@@ -36,7 +36,7 @@ export function How() {
         <div className={styles.story}>
           <div className={styles.phoneCol}>
             <div className={styles.sticky}>
-              <DevicePhone pose={{ x: 4, y: 16, z: -1 }} follow={false} finish="blue">
+              <DevicePhone follow={false} finish="blue">
                 <div className={styles.screens}>
                   <div className={styles.screenLayer} data-on={active === 0 || undefined}>
                     <ImportScreen />

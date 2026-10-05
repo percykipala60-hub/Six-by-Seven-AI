@@ -10,9 +10,18 @@ export const brand = {
 
 // Liens de l'application. À remplir le jour du lancement :
 // tant qu'ils sont vides, les boutons mènent à la section « Télécharger » avec la date de sortie.
+export type PlatformId = "ios" | "android" | "mac" | "windows";
+
 export const app = {
   webUrl: "", // adresse de la version web, ex. https://app.exemple.com
-  downloadUrl: "", // lien d'installation de l'application
+  // Liens de téléchargement par plateforme : vides tant que les versions ne sont pas publiées.
+  platforms: [
+    { id: "ios", name: "iPhone", system: "iOS", url: "" },
+    { id: "android", name: "Android", system: "Téléphones Android", url: "" },
+    { id: "mac", name: "Mac", system: "macOS", url: "" },
+    { id: "windows", name: "Windows", system: "PC Windows", url: "" },
+  ] satisfies { id: PlatformId; name: string; system: string; url: string }[],
+  downloadPage: "/telecharger",
   sectionId: "telecharger",
   release: "Disponible le 15 octobre",
   releaseShort: "15 oct.",
@@ -21,7 +30,7 @@ export const app = {
     long: "Télécharger l'application",
     title: "L'application",
     text: "Installe Six sur ton téléphone depuis un simple lien. Elle s'ouvre même quand le réseau coupe.",
-    platforms: "Android et iPhone",
+    platforms: "iPhone, Android, Mac et Windows",
   },
   web: {
     short: "Version web",
@@ -127,6 +136,18 @@ export const socials: { id: SocialId; name: string; handle?: string; href?: stri
   { id: "facebook", name: "Facebook", handle: "Seven.AI", href: "https://www.facebook.com/profile.php?id=61595213814728" },
 ];
 
+// Page « Télécharger ».
+export const downloadPage = {
+  title: "Télécharger Six",
+  intro: "Choisis ton appareil. Six sort le 15 octobre sur iPhone, Android, Mac et Windows.",
+  detected: "Pour ton appareil",
+  others: "Toutes les versions",
+  download: "Télécharger",
+  soon: "Disponible le 15 oct.",
+  webTitle: "Pas envie d'installer ?",
+  webText: "La version web fait exactement la même chose, directement dans ton navigateur.",
+};
+
 export const launch = {
   title: "Six sort le 15 octobre.",
   text: "Choisis comment tu veux l'utiliser. Les deux versions font exactement la même chose.",
@@ -138,8 +159,8 @@ export const footer = {
     {
       title: "Six",
       links: [
-        { label: "Télécharger", href: "/#telecharger" },
-        { label: "Version web", href: "/#telecharger" },
+        { label: "Télécharger", href: "/telecharger" },
+        { label: "Version web", href: "/telecharger#web" },
         { label: "Comment ça marche", href: "/#comment" },
         { label: "Sécurité", href: "/#securite" },
         { label: "Confidentialité", href: "/#confidentialite" },

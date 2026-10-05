@@ -20,7 +20,7 @@ export function Security() {
         </Reveal>
 
         <Reveal delay={150}>
-          <DevicePhone pose={{ x: 4, y: 18, z: -2 }} model="ultra" finish="rose" label={`${scamScene.scam!.title} : ${scamScene.scam!.text}`}>
+          <DevicePhone model="ultra" finish="rose" label={`${scamScene.scam!.title} : ${scamScene.scam!.text}`}>
             <SixScreen scene={scamScene} step={2} />
           </DevicePhone>
         </Reveal>

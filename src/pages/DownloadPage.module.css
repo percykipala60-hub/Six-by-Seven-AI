@@ -1,0 +1,180 @@
+.page {
+  padding-top: calc(72px + clamp(48px, 7vw, 96px));
+  padding-bottom: var(--section-space);
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 720px;
+  margin: 0 auto clamp(40px, 6vw, 64px);
+}
+
+.head h1 {
+  margin-top: 28px;
+  font-size: clamp(48px, 7vw, 96px);
+}
+
+.head p {
+  margin-top: 18px;
+  font-size: 18px;
+  color: var(--ink-2);
+}
+
+/* Version recommandée pour l'appareil du visiteur. */
+.featured {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  max-width: 960px;
+  margin: 0 auto clamp(56px, 7vw, 88px);
+  padding: clamp(28px, 4vw, 44px);
+  border-radius: var(--radius-lg);
+  background: var(--navy-900);
+  color: var(--dark-ink);
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--brand-blue);
+}
+
+.featuredText h2 {
+  margin-top: 8px;
+  font-size: clamp(34px, 4.4vw, 52px);
+}
+
+.system {
+  margin-top: 6px;
+  color: var(--dark-mut);
+  font-size: 15px;
+}
+
+.gridTitle {
+  font: 600 15px var(--font-body);
+  letter-spacing: 0;
+  color: var(--mut);
+  max-width: 960px;
+  margin: 0 auto 16px;
+}
+
+.grid {
+  list-style: none;
+  margin: 0 auto;
+  padding: 0;
+  max-width: 960px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  padding: 26px 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.card[data-current] {
+  border-color: var(--acc);
+}
+
+.icon {
+  color: var(--acc);
+  margin-bottom: 22px;
+}
+
+.card h3 {
+  font-size: 28px;
+}
+
+.card p {
+  margin: 4px 0 22px;
+  font-size: 14px;
+  color: var(--mut);
+}
+
+.card > :last-child {
+  margin-top: auto;
+}
+
+.dl {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 16px;
+  border-radius: var(--radius-pill);
+  background: var(--brand-blue-deep);
+  color: #fff;
+  font-weight: 600;
+  font-size: 14px;
+  text-decoration: none;
+  transition: background-color 0.15s;
+}
+
+.dl:hover {
+  background: var(--brand-blue);
+}
+
+.dlLarge {
+  padding: 15px 26px;
+  font-size: 16px;
+  background: var(--brand-white);
+  color: var(--navy-950);
+}
+
+.dlLarge:hover {
+  background: #fff;
+}
+
+/* Date de sortie, à la place du bouton tant que le lien n'existe pas. */
+.soon {
+  display: inline-flex;
+  justify-content: center;
+  padding: 10px 14px;
+  border-radius: var(--radius-pill);
+  border: 1px dashed var(--line-strong);
+  color: var(--mut);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.soonLarge {
+  padding: 14px 22px;
+  font-size: 15px;
+  border-color: var(--navy-600);
+  color: var(--dark-ink-2);
+}
+
+.web {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  max-width: 960px;
+  margin: clamp(56px, 7vw, 88px) auto 0;
+  padding: clamp(28px, 4vw, 44px);
+  border-radius: var(--radius-lg);
+  background: var(--navy-950);
+  color: var(--dark-ink);
+  scroll-margin-top: 96px;
+}
+
+.web h2 {
+  font-size: clamp(30px, 3.6vw, 44px);
+}
+
+.web p {
+  margin-top: 8px;
+  color: var(--dark-ink-2);
+  max-width: 34em;
+}

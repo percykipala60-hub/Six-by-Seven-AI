@@ -40,16 +40,16 @@ function useMaterials(finish: Finish) {
       // Barillet en métal sombre et fines bagues claires à l'intérieur de l'objectif.
       barrel: new THREE.MeshStandardMaterial({ color: "#2b2f38", metalness: 0.9, roughness: 0.32, envMapIntensity: 0.9 }),
       barrelLight: new THREE.MeshStandardMaterial({ color: "#a9afba", metalness: 1, roughness: 0.22, envMapIntensity: 1.2 }),
-      barrelDim: new THREE.MeshStandardMaterial({ color: "#4a505c", metalness: 1, roughness: 0.3, envMapIntensity: 1 }),
+      barrelDim: new THREE.MeshStandardMaterial({ color: "#23262d", metalness: 1, roughness: 0.35, envMapIntensity: 0.6 }),
       // Élément optique : bleu nuit profond avec traitement irisé.
       element: new THREE.MeshPhysicalMaterial({
-        color: "#10131c",
-        metalness: 0.1,
-        roughness: 0.12,
-        clearcoat: 0.3,
-        clearcoatRoughness: 0.2,
-        envMapIntensity: 0.45,
-        iridescence: 0.35,
+        color: "#050609",
+        metalness: 0,
+        roughness: 0.2,
+        clearcoat: 0.2,
+        clearcoatRoughness: 0.3,
+        envMapIntensity: 0.25,
+        iridescence: 0.12,
         iridescenceIOR: 2,
         iridescenceThicknessRange: [280, 760],
       }),
@@ -61,9 +61,9 @@ function useMaterials(finish: Finish) {
         roughness: 0,
         clearcoat: 1,
         transparent: true,
-        opacity: 0.16,
+        opacity: 0.09,
         depthWrite: false,
-        envMapIntensity: 2,
+        envMapIntensity: 1.4,
       }),
       // Liseré d'ombre autour des boutons, et verre du bouton de commande de l'appareil photo.
       gap: new THREE.MeshStandardMaterial({ color: "#050506", roughness: 0.6 }),
@@ -72,12 +72,12 @@ function useMaterials(finish: Finish) {
       flash: new THREE.MeshPhysicalMaterial({ color: "#f4f1ea", emissive: "#1d1c18", roughness: 0.45, clearcoat: 1, envMapIntensity: 0.6 }),
       // Verre teinté vert-bleu des objectifs Samsung.
       elementGreen: new THREE.MeshPhysicalMaterial({
-        color: "#0f1c1e",
-        metalness: 0.1,
-        roughness: 0.12,
-        clearcoat: 0.3,
-        envMapIntensity: 0.5,
-        iridescence: 0.3,
+        color: "#05080a",
+        metalness: 0,
+        roughness: 0.2,
+        clearcoat: 0.2,
+        envMapIntensity: 0.25,
+        iridescence: 0.12,
         iridescenceIOR: 1.8,
         iridescenceThicknessRange: [200, 600],
       }),
@@ -123,13 +123,7 @@ function Lens({ x, y, z, r, m, look = "apple" }: { x: number; y: number; z: numb
         <circleGeometry args={[r * glass, 72]} />
       </mesh>
       <mesh position={[0, 0, top - 0.004]} rotation={FACE} material={m.barrelDim}>
-        <ringGeometry args={[r * glass * 0.78, r * glass * 0.84, 72]} />
-      </mesh>
-      <mesh position={[0, 0, top - 0.004]} rotation={FACE} material={m.barrelLight}>
-        <ringGeometry args={[r * glass * 0.5, r * glass * 0.56, 72]} />
-      </mesh>
-      <mesh position={[0, 0, top - 0.004]} rotation={FACE} material={m.barrelDim}>
-        <ringGeometry args={[r * glass * 0.36, r * glass * 0.4, 72]} />
+        <ringGeometry args={[r * glass * 0.46, r * glass * 0.5, 72]} />
       </mesh>
       <mesh position={[0, 0, top - 0.005]} rotation={FACE} material={m.pupil}>
         <circleGeometry args={[r * glass * 0.3, 48]} />
@@ -186,38 +180,51 @@ function SideButton({ side, y, length, w, m, kind = "metal" }: { side: 1 | -1; y
   );
 }
 
+// Forme plate gravée sur la tranche du bas (face orientée vers -y).
+// `hole` : évide l'intérieur pour ne garder qu'un contour.
+function EdgeShape({ x, y, w, h, r, material, hole, lift = 0.001 }: { x: number; y: number; w: number; h: number; r: number; material: THREE.Material; hole?: number; lift?: number }) {
+  const geo = useMemo(() => {
+    const shape = roundedRect(w, h, Math.min(r, h / 2, w / 2));
+    if (hole) {
+      const inner = roundedRect(w - hole * 2, h - hole * 2, Math.max(Math.min(r, h / 2, w / 2) - hole, 0.005));
+      shape.holes.push(new THREE.Path(inner.getPoints(24).reverse()));
+    }
+    return new THREE.ShapeGeometry(shape, 24);
+  }, [w, h, r, hole]);
+  // Rotation de +90° autour de x : la face regarde vers le bas, la hauteur de la forme suit l'épaisseur (z).
+  return <mesh geometry={geo} position={[x, y - lift, 0]} rotation={[Math.PI / 2, 0, 0]} material={material} />;
+}
+
 // Tranche du bas. iPhone : USB-C au centre, haut-parleur et micros de part et d'autre.
-// Galaxy Ultra : stylet S Pen à gauche, tiroir SIM, USB-C au centre, haut-parleur à droite.
+// Galaxy Ultra : embout du S Pen à gauche, tiroir SIM, USB-C au centre, haut-parleur à droite.
 function BottomEdge({ h, m, model }: { h: number; m: M; model: Model }) {
   const y = -h / 2;
-  const holes = model === "pro" ? [-2.05, -1.8, -1.55, -1.3, 1.3, 1.55, 1.8, 2.05] : [1.2, 1.42, 1.64, 1.86, 2.08, 2.3];
+  const step = 0.16;
+  const holes =
+    model === "pro"
+      ? [...Array(6)].flatMap((_, i) => [1.2 + i * step, -(1.2 + i * step)])
+      : [...Array(7)].map((_, i) => 1.15 + i * step);
   return (
     <group>
-      {/* Port USB-C */}
-      <mesh position={[0, y + 0.09, 0]} rotation={[0, 0, Math.PI / 2]} material={m.gap}>
-        <capsuleGeometry args={[0.12, 0.62, 8, 24]} />
-      </mesh>
-      {holes.map((x) => (
-        <mesh key={x} position={[x, y + 0.035, 0]} material={m.gap}>
-          <sphereGeometry args={[0.055, 12, 8]} />
+      {/* Port USB-C : bordure polie, ouverture sombre, languette intérieure */}
+      <EdgeShape x={0} y={y} w={0.94} h={0.33} r={0.165} material={m.polished} lift={0.0006} />
+      <EdgeShape x={0} y={y} w={0.86} h={0.26} r={0.13} material={m.gap} lift={0.0012} />
+      <EdgeShape x={0} y={y} w={0.56} h={0.07} r={0.03} material={m.barrelDim} lift={0.0018} />
+      {holes.map((hx) => (
+        <mesh key={hx} position={[hx, y - 0.0012, 0]} rotation={[Math.PI / 2, 0, 0]} material={m.gap}>
+          <circleGeometry args={[0.045, 20]} />
         </mesh>
       ))}
       {model === "ultra" && (
         <>
-          {/* Tiroir SIM : interstice et trou d'éjection */}
-          <mesh position={[-1.25, y + 0.012, 0]} rotation={[0, 0, Math.PI / 2]} scale={[1, 1, 0.9]} material={m.gap}>
-            <capsuleGeometry args={[0.15, 0.95, 8, 24]} />
+          {/* Tiroir SIM : contour très fin et trou d'éjection */}
+          <EdgeShape x={-1.2} y={y} w={1.3} h={0.3} r={0.15} material={m.gap} hole={0.018} />
+          <mesh position={[-0.68, y - 0.0012, 0]} rotation={[Math.PI / 2, 0, 0]} material={m.gap}>
+            <circleGeometry args={[0.035, 16]} />
           </mesh>
-          <mesh position={[-1.25, y + 0.0, 0]} rotation={[0, 0, Math.PI / 2]} scale={[1, 1, 0.82]} material={m.metal}>
-            <capsuleGeometry args={[0.135, 0.92, 8, 24]} />
-          </mesh>
-          {/* Embout du stylet S Pen, affleurant à gauche */}
-          <mesh position={[-2.75, y + 0.01, 0]} material={m.gap}>
-            <sphereGeometry args={[0.22, 24, 16]} />
-          </mesh>
-          <mesh position={[-2.75, y - 0.005, 0]} material={m.polished}>
-            <sphereGeometry args={[0.19, 24, 16]} />
-          </mesh>
+          {/* Embout du stylet S Pen, affleurant et poli */}
+          <EdgeShape x={-2.45} y={y} w={0.58} h={0.3} r={0.15} material={m.gap} lift={0.0006} />
+          <EdgeShape x={-2.45} y={y} w={0.54} h={0.26} r={0.13} material={m.polished} lift={0.0012} />
         </>
       )}
     </group>
