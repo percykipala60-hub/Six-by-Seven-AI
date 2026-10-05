@@ -1,0 +1,77 @@
+import { useEffect, useRef, useState } from "react";
+import { how } from "../content/site";
+import { scenes } from "../content/phoneScenes";
+import { Reveal } from "../components/ui/Reveal";
+import { DevicePhone } from "../components/phone3d/DevicePhone";
+import { ImportScreen, VerifyScreen } from "../components/phone/HowScreens";
+import { SixScreen } from "../components/phone/Screens";
+import styles from "./How.module.css";
+
+// Récit au défilement : le téléphone reste en place, son écran suit l'étape lue.
+export function How() {
+  const [active, setActive] = useState(0);
+  const stepRefs = useRef<(HTMLLIElement | null)[]>([]);
+
+  useEffect(() => {
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (e.isIntersecting) setActive(Number((e.target as HTMLElement).dataset.index));
+        }
+      },
+      { rootMargin: "-45% 0px -45% 0px" },
+    );
+    stepRefs.current.forEach((el) => el && io.observe(el));
+    return () => io.disconnect();
+  }, []);
+
+  return (
+    <section id={how.id} className={styles.section} aria-labelledby="how-title">
+      <div className="container">
+        <Reveal className={styles.head}>
+          <h2 id="how-title">{how.title}</h2>
+          <p>{how.intro}</p>
+        </Reveal>
+
+        <div className={styles.story}>
+          <div className={styles.phoneCol}>
+            <div className={styles.sticky}>
+              <DevicePhone pose={{ x: 4, y: 16, z: -1 }} follow={false} finish="blue">
+                <div className={styles.screens}>
+                  <div className={styles.screenLayer} data-on={active === 0 || undefined}>
+                    <ImportScreen />
+                  </div>
+                  <div className={styles.screenLayer} data-on={active === 1 || undefined}>
+                    <VerifyScreen active={active === 1} />
+                  </div>
+                  <div className={styles.screenLayer} data-on={active === 2 || undefined}>
+                    <SixScreen scene={scenes[0]} step={3} />
+                  </div>
+                </div>
+              </DevicePhone>
+            </div>
+          </div>
+
+          <ol className={styles.steps}>
+            {how.steps.map((step, i) => (
+              <li
+                key={step.title}
+                ref={(el) => {
+                  stepRefs.current[i] = el;
+                }}
+                data-index={i}
+                className={styles.step}
+                data-active={active === i || undefined}
+              >
+                <button type="button" onClick={() => setActive(i)} aria-pressed={active === i}>
+                  <span className={styles.stepTitle}>{step.title}</span>
+                  <span className={styles.stepText}>{step.text}</span>
+                </button>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </div>
+    </section>
+  );
+}

@@ -1,0 +1,59 @@
+.section {
+  padding-block: var(--section-space);
+}
+
+.grid {
+  display: grid;
+  gap: 56px;
+}
+
+@media (min-width: 960px) {
+  .grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 96px;
+    align-items: start;
+  }
+  .intro {
+    position: sticky;
+    top: 120px;
+  }
+}
+
+.grid > * {
+  min-width: 0;
+}
+
+.intro h2 {
+  font-size: clamp(50px, 6.8vw, 96px);
+  max-width: 10ch;
+}
+
+.intro p {
+  margin-top: 28px;
+  font-size: 19px;
+  color: var(--ink-2);
+  max-width: 30em;
+}
+
+.points {
+  margin: 0;
+}
+
+.point {
+  padding-block: 28px;
+  border-top: 1px solid var(--line-strong);
+}
+
+.point:last-child {
+  border-bottom: 1px solid var(--line-strong);
+}
+
+.point dt {
+  font: 600 28px/1.15 var(--font-display);
+}
+
+.point dd {
+  margin: 8px 0 0;
+  font-size: 17px;
+  color: var(--ink-2);
+}

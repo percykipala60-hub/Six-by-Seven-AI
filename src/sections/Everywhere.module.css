@@ -1,0 +1,58 @@
+.section {
+  padding-block: 0 var(--section-space);
+}
+
+.grid {
+  display: grid;
+  gap: 20px;
+  padding-top: clamp(56px, 7vw, 96px);
+  border-top: 1px solid var(--line-strong);
+}
+
+@media (min-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 96px;
+  }
+}
+
+.grid h2 {
+  font-size: clamp(42px, 5vw, 68px);
+}
+
+.grid p {
+  font-size: 18px;
+  color: var(--ink-2);
+  max-width: 30em;
+}
+
+.apps {
+  margin-top: clamp(48px, 6vw, 72px);
+}
+
+.appsLabel {
+  font-size: 14px;
+  color: var(--mut);
+  margin-bottom: 12px;
+}
+
+.apps ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 0.5em;
+  font: italic 500 clamp(34px, 5.4vw, 72px) / 1.1 var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+.apps li {
+  color: var(--ink);
+}
+
+.apps li:not(:last-child)::after {
+  content: "·";
+  margin-left: 0.5em;
+  color: var(--line-strong);
+}

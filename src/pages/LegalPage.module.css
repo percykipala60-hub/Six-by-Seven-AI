@@ -1,0 +1,133 @@
+.layout {
+  display: grid;
+  gap: 56px;
+  padding-top: calc(72px + clamp(40px, 6vw, 80px));
+  padding-bottom: var(--section-space);
+}
+
+@media (min-width: 960px) {
+  .layout {
+    grid-template-columns: minmax(0, 720px) 260px;
+    justify-content: space-between;
+  }
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--mut);
+  text-decoration: none;
+  margin-bottom: 40px;
+}
+
+.back:hover {
+  color: var(--ink);
+}
+
+.eyebrow {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--acc);
+  margin-bottom: 14px;
+}
+
+.article h1 {
+  font-size: clamp(38px, 5.4vw, 60px);
+}
+
+.summary {
+  margin-top: 18px;
+  font-size: 19px;
+  color: var(--ink-2);
+}
+
+.meta {
+  margin-top: 24px;
+  font-size: 14px;
+  color: var(--mut);
+}
+
+.draft {
+  margin-top: 16px;
+  padding: 14px 18px;
+  border-radius: var(--radius-md);
+  background: var(--acc-soft);
+  color: var(--ink-2);
+  font-size: 14px;
+}
+
+.article section {
+  margin-top: 48px;
+}
+
+.article h2 {
+  font-size: 22px;
+  letter-spacing: -0.02em;
+  margin-bottom: 14px;
+}
+
+.article section p,
+.article section li {
+  color: var(--ink-2);
+  font-size: 16.5px;
+  line-height: 1.7;
+}
+
+.article section p + p {
+  margin-top: 12px;
+}
+
+.article ul {
+  margin: 0;
+  padding-left: 1.2em;
+  display: grid;
+  gap: 6px;
+}
+
+.aside {
+  align-self: start;
+}
+
+@media (min-width: 960px) {
+  .aside {
+    position: sticky;
+    top: 104px;
+    margin-top: 72px;
+  }
+}
+
+.asideTitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--mut);
+  margin-bottom: 12px;
+}
+
+.aside ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-left: 1px solid var(--line);
+}
+
+.aside a {
+  display: block;
+  padding: 8px 16px;
+  margin-left: -1px;
+  border-left: 2px solid transparent;
+  color: var(--ink-2);
+  text-decoration: none;
+  font-size: 15px;
+}
+
+.aside a:hover {
+  color: var(--ink);
+}
+
+.aside a[aria-current="page"] {
+  color: var(--ink);
+  font-weight: 600;
+  border-left-color: var(--acc);
+}

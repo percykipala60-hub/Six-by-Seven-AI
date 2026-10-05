@@ -1,0 +1,92 @@
+/* Design tokens : la seule source des couleurs, polices et rayons.
+   Couleurs tirées des planches de logo Six et Seven.AI : bleu nuit, blanc, bleu. */
+:root {
+  /* Marque */
+  --navy-950: #090f1b;
+  --navy-900: #0e1526;
+  --navy-800: #121a2f;
+  --navy-700: #1b2540;
+  --navy-600: #26324f;
+  --brand-blue: #4d7cfe;
+  --brand-blue-deep: #2d5fe6;
+  --brand-white: #f2f5fa;
+
+  /* Thème clair (pages de contenu) */
+  --bg: #f7f8fb;
+  --bg-soft: #eef1f7;
+  --surface: #ffffff;
+  --ink: #0e1526;
+  --ink-2: #3c4459;
+  --mut: #697187;
+  --line: #e1e5ee;
+  --line-strong: #cbd2df;
+  --acc: #2d5fe6;
+  --acc-ink: #ffffff;
+  --acc-soft: #e8eeff;
+  --mask: #ffd84d;
+  --mask-ink: #0e1526;
+  --warn: #c2361f;
+  --warn-bg: #fdece8;
+
+  /* Zones sombres (hero, sécurité, Seven.AI, pied de page) */
+  --dark-bg: var(--navy-950);
+  --dark-surface: var(--navy-800);
+  --dark-ink: var(--brand-white);
+  --dark-ink-2: #b7bfd1;
+  --dark-mut: #7c869e;
+  --dark-line: #1f2a44;
+
+  --font-display: "Cormorant Garamond", "Cormorant", Garamond, Georgia, serif;
+  --font-body: "Manrope", system-ui, -apple-system, sans-serif;
+  --font-wordmark: "Manrope", system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 28px;
+  --radius-pill: 999px;
+
+  --container: 1200px;
+  --gutter: clamp(20px, 4vw, 40px);
+  --section-space: clamp(88px, 12vw, 152px);
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b1120;
+    --bg-soft: #111a2e;
+    --surface: #141e34;
+    --ink: #f2f5fa;
+    --ink-2: #c3cada;
+    --mut: #8b93a7;
+    --line: #1f2a44;
+    --line-strong: #2c3956;
+    --acc: #6b93ff;
+    --acc-ink: #090f1b;
+    --acc-soft: #18254a;
+    --warn: #ff9d88;
+    --warn-bg: #3a1d1c;
+    --dark-bg: #070c16;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg: #0b1120;
+  --bg-soft: #111a2e;
+  --surface: #141e34;
+  --ink: #f2f5fa;
+  --ink-2: #c3cada;
+  --mut: #8b93a7;
+  --line: #1f2a44;
+  --line-strong: #2c3956;
+  --acc: #6b93ff;
+  --acc-ink: #090f1b;
+  --acc-soft: #18254a;
+  --warn: #ff9d88;
+  --warn-bg: #3a1d1c;
+  --dark-bg: #070c16;
+  color-scheme: dark;
+}

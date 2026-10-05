@@ -1,0 +1,167 @@
+// Tout le texte du site vit ici. Les composants ne font que l'afficher :
+// on peut refaire le design sans toucher au contenu, et inversement.
+// Ton : simple, concret, à la deuxième personne. Pas de slogans en cascade.
+
+export const brand = {
+  product: "Six",
+  company: "Seven.AI",
+  tagline: "L'IA propose. Tu décides.",
+};
+
+// Liens de l'application. À remplir le jour du lancement :
+// tant qu'ils sont vides, les boutons mènent à la section « Télécharger » avec la date de sortie.
+export const app = {
+  webUrl: "", // adresse de la version web, ex. https://app.exemple.com
+  downloadUrl: "", // lien d'installation de l'application
+  sectionId: "telecharger",
+  release: "Disponible le 15 octobre",
+  releaseShort: "15 oct.",
+  download: {
+    short: "Télécharger",
+    long: "Télécharger l'application",
+    title: "L'application",
+    text: "Installe Six sur ton téléphone depuis un simple lien. Elle s'ouvre même quand le réseau coupe.",
+    platforms: "Android et iPhone",
+  },
+  web: {
+    short: "Version web",
+    long: "Ouvrir la version web",
+    title: "La version web",
+    text: "Utilise Six directement dans ton navigateur, sur téléphone comme sur ordinateur. Rien à installer.",
+    platforms: "Tous les navigateurs",
+  },
+};
+
+export const nav = {
+  links: [
+    { href: "/#comment", label: "Comment ça marche" },
+    { href: "/#securite", label: "Sécurité" },
+    { href: "/#confidentialite", label: "Confidentialité" },
+    { href: "/#seven-ai", label: "Seven.AI" },
+  ],
+};
+
+export const hero = {
+  title: "L'IA propose. Tu décides.",
+  lead: "Un message auquel tu ne sais pas quoi répondre ? Colle-le dans Six. Il te propose trois réponses, tu prends celle qui te ressemble et tu l'envoies toi-même.",
+  more: { href: "#comment", label: "Voir comment ça marche" },
+};
+
+export const how = {
+  id: "comment",
+  title: "Comment ça marche",
+  intro: "Six ne lit pas tes messages tout seul et n'envoie rien à ta place. Tu lui montres une conversation, il t'aide à y répondre.",
+  steps: [
+    {
+      title: "Colle la discussion",
+      text: "Copie le texte, importe l'export d'une conversation WhatsApp ou ajoute une capture d'écran. Six reconnaît qui parle et à quel moment.",
+    },
+    {
+      title: "Vérifie ce qui part",
+      text: "Avant l'analyse, les noms, numéros, codes et adresses sont remplacés. Tu vois le texte tel que l'IA va le lire, et tu peux masquer ce qui serait passé à travers.",
+    },
+    {
+      title: "Choisis ta réponse",
+      text: "Six te dit ce qu'il a compris, puis te propose trois réponses dans le ton voulu. Tu prends la tienne, tu la copies, tu l'envoies depuis ton appli habituelle.",
+    },
+  ],
+};
+
+// Exemple de masquage : chaque segment sensible a sa version originale et sa version masquée.
+export type MaskSegment = string | { original: string; masked: string };
+
+export const maskExample = {
+  toggle: { original: "Reçu", masked: "Envoyé à l'IA" },
+  segments: [
+    "Salut ",
+    { original: "Patrick", masked: "[PRÉNOM]" },
+    ", appelle-moi au ",
+    { original: "+243 81 234 5678", masked: "[NUMÉRO]" },
+    ". Mon compte est ",
+    { original: "0123-4567", masked: "[COMPTE]" },
+    ", mais ne le dis à personne.",
+  ] satisfies MaskSegment[],
+};
+
+export const security = {
+  id: "securite",
+  title: "Les arnaques, il les voit venir.",
+  text: "Faux conseiller bancaire, gain miracle, proche qui écrit soudain depuis un nouveau numéro. Quand un message y ressemble, Six te prévient avant de proposer quoi que ce soit.",
+  note: "Une alerte reste une aide. En cas de doute, appelle l'organisme concerné par son numéro officiel.",
+};
+
+export const privacy = {
+  id: "confidentialite",
+  title: "Tes conversations restent les tiennes.",
+  text: "Avant d'envoyer quoi que ce soit à l'IA, Six remplace les informations personnelles. Les vraies sont remises à leur place dans la réponse, sur notre serveur. Ensuite, la conversation est effacée.",
+  points: [
+    { title: "Rien n'est conservé", text: "Seuls ton compte et ton quota d'utilisation sont enregistrés." },
+    { title: "Les captures restent sur ton téléphone", text: "Le texte est lu sur l'appareil. L'image n'est jamais envoyée." },
+    { title: "Sept types d'informations masquées", text: "Noms, prénoms, numéros, codes, comptes, adresses et pseudos." },
+    { title: "Tu as le dernier mot", text: "Le masquage n'est pas parfait. Si un nom passe, tu le masques toi-même avant l'envoi." },
+  ],
+};
+
+export const everywhere = {
+  title: "Léger, même sur un vieux téléphone.",
+  text: "Six s'installe depuis un simple lien, sans passer par un store. L'appli s'ouvre même quand le réseau coupe, et elle a été pensée pour les petits écrans.",
+  apps: ["WhatsApp", "Messenger", "Telegram", "Instagram", "SMS", "Email"],
+  appsLabel: "Fonctionne avec les conversations de",
+};
+
+export const sevenAi = {
+  id: "seven-ai",
+  label: "Seven.AI",
+  title: "Deux traits côte à côte.",
+  text: "Le blanc, c'est l'humain qui trace. Le bleu, c'est l'IA qui l'accompagne sans jamais passer devant. C'est l'idée derrière Seven.AI, et derrière chacun de ses produits.",
+  sixStory: "Six naît du 7 : la barre du 7 descend et s'enroule en 6. Le trait bleu marche à côté.",
+};
+
+// Un réseau sans `href` s'affiche grisé : ajoute le lien ici dès qu'il existe.
+export type SocialId = "whatsapp" | "instagram" | "linkedin" | "tiktok" | "facebook";
+export const socials: { id: SocialId; name: string; handle?: string; href?: string }[] = [
+  { id: "whatsapp", name: "WhatsApp", handle: "Chaîne Seven.AI", href: "https://whatsapp.com/channel/0029Vb9blFv4o7qVCCbRPi1Y" },
+  { id: "instagram", name: "Instagram", handle: "@sevenai.dc", href: "https://www.instagram.com/sevenai.dc/" },
+  { id: "linkedin", name: "LinkedIn" },
+  { id: "tiktok", name: "TikTok", handle: "@sevenai..dc", href: "https://www.tiktok.com/@sevenai..dc" },
+  { id: "facebook", name: "Facebook", handle: "Seven.AI", href: "https://www.facebook.com/profile.php?id=61595213814728" },
+];
+
+export const launch = {
+  title: "Six sort le 15 octobre.",
+  text: "Choisis comment tu veux l'utiliser. Les deux versions font exactement la même chose.",
+  follow: "Suis Seven.AI pour être prévenu le jour du lancement.",
+};
+
+export const footer = {
+  columns: [
+    {
+      title: "Six",
+      links: [
+        { label: "Télécharger", href: "/#telecharger" },
+        { label: "Version web", href: "/#telecharger" },
+        { label: "Comment ça marche", href: "/#comment" },
+        { label: "Sécurité", href: "/#securite" },
+        { label: "Confidentialité", href: "/#confidentialite" },
+      ],
+    },
+    {
+      title: "Seven.AI",
+      links: [
+        { label: "À propos", href: "/#seven-ai" },
+        { label: "Utilisation de l'IA", href: "/legal/utilisation-ia" },
+        { label: "Lancement", href: "/#telecharger" },
+      ],
+    },
+    {
+      title: "Légal",
+      links: [
+        { label: "Conditions d'utilisation", href: "/legal/conditions-utilisation" },
+        { label: "Politique de confidentialité", href: "/legal/politique-confidentialite" },
+        { label: "Mentions légales", href: "/legal/mentions-legales" },
+      ],
+    },
+  ],
+  soon: "Bientôt",
+  copyright: "© 2026 Seven.AI",
+};

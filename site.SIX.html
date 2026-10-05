@@ -1,0 +1,339 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>six</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@500;700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+/* Mise en page : colonne éditoriale alignée à gauche, héros avec téléphone interactif,
+   puis sections à rythme varié (étapes, avant/après, feuille de route). Identité de six conservée. */
+:root{
+  --bg:#F6F5FB;
+  --ink:#17153B;
+  --mut:#5C5A7A;
+  --acc:#5B3DF5;
+  --acc-ink:#FFFFFF;
+  --hl:#FFD84D;
+  --hl-ink:#17153B;
+  --card:#FFFFFF;
+  --line:#E1DEF2;
+  --warn:#B3261E;
+  --warn-bg:#FDECEA;
+  --ok:#1E7A4C;
+  --display:"Bricolage Grotesque",system-ui,sans-serif;
+  --body:"DM Sans",system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#13112B;--ink:#F2F0FF;--mut:#A9A6CC;--acc:#8B76FF;--acc-ink:#13112B;
+    --card:#1E1B40;--line:#332F63;--warn:#FF8A80;--warn-bg:#3A1B2A;--ok:#6FD6A0;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#13112B;--ink:#F2F0FF;--mut:#A9A6CC;--acc:#8B76FF;--acc-ink:#13112B;
+  --card:#1E1B40;--line:#332F63;--warn:#FF8A80;--warn-bg:#3A1B2A;--ok:#6FD6A0;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.6 var(--body);padding-inline:20px;overflow-x:hidden}
+h1,h2,h3{font-family:var(--display);line-height:1.05;letter-spacing:-.02em;margin:0;text-wrap:balance}
+p{margin:0}
+.wrap{max-width:1040px;margin:0 auto}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--hl);outline-offset:3px}
+
+nav{display:flex;justify-content:space-between;align-items:center;gap:16px;padding-block:20px}
+.logo{font:800 30px var(--display);letter-spacing:-.04em;text-decoration:none}
+.links{display:flex;align-items:center;gap:22px}
+.links a.t{text-decoration:none;color:var(--mut);font-weight:500;font-size:15px}
+.links a.t:hover{color:var(--ink)}
+@media(max-width:700px){.links a.t{display:none}}
+.btn{display:inline-block;background:var(--acc);color:var(--acc-ink);text-decoration:none;font-weight:500;padding:14px 26px;border-radius:999px;border:0;font-family:var(--body);font-size:17px;cursor:pointer}
+.btn:hover{opacity:.9}
+.btn.sm{padding:10px 20px;font-size:15px}
+
+.hero{display:grid;gap:44px;padding-block:32px 72px;align-items:center}
+@media(min-width:820px){.hero{grid-template-columns:1.1fr .9fr}}
+.hero>div{min-width:0}
+h1{font-size:clamp(36px,6vw,60px);font-weight:800}
+h1 mark{background:var(--hl);color:var(--hl-ink);padding:0 .12em;border-radius:6px;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+.hero p.lead{color:var(--mut);max-width:46ch;margin:22px 0 28px;font-size:19px}
+.hero .cta-row{display:flex;flex-wrap:wrap;gap:14px;align-items:center}
+.hero .note{font-size:14px;color:var(--mut)}
+
+.phone{background:var(--card);border:1px solid var(--line);border-radius:34px;padding:20px 18px 22px;max-width:380px;width:100%;margin:0 auto}
+.seg{display:flex;gap:4px;background:var(--bg);border-radius:999px;padding:4px;margin-bottom:18px}
+.seg button{flex:1;border:0;background:transparent;color:var(--mut);font:500 14px var(--body);padding:8px 10px;border-radius:999px;cursor:pointer}
+.seg button[aria-selected="true"]{background:var(--ink);color:var(--bg)}
+.msg{padding:11px 15px;border-radius:20px 20px 20px 6px;background:var(--bg);max-width:88%;margin-bottom:14px;font-size:16px;line-height:1.4}
+.label{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);margin:16px 0 8px;font-weight:500}
+.tones{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.tone{border:1px solid var(--line);background:transparent;color:var(--ink);font:500 14px var(--body);padding:8px 14px;border-radius:999px;cursor:pointer}
+.tone:hover{opacity:.8}
+.tone[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.reply{background:var(--hl);color:var(--hl-ink);padding:13px 16px;border-radius:20px 20px 6px 20px;font-size:16px;line-height:1.4;min-height:78px;transition:opacity .2s}
+.reply.sw{opacity:0}
+.reply-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px;font-size:14px;color:var(--mut)}
+.copy{border:1px solid var(--line);background:transparent;color:var(--ink);font:500 14px var(--body);padding:7px 14px;border-radius:999px;cursor:pointer}
+.alert{background:var(--warn-bg);color:var(--warn);border-radius:16px;padding:14px 16px;font-size:15px;line-height:1.45}
+.alert strong{display:block;font:700 17px var(--display);margin-bottom:4px}
+.acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.acts span{border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:8px 14px;font-size:14px;font-weight:500}
+[hidden]{display:none!important}
+
+section{padding-block:68px;border-top:1px solid var(--line)}
+h2{font-size:clamp(30px,5vw,46px);font-weight:700;margin-bottom:14px;max-width:20ch}
+.sub{color:var(--mut);max-width:58ch;margin-bottom:36px}
+
+.steps{display:grid;gap:0 36px;counter-reset:step;list-style:none;padding:0;margin:0}
+@media(min-width:760px){.steps{grid-template-columns:1fr 1fr}}
+.steps li{counter-increment:step;display:grid;grid-template-columns:44px 1fr;gap:4px 12px;padding-block:16px;border-top:1px solid var(--line);min-width:0}
+.steps li::before{content:counter(step);font:800 30px var(--display);color:var(--acc);grid-row:span 2;line-height:1}
+.steps h3{font-size:21px}
+.steps p{color:var(--mut);font-size:16px}
+.steps li.human h3::after{content:"Tu décides";font:500 12px var(--body);letter-spacing:.05em;text-transform:uppercase;background:var(--hl);color:var(--hl-ink);border-radius:999px;padding:3px 9px;margin-left:10px;vertical-align:middle}
+
+.priv{display:grid;gap:28px}
+@media(min-width:820px){.priv{grid-template-columns:1fr 1fr;align-items:start}}
+.priv>*{min-width:0}
+.ba{display:grid;gap:14px}
+.ba figure{margin:0;border:1px solid var(--line);background:var(--card);border-radius:18px;padding:16px 18px}
+.ba figcaption{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);font-weight:500;margin-bottom:8px}
+.ba .t{font-size:16px;line-height:1.5}
+.ba .after .t{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:14.5px}
+.tag{background:var(--hl);color:var(--hl-ink);border-radius:5px;padding:1px 6px;font-weight:700}
+.facts{list-style:none;padding:0;margin:0;display:grid;gap:16px}
+.facts li{padding-left:18px;position:relative}
+.facts li::before{content:"";position:absolute;left:0;top:.7em;width:8px;height:8px;border-radius:2px;background:var(--acc)}
+.facts b{display:block;font:700 19px var(--display);letter-spacing:-.01em}
+.facts span{color:var(--mut);font-size:16px}
+.limit{margin-top:22px;font-size:15px;color:var(--mut);border-left:3px solid var(--hl);padding-left:14px;max-width:56ch}
+
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 26px;padding:0;list-style:none}
+.chips li{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:10px 20px;font-weight:500}
+.cols{display:grid;gap:26px}
+@media(min-width:820px){.cols{grid-template-columns:repeat(3,1fr)}}
+.cols div{min-width:0}
+.cols h3{font-size:21px;margin-bottom:6px}
+.cols p{color:var(--mut);font-size:16px}
+
+.road{display:grid;gap:14px}
+@media(min-width:820px){.road{grid-template-columns:repeat(3,1fr)}}
+.col{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:22px;min-width:0}
+.col h3{font-size:22px;margin-bottom:4px}
+.st{display:inline-block;font:500 12px var(--body);letter-spacing:.06em;text-transform:uppercase;border-radius:999px;padding:4px 10px;margin-bottom:14px}
+.st.ok{background:var(--ok);color:var(--bg)}
+.st.run{background:var(--hl);color:var(--hl-ink)}
+.st.next{border:1px solid var(--line);color:var(--mut)}
+.col ul{margin:0;padding:0;list-style:none;display:grid;gap:10px;font-size:16px}
+.col li{padding-left:16px;position:relative}
+.col li::before{content:"";position:absolute;left:0;top:.72em;width:6px;height:6px;border-radius:50%;background:var(--mut)}
+
+.team{display:grid;gap:10px 28px;grid-template-columns:1fr;max-width:640px;list-style:none;padding:0;margin:0}
+@media(min-width:560px){.team{grid-template-columns:1fr 1fr}}
+.team li{display:flex;justify-content:space-between;gap:12px;padding-block:10px;border-bottom:1px solid var(--line);font-size:16px}
+.team b{font-weight:500}
+.team span{color:var(--mut)}
+
+.final{text-align:center}
+.final h2{margin-inline:auto;max-width:16ch}
+.final .sub{margin-inline:auto}
+footer{color:var(--mut);font-size:14px;text-align:center;padding-block:26px 40px;border-top:1px solid var(--line)}
+
+@media(prefers-reduced-motion:reduce){.reply{transition:none}html{scroll-behavior:auto}}
+
+.soc{display:grid;gap:14px;max-width:640px}
+@media(min-width:560px){.soc{grid-template-columns:1fr 1fr}}
+.soc a{display:flex;flex-direction:column;gap:2px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px 20px;text-decoration:none;color:var(--ink);min-width:0}
+.soc a:hover{border-color:var(--acc)}
+.soc b{font:700 20px var(--display);letter-spacing:-.01em}
+.soc span{color:var(--mut);font-size:15px;overflow-wrap:anywhere}
+</style>
+
+<div class="wrap">
+  <nav>
+    <a class="logo" href="#haut" id="haut">six</a>
+    <div class="links">
+      <a class="t" href="#parcours">Parcours</a>
+      <a class="t" href="#confidentialite">Confidentialité</a>
+      <a class="t" href="#reseaux">Réseaux</a>
+      <a class="btn sm" href="#essayer">Essayer six</a>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <div>
+      <h1>Parmi les <mark>six</mark> réponses, la vôtre est la meilleure.</h1>
+      <p class="lead">Envoie une discussion à six. Il comprend la situation, te propose trois réponses dans le ton que tu veux, et c'est toi qui choisis. Il ne répond jamais à ta place.</p>
+      <div class="cta-row">
+        <a class="btn" href="#essayer">Essayer six</a>
+        <span class="note">Version 1.0 prévue le 15 octobre 2026</span>
+      </div>
+    </div>
+
+    <div class="phone" aria-label="Exemple d'utilisation de six">
+      <div class="seg" role="tablist" aria-label="Choisir un exemple">
+        <button type="button" role="tab" id="tab-msg" aria-selected="true" data-view="msg">Une invitation</button>
+        <button type="button" role="tab" id="tab-scam" aria-selected="false" data-view="scam">Un message suspect</button>
+      </div>
+
+      <div id="view-msg" role="tabpanel" aria-labelledby="tab-msg">
+        <div class="msg">Tu viens ce soir ou pas ? On commence à 20h 🍕</div>
+        <div class="label">Choisis ton ton</div>
+        <div class="tones" role="group" aria-label="Ton de la réponse">
+          <button class="tone" type="button" aria-pressed="true" data-tone="cool">Décontracté</button>
+          <button class="tone" type="button" aria-pressed="false" data-tone="pro">Poli</button>
+          <button class="tone" type="button" aria-pressed="false" data-tone="fun">Drôle</button>
+        </div>
+        <div class="reply" id="reply" aria-live="polite">Carrément, je finis un truc et j'arrive vers 20h15 !</div>
+        <div class="reply-foot">
+          <span>Modifie-la avant d'envoyer</span>
+          <button class="copy" type="button" id="copy">Copier</button>
+        </div>
+      </div>
+
+      <div id="view-scam" role="tabpanel" aria-labelledby="tab-scam" hidden>
+        <div class="msg">Bonjour, ici le service client de ta banque. Envoie-moi ton code PIN maintenant pour éviter le blocage de ton compte.</div>
+        <div class="alert" role="alert">
+          <strong>Arnaque probable</strong>
+          Une banque ne demande jamais ton code PIN par message.
+        </div>
+        <div class="acts" aria-label="Ce que tu peux faire">
+          <span>Ignorer</span>
+          <span>Répondre prudemment</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <section id="parcours">
+    <h2>De la discussion à ta réponse</h2>
+    <p class="sub">Huit étapes. Chacune est pré-remplie avec l'option la plus probable, donc un seul geste suffit. Les étapes marquées sont celles où tu as le dernier mot.</p>
+    <ol class="steps">
+      <li><h3>Importer</h3><p>Colle le texte, choisis un fichier .txt ou un export .zip de WhatsApp, ou ajoute une capture d'écran.</p></li>
+      <li><h3>Masquer</h3><p>Noms, numéros, codes et adresses sont remplacés avant toute analyse. Tu vérifies et tu peux en ajouter.</p></li>
+      <li><h3>Comprendre</h3><p>six résume ce qu'il a compris de la conversation et prévient s'il détecte une arnaque.</p></li>
+      <li class="human"><h3>Choisir l'objectif</h3><p>Accepter, refuser, gagner du temps, calmer : tu confirmes ce que tu veux obtenir.</p></li>
+      <li class="human"><h3>Choisir le ton</h3><p>Décontracté, poli ou drôle, selon la personne en face.</p></li>
+      <li><h3>Lire trois réponses</h3><p>Trois propositions rédigées dans ton ton, en français.</p></li>
+      <li class="human"><h3>Ajuster</h3><p>Plus court, plus chaleureux, plus ferme : tu retouches jusqu'à ce que ça te ressemble.</p></li>
+      <li class="human"><h3>Copier et envoyer</h3><p>Tu copies la réponse et tu l'envoies toi-même, dans l'app de ton choix.</p></li>
+    </ol>
+  </section>
+
+  <section id="confidentialite">
+    <h2>Ce qui sort de ton téléphone, tu le vois d'abord</h2>
+    <p class="sub">six ne garde aucune conversation. Les informations personnelles sont masquées avant d'être envoyées à l'IA, puis remises à leur place dans la réponse, sur notre serveur.</p>
+    <div class="priv">
+      <div class="ba">
+        <figure class="before">
+          <figcaption>Ce que tu as reçu</figcaption>
+          <div class="t">Salut Patrick, appelle-moi au +243 81 234 5678. Mon compte est 0123-4567, mais ne le dis à personne.</div>
+        </figure>
+        <figure class="after">
+          <figcaption>Ce que l'IA lit</figcaption>
+          <div class="t">Salut <span class="tag">[PRÉNOM]</span>, appelle-moi au <span class="tag">[NUMÉRO]</span>. Mon compte est <span class="tag">[COMPTE]</span>, mais ne le dis à personne.</div>
+        </figure>
+      </div>
+      <div>
+        <ul class="facts">
+          <li><b>Aucune conversation stockée</b><span>Seuls les comptes et les quotas d'utilisation sont enregistrés.</span></li>
+          <li><b>Les captures restent sur ton téléphone</b><span>Le texte est lu sur l'appareil. L'image n'est jamais envoyée.</span></li>
+          <li><b>Sept types d'informations masquées</b><span>Noms, prénoms, numéros de téléphone, codes, comptes, adresses et pseudos.</span></li>
+          <li><b>Tu gardes la main</b><span>Si un nom a échappé au masquage, tu l'ajoutes toi-même avant l'envoi.</span></li>
+        </ul>
+        <p class="limit">Le masquage est solide mais pas parfait : un nom rare, seul en début de phrase, peut passer. L'écran de vérification te le rappelle.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Partout où tu discutes</h2>
+    <p class="sub">Un message important à un client, une réponse à un ami, un mail délicat : six te fait gagner du temps et les bons mots.</p>
+    <ul class="chips">
+      <li>WhatsApp</li><li>Messenger</li><li>SMS</li><li>Email</li><li>Et bien d'autres</li>
+    </ul>
+    <div class="cols">
+      <div><h3>Import WhatsApp</h3><p>Les exports Android, iPhone et en français sont reconnus, en .txt comme en .zip.</p></div>
+      <div><h3>Ouvert sans réseau</h3><p>L'application s'ouvre même quand la connexion coupe.</p></div>
+      <div><h3>Pensé pour les petits téléphones</h3><p>Une application légère, installable depuis un lien, conçue pour les connexions instables.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Seven.AI</h2>
+    <p class="sub">Une startup congolaise née à l'Université Loyola du Congo, Faculté des Sciences et Technologies, dans le cadre du projet PBL 5.</p>
+    <ul class="team">
+      <li><b>Kumedisa Charly</b><span>CEO</span></li>
+      <li><b>Mfumu Damien</b><span>CTO</span></li>
+      <li><b>Mukonkole Deborah</b><span>Développeur</span></li>
+      <li><b>Kipalamoto</b><span>CPO</span></li>
+      <li><b>Kirongozi Ismael</b><span>CMO</span></li>
+      <li><b>Okedi Ephraim</b><span>COO</span></li>
+    </ul>
+  </section>
+
+  <section id="reseaux">
+    <h2>Suis six</h2>
+    <p class="sub">Démos, messages suspects décryptés et coulisses de l'équipe. Retrouve Seven.AI sur nos réseaux.</p>
+    <div class="soc">
+      <a href="https://www.tiktok.com/@sevenai..dc" rel="noopener"><b>TikTok</b><span>@sevenai..dc</span></a>
+      <a href="https://www.instagram.com/sevenai.dc/" rel="noopener"><b>Instagram</b><span>@sevenai.dc</span></a>
+      <a href="https://www.facebook.com/profile.php?id=61595213814728" rel="noopener"><b>Facebook</b><span>Seven.AI</span></a>
+    </div>
+  </section>
+
+  <section class="final" id="essayer">
+    <h2>Prêt à répondre sans te prendre la tête ?</h2>
+    <p class="sub">six 1.0 sera présenté les 14 et 15 octobre. L'adresse de l'application sera publiée ici dès la mise en ligne.</p>
+    <a class="btn" href="#haut">Revenir en haut</a>
+  </section>
+</div>
+
+<footer>by Seven AI</footer>
+
+<script>
+(function(){
+  var replies={
+    cool:"Carrément, je finis un truc et j'arrive vers 20h15 !",
+    pro:"Avec plaisir, je serai là pour 20h. Merci pour l'invitation.",
+    fun:"Une pizza ? J'arrive avant qu'elle refroidisse, promis (ou presque) 🍕"
+  };
+  var reply=document.getElementById("reply");
+  var tones=document.querySelectorAll(".tone");
+  var current="cool";
+  tones.forEach(function(b){
+    b.addEventListener("click",function(){
+      tones.forEach(function(x){x.setAttribute("aria-pressed",String(x===b))});
+      current=b.dataset.tone;
+      reply.classList.add("sw");
+      setTimeout(function(){reply.textContent=replies[current];reply.classList.remove("sw")},200);
+    });
+  });
+
+  var tabs=document.querySelectorAll(".seg button");
+  tabs.forEach(function(t){
+    t.addEventListener("click",function(){
+      tabs.forEach(function(x){x.setAttribute("aria-selected",String(x===t))});
+      document.getElementById("view-msg").hidden=t.dataset.view!=="msg";
+      document.getElementById("view-scam").hidden=t.dataset.view!=="scam";
+    });
+  });
+
+  var copy=document.getElementById("copy");
+  copy.addEventListener("click",function(){
+    var done=function(){copy.textContent="Copié";setTimeout(function(){copy.textContent="Copier"},1600)};
+    var fallback=function(){
+      var r=document.createRange();r.selectNodeContents(reply);
+      var s=window.getSelection();s.removeAllRanges();s.addRange(r);
+      copy.textContent="Sélectionné";setTimeout(function(){copy.textContent="Copier"},1600);
+    };
+    try{
+      navigator.clipboard.writeText(reply.textContent).then(done,fallback);
+    }catch(e){fallback()}
+  });
+})();
+</script>
+
+</body></html>

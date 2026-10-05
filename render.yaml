@@ -1,0 +1,21 @@
+# Configuration Render (Blueprint) : site statique « six-by-sevenai ».
+# Render la lit automatiquement : nom, commande de build, dossier publié et règles de réécriture.
+services:
+  - type: web
+    name: six-by-sevenai
+    runtime: static
+    buildCommand: npm ci && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+    # Application à page unique : toutes les adresses (/legal/...) renvoient index.html.
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    headers:
+      # Les fichiers de /assets ont un nom unique à chaque build : on peut les garder en cache longtemps.
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
