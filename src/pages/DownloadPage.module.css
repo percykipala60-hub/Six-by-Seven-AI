@@ -87,13 +87,19 @@ a.mainBtn:hover {
   padding: 0;
   display: grid;
   gap: 14px;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: 1fr 1fr;
+}
+
+/* Les quatre plateformes sur une seule ligne dès que la place le permet. */
+@media (min-width: 900px) {
+  .grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
 /* Sur téléphone : deux fiches par ligne, comme dans une boutique en ligne. */
 @media (max-width: 560px) {
   .grid {
-    grid-template-columns: 1fr 1fr;
     gap: 10px;
   }
   .grid .card {
@@ -102,8 +108,7 @@ a.mainBtn:hover {
   .grid .card h3 {
     font-size: 17px;
   }
-  .grid .pillDark,
-  .grid .pillLine {
+  .grid .pillDark {
     padding: 10px 12px;
     font-size: 13px;
   }
@@ -143,9 +148,8 @@ a.mainBtn:hover {
   margin-top: 18px;
 }
 
-/* Pilules : pleine bleu nuit et contour, comme les boutons principaux du site. */
-.pillDark,
-.pillLine {
+/* Pilule pleine bleu nuit, comme les boutons principaux du site. */
+.pillDark {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -171,19 +175,10 @@ a.pillDark:hover {
   background: var(--navy-700);
 }
 
+/* Avant la sortie : même bouton bleu nuit, simplement non cliquable. */
 .pillDark[aria-disabled] {
-  opacity: 0.35;
-  cursor: default;
-}
-
-.pillLine {
-  border: 1.5px solid var(--navy-950);
-  color: var(--navy-950);
-  background: transparent;
-}
-
-.pillLine:hover {
-  background: var(--surface);
+  cursor: not-allowed;
+  user-select: none;
 }
 
 .wide {

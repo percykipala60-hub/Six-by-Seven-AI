@@ -67,15 +67,12 @@ export function DownloadPage() {
                     {downloadPage.download}
                   </a>
                 ) : (
-                  <span className={styles.pillDark} aria-disabled="true">
+                  // Avant la sortie : le même bouton, non cliquable (la date est écrite juste au-dessus).
+                  <span className={styles.pillDark} aria-disabled="true" title={app.release}>
                     <Download size={16} aria-hidden="true" />
-                    {app.releaseShort}
+                    {downloadPage.download}
                   </span>
                 )}
-                <a className={styles.pillLine} href={betaHref} {...betaTarget}>
-                  {beta.short}
-                  <ArrowUpRight size={16} aria-hidden="true" />
-                </a>
               </div>
             </li>
           ))}
@@ -96,14 +93,11 @@ export function DownloadPage() {
                 <ArrowUpRight size={16} aria-hidden="true" />
               </a>
             ) : (
-              <span className={styles.pillDark} aria-disabled="true">
-                {app.releaseShort}
+              <span className={styles.pillDark} aria-disabled="true" title={app.release}>
+                {downloadPage.open}
+                <ArrowUpRight size={16} aria-hidden="true" />
               </span>
             )}
-            <a className={styles.pillLine} href={betaHref} {...betaTarget}>
-              {beta.label}
-              <ArrowUpRight size={16} aria-hidden="true" />
-            </a>
           </div>
         </div>
       </section>
