@@ -28,8 +28,8 @@ const CYCLE_MS = 5200;
 const LAYOUT: Record<PlatformId, { pose: Pose; scale: number; x: number; y: number }> = {
   ios: { pose: DEFAULT_POSE, scale: 1.5, x: 0, y: 0 },
   android: { pose: DEFAULT_POSE, scale: 1.5, x: 0, y: 0 },
-  mac: { pose: { x: 20, y: -26, z: 0 }, scale: 0.63, x: -1.6, y: -5.4 },
-  windows: { pose: { x: 20, y: -26, z: 0 }, scale: 0.57, x: -0.4, y: -4.4 },
+  mac: { pose: { x: 20, y: -26, z: 0 }, scale: 0.57, x: 0.2, y: -4.5 },
+  windows: { pose: { x: 20, y: -26, z: 0 }, scale: 0.6, x: 0.2, y: -4.4 },
 };
 
 export type DeviceShowcaseProps = { initial?: PlatformId | null; label?: string };

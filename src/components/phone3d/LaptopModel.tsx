@@ -1,4 +1,4 @@
-import { useLayoutEffect, useMemo, useRef } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { roundedRect, roundedSlab } from "./geometry";
@@ -6,7 +6,8 @@ import { ScreenAnchor } from "./stage";
 
 // Ordinateurs portables modélisés à leurs dimensions réelles (1 unité = 1 cm), sans aucun logo.
 // « mac » : inspiré du MacBook Pro 16 pouces (aluminium, encoche, haut-parleurs de part et d'autre du clavier).
-// « windows » : inspiré d'un portable de jeu 16 pouces type Omen 16 (noir, angles francs, pavé numérique).
+// « windows » : inspiré du Surface Laptop 15 pouces de 2024 (aluminium noir, écran 3:2 aux coins arrondis,
+// aucune grille visible, grand pavé tactile centré).
 export type LaptopKind = "mac" | "windows";
 
 type Spec = {
@@ -17,10 +18,11 @@ type Spec = {
   lidH: number; // hauteur du capot
   lidT: number; // épaisseur du capot
   disp: { w: number; h: number; bottom: number }; // zone d'affichage et bordure du bas
+  /** Coins de l'image à l'écran (CSS). */
+  screenRadius: string;
   hingeInset: number; // recul de la charnière depuis l'arrière
   u: number; // pas des touches
-  numpad: boolean;
-  trackpad: { w: number; h: number; x: number };
+  trackpad: { w: number; h: number; x: number; front: number };
   body: string;
   bodyMetal: number;
   bodyRough: number;
@@ -44,10 +46,10 @@ export const LAPTOP_SPECS: Record<LaptopKind, Spec> = {
     lidH: 24.4,
     lidT: 0.58,
     disp: { w: 34.56, h: 22.34, bottom: 1.5 },
+    screenRadius: "10px 10px 0 0",
     hingeInset: 0.45,
     u: 1.9,
-    numpad: false,
-    trackpad: { w: 16.2, h: 9.4, x: 0 },
+    trackpad: { w: 16.2, h: 9.4, x: 0, front: 0.9 },
     body: "#d6d8dc",
     bodyMetal: 1,
     bodyRough: 0.33,
@@ -60,36 +62,35 @@ export const LAPTOP_SPECS: Record<LaptopKind, Spec> = {
     kbInset: 1.7,
   },
   windows: {
-    w: 36.9,
-    d: 25.9,
-    h: 2.0,
-    r: 0.55,
-    lidH: 23.5,
-    lidT: 0.55,
-    disp: { w: 35.65, h: 20.05, bottom: 2.45 },
-    // Charnière avancée de 3 cm : derrière l'écran, un coffre porte les aérations et les ports.
-    hingeInset: 3.2,
-    u: 1.75,
-    numpad: true,
-    trackpad: { w: 12.6, h: 8, x: -3.6 },
-    // Gris métallisé, comme sur les photos d'un Omen 16 réel.
-    body: "#35383d",
-    bodyMetal: 0,
-    bodyRough: 0.72,
-    // Touches à course plus longue, comme sur la photo de l'Omen.
-    keys: "#141519",
+    // 32,9 × 23,9 × 1,83 cm fermé ; écran 15 pouces 3:2.
+    w: 32.9,
+    d: 23.9,
+    h: 1.3,
+    r: 0.75,
+    lidH: 23.0,
+    lidT: 0.52,
+    disp: { w: 31.7, h: 21.13, bottom: 1.02 },
+    screenRadius: "16px",
+    hingeInset: 0.45,
+    u: 1.88,
+    trackpad: { w: 14.3, h: 9.4, x: 0, front: 1.2 },
+    // Aluminium anodisé noir, satiné.
+    body: "#26272b",
+    bodyMetal: 0.15,
+    bodyRough: 0.62,
+    keys: "#121316",
     speakers: false,
-    keyRise: 0.07,
-    keyT: 0.11,
-    fnRow: 0.6,
-    kbInset: 2.0,
+    keyRise: 0.04,
+    keyT: 0.08,
+    fnRow: 0.62,
+    kbInset: 1.5,
   },
 };
 
 // Taille de l'interface affichée à l'écran, en pixels CSS (proportions de l'écran réel).
 export const LAPTOP_SCREEN_PX: Record<LaptopKind, { w: number; h: number }> = {
   mac: { w: 1000, h: Math.round((1000 * 22.34) / 34.56) },
-  windows: { w: 1000, h: Math.round((1000 * 20.05) / 35.65) },
+  windows: { w: 1000, h: Math.round((1000 * 21.13) / 31.7) },
 };
 
 // Disposition du clavier ISO français (AZERTY) : largeur de chaque touche en multiples du pas.
@@ -99,21 +100,21 @@ const ROW_WIDTHS: number[][] = [
   [1.5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], // tabulation, A…$, haut de la touche Entrée
   [1.75, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.75], // verrouillage, Q…, bas de la touche Entrée (en L)
   [1.25, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2.25], // majuscule, <, W…, majuscule
-  [1, 1, 1, 1.25, 5, 1.25, 1, 1, 1, 1], // fn, ctrl, alt, cmd, espace, …, flèches
+  [1, 1, 1, 1.25, 5, 1.25, 1, 1, 1, 1], // rangée du bas : modificateurs, espace, flèches
 ];
 
 // Rangée de fonctions, également sur 14,5 pas.
 const FN_WIDTHS: Record<LaptopKind, number[]> = {
   // esc large, F1 à F12, Touch ID.
   mac: [1.5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
-  // ESC, F1 à F12, marche/arrêt, DELETE.
+  // échap, F1 à F12, suppression, marche/arrêt.
   windows: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.75, 0.75],
 };
 
 type KeyRect = { x: number; z: number; w: number; d: number; label: string; small?: boolean };
 
 // Inscriptions des touches, en AZERTY français, rangée par rangée (même ordre que les largeurs).
-const LABELS: Record<LaptopKind, { fn: string[]; rows: string[][]; numpad: string[]; numTop?: string[] }> = {
+const LABELS: Record<LaptopKind, { fn: string[]; rows: string[][] }> = {
   mac: {
     // Dernière touche de fonction : Touch ID, sans inscription.
     fn: ["esc", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12", ""],
@@ -124,25 +125,16 @@ const LABELS: Record<LaptopKind, { fn: string[]; rows: string[][]; numpad: strin
       ["⇧", "<", "W", "X", "C", "V", "B", "N", ",", ";", ":", "=", "⇧"],
       ["fn", "⌃", "⌥", "⌘", "", "⌘", "⌥", "◀", "▲▼", "▶"],
     ],
-    numpad: [],
   },
   windows: {
-    fn: ["ESC", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12", "⏻", "DELETE"],
+    fn: ["esc", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12", "suppr", "⏻"],
     rows: [
-      ["²", "1\n&", "2\né", "3\n\"", "4\n'", "5\n(", "6\n-", "7\nè", "8\n_", "9\nç", "0\nà", "°\n)", "+\n=", "BACKSPACE"],
-      ["TAB", "A", "Z", "E", "R", "T", "Y", "U", "I", "O", "P", "¨\n^", "£\n$", "ENTER"],
-      ["CAPS LOCK", "Q", "S", "D", "F", "G", "H", "J", "K", "L", "M", "%\nù", "µ\n*", ""],
-      ["SHIFT", ">\n<", "W", "X", "C", "V", "B", "N", "?\n,", ".\n;", "/\n:", "§\n!", "SHIFT"],
-      ["CTRL", "FN", "", "ALT", "", "ALT", "CTRL", "◀", "▲▼", "▶"],
-    ],
-    // Au-dessus du pavé numérique : touche du constructeur (sans logo), calculatrice, INSERT, PRT SC.
-    numTop: ["", "▤", "INSERT", "PRT SC"],
-    numpad: [
-      "NUM\nLOCK", "/", "*", "-",
-      "7\nHOME", "8\n↑", "9\nPG UP", "+",
-      "4\n←", "5", "6\n→", "+",
-      "1\nEND", "2\n↓", "3\nPG DN", "ENTER",
-      "0\nINS", "0\nINS", ".\nDEL", "ENTER",
+      ["²", "1\n&", "2\né", '3\n"', "4\n'", "5\n(", "6\n-", "7\nè", "8\n_", "9\nç", "0\nà", "°\n)", "+\n=", "⌫"],
+      ["⇥", "A", "Z", "E", "R", "T", "Y", "U", "I", "O", "P", "¨\n^", "£\n$", "↵"],
+      ["Caps", "Q", "S", "D", "F", "G", "H", "J", "K", "L", "M", "%\nù", "µ\n*", ""],
+      ["⇧", ">\n<", "W", "X", "C", "V", "B", "N", "?\n,", ".\n;", "/\n:", "§\n!", "⇧"],
+      // Ctrl, Fn, touche Windows (sans logo), Alt, espace, Alt Gr, touche Copilot (sans logo), flèches.
+      ["Ctrl", "Fn", "", "Alt", "", "Alt Gr", "▤", "◀", "▲▼", "▶"],
     ],
   },
 };
@@ -151,14 +143,11 @@ function keyboardLayout(spec: Spec, kind: LaptopKind) {
   const labels = LABELS[kind];
   const u = spec.u;
   const gap = 0.32;
-  const mainW = 14.5 * u;
-  const numW = spec.numpad ? 4 * u : 0;
-  const sep = spec.numpad ? 0.7 : 0;
-  const totalW = mainW + sep + numW;
+  const totalW = 14.5 * u;
   const left = -totalW / 2;
   const keys: KeyRect[] = [];
 
-  // Rangée des touches de fonction : demi-hauteur.
+  // Rangée des touches de fonction, moins haute que les autres.
   const fnH = u * spec.fnRow;
   let z = 0;
   let fx = left;
@@ -190,55 +179,43 @@ function keyboardLayout(spec: Spec, kind: LaptopKind) {
     z += u;
   });
 
-  if (spec.numpad) {
-    const nx = left + mainW + sep;
-    labels.numTop?.forEach((label, c) => keys.push({ x: nx + u * (c + 0.5), z: fnH / 2, w: u - gap, d: fnH - gap * 0.8, label, small: true }));
-    let nz = fnH;
-    for (let r = 0; r < 5; r++) {
-      for (let c = 0; c < 4; c++)
-        keys.push({ x: nx + u * (c + 0.5), z: nz + u / 2, w: u - gap, d: u - gap, label: labels.numpad[r * 4 + c] ?? "" });
-      nz += u;
-    }
-  }
-  return { keys, totalW, totalD: z, mainCenter: left + mainW / 2 };
+  return { keys, totalW, totalD: z };
 }
 
 export function LaptopModel({ kind, screenEl, lidAngle = 112 }: { kind: LaptopKind; screenEl: HTMLDivElement; lidAngle?: number }) {
   const spec = LAPTOP_SPECS[kind];
   const { w, d, h, r, lidH, lidT, disp } = spec;
+  const mac = kind === "mac";
+
+  // Coins de l'image identiques à ceux de la dalle.
+  useEffect(() => {
+    screenEl.style.borderRadius = spec.screenRadius;
+    screenEl.style.overflow = "hidden";
+  }, [screenEl, spec.screenRadius]);
 
   const mats = useMemo(
     () => ({
-      // Le Mac garde un léger vernis ; le portable noir est mat, sinon il reflète le studio et paraît gris.
+      // Reflets du PC noir contenus : sinon le repose-poignets, vu en biais, paraît gris clair.
       body: new THREE.MeshPhysicalMaterial({
         color: spec.body,
         metalness: spec.bodyMetal,
         roughness: spec.bodyRough,
-        clearcoat: kind === "mac" ? 0.2 : 0,
+        clearcoat: mac ? 0.2 : 0,
         clearcoatRoughness: 0.5,
-        envMapIntensity: kind === "mac" ? 1 : 0.18,
-        // Reflets atténués sur le gris du PC : sinon le repose-poignets, vu en biais, paraît presque blanc.
-        specularIntensity: kind === "mac" ? 1 : 0.15,
+        envMapIntensity: mac ? 1 : 0.16,
+        specularIntensity: mac ? 1 : 0.16,
       }),
-      // Puits du clavier ; sur le portable de jeu, une lueur de rétroéclairage filtre entre les touches.
-      well: new THREE.MeshStandardMaterial({
-        color: kind === "mac" ? "#050506" : "#060608",
-        roughness: 0.85,
-        metalness: 0.2,
-        emissive: kind === "mac" ? "#000000" : "#7d3cff",
-        emissiveIntensity: kind === "mac" ? 0 : 0.11,
-      }),
+      well: new THREE.MeshStandardMaterial({ color: "#050506", roughness: 0.85, metalness: 0.2 }),
       // Touches noires mates : peu de reflets, sinon elles paraissent grises vues de biais.
-      key: new THREE.MeshStandardMaterial({ color: spec.keys, roughness: 0.82, metalness: 0, envMapIntensity: 0.12 }),
-      // Pavé tactile : verre poli sur le Mac, revêtement mat sur le portable de jeu.
+      key: new THREE.MeshStandardMaterial({ color: spec.keys, roughness: 0.82, metalness: 0, envMapIntensity: mac ? 0.12 : 0.06 }),
+      // Pavé tactile : verre poli sur le Mac, verre satiné noir sur le PC.
       pad: new THREE.MeshPhysicalMaterial({
-        color: kind === "mac" ? "#cfd2d6" : "#1d1f23",
-        metalness: kind === "mac" ? 0.9 : 0.1,
-        roughness: kind === "mac" ? 0.22 : 0.75,
-        clearcoat: kind === "mac" ? 0.8 : 0,
-        envMapIntensity: kind === "mac" ? 1 : 0.1,
-        // Reflets atténués sur le PC : sinon le pavé tactile, vu en biais, paraît bleu clair.
-        specularIntensity: kind === "mac" ? 1 : 0.1,
+        color: mac ? "#cfd2d6" : "#202125",
+        metalness: mac ? 0.9 : 0,
+        roughness: mac ? 0.22 : 0.55,
+        clearcoat: mac ? 0.8 : 0,
+        envMapIntensity: mac ? 1 : 0.12,
+        specularIntensity: mac ? 1 : 0.12,
       }),
       // Bordures de l'écran : noir anti-reflet. Un verre trop poli renvoyait de grandes taches de lumière
       // qui se déplaçaient au moindre mouvement (surtout sur la bande sous l'écran).
@@ -250,11 +227,14 @@ export function LaptopModel({ kind, screenEl, lidAngle = 112 }: { kind: LaptopKi
         metalness: 0,
         envMapIntensity: 0.25,
       }),
-      dark: new THREE.MeshStandardMaterial({ color: "#050506", roughness: 0.6 }),
       lens: new THREE.MeshPhysicalMaterial({ color: "#0b0d14", roughness: 0.1, clearcoat: 1, envMapIntensity: 0.6 }),
-      hinge: new THREE.MeshStandardMaterial({ color: kind === "mac" ? "#1b1c1f" : "#141518", roughness: 0.45, metalness: 0.6 }),
+      hinge: new THREE.MeshStandardMaterial({ color: mac ? "#1b1c1f" : "#18191c", roughness: 0.45, metalness: 0.6 }),
+      // Intérieur des ports : noir profond, et languette de contact un peu plus claire.
+      hole: new THREE.MeshBasicMaterial({ color: "#020203" }),
+      tongue: new THREE.MeshStandardMaterial({ color: "#3b3d42", roughness: 0.5, metalness: 0.4 }),
+      dark: new THREE.MeshStandardMaterial({ color: "#050506", roughness: 0.6 }),
     }),
-    [kind, spec],
+    [mac, spec],
   );
 
   const geo = useMemo(() => {
@@ -271,11 +251,11 @@ export function LaptopModel({ kind, screenEl, lidAngle = 112 }: { kind: LaptopKi
           return g.translate(k.x, h + spec.keyRise - spec.keyT / 2, k.z);
         }),
       )!,
-      pad: flat(new THREE.ShapeGeometry(roundedRect(spec.trackpad.w, spec.trackpad.h, 0.45), 24)),
+      pad: flat(new THREE.ShapeGeometry(roundedRect(spec.trackpad.w, spec.trackpad.h, mac ? 0.45 : 0.6), 24)),
       bezel: new THREE.ShapeGeometry(roundedRect(w - 0.22, lidH - 0.22, r - 0.11), 24),
       dot: flat(new THREE.CircleGeometry(0.045, 8)),
     };
-  }, [spec, kind, w, d, h, r, lidH, lidT]);
+  }, [spec, kind, mac, w, d, h, r, lidH, lidT]);
 
   const kbFrontZ = -d / 2 + spec.hingeInset + spec.kbInset; // haut du clavier (côté charnière)
 
@@ -310,7 +290,7 @@ export function LaptopModel({ kind, screenEl, lidAngle = 112 }: { kind: LaptopKi
   }, [dots, h]);
 
   // Inscriptions dessinées une fois dans une texture posée juste au-dessus des touches.
-  // Sur le portable de jeu, elles sont rétroéclairées (matériau non éclairé, toujours lumineux).
+  // Sur le PC, elles sont rétroéclairées (matériau non éclairé, toujours lisible).
   const legend = useMemo(() => {
     const PX = 90; // pixels par centimètre
     const { totalW, totalD, keys } = geo.layout;
@@ -320,14 +300,8 @@ export function LaptopModel({ kind, screenEl, lidAngle = 112 }: { kind: LaptopKi
     const ctx = canvas.getContext("2d")!;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
-    const lit = kind === "windows";
-    // Le PC de jeu utilise une police carrée (proche de Bahnschrift) ; le Mac, la police système.
-    const family = lit ? '"Bahnschrift", "DIN Alternate", "Arial Narrow", sans-serif' : '-apple-system, "Segoe UI", Roboto, Arial, sans-serif';
-    ctx.fillStyle = lit ? "#f1ecff" : "#c9ccd2";
-    if (lit) {
-      ctx.shadowColor = "rgba(176, 120, 255, 0.85)";
-      ctx.shadowBlur = 4;
-    }
+    const family = mac ? '-apple-system, "Segoe UI", Roboto, Arial, sans-serif' : '"Segoe UI", "Segoe UI Variable", Roboto, Arial, sans-serif';
+    ctx.fillStyle = mac ? "#c9ccd2" : "#d4d6dc";
     for (const k of keys) {
       if (!k.label) continue;
       const cx = (k.x + totalW / 2) * PX;
@@ -335,54 +309,29 @@ export function LaptopModel({ kind, screenEl, lidAngle = 112 }: { kind: LaptopKi
       const lines = k.label.split("\n");
       if (lines.length === 2) {
         // Touche à deux symboles : le symbole du haut au-dessus de celui du bas.
-        const size = (k.small ? 0.22 : 0.3) * spec.u * PX;
-        ctx.font = `600 ${size}px ${family}`;
+        const size = (k.small ? 0.22 : 0.27) * spec.u * PX;
+        ctx.font = `500 ${size}px ${family}`;
         ctx.fillText(lines[0], cx, cy - size * 0.55);
         ctx.fillText(lines[1], cx, cy + size * 0.6);
         continue;
       }
       const long = k.label.length > 2;
-      const size = (k.small ? 0.24 : long ? 0.24 : 0.46) * spec.u * PX;
-      ctx.font = `${lit ? 600 : 500} ${size}px ${family}`;
+      const size = (k.small ? 0.24 : long ? 0.24 : 0.4) * spec.u * PX;
+      ctx.font = `${mac ? 500 : 400} ${size}px ${family}`;
       ctx.fillText(k.label, cx, cy);
     }
     const tex = new THREE.CanvasTexture(canvas);
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.anisotropy = 8;
-    const mat = lit
-      ? new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, toneMapped: false })
-      : new THREE.MeshStandardMaterial({ map: tex, transparent: true, depthWrite: false, roughness: 0.6 });
+    const mat = mac
+      ? new THREE.MeshStandardMaterial({ map: tex, transparent: true, depthWrite: false, roughness: 0.6 })
+      : new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, toneMapped: false, opacity: 0.85 });
     const plane = new THREE.PlaneGeometry(totalW, totalD).rotateX(-Math.PI / 2);
     return { mat, plane };
-  }, [geo, kind, spec.u]);
-
-  // Grille à motif de losanges, dessinée une fois dans une texture.
-  const grille = useMemo(() => {
-    if (kind !== "windows") return null;
-    const canvas = document.createElement("canvas");
-    canvas.width = 2048;
-    canvas.height = 96;
-    const ctx = canvas.getContext("2d")!;
-    ctx.fillStyle = "#26282c";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.strokeStyle = "#0e0f11";
-    ctx.lineWidth = 3;
-    for (let x = -canvas.height; x < canvas.width + canvas.height; x += 14) {
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x + canvas.height, canvas.height);
-      ctx.moveTo(x + canvas.height, 0);
-      ctx.lineTo(x, canvas.height);
-      ctx.stroke();
-    }
-    const tex = new THREE.CanvasTexture(canvas);
-    tex.colorSpace = THREE.SRGBColorSpace;
-    tex.anisotropy = 8;
-    return new THREE.MeshStandardMaterial({ map: tex, roughness: 0.8, metalness: 0, envMapIntensity: 0.2 });
-  }, [kind]);
+  }, [geo, mac, spec.u]);
 
   const hingeZ = -d / 2 + spec.hingeInset;
-  const padZ = d / 2 - 0.9 - spec.trackpad.h / 2;
+  const padZ = d / 2 - spec.trackpad.front - spec.trackpad.h / 2;
   const tilt = (lidAngle - 90) * (Math.PI / 180);
   const pxScale = disp.w / LAPTOP_SCREEN_PX[kind].w;
   const dispCenterY = disp.bottom + disp.h / 2;
@@ -395,13 +344,8 @@ export function LaptopModel({ kind, screenEl, lidAngle = 112 }: { kind: LaptopKi
       <mesh geometry={geo.keys} position={[0, 0, kbFrontZ]} material={mats.key} />
       <mesh geometry={legend.plane} position={[0, h + spec.keyRise + 0.008, kbFrontZ + geo.layout.totalD / 2]} material={legend.mat} />
       <mesh geometry={geo.pad} position={[spec.trackpad.x, h + 0.01, padZ]} material={mats.pad} />
-      <Ports kind={kind} w={w} d={d} h={h} material={mats.dark} />
-      {grille && (
-        <mesh position={[0, h + 0.01, (hingeZ + kbFrontZ) / 2 + 0.25]} rotation={[-Math.PI / 2, 0, 0]} material={grille}>
-          <planeGeometry args={[w - 5, 1.1]} />
-        </mesh>
-      )}
-      {kind === "mac" && (
+      <Ports kind={kind} w={w} h={h} hole={mats.hole} tongue={mats.tongue} />
+      {mac && (
         // Encoche d'ouverture sur le bord avant.
         <mesh position={[0, h - 0.02, d / 2 - 0.12]} rotation={[-Math.PI / 2, 0, 0]} material={mats.hinge}>
           <planeGeometry args={[7, 0.22]} />
@@ -409,143 +353,104 @@ export function LaptopModel({ kind, screenEl, lidAngle = 112 }: { kind: LaptopKi
       )}
       {spec.speakers && <instancedMesh ref={dotsRef} args={[geo.dot, mats.dark, dots.length]} />}
 
-      {/* Aérations du portable de jeu : face arrière (de part et d'autre des ports) et arrière des flancs */}
-      {kind === "windows" && <Vents w={w} d={d} h={h} />}
-
-      {/* Charnière : une barre sur le Mac, deux blocs séparés aux coins sur le PC */}
-      {kind === "mac" ? (
-        <mesh position={[0, h + 0.2, hingeZ]} rotation={[0, 0, Math.PI / 2]} material={mats.hinge}>
-          <cylinderGeometry args={[0.32, 0.32, w - 7, 24]} />
-        </mesh>
-      ) : (
-        <>
-          <mesh position={[0, h + 0.3, hingeZ - 0.3]} rotation={[0, 0, Math.PI / 2]} material={mats.hinge}>
-            <cylinderGeometry args={[0.36, 0.36, w - 7.4, 24]} />
-          </mesh>
-          {[-1, 1].map((side) => (
-            <mesh key={side} position={[side * (w / 2 - 2.1), h + 0.3, hingeZ - 0.3]} rotation={[0, 0, Math.PI / 2]} material={mats.body}>
-              <cylinderGeometry args={[0.46, 0.46, 3.4, 24]} />
-            </mesh>
-          ))}
-        </>
-      )}
+      {/* Charnière : une barre presque sur toute la largeur */}
+      <mesh position={[0, h + 0.2, hingeZ]} rotation={[0, 0, Math.PI / 2]} material={mats.hinge}>
+        <cylinderGeometry args={[0.32, 0.32, mac ? w - 7 : w - 4, 24]} />
+      </mesh>
 
       {/* Capot ouvert, pivotant autour de la charnière */}
-      <group position={[0, h + (kind === "windows" ? 0.3 : 0.2), hingeZ]} rotation={[-tilt, 0, 0]}>
+      <group position={[0, h + 0.2, hingeZ]} rotation={[-tilt, 0, 0]}>
         <mesh geometry={geo.lid} position={[0, lidH / 2, -lidT / 2]} material={mats.body} />
         <mesh geometry={geo.bezel} position={[0, lidH / 2, 0.02]} material={mats.glass} />
         <ScreenAnchor el={screenEl} scale={pxScale} position={[0, dispCenterY, 0.03]} />
-        <mesh position={[0, disp.bottom + disp.h + (lidH - disp.bottom - disp.h) / 2, 0.03]} material={mats.lens}>
-          <circleGeometry args={[0.13, 20]} />
-        </mesh>
+        {!mac && (
+          // Webcam au centre de la bordure du haut (sur le Mac, elle est dans l'encoche de l'écran).
+          <mesh position={[0, disp.bottom + disp.h + (lidH - disp.bottom - disp.h) / 2, 0.03]} material={mats.lens}>
+            <circleGeometry args={[0.12, 20]} />
+          </mesh>
+        )}
       </group>
     </group>
   );
 }
 
-// Connectique sur les flancs (et à l'arrière pour le portable de jeu), d'après les fiches techniques.
-type PortShape = { z: number; w: number; h: number; r: number; y?: number };
+// Connectique sur les flancs, d'après les fiches techniques. `z` : position depuis le centre (négatif = vers l'arrière).
+type PortType = "usbc" | "usba" | "hdmi" | "jack" | "slot" | "magsafe" | "connect";
+type Port = { z: number; type: PortType };
 
-const PORTS: Record<LaptopKind, { left: PortShape[]; right: PortShape[]; back: { x: number; w: number; h: number; r: number }[] }> = {
+const PORT_SIZE: Record<PortType, { w: number; h: number; r: number }> = {
+  usbc: { w: 0.84, h: 0.26, r: 0.13 },
+  usba: { w: 1.25, h: 0.5, r: 0.05 },
+  hdmi: { w: 1.4, h: 0.42, r: 0.06 },
+  jack: { w: 0.36, h: 0.36, r: 0.18 },
+  slot: { w: 1.15, h: 0.12, r: 0.04 }, // lecteur de carte
+  magsafe: { w: 1.25, h: 0.3, r: 0.15 },
+  connect: { w: 1.9, h: 0.24, r: 0.12 }, // prise de charge magnétique
+};
+
+const PORTS: Record<LaptopKind, { left: Port[]; right: Port[] }> = {
   mac: {
     // Gauche : MagSafe, deux ports USB-C (Thunderbolt), prise casque. Droite : HDMI, lecteur SD, USB-C.
     left: [
-      { z: -7.5, w: 1.25, h: 0.3, r: 0.15 },
-      { z: -5.3, w: 0.84, h: 0.26, r: 0.13 },
-      { z: -3.9, w: 0.84, h: 0.26, r: 0.13 },
-      { z: 6.8, w: 0.36, h: 0.36, r: 0.18 },
+      { z: -7.5, type: "magsafe" },
+      { z: -5.3, type: "usbc" },
+      { z: -3.9, type: "usbc" },
+      { z: 6.8, type: "jack" },
     ],
     right: [
-      { z: -6.6, w: 1.4, h: 0.42, r: 0.06 },
-      { z: -3.3, w: 2.4, h: 0.16, r: 0.04 },
-      { z: 0.2, w: 0.84, h: 0.26, r: 0.13 },
+      { z: -6.6, type: "hdmi" },
+      { z: -3.3, type: "slot" },
+      { z: 0.2, type: "usbc" },
     ],
-    back: [],
   },
   windows: {
-    // Gauche : deux USB-C, prise casque. Droite : USB-A. Arrière, entre les aérations : alimentation, Ethernet, HDMI, USB-A.
+    // Gauche, de l'arrière vers l'avant : prise casque, USB-A, deux USB-C. Droite : prise de charge, lecteur microSD.
     left: [
-      { z: -5.6, w: 0.84, h: 0.28, r: 0.14 },
-      { z: -4.3, w: 0.84, h: 0.28, r: 0.14 },
-      { z: -2.9, w: 0.38, h: 0.38, r: 0.19 },
+      { z: -8.7, type: "jack" },
+      { z: -7.1, type: "usba" },
+      { z: -5.3, type: "usbc" },
+      { z: -3.9, type: "usbc" },
     ],
-    right: [{ z: -5.4, w: 1.25, h: 0.5, r: 0.06 }],
-    back: [
-      { x: 0.1, w: 0.62, h: 0.62, r: 0.31 },
-      { x: -1.5, w: 1.45, h: 1.0, r: 0.08 },
-      { x: -3.3, w: 1.5, h: 0.48, r: 0.06 },
-      { x: -5.0, w: 1.25, h: 0.5, r: 0.06 },
+    right: [
+      { z: -7.6, type: "connect" },
+      { z: -4.6, type: "slot" },
     ],
   },
 };
 
-function Ports({ kind, w, d, h, material }: { kind: LaptopKind; w: number; d: number; h: number; material: THREE.Material }) {
+// Chaque port : une ouverture noire et, pour les prises USB et HDMI, la languette de contact visible au fond.
+function Ports({ kind, w, h, hole, tongue }: { kind: LaptopKind; w: number; h: number; hole: THREE.Material; tongue: THREE.Material }) {
   const set = PORTS[kind];
-  const shape = (pw: number, ph: number, pr: number) => new THREE.ShapeGeometry(roundedRect(pw, ph, Math.min(pr, ph / 2, pw / 2)), 12);
+  const shapes = useMemo(() => {
+    const make = (pw: number, ph: number, pr: number) => new THREE.ShapeGeometry(roundedRect(pw, ph, Math.min(pr, ph / 2, pw / 2)), 12);
+    const out = {} as Record<PortType, { hole: THREE.BufferGeometry; tongue?: THREE.BufferGeometry; tongueY?: number }>;
+    (Object.keys(PORT_SIZE) as PortType[]).forEach((t) => {
+      const s = PORT_SIZE[t];
+      out[t] = { hole: make(s.w, s.h, s.r) };
+      if (t === "usbc") out[t].tongue = make(s.w * 0.62, s.h * 0.24, 0.02);
+      if (t === "usba") {
+        out[t].tongue = make(s.w * 0.84, s.h * 0.34, 0.01);
+        out[t].tongueY = s.h * 0.17;
+      }
+      if (t === "hdmi") out[t].tongue = make(s.w * 0.7, s.h * 0.28, 0.01);
+    });
+    return out;
+  }, []);
+
+  const render = (p: Port, side: -1 | 1) => {
+    const s = shapes[p.type];
+    return (
+      <group key={`${side}${p.z}`} position={[side * (w / 2 + 0.01), h / 2, p.z]} rotation={[0, (side * Math.PI) / 2, 0]}>
+        <mesh geometry={s.hole} material={hole} />
+        {s.tongue && <mesh geometry={s.tongue} position={[0, s.tongueY ?? 0, 0.002]} material={tongue} />}
+      </group>
+    );
+  };
+
   return (
     <group>
-      {set.left.map((p) => (
-        <mesh key={`l${p.z}`} geometry={shape(p.w, p.h, p.r)} position={[-w / 2 - 0.01, h / 2, p.z]} rotation={[0, -Math.PI / 2, 0]} material={material} />
-      ))}
-      {set.right.map((p) => (
-        <mesh key={`r${p.z}`} geometry={shape(p.w, p.h, p.r)} position={[w / 2 + 0.01, h / 2, p.z]} rotation={[0, Math.PI / 2, 0]} material={material} />
-      ))}
-      {set.back.map((p) => (
-        <mesh key={`b${p.x}`} geometry={shape(p.w, p.h, p.r)} position={[p.x, h / 2, -d / 2 - 0.01]} rotation={[0, Math.PI, 0]} material={material} />
-      ))}
-    </group>
-  );
-}
-
-// Fentes d'aération : rangée de fentes verticales arrondies, dessinées une fois dans une texture transparente.
-function ventMaterial(length: number, height: number) {
-  const PX = 60;
-  const canvas = document.createElement("canvas");
-  canvas.width = Math.round(length * PX);
-  canvas.height = Math.round(height * PX);
-  const ctx = canvas.getContext("2d")!;
-  ctx.fillStyle = "#050506";
-  const pitch = 0.42 * PX;
-  const slot = 0.26 * PX;
-  const count = Math.floor(canvas.width / pitch);
-  const offset = (canvas.width - count * pitch) / 2;
-  for (let i = 0; i < count; i++) {
-    ctx.beginPath();
-    ctx.roundRect(offset + i * pitch + (pitch - slot) / 2, 0, slot, canvas.height, slot / 2);
-    ctx.fill();
-  }
-  const tex = new THREE.CanvasTexture(canvas);
-  tex.colorSpace = THREE.SRGBColorSpace;
-  tex.anisotropy = 8;
-  return new THREE.MeshStandardMaterial({ map: tex, transparent: true, roughness: 0.8, depthWrite: false });
-}
-
-// Aérations de l'Omen 16 : deux larges grilles à l'arrière, de part et d'autre des ports,
-// prolongées sur l'arrière de chaque flanc.
-const REAR_VENTS: [number, number][] = [
-  [1.1, 17.2], // à droite des ports (vu de face)
-  [-17.2, -6.2], // à gauche des ports
-];
-const SIDE_VENT = { from: 0.7, to: 5.4 }; // distance depuis l'arrière, sur chaque flanc
-
-function Vents({ w, d, h }: { w: number; d: number; h: number }) {
-  const ventH = h * 0.5;
-  const y = h * 0.52;
-  const rear = useMemo(() => REAR_VENTS.map(([a, b]) => ({ x: (a + b) / 2, len: b - a, mat: ventMaterial(b - a, ventH) })), [ventH]);
-  const side = useMemo(() => ventMaterial(SIDE_VENT.to - SIDE_VENT.from, ventH), [ventH]);
-  const sideZ = -d / 2 + (SIDE_VENT.from + SIDE_VENT.to) / 2;
-  return (
-    <group>
-      {rear.map((v) => (
-        <mesh key={v.x} position={[v.x, y, -d / 2 - 0.012]} rotation={[0, Math.PI, 0]} material={v.mat}>
-          <planeGeometry args={[v.len, ventH]} />
-        </mesh>
-      ))}
-      {[-1, 1].map((sd) => (
-        <mesh key={sd} position={[sd * (w / 2 + 0.012), y, sideZ]} rotation={[0, (sd * Math.PI) / 2, 0]} material={side}>
-          <planeGeometry args={[SIDE_VENT.to - SIDE_VENT.from, ventH]} />
-        </mesh>
-      ))}
+      {set.left.map((p) => render(p, -1))}
+      {set.right.map((p) => render(p, 1))}
     </group>
   );
 }
