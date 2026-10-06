@@ -2,15 +2,25 @@ import { Check, Copy, Minus, Search, Square, X } from "lucide-react";
 import { scenes } from "../../content/phoneScenes";
 import { SixAppIcon } from "../brand/Logos";
 import type { LaptopKind } from "../phone3d/LaptopModel";
+import { APPLE_PATH, WINDOWS_PATH } from "../phone3d/brandLogos";
 import styles from "./DesktopScreen.module.css";
 
-// Écran d'ordinateur : l'appli de bureau Six ouverte, sur un bureau macOS ou Windows (sans logos de marque).
+// Écran d'ordinateur : l'appli de bureau Six ouverte, sur un bureau macOS ou Windows.
+
+function Glyph({ path, size, className }: { path: string; size: number; className?: string }) {
+  return (
+    <svg className={className} width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
+      <path d={path} fill="currentColor" />
+    </svg>
+  );
+}
 export function DesktopScreen({ os, width, height }: { os: LaptopKind; width: number; height: number }) {
   const scene = scenes[0];
   return (
     <div className={styles.desktop} data-os={os} style={{ width, height }}>
       {os === "mac" && (
         <div className={styles.menuBar}>
+          <Glyph path={APPLE_PATH} size={13} />
           <b>Six</b>
           <span>Fichier</span>
           <span>Édition</span>
@@ -112,7 +122,7 @@ export function DesktopScreen({ os, width, height }: { os: LaptopKind; width: nu
         </div>
       ) : (
         <div className={styles.taskbar} aria-hidden="true">
-          <i className={styles.start} />
+          <Glyph path={WINDOWS_PATH} size={20} className={styles.start} />
           <span className={styles.taskSearch}>
             <Search size={12} /> Rechercher
           </span>

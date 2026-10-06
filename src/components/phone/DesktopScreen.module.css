@@ -383,10 +383,9 @@
   background: linear-gradient(160deg, #ffcf48, #f0a90a);
 }
 
-/* Bouton de démarrage générique (pas le logo d'un éditeur). */
-.taskbar i.start {
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #8fb4ff, #2d5fe6);
+/* Bouton Démarrer : logo Windows bleu. */
+.start {
+  color: #0078d4;
 }
 
 .taskSearch {

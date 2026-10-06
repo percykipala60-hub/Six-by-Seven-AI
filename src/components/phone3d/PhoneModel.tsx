@@ -2,6 +2,8 @@ import { useMemo } from "react";
 import * as THREE from "three";
 import type { Finish, Model } from "../phone/RealPhone";
 import { roundedRect, roundedSlab, SPECS } from "./geometry";
+import { logoGeometry, roundedPrism, solid, useCarved, zCylinder } from "./carve";
+import { APPLE_PATH, SAMSUNG_PATH } from "./brandLogos";
 
 // Teintes des coloris (aluminium anodisé et verre arrière dépoli).
 const FINISH_COLORS: Record<Finish, { metal: string; glass: string }> = {
@@ -82,6 +84,12 @@ function useMaterials(finish: Finish) {
         iridescenceThicknessRange: [200, 600],
       }),
       sensor: new THREE.MeshPhysicalMaterial({ color: "#000000", roughness: 0.15, clearcoat: 1, envMapIntensity: 0.35 }),
+      // Parois des trous de la tranche (port, haut-parleurs) : noir mat, la lumière y meurt.
+      hole: new THREE.MeshStandardMaterial({ color: "#070708", roughness: 0.9, metalness: 0, envMapIntensity: 0.04 }),
+      // Logo Apple : métal poli miroir, de la teinte du coloris.
+      logo: new THREE.MeshPhysicalMaterial({ color: c.metal, metalness: 1, roughness: 0.28, clearcoat: 1, clearcoatRoughness: 0.1, envMapIntensity: 1.3 }),
+      // Inscription Samsung : sérigraphie métallisée, un ton plus clair que le verre.
+      print: new THREE.MeshPhysicalMaterial({ color: c.metal, metalness: 0.7, roughness: 0.35, envMapIntensity: 0.8 }),
     };
   }, [finish]);
 }
@@ -112,7 +120,7 @@ function Lens({ x, y, z, r, m, look = "apple" }: { x: number; y: number; z: numb
         <cylinderGeometry args={[r, r, height, 72]} />
       </mesh>
       <mesh position={[0, 0, top]} material={m.polished}>
-        <torusGeometry args={[r * (blackOuter + 1) / 2, r * (1 - blackOuter) / 2, 18, 96]} />
+        <torusGeometry args={[(r * (blackOuter + 1)) / 2, (r * (1 - blackOuter)) / 2, 18, 96]} />
       </mesh>
       {/* Anneau noir brillant */}
       <mesh position={[0, 0, top - 0.002]} rotation={FACE} material={m.housing}>
@@ -139,7 +147,21 @@ function Lens({ x, y, z, r, m, look = "apple" }: { x: number; y: number; z: numb
 // Bouton latéral réaliste : face plate, bouts arrondis, à peine en relief (~0,5 mm),
 // cerné d'un interstice très fin. `side` : -1 côté gauche, +1 côté droit (vu de face).
 // `length` : longueur totale du bouton, en cm.
-function SideButton({ side, y, length, w, m, kind = "metal" }: { side: 1 | -1; y: number; length: number; w: number; m: M; kind?: "metal" | "control" | "sim" }) {
+function SideButton({
+  side,
+  y,
+  length,
+  w,
+  m,
+  kind = "metal",
+}: {
+  side: 1 | -1;
+  y: number;
+  length: number;
+  w: number;
+  m: M;
+  kind?: "metal" | "control" | "sim";
+}) {
   const geo = useMemo(
     () => ({
       gap: roundedSlab(0.31, length + 0.03, 0.03, 0.155, 0.006),
@@ -158,7 +180,7 @@ function SideButton({ side, y, length, w, m, kind = "metal" }: { side: 1 | -1; y
       <group>
         <mesh geometry={geo.sim} position={at(-0.004)} rotation={rot} material={m.gap} />
         <mesh geometry={geo.sim} position={at(-0.002)} rotation={rot} scale={[0.86, 0.96, 1]} material={m.metal} />
-        <mesh position={[side * (w / 2 + 0.001), y - length / 2 + 0.22, 0]} rotation={[0, side * Math.PI / 2, 0]} material={m.gap}>
+        <mesh position={[side * (w / 2 + 0.001), y - length / 2 + 0.22, 0]} rotation={[0, (side * Math.PI) / 2, 0]} material={m.gap}>
           <circleGeometry args={[0.035, 16]} />
         </mesh>
       </group>
@@ -182,7 +204,25 @@ function SideButton({ side, y, length, w, m, kind = "metal" }: { side: 1 | -1; y
 
 // Forme plate gravée sur la tranche du bas (face orientée vers -y).
 // `hole` : évide l'intérieur pour ne garder qu'un contour.
-function EdgeShape({ x, y, w, h, r, material, hole, lift = 0.001 }: { x: number; y: number; w: number; h: number; r: number; material: THREE.Material; hole?: number; lift?: number }) {
+function EdgeShape({
+  x,
+  y,
+  w,
+  h,
+  r,
+  material,
+  hole,
+  lift = 0.001,
+}: {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  r: number;
+  material: THREE.Material;
+  hole?: number;
+  lift?: number;
+}) {
   const geo = useMemo(() => {
     const shape = roundedRect(w, h, Math.min(r, h / 2, w / 2));
     if (hole) {
@@ -195,36 +235,58 @@ function EdgeShape({ x, y, w, h, r, material, hole, lift = 0.001 }: { x: number;
   return <mesh geometry={geo} position={[x, y - lift, 0]} rotation={[Math.PI / 2, 0, 0]} material={material} />;
 }
 
-// Tranche du bas. iPhone : USB-C au centre, haut-parleur et micros de part et d'autre.
-// Galaxy Ultra : embout du S Pen à gauche, tiroir SIM, USB-C au centre, haut-parleur à droite.
+// Positions des ouvertures de la tranche du bas (x, en cm depuis le centre).
+// iPhone : USB-C au centre, haut-parleur à droite et micros à gauche, deux vis de part et d'autre du port.
+// Galaxy Ultra : logement du S Pen à gauche, tiroir SIM, USB-C au centre, haut-parleur à droite.
+const SPEAKER_STEP = 0.16;
+const speakerHoles = (model: Model) =>
+  model === "pro" ? [...Array(6)].flatMap((_, i) => [1.2 + i * SPEAKER_STEP, -(1.2 + i * SPEAKER_STEP)]) : [...Array(7)].map((_, i) => 1.15 + i * SPEAKER_STEP);
+const SPEN_X = -2.45;
+
+// Volumes retirés du cadre sur la tranche du bas (axe des trous selon y).
+function bottomCutters(model: Model, h: number) {
+  const y = -h / 2;
+  const alongY = (g: THREE.BufferGeometry, x: number) => g.rotateX(Math.PI / 2).translate(x, y, 0);
+  const cutters = [alongY(roundedPrism(0.86, 0.26, 0.13, 1.1, 12), 0), ...speakerHoles(model).map((hx) => alongY(zCylinder(0.045, 0.5, 16), hx))];
+  if (model === "ultra") {
+    cutters.push(alongY(roundedPrism(0.58, 0.3, 0.15, 1.8, 12), SPEN_X));
+    cutters.push(alongY(zCylinder(0.035, 0.4, 12), -0.68));
+  }
+  return cutters;
+}
+
+// Ce qu'on voit dans et autour des ouvertures : languette du USB-C, vis, tiroir SIM, embout du S Pen.
 function BottomEdge({ h, m, model }: { h: number; m: M; model: Model }) {
   const y = -h / 2;
-  const step = 0.16;
-  const holes =
-    model === "pro"
-      ? [...Array(6)].flatMap((_, i) => [1.2 + i * step, -(1.2 + i * step)])
-      : [...Array(7)].map((_, i) => 1.15 + i * step);
+  const geo = useMemo(
+    () => ({
+      tongue: new THREE.BoxGeometry(0.56, 0.42, 0.07),
+      pen: roundedPrism(0.54, 0.26, 0.13, 0.9, 12).rotateX(Math.PI / 2),
+    }),
+    [],
+  );
   return (
     <group>
-      {/* Port USB-C : bordure polie, ouverture sombre, languette intérieure */}
-      <EdgeShape x={0} y={y} w={0.94} h={0.33} r={0.165} material={m.polished} lift={0.0006} />
-      <EdgeShape x={0} y={y} w={0.86} h={0.26} r={0.13} material={m.gap} lift={0.0012} />
-      <EdgeShape x={0} y={y} w={0.56} h={0.07} r={0.03} material={m.barrelDim} lift={0.0018} />
-      {holes.map((hx) => (
-        <mesh key={hx} position={[hx, y - 0.0012, 0]} rotation={[Math.PI / 2, 0, 0]} material={m.gap}>
-          <circleGeometry args={[0.045, 20]} />
-        </mesh>
-      ))}
+      {/* Languette de contact au fond du port USB-C */}
+      <mesh geometry={geo.tongue} position={[0, y + 0.08 + 0.21, 0]} material={m.barrelDim} />
+      {model === "pro" &&
+        [-0.62, 0.62].map((sx) => (
+          // Vis à tête affleurante, cernée d'un liseré sombre.
+          <group key={sx}>
+            <mesh position={[sx, y - 0.0008, 0]} rotation={[Math.PI / 2, 0, 0]} material={m.gap}>
+              <circleGeometry args={[0.062, 24]} />
+            </mesh>
+            <mesh position={[sx, y - 0.0016, 0]} rotation={[Math.PI / 2, 0, 0]} material={m.polished}>
+              <circleGeometry args={[0.048, 24]} />
+            </mesh>
+          </group>
+        ))}
       {model === "ultra" && (
         <>
-          {/* Tiroir SIM : contour très fin et trou d'éjection */}
+          {/* Tiroir SIM : contour très fin */}
           <EdgeShape x={-1.2} y={y} w={1.3} h={0.3} r={0.15} material={m.gap} hole={0.018} />
-          <mesh position={[-0.68, y - 0.0012, 0]} rotation={[Math.PI / 2, 0, 0]} material={m.gap}>
-            <circleGeometry args={[0.035, 16]} />
-          </mesh>
-          {/* Embout du stylet S Pen, affleurant et poli */}
-          <EdgeShape x={-2.45} y={y} w={0.58} h={0.3} r={0.15} material={m.gap} lift={0.0006} />
-          <EdgeShape x={-2.45} y={y} w={0.54} h={0.26} r={0.13} material={m.polished} lift={0.0012} />
+          {/* Embout du S Pen, glissé dans son logement, presque affleurant */}
+          <mesh geometry={geo.pen} position={[SPEN_X, y + 0.45 + 0.012, 0]} material={m.polished} />
         </>
       )}
     </group>
@@ -246,7 +308,7 @@ export function PhoneModel({ model, finish }: { model: Model; finish: Finish }) 
   const back = -d / 2;
 
   const geos = useMemo(() => {
-    const body = roundedSlab(w, h, d, r, 0.22);
+    const body = solid(roundedSlab(w, h, d, r, 0.22));
     const front = new THREE.ShapeGeometry(roundedRect(w - 0.16, h - 0.16, r - 0.08), 48);
     const panelProH = h - 4.2 - 0.15 - 0.5 - 0.3;
     return {
@@ -258,12 +320,15 @@ export function PhoneModel({ model, finish }: { model: Model; finish: Finish }) 
       panelProH,
       // Dos en verre (ultra) : couvre tout le dos sauf un fin cadre.
       panelUltra: new THREE.ShapeGeometry(roundedRect(w - 0.3, h - 0.3, r - 0.12), 48),
+      logo: model === "pro" ? logoGeometry(APPLE_PATH, { height: 1.55 }) : logoGeometry(SAMSUNG_PATH, { width: 2.1 }),
     };
-  }, [w, h, d, r]);
+  }, [w, h, d, r, model]);
+  // Cadre percé : port USB-C, haut-parleurs, logement du S Pen (calcul en arrière-plan).
+  const body = useCarved(`phone-${model}`, geos.body, () => ({ base: roundedSlab(w, h, d, r, 0.22), cutters: bottomCutters(model, h) }));
 
   return (
     <group>
-      <mesh geometry={geos.body} material={m.metal} />
+      <mesh geometry={body} material={[m.metal, m.hole]} />
       <mesh geometry={geos.front} position={[0, 0, d / 2 + 0.006]} material={m.frontGlass} />
 
       {/* Boutons placés d'après le schéma officiel d'Apple (positions mesurées depuis le haut) :
@@ -292,12 +357,9 @@ export function PhoneModel({ model, finish }: { model: Model; finish: Finish }) 
         <>
           {/* Plateau photo : vu de dos, le bloc d'objectifs est en haut à gauche, donc côté x positif. */}
           <mesh geometry={geos.plateau} position={[0, h / 2 - 0.15 - 2.1, back - 0.07]} material={m.metal} />
-          <mesh
-            geometry={geos.panelPro}
-            position={[0, -h / 2 + 0.3 + geos.panelProH / 2, back - 0.006]}
-            rotation={[0, Math.PI, 0]}
-            material={m.frosted}
-          />
+          <mesh geometry={geos.panelPro} position={[0, -h / 2 + 0.3 + geos.panelProH / 2, back - 0.006]} rotation={[0, Math.PI, 0]} material={m.frosted} />
+          {/* Logo au centre de la fenêtre de verre */}
+          <mesh geometry={geos.logo} position={[0, -h / 2 + 0.3 + geos.panelProH / 2, back - 0.009]} rotation={[0, Math.PI, 0]} material={m.logo} />
           {(() => {
             const z = back - 0.15;
             // Bague d'objectif ≈ 22 % de la largeur (≈ 15,6 mm), comme sur les photos de référence.
@@ -326,6 +388,8 @@ export function PhoneModel({ model, finish }: { model: Model; finish: Finish }) 
       ) : (
         <>
           <mesh geometry={geos.panelUltra} position={[0, 0, back - 0.006]} rotation={[0, Math.PI, 0]} material={m.frosted} />
+          {/* Inscription de la marque en bas du dos */}
+          <mesh geometry={geos.logo} position={[0, -h / 2 + 1.25, back - 0.009]} rotation={[0, Math.PI, 0]} material={m.print} />
           {(() => {
             const z = back - 0.008;
             const lr = 0.66;
