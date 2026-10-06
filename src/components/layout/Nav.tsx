@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useLocation } from "react-router";
 import { Menu, X } from "lucide-react";
-import { nav } from "../../content/site";
+import { app, nav } from "../../content/site";
 import { SixLogo } from "../brand/Logos";
 import { AppButton } from "../ui/AppButton";
 import styles from "./Nav.module.css";
@@ -12,6 +12,8 @@ export function Nav() {
   const [scrolled, setScrolled] = useState(false);
   const { pathname } = useLocation();
   const overHero = pathname === "/" && !scrolled && !open;
+  // Sur la page de téléchargement, le bouton « Télécharger » ferait doublon : on le masque.
+  const onDownloadPage = pathname === app.downloadPage;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 24);
@@ -46,7 +48,9 @@ export function Nav() {
 
         <div className={styles.actions}>
           <AppButton kind="web" size="sm" variant={overHero ? "outlineDark" : "secondary"} className={`${styles.cta} ${styles.ctaWeb}`} badge={false} />
-          <AppButton kind="download" size="sm" variant={overHero ? "light" : "primary"} className={styles.cta} badge={false} />
+          {!onDownloadPage && (
+            <AppButton kind="download" size="sm" variant={overHero ? "light" : "primary"} className={styles.cta} badge={false} />
+          )}
           <button
             type="button"
             className={styles.toggle}
@@ -68,7 +72,7 @@ export function Nav() {
             </Link>
           ))}
           <div className={styles.mobileCtas}>
-            <AppButton kind="download" long onClick={close} />
+            {!onDownloadPage && <AppButton kind="download" long onClick={close} />}
             <AppButton kind="web" long variant="secondary" onClick={close} />
           </div>
         </div>
