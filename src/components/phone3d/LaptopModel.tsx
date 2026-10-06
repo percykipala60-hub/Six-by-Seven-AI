@@ -62,26 +62,27 @@ export const LAPTOP_SPECS: Record<LaptopKind, Spec> = {
   windows: {
     w: 36.9,
     d: 25.9,
-    h: 1.75,
+    h: 2.0,
     r: 0.55,
     lidH: 23.5,
     lidT: 0.55,
     disp: { w: 35.65, h: 20.05, bottom: 2.45 },
-    hingeInset: 2.1,
+    // Charnière avancée de 3 cm : derrière l'écran, un coffre porte les aérations et les ports.
+    hingeInset: 3.2,
     u: 1.75,
     numpad: true,
     trackpad: { w: 12.6, h: 8, x: -3.6 },
     // Gris métallisé, comme sur les photos d'un Omen 16 réel.
     body: "#35383d",
-    bodyMetal: 0.2,
-    bodyRough: 0.55,
+    bodyMetal: 0,
+    bodyRough: 0.72,
     // Touches à course plus longue, comme sur la photo de l'Omen.
     keys: "#141519",
     speakers: false,
     keyRise: 0.07,
     keyT: 0.11,
     fnRow: 0.6,
-    kbInset: 2.2,
+    kbInset: 2.0,
   },
 };
 
@@ -215,9 +216,9 @@ export function LaptopModel({ kind, screenEl, lidAngle = 112 }: { kind: LaptopKi
         roughness: spec.bodyRough,
         clearcoat: kind === "mac" ? 0.2 : 0,
         clearcoatRoughness: 0.5,
-        envMapIntensity: kind === "mac" ? 1 : 0.3,
+        envMapIntensity: kind === "mac" ? 1 : 0.18,
         // Reflets atténués sur le gris du PC : sinon le repose-poignets, vu en biais, paraît presque blanc.
-        specularIntensity: kind === "mac" ? 1 : 0.3,
+        specularIntensity: kind === "mac" ? 1 : 0.15,
       }),
       // Puits du clavier ; sur le portable de jeu, une lueur de rétroéclairage filtre entre les touches.
       well: new THREE.MeshStandardMaterial({
@@ -233,11 +234,11 @@ export function LaptopModel({ kind, screenEl, lidAngle = 112 }: { kind: LaptopKi
       pad: new THREE.MeshPhysicalMaterial({
         color: kind === "mac" ? "#cfd2d6" : "#1d1f23",
         metalness: kind === "mac" ? 0.9 : 0.1,
-        roughness: kind === "mac" ? 0.22 : 0.6,
+        roughness: kind === "mac" ? 0.22 : 0.75,
         clearcoat: kind === "mac" ? 0.8 : 0,
-        envMapIntensity: kind === "mac" ? 1 : 0.2,
-        // Reflets atténués sur le gris du PC : sinon le repose-poignets, vu en biais, paraît presque blanc.
-        specularIntensity: kind === "mac" ? 1 : 0.3,
+        envMapIntensity: kind === "mac" ? 1 : 0.1,
+        // Reflets atténués sur le PC : sinon le pavé tactile, vu en biais, paraît bleu clair.
+        specularIntensity: kind === "mac" ? 1 : 0.1,
       }),
       // Bordures de l'écran : noir anti-reflet. Un verre trop poli renvoyait de grandes taches de lumière
       // qui se déplaçaient au moindre mouvement (surtout sur la bande sous l'écran).
@@ -250,6 +251,7 @@ export function LaptopModel({ kind, screenEl, lidAngle = 112 }: { kind: LaptopKi
         envMapIntensity: 0.25,
       }),
       dark: new THREE.MeshStandardMaterial({ color: "#050506", roughness: 0.6 }),
+      lens: new THREE.MeshPhysicalMaterial({ color: "#0b0d14", roughness: 0.1, clearcoat: 1, envMapIntensity: 0.6 }),
       hinge: new THREE.MeshStandardMaterial({ color: kind === "mac" ? "#1b1c1f" : "#141518", roughness: 0.45, metalness: 0.6 }),
     }),
     [kind, spec],
@@ -361,9 +363,9 @@ export function LaptopModel({ kind, screenEl, lidAngle = 112 }: { kind: LaptopKi
     canvas.width = 2048;
     canvas.height = 96;
     const ctx = canvas.getContext("2d")!;
-    ctx.fillStyle = "#3d4046";
+    ctx.fillStyle = "#26282c";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.strokeStyle = "#1c1d21";
+    ctx.strokeStyle = "#0e0f11";
     ctx.lineWidth = 3;
     for (let x = -canvas.height; x < canvas.width + canvas.height; x += 14) {
       ctx.beginPath();
@@ -376,7 +378,7 @@ export function LaptopModel({ kind, screenEl, lidAngle = 112 }: { kind: LaptopKi
     const tex = new THREE.CanvasTexture(canvas);
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.anisotropy = 8;
-    return new THREE.MeshStandardMaterial({ map: tex, roughness: 0.7, metalness: 0.4 });
+    return new THREE.MeshStandardMaterial({ map: tex, roughness: 0.8, metalness: 0, envMapIntensity: 0.2 });
   }, [kind]);
 
   const hingeZ = -d / 2 + spec.hingeInset;
@@ -407,13 +409,8 @@ export function LaptopModel({ kind, screenEl, lidAngle = 112 }: { kind: LaptopKi
       )}
       {spec.speakers && <instancedMesh ref={dotsRef} args={[geo.dot, mats.dark, dots.length]} />}
 
-      {/* Aérations arrière (portable de jeu), derrière la charnière */}
-      {kind === "windows" &&
-        Array.from({ length: 16 }, (_, i) => (
-          <mesh key={i} position={[-w / 2 + 4 + i * ((w - 8) / 15), h + 0.01, -d / 2 + 1.0]} rotation={[-Math.PI / 2, 0, 0]} material={mats.dark}>
-            <planeGeometry args={[1.25, 1.1]} />
-          </mesh>
-        ))}
+      {/* Aérations du portable de jeu : face arrière (de part et d'autre des ports) et arrière des flancs */}
+      {kind === "windows" && <Vents w={w} d={d} h={h} />}
 
       {/* Charnière : une barre sur le Mac, deux blocs séparés aux coins sur le PC */}
       {kind === "mac" ? (
@@ -421,18 +418,26 @@ export function LaptopModel({ kind, screenEl, lidAngle = 112 }: { kind: LaptopKi
           <cylinderGeometry args={[0.32, 0.32, w - 7, 24]} />
         </mesh>
       ) : (
-        [-1, 1].map((side) => (
-          <mesh key={side} position={[side * (w / 2 - 3.2), h + 0.25, hingeZ]} rotation={[0, 0, Math.PI / 2]} material={mats.body}>
-            <cylinderGeometry args={[0.45, 0.45, 3.6, 24]} />
+        <>
+          <mesh position={[0, h + 0.3, hingeZ - 0.3]} rotation={[0, 0, Math.PI / 2]} material={mats.hinge}>
+            <cylinderGeometry args={[0.36, 0.36, w - 7.4, 24]} />
           </mesh>
-        ))
+          {[-1, 1].map((side) => (
+            <mesh key={side} position={[side * (w / 2 - 2.1), h + 0.3, hingeZ - 0.3]} rotation={[0, 0, Math.PI / 2]} material={mats.body}>
+              <cylinderGeometry args={[0.46, 0.46, 3.4, 24]} />
+            </mesh>
+          ))}
+        </>
       )}
 
       {/* Capot ouvert, pivotant autour de la charnière */}
-      <group position={[0, h + 0.2, hingeZ]} rotation={[-tilt, 0, 0]}>
+      <group position={[0, h + (kind === "windows" ? 0.3 : 0.2), hingeZ]} rotation={[-tilt, 0, 0]}>
         <mesh geometry={geo.lid} position={[0, lidH / 2, -lidT / 2]} material={mats.body} />
         <mesh geometry={geo.bezel} position={[0, lidH / 2, 0.02]} material={mats.glass} />
         <ScreenAnchor el={screenEl} scale={pxScale} position={[0, dispCenterY, 0.03]} />
+        <mesh position={[0, disp.bottom + disp.h + (lidH - disp.bottom - disp.h) / 2, 0.03]} material={mats.lens}>
+          <circleGeometry args={[0.13, 20]} />
+        </mesh>
       </group>
     </group>
   );
@@ -458,22 +463,18 @@ const PORTS: Record<LaptopKind, { left: PortShape[]; right: PortShape[]; back: {
     back: [],
   },
   windows: {
-    // Gauche : Ethernet, deux USB-A, prise casque. Droite : USB-C, deux USB-A. Arrière : alimentation, HDMI, USB-C.
+    // Gauche : deux USB-C, prise casque. Droite : USB-A. Arrière, entre les aérations : alimentation, Ethernet, HDMI, USB-A.
     left: [
-      { z: -6.8, w: 1.45, h: 1.0, r: 0.08 },
-      { z: -4.3, w: 1.25, h: 0.5, r: 0.06 },
-      { z: -2.4, w: 1.25, h: 0.5, r: 0.06 },
-      { z: 6.5, w: 0.38, h: 0.38, r: 0.19 },
+      { z: -5.6, w: 0.84, h: 0.28, r: 0.14 },
+      { z: -4.3, w: 0.84, h: 0.28, r: 0.14 },
+      { z: -2.9, w: 0.38, h: 0.38, r: 0.19 },
     ],
-    right: [
-      { z: -9.6, w: 0.84, h: 0.28, r: 0.14 },
-      { z: -7.9, w: 1.25, h: 0.5, r: 0.06 },
-      { z: -6.1, w: 1.25, h: 0.5, r: 0.06 },
-    ],
+    right: [{ z: -5.4, w: 1.25, h: 0.5, r: 0.06 }],
     back: [
-      { x: 15.6, w: 0.7, h: 0.7, r: 0.35 },
-      { x: -8.6, w: 1.5, h: 0.48, r: 0.06 },
-      { x: -6.6, w: 0.84, h: 0.28, r: 0.14 },
+      { x: 0.1, w: 0.62, h: 0.62, r: 0.31 },
+      { x: -1.5, w: 1.45, h: 1.0, r: 0.08 },
+      { x: -3.3, w: 1.5, h: 0.48, r: 0.06 },
+      { x: -5.0, w: 1.25, h: 0.5, r: 0.06 },
     ],
   },
 };
@@ -491,6 +492,59 @@ function Ports({ kind, w, d, h, material }: { kind: LaptopKind; w: number; d: nu
       ))}
       {set.back.map((p) => (
         <mesh key={`b${p.x}`} geometry={shape(p.w, p.h, p.r)} position={[p.x, h / 2, -d / 2 - 0.01]} rotation={[0, Math.PI, 0]} material={material} />
+      ))}
+    </group>
+  );
+}
+
+// Fentes d'aération : rangée de fentes verticales arrondies, dessinées une fois dans une texture transparente.
+function ventMaterial(length: number, height: number) {
+  const PX = 60;
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(length * PX);
+  canvas.height = Math.round(height * PX);
+  const ctx = canvas.getContext("2d")!;
+  ctx.fillStyle = "#050506";
+  const pitch = 0.42 * PX;
+  const slot = 0.26 * PX;
+  const count = Math.floor(canvas.width / pitch);
+  const offset = (canvas.width - count * pitch) / 2;
+  for (let i = 0; i < count; i++) {
+    ctx.beginPath();
+    ctx.roundRect(offset + i * pitch + (pitch - slot) / 2, 0, slot, canvas.height, slot / 2);
+    ctx.fill();
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 8;
+  return new THREE.MeshStandardMaterial({ map: tex, transparent: true, roughness: 0.8, depthWrite: false });
+}
+
+// Aérations de l'Omen 16 : deux larges grilles à l'arrière, de part et d'autre des ports,
+// prolongées sur l'arrière de chaque flanc.
+const REAR_VENTS: [number, number][] = [
+  [1.1, 17.2], // à droite des ports (vu de face)
+  [-17.2, -6.2], // à gauche des ports
+];
+const SIDE_VENT = { from: 0.7, to: 5.4 }; // distance depuis l'arrière, sur chaque flanc
+
+function Vents({ w, d, h }: { w: number; d: number; h: number }) {
+  const ventH = h * 0.5;
+  const y = h * 0.52;
+  const rear = useMemo(() => REAR_VENTS.map(([a, b]) => ({ x: (a + b) / 2, len: b - a, mat: ventMaterial(b - a, ventH) })), [ventH]);
+  const side = useMemo(() => ventMaterial(SIDE_VENT.to - SIDE_VENT.from, ventH), [ventH]);
+  const sideZ = -d / 2 + (SIDE_VENT.from + SIDE_VENT.to) / 2;
+  return (
+    <group>
+      {rear.map((v) => (
+        <mesh key={v.x} position={[v.x, y, -d / 2 - 0.012]} rotation={[0, Math.PI, 0]} material={v.mat}>
+          <planeGeometry args={[v.len, ventH]} />
+        </mesh>
+      ))}
+      {[-1, 1].map((sd) => (
+        <mesh key={sd} position={[sd * (w / 2 + 0.012), y, sideZ]} rotation={[0, (sd * Math.PI) / 2, 0]} material={side}>
+          <planeGeometry args={[SIDE_VENT.to - SIDE_VENT.from, ventH]} />
+        </mesh>
       ))}
     </group>
   );

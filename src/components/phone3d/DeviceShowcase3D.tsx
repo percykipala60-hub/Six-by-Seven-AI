@@ -29,7 +29,7 @@ const LAYOUT: Record<PlatformId, { pose: Pose; scale: number; x: number; y: numb
   ios: { pose: DEFAULT_POSE, scale: 1.5, x: 0, y: 0 },
   android: { pose: DEFAULT_POSE, scale: 1.5, x: 0, y: 0 },
   mac: { pose: { x: 20, y: -26, z: 0 }, scale: 0.63, x: -1.6, y: -5.4 },
-  windows: { pose: { x: 20, y: -26, z: 0 }, scale: 0.61, x: -1.6, y: -5.2 },
+  windows: { pose: { x: 20, y: -26, z: 0 }, scale: 0.57, x: -0.4, y: -4.4 },
 };
 
 export type DeviceShowcaseProps = { initial?: PlatformId | null; label?: string };
@@ -148,13 +148,23 @@ export default function DeviceShowcase3D({ initial, label }: DeviceShowcaseProps
 function Slot({ id, active, children }: { id: PlatformId; active: boolean; children: ReactNode }) {
   const group = useRef<THREE.Group>(null);
   const t = useRef(active ? 1 : 0);
+  const wait = useRef(0);
+  const wasActive = useRef(active);
   const { pose, scale, x, y } = LAYOUT[id];
+
+  useEffect(() => {
+    // L'appareil suivant attend que le précédent soit presque parti : les deux ne se chevauchent pas.
+    if (active && !wasActive.current) wait.current = 0.32;
+    wasActive.current = active;
+  }, [active]);
 
   useFrame((_, delta) => {
     const g = group.current;
     if (!g) return;
-    const target = active ? 1 : 0;
-    t.current += (target - t.current) * Math.min(delta * 5, 1);
+    if (active && wait.current > 0) wait.current -= delta;
+    const target = active && wait.current <= 0 ? 1 : 0;
+    // Sortie rapide, entrée plus posée.
+    t.current += (target - t.current) * Math.min(delta * (active ? 5 : 9), 1);
     const e = t.current;
     const s = scale * (0.55 + 0.45 * e);
     g.visible = e > 0.02;
