@@ -31,6 +31,8 @@ type Spec = {
   keyT: number;
   /** Hauteur de la rangée de fonctions, en fraction du pas. */
   fnRow: number;
+  /** Distance entre la charnière et le haut du clavier (cm). */
+  kbInset: number;
 };
 
 export const LAPTOP_SPECS: Record<LaptopKind, Spec> = {
@@ -45,7 +47,7 @@ export const LAPTOP_SPECS: Record<LaptopKind, Spec> = {
     hingeInset: 0.45,
     u: 1.9,
     numpad: false,
-    trackpad: { w: 16.2, h: 10, x: 0 },
+    trackpad: { w: 16.2, h: 9.4, x: 0 },
     body: "#d6d8dc",
     bodyMetal: 1,
     bodyRough: 0.33,
@@ -54,7 +56,8 @@ export const LAPTOP_SPECS: Record<LaptopKind, Spec> = {
     speakers: true,
     keyRise: 0.025,
     keyT: 0.06,
-    fnRow: 0.72,
+    fnRow: 1,
+    kbInset: 1.7,
   },
   windows: {
     w: 36.9,
@@ -78,6 +81,7 @@ export const LAPTOP_SPECS: Record<LaptopKind, Spec> = {
     keyRise: 0.07,
     keyT: 0.11,
     fnRow: 0.6,
+    kbInset: 2.2,
   },
 };
 
@@ -87,14 +91,23 @@ export const LAPTOP_SCREEN_PX: Record<LaptopKind, { w: number; h: number }> = {
   windows: { w: 1000, h: Math.round((1000 * 20.05) / 35.65) },
 };
 
-// Disposition du clavier : largeur de chaque touche en multiples du pas, rangée par rangée.
-const MAIN_ROWS: number[][] = [
-  [1.5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.5],
-  [1.5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.5],
-  [1.75, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.75],
-  [2.25, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2.25],
-  [1, 1, 1, 1.25, 5, 1.25, 1, 1, 1, 1],
+// Disposition du clavier ISO français (AZERTY) : largeur de chaque touche en multiples du pas.
+// Chaque rangée mesure exactement 14,5 pas, comme sur un vrai clavier.
+const ROW_WIDTHS: number[][] = [
+  [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1.5], // chiffres, effacement
+  [1.5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], // tabulation, A…$, haut de la touche Entrée
+  [1.75, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.75], // verrouillage, Q…, bas de la touche Entrée (en L)
+  [1.25, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2.25], // majuscule, <, W…, majuscule
+  [1, 1, 1, 1.25, 5, 1.25, 1, 1, 1, 1], // fn, ctrl, alt, cmd, espace, …, flèches
 ];
+
+// Rangée de fonctions, également sur 14,5 pas.
+const FN_WIDTHS: Record<LaptopKind, number[]> = {
+  // esc large, F1 à F12, Touch ID.
+  mac: [1.5, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
+  // ESC, F1 à F12, marche/arrêt, DELETE.
+  windows: [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0.75, 0.75],
+};
 
 type KeyRect = { x: number; z: number; w: number; d: number; label: string; small?: boolean };
 
@@ -106,8 +119,8 @@ const LABELS: Record<LaptopKind, { fn: string[]; rows: string[][]; numpad: strin
     rows: [
       ["@", "&", "é", '"', "'", "(", "§", "è", "!", "ç", "à", ")", "-", "⌫"],
       ["⇥", "A", "Z", "E", "R", "T", "Y", "U", "I", "O", "P", "^", "$", "↩"],
-      ["⇪", "Q", "S", "D", "F", "G", "H", "J", "K", "L", "M", "ù", "`"],
-      ["⇧", "W", "X", "C", "V", "B", "N", ",", ";", ":", "=", "⇧"],
+      ["⇪", "Q", "S", "D", "F", "G", "H", "J", "K", "L", "M", "ù", "`", ""],
+      ["⇧", "<", "W", "X", "C", "V", "B", "N", ",", ";", ":", "=", "⇧"],
       ["fn", "⌃", "⌥", "⌘", "", "⌘", "⌥", "◀", "▲▼", "▶"],
     ],
     numpad: [],
@@ -116,9 +129,9 @@ const LABELS: Record<LaptopKind, { fn: string[]; rows: string[][]; numpad: strin
     fn: ["ESC", "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12", "⏻", "DELETE"],
     rows: [
       ["²", "1\n&", "2\né", "3\n\"", "4\n'", "5\n(", "6\n-", "7\nè", "8\n_", "9\nç", "0\nà", "°\n)", "+\n=", "BACKSPACE"],
-      ["TAB", "A", "Z", "E", "R", "T", "Y", "U", "I", "O", "P", "¨\n^", "£\n$", "µ\n*"],
-      ["CAPS LOCK", "Q", "S", "D", "F", "G", "H", "J", "K", "L", "M", "%\nù", "ENTER"],
-      ["SHIFT", "W", "X", "C", "V", "B", "N", "?\n,", ".\n;", "/\n:", "§\n!", "SHIFT"],
+      ["TAB", "A", "Z", "E", "R", "T", "Y", "U", "I", "O", "P", "¨\n^", "£\n$", "ENTER"],
+      ["CAPS LOCK", "Q", "S", "D", "F", "G", "H", "J", "K", "L", "M", "%\nù", "µ\n*", ""],
+      ["SHIFT", ">\n<", "W", "X", "C", "V", "B", "N", "?\n,", ".\n;", "/\n:", "§\n!", "SHIFT"],
       ["CTRL", "FN", "", "ALT", "", "ALT", "CTRL", "◀", "▲▼", "▶"],
     ],
     // Au-dessus du pavé numérique : touche du constructeur (sans logo), calculatrice, INSERT, PRT SC.
@@ -146,14 +159,15 @@ function keyboardLayout(spec: Spec, kind: LaptopKind) {
 
   // Rangée des touches de fonction : demi-hauteur.
   const fnH = u * spec.fnRow;
-  const fnCount = labels.fn.length;
-  const fnW = mainW / fnCount;
   let z = 0;
-  for (let i = 0; i < fnCount; i++)
-    keys.push({ x: left + fnW * (i + 0.5), z: z + fnH / 2, w: fnW - gap, d: fnH - gap * 0.8, label: labels.fn[i] ?? "", small: true });
+  let fx = left;
+  FN_WIDTHS[kind].forEach((k, i) => {
+    keys.push({ x: fx + (k * u) / 2, z: z + fnH / 2, w: k * u - gap, d: fnH - gap * 0.8, label: labels.fn[i] ?? "", small: true });
+    fx += k * u;
+  });
   z += fnH;
 
-  MAIN_ROWS.forEach((row, r) => {
+  ROW_WIDTHS.forEach((row, r) => {
     let x = left;
     row.forEach((k, c) => {
       const label = labels.rows[r]?.[c] ?? "";
@@ -164,6 +178,9 @@ function keyboardLayout(spec: Spec, kind: LaptopKind) {
         keys.push({ x: cx, z: z + (3 * u) / 4, w: k * u - gap, d: half, label: "▼", small: true });
       } else if (label === "◀" || label === "▶") {
         keys.push({ x: cx, z: z + (3 * u) / 4, w: k * u - gap, d: half, label, small: true });
+      } else if (r === 2 && c === row.length - 1) {
+        // Bas de la touche Entrée : prolongé vers le haut jusqu'à la partie supérieure, pour former le L.
+        keys.push({ x: cx, z: z + u / 2 - gap / 2, w: k * u - gap, d: u, label });
       } else {
         keys.push({ x: cx, z: z + u / 2, w: k * u - gap, d: u - gap, label });
       }
@@ -249,7 +266,7 @@ export function LaptopModel({ kind, screenEl, lidAngle = 112 }: { kind: LaptopKi
     };
   }, [spec, kind, w, d, h, r, lidH, lidT]);
 
-  const kbFrontZ = -d / 2 + spec.hingeInset + 2.2; // début du clavier, derrière la rangée de fonctions
+  const kbFrontZ = -d / 2 + spec.hingeInset + spec.kbInset; // haut du clavier (côté charnière)
 
   // Grilles de haut-parleurs (Mac) : petits trous en quinconce de chaque côté du clavier.
   const dotsRef = useRef<THREE.InstancedMesh>(null);
