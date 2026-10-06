@@ -85,7 +85,8 @@ export default function DeviceShowcase3D({ initial, label }: DeviceShowcaseProps
         >
           <Studio />
           <CssLayer />
-          <Rig input={input} pose={{ x: 0, y: 0, z: 0 }} float>
+          {/* Flottement très léger : les ordinateurs restent stables, les reflets ne balaient plus l'écran. */}
+          <Rig input={input} pose={{ x: 0, y: 0, z: 0 }} float amplitude={0.3}>
             {SHOWCASE_DEVICES.map((d, i) => (
               <Slot key={d.id} id={d.id} active={i === index}>
                 {d.id === "ios" || d.id === "android" ? (

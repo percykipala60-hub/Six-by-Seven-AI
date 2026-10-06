@@ -239,7 +239,16 @@ export function LaptopModel({ kind, screenEl, lidAngle = 112 }: { kind: LaptopKi
         // Reflets atténués sur le gris du PC : sinon le repose-poignets, vu en biais, paraît presque blanc.
         specularIntensity: kind === "mac" ? 1 : 0.3,
       }),
-      glass: new THREE.MeshPhysicalMaterial({ color: "#030304", roughness: 0.05, clearcoat: 1, metalness: 0 }),
+      // Bordures de l'écran : noir anti-reflet. Un verre trop poli renvoyait de grandes taches de lumière
+      // qui se déplaçaient au moindre mouvement (surtout sur la bande sous l'écran).
+      glass: new THREE.MeshPhysicalMaterial({
+        color: "#050506",
+        roughness: 0.45,
+        clearcoat: 0.25,
+        clearcoatRoughness: 0.4,
+        metalness: 0,
+        envMapIntensity: 0.25,
+      }),
       dark: new THREE.MeshStandardMaterial({ color: "#050506", roughness: 0.6 }),
       hinge: new THREE.MeshStandardMaterial({ color: kind === "mac" ? "#1b1c1f" : "#141518", roughness: 0.45, metalness: 0.6 }),
     }),

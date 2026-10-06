@@ -129,7 +129,20 @@ export function useInView(ref: RefObject<HTMLElement | null>) {
 }
 
 // Fait tourner ses enfants : pose de repos + rotation du visiteur + léger flottement.
-export function Rig({ input, pose, float = true, children }: { input: RefObject<DragInput>; pose: Pose; float?: boolean; children: ReactNode }) {
+export function Rig({
+  input,
+  pose,
+  float = true,
+  amplitude = 1,
+  children,
+}: {
+  input: RefObject<DragInput>;
+  pose: Pose;
+  float?: boolean;
+  /** Ampleur du flottement (1 = normal, plus petit = plus stable). */
+  amplitude?: number;
+  children: ReactNode;
+}) {
   const group = useRef<THREE.Group>(null);
   const look = useRef({ x: 0, y: 0 });
   const reduced = useRef(false);
@@ -163,8 +176,8 @@ export function Rig({ input, pose, float = true, children }: { input: RefObject<
 
     const t = state.clock.elapsedTime;
     const moving = float && !reduced.current;
-    const bob = moving ? Math.sin(t * 0.9) : 0;
-    const sway = moving && settled ? Math.sin(t * 0.6) * 2.5 : 0;
+    const bob = moving ? Math.sin(t * 0.9) * amplitude : 0;
+    const sway = moving && settled ? Math.sin(t * 0.6) * 2.5 * amplitude : 0;
 
     g.rotation.set(
       (pose.x + s.rot.x + look.current.x + bob * 1.2) * DEG,
