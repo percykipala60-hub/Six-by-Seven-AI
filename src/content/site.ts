@@ -212,6 +212,7 @@ export const downloadPage = {
   yours: "Ton appareil",
   download: "Télécharger",
   open: "Ouvrir",
+  available: "Disponible maintenant",
   help: "Une question sur la façon dont Six utilise l'IA ?",
   helpLink: "Lire notre page dédiée",
 };
@@ -230,28 +231,45 @@ export const footer = {
       links: [
         { label: "Télécharger", href: "/telecharger" },
         { label: "Version web", href: "/telecharger#web" },
+        { label: "Bêta web", href: "/telecharger#beta" },
         { label: "Comment ça marche", href: "/#comment" },
-        { label: "Sécurité", href: "/#securite" },
+        { label: "Fonctions", href: "/#fonctions" },
+      ],
+    },
+    {
+      title: "Sécurité et vie privée",
+      links: [
+        { label: "Arnaques", href: "/#securite" },
         { label: "Confidentialité", href: "/#confidentialite" },
+        { label: "Utilisation de l'IA", href: "/legal/utilisation-ia" },
+        { label: "Politique de confidentialité", href: "/legal/politique-confidentialite" },
+      ],
+    },
+    {
+      title: "Assistance",
+      links: [
+        { label: "Questions fréquentes", href: "/#questions" },
+        { label: "Plateformes disponibles", href: "/telecharger#plateformes" },
+        { label: "Chaîne WhatsApp", href: "https://whatsapp.com/channel/0029Vb9blFv4o7qVCCbRPi1Y" },
       ],
     },
     {
       title: "Seven.AI",
       links: [
         { label: "À propos", href: "/#seven-ai" },
-        { label: "Utilisation de l'IA", href: "/legal/utilisation-ia" },
-        { label: "Lancement", href: "/#telecharger" },
-      ],
-    },
-    {
-      title: "Légal",
-      links: [
-        { label: "Conditions d'utilisation", href: "/legal/conditions-utilisation" },
-        { label: "Politique de confidentialité", href: "/legal/politique-confidentialite" },
+        { label: "Lancement du 15 octobre", href: "/#telecharger" },
         { label: "Mentions légales", href: "/legal/mentions-legales" },
       ],
     },
   ],
+  legal: [
+    { label: "Conditions d'utilisation", href: "/legal/conditions-utilisation" },
+    { label: "Confidentialité", href: "/legal/politique-confidentialite" },
+    { label: "Utilisation de l'IA", href: "/legal/utilisation-ia" },
+    { label: "Mentions légales", href: "/legal/mentions-legales" },
+  ],
+  locale: "Français",
+  follow: "Rejoignez-nous sur",
   soon: "Bientôt",
-  copyright: "© 2026 Seven.AI",
+  copyright: "Copyright © 2026 Seven.AI. Tous droits réservés.",
 };

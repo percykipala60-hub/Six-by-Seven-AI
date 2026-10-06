@@ -1,49 +1,53 @@
 .page {
-  padding-top: calc(72px + clamp(32px, 5vw, 64px));
+  padding-top: calc(72px + clamp(28px, 4vw, 48px));
   padding-bottom: var(--section-space);
 }
 
-/* ---------- En-tête : texte et action principale à gauche, téléphone à droite ---------- */
-.hero {
+/* ---------- En-tête : titre à gauche, action principale à droite ---------- */
+.head {
   display: grid;
-  gap: 32px;
-  align-items: center;
+  gap: 28px;
+  align-items: end;
 }
 
 @media (min-width: 960px) {
-  .hero {
-    grid-template-columns: 1.1fr 0.9fr;
+  .head {
+    grid-template-columns: 1fr auto;
     gap: 64px;
   }
 }
 
-.hero > * {
-  min-width: 0;
-}
-
-.heroText h1 {
-  font-size: clamp(52px, 7.4vw, 104px);
+.head h1 {
+  font-size: clamp(48px, 6.4vw, 88px);
 }
 
 .intro {
-  margin-top: 20px;
-  font-size: 19px;
+  margin-top: 14px;
+  font-size: 18px;
   color: var(--ink-2);
-  max-width: 30em;
+  max-width: 32em;
 }
 
 .primary {
-  margin-top: 36px;
+  display: grid;
+  justify-items: start;
+  gap: 10px;
+}
+
+@media (min-width: 960px) {
+  .primary {
+    justify-items: end;
+    text-align: right;
+  }
 }
 
 .mainBtn {
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  padding: 16px 26px;
+  padding: 15px 26px;
   border-radius: var(--radius-pill);
-  /* Même bleu que les boutons principaux du reste du site. */
-  background: var(--brand-blue-deep);
+  background: var(--navy-950);
   color: #fff;
   font-weight: 600;
   font-size: 16px;
@@ -52,127 +56,270 @@
 }
 
 a.mainBtn:hover {
-  background: var(--brand-blue);
-}
-
-/* Avant la sortie : le bouton reste visible mais inactif. */
-.mainBtn[aria-disabled] {
-  background: var(--bg-soft);
-  color: var(--mut);
-  cursor: default;
+  background: var(--navy-700);
 }
 
 .release {
-  margin-top: 12px;
-  font-size: 14px;
+  max-width: 24em;
+  font-size: 13px;
   color: var(--mut);
 }
 
-.webLink {
-  display: inline-flex;
+/* ---------- Tuiles de choix de l'appareil ---------- */
+.tilesWrap {
+  margin-top: clamp(28px, 4vw, 44px);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tilesWrap::-webkit-scrollbar {
+  display: none;
+}
+
+.tiles {
+  list-style: none;
+  margin-block: 0;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(150px, 1fr);
+  gap: 10px;
+}
+
+.tile {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  gap: 6px;
-  margin-top: 28px;
-  font-weight: 500;
+  gap: 8px;
+  height: 92px;
+  padding: 14px 10px 14px 16px;
+  border: 1.5px solid transparent;
+  border-radius: 16px;
+  background: var(--bg-soft);
   color: var(--ink);
   text-decoration: none;
-  border-bottom: 1px solid var(--line-strong);
-  padding-bottom: 2px;
+  overflow: hidden;
+  transition:
+    border-color 0.15s,
+    background-color 0.15s;
 }
 
-.webLink:hover {
-  border-color: var(--ink);
+.tile:hover {
+  border-color: var(--line-strong);
 }
 
-.heroVisual {
-  display: flex;
-  justify-content: center;
+.tile[data-current] {
+  border-color: var(--navy-950);
+  background: var(--surface);
 }
 
-/* ---------- Liste des plateformes, façon tableau ---------- */
-.list {
-  margin-top: clamp(64px, 8vw, 112px);
-  scroll-margin-top: 96px;
-}
-
-.list h2,
-.beta h2 {
-  font-size: clamp(30px, 3.4vw, 40px);
-  margin-bottom: 20px;
-}
-
-.list ul {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  border-top: 1px solid var(--ink);
-}
-
-.row {
+.tile span {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 4px;
-  padding: 18px 0;
-  border-bottom: 1px solid var(--line-strong);
-  scroll-margin-top: 96px;
+  gap: 2px;
 }
 
-@media (min-width: 720px) {
-  .row {
-    grid-template-columns: 1.1fr 1fr auto;
-    align-items: center;
-    gap: 24px;
+.tile b {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.tile small {
+  font-size: 12px;
+  color: var(--acc);
+  font-weight: 600;
+}
+
+.tile img {
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  flex: none;
+}
+
+.tileIcon {
+  width: 34px;
+  height: 34px;
+  margin-right: 16px;
+  color: var(--navy-950);
+  stroke-width: 1.4;
+}
+
+/* ---------- Démonstration 3D ---------- */
+.stage {
+  margin-top: clamp(24px, 4vw, 48px);
+}
+
+/* ---------- Fiches par plateforme ---------- */
+.cards {
+  margin-top: clamp(56px, 8vw, 96px);
+  scroll-margin-top: 88px;
+}
+
+.cards h2,
+.beta h2 {
+  font-size: clamp(34px, 4.4vw, 56px);
+}
+
+.grid {
+  list-style: none;
+  margin: 28px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+/* Sur téléphone : deux fiches par ligne, comme dans une boutique en ligne. */
+@media (max-width: 560px) {
+  .grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .grid .card {
+    padding: 14px;
+  }
+  .grid .card h3 {
+    font-size: 17px;
+  }
+  .grid .pillDark,
+  .grid .pillLine {
+    padding: 10px 12px;
+    font-size: 13px;
   }
 }
 
-.name {
+.card {
+  position: relative;
   display: flex;
-  align-items: baseline;
-  gap: 10px;
-  font: 600 24px var(--font-display);
-}
-
-.yours {
-  font: 500 12px var(--font-body);
-  color: var(--acc);
-}
-
-.system {
-  color: var(--mut);
-  font-size: 15px;
-}
-
-.action a {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 600;
-  color: var(--acc);
-  text-decoration: none;
-}
-
-.action a:hover {
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.pending {
-  font-size: 14px;
-  color: var(--mut);
-}
-
-/* ---------- Bêta : une simple ligne, sans encart ---------- */
-.beta {
-  display: grid;
-  gap: 16px;
-  margin-top: clamp(56px, 7vw, 88px);
-  padding-top: 32px;
-  /* Trait du haut aligné sur le contenu (sans déborder dans les marges de la page). */
-  background: linear-gradient(var(--line-strong), var(--line-strong)) top center / calc(100% - 2 * var(--gutter)) 1px no-repeat;
+  flex-direction: column;
+  padding: 24px;
+  border-radius: 22px;
+  background: var(--bg-soft);
   scroll-margin-top: 96px;
 }
 
-@media (min-width: 720px) {
+.card img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: contain;
+  margin-bottom: 8px;
+}
+
+.card h3 {
+  font: 700 20px/1.2 var(--font-body);
+  letter-spacing: -0.01em;
+}
+
+.system {
+  margin-top: 4px;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.status {
+  margin-top: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.badge {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  padding: 5px 10px;
+  border-radius: var(--radius-pill);
+  background: var(--navy-950);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.cardActions {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+/* Pilules : pleine bleu nuit et contour, comme les boutons principaux du site. */
+.pillDark,
+.pillLine {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 18px;
+  border-radius: var(--radius-pill);
+  font-size: 14px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    background-color 0.15s,
+    opacity 0.15s;
+}
+
+.pillDark {
+  background: var(--navy-950);
+  color: #fff;
+  border: 1.5px solid var(--navy-950);
+}
+
+a.pillDark:hover {
+  background: var(--navy-700);
+}
+
+.pillDark[aria-disabled] {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.pillLine {
+  border: 1.5px solid var(--navy-950);
+  color: var(--navy-950);
+  background: transparent;
+}
+
+.pillLine:hover {
+  background: var(--surface);
+}
+
+.wide {
+  margin-top: 14px;
+  display: grid;
+  gap: 18px;
+  align-items: center;
+}
+
+@media (min-width: 760px) {
+  .wide {
+    grid-template-columns: auto 1fr minmax(220px, auto);
+    gap: 28px;
+  }
+  .wide .cardActions {
+    margin-top: 0;
+  }
+}
+
+.webIcon {
+  width: 56px;
+  height: 56px;
+  color: var(--navy-950);
+  stroke-width: 1.2;
+}
+
+/* ---------- Bêta ---------- */
+.beta {
+  display: grid;
+  gap: 24px;
+  margin-top: clamp(56px, 8vw, 96px);
+  padding-top: clamp(40px, 6vw, 64px);
+  border-top: 1px solid var(--line-strong);
+  scroll-margin-top: 88px;
+}
+
+@media (min-width: 760px) {
   .beta {
     grid-template-columns: 1fr auto;
     align-items: end;
@@ -180,23 +327,24 @@ a.mainBtn:hover {
   }
 }
 
-.beta h2 {
+.betaTag {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--acc);
   margin-bottom: 8px;
 }
 
-.beta p {
-  color: var(--ink-2);
+.beta p:not(.betaTag) {
+  margin-top: 12px;
   max-width: 36em;
+  color: var(--ink-2);
 }
 
-.betaLink {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 600;
-  color: var(--acc);
-  text-decoration: none;
-  white-space: nowrap;
+.pending {
+  font-size: 14px;
+  color: var(--mut);
 }
 
 .help {
@@ -206,5 +354,5 @@ a.mainBtn:hover {
 }
 
 .help a {
-  color: var(--ink-2);
+  color: var(--ink);
 }

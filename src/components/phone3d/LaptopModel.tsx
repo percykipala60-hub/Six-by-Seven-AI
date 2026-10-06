@@ -252,7 +252,18 @@ function keyboardLayout(spec: Spec, kind: LaptopKind) {
   return { keys, totalW, totalD: z };
 }
 
-export function LaptopModel({ kind, screenEl, lidAngle = 112 }: { kind: LaptopKind; screenEl: HTMLDivElement; lidAngle?: number }) {
+// `wallpaper` : image posée sur l'écran (photos produit), par-dessus l'emplacement de l'interface.
+export function LaptopModel({
+  kind,
+  screenEl,
+  lidAngle = 112,
+  wallpaper,
+}: {
+  kind: LaptopKind;
+  screenEl: HTMLDivElement;
+  lidAngle?: number;
+  wallpaper?: THREE.Texture;
+}) {
   const spec = LAPTOP_SPECS[kind];
   const { w, d, h, r, lidH, lidT, disp } = spec;
   const mac = kind === "mac";
@@ -569,6 +580,12 @@ export function LaptopModel({ kind, screenEl, lidAngle = 112 }: { kind: LaptopKi
         <mesh geometry={geo.logo} position={[0, lidH / 2, -lidT - 0.003]} rotation={[0, Math.PI, 0]} material={mats.logo} />
         <mesh geometry={geo.bezel} position={[0, lidH / 2, 0.02]} material={mats.glass} />
         <ScreenAnchor el={screenEl} scale={pxScale} radius={parseFloat(spec.screenRadius)} position={[0, dispCenterY, 0.03]} />
+        {wallpaper && (
+          <mesh position={[0, dispCenterY, 0.036]}>
+            <planeGeometry args={[disp.w, disp.h]} />
+            <meshBasicMaterial map={wallpaper} transparent toneMapped={false} />
+          </mesh>
+        )}
         {!mac && (
           // Webcam au centre de la bordure du haut (sur le Mac, elle est dans l'encoche de l'écran).
           <mesh position={[0, disp.bottom + disp.h + (lidH - disp.bottom - disp.h) / 2, 0.03]} material={mats.lens}>

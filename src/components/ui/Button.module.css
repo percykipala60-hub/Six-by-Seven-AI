@@ -31,18 +31,19 @@
   transform: translateX(2px);
 }
 
+/* Pilule pleine bleu nuit (la couleur de la marque), contour pour l'action secondaire. */
 .primary {
-  background: var(--brand-blue-deep);
+  background: var(--navy-950);
   color: #fff;
 }
 
 .primary:hover {
-  background: var(--brand-blue);
+  background: var(--navy-700);
 }
 
 .secondary {
-  color: var(--ink);
-  border-color: var(--line-strong);
+  color: var(--navy-950);
+  border-color: var(--navy-950);
 }
 
 .secondary:hover {

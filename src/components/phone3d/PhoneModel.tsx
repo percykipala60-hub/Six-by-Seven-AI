@@ -155,9 +155,9 @@ function Lens({ x, y, z, r, m, look = "apple", height: heightIn }: { x: number; 
   // Le puits ne descend jamais plus bas que la surface qui porte l'objectif (sinon elle le boucherait).
   const k = Math.min(1, (height - 0.012) / 0.14);
   const at = (depth: number): [number, number, number] => [0, 0, top + depth * k];
-  const element = g * 0.5; // rayon de la lentille au fond de l'objectif
+  const element = g * 0.68; // rayon de la lentille : large, mais au fond de l'objectif
   const coverR = g / Math.sin(COVER);
-  const capAngle = 0.4;
+  const capAngle = 0.24;
   const capR = element / Math.sin(capAngle);
   return (
     <group position={[x, y, z]}>
@@ -173,13 +173,13 @@ function Lens({ x, y, z, r, m, look = "apple", height: heightIn }: { x: number; 
         <ringGeometry args={[g, r * blackOuter, 72]} />
       </mesh>
       {/* L'objectif, simplement posé au fond : paroi sombre, puis la lentille irisée */}
-      <mesh rotation={rot} position={at(0.04)} scale={[1, k, 1]} material={m.barrel}>
-        <cylinderGeometry args={[g, g, 0.08, 64, 1, true, 0, Math.PI * 2]} />
+      <mesh rotation={rot} position={at(0.06)} scale={[1, k, 1]} material={m.barrel}>
+        <cylinderGeometry args={[g, g, 0.12, 64, 1, true, 0, Math.PI * 2]} />
       </mesh>
-      <mesh position={at(0.08)} rotation={FACE} material={m.pupil}>
+      <mesh position={at(0.12)} rotation={FACE} material={m.pupil}>
         <ringGeometry args={[element, g, 72]} />
       </mesh>
-      <mesh position={[0, 0, at(0.08)[2] + capR * Math.cos(capAngle)]} rotation={[-Math.PI / 2, 0, 0]} material={apple ? m.element : m.elementGreen}>
+      <mesh position={[0, 0, at(0.12)[2] + capR * Math.cos(capAngle)]} rotation={[-Math.PI / 2, 0, 0]} material={apple ? m.element : m.elementGreen}>
         <sphereGeometry args={[capR, 48, 12, 0, Math.PI * 2, 0, capAngle]} />
       </mesh>
       {/* Verre de protection légèrement bombé qui recouvre toute la caméra : on le voit à ses reflets */}
@@ -347,7 +347,8 @@ function Dot({ x, y, z, r, material }: { x: number; y: number; z: number; r: num
   );
 }
 
-export function PhoneModel({ model, finish }: { model: Model; finish: Finish }) {
+// `wallpaper` : image posée sur l'écran (photos produit), à la place de l'interface.
+export function PhoneModel({ model, finish, wallpaper }: { model: Model; finish: Finish; wallpaper?: THREE.Texture }) {
   const m = useMaterials(finish);
   const spec = SPECS[model];
   const { w, h, d, r } = spec;
@@ -378,6 +379,12 @@ export function PhoneModel({ model, finish }: { model: Model; finish: Finish }) 
     <group>
       <mesh geometry={body} material={[m.metal, m.hole]} />
       <AntennaLines w={w} h={h} d={d} bevel={EDGE_BEVEL[model]} m={m} />
+      {wallpaper && (
+        <mesh position={[0, 0, d / 2 + 0.012]}>
+          <planeGeometry args={[w - 2 * spec.inset, h - 2 * spec.inset]} />
+          <meshBasicMaterial map={wallpaper} transparent toneMapped={false} />
+        </mesh>
+      )}
       <mesh geometry={geos.front} position={[0, 0, d / 2 + 0.006]} material={m.frontGlass} />
 
       {/* Boutons placés d'après le schéma officiel d'Apple (positions mesurées depuis le haut) :
