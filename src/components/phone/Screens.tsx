@@ -1,6 +1,5 @@
-import { Check, ChevronLeft, Copy, Mic, Phone as PhoneIcon, Plus, ShieldAlert, Sparkles, Video } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Copy, Mic, Phone as PhoneIcon, Plus, TriangleAlert, Video } from "lucide-react";
 import type { Scene } from "../../content/phoneScenes";
-import { SixAppIcon } from "../brand/Logos";
 import styles from "./Screens.module.css";
 
 export function StatusBar({ dark = false }: { dark?: boolean }) {
@@ -90,73 +89,92 @@ const nextMinute = (t: string) => {
 
 type SixProps = { scene: Scene; step: number };
 
-// L'écran de Six : le message collé, ce que Six a compris, puis les réponses (ou l'alerte).
+// L'écran de Six, dans les codes d'une vraie appli iOS : barre de navigation, bulle du message reçu,
+// ligne de réglage, liste groupée des réponses. Étapes : 1 contexte, 2 propositions, 3 réponse choisie.
 export function SixScreen({ scene, step }: SixProps) {
   const picked = step >= 3;
   return (
     <div className={styles.six}>
       <StatusBar />
-      <div className={styles.sixHeader}>
-        <SixAppIcon size={28} />
-        <b>Six</b>
-        <span className={styles.source} data-app={scene.app}>
-          <i />
-          Depuis {scene.appName}
+      <div className={styles.navBar}>
+        <span className={styles.navBack}>
+          <ChevronLeft size={22} strokeWidth={2.4} />
+          {scene.appName}
         </span>
+        <span className={styles.navTitle}>{scene.contact.name}</span>
+        <span />
       </div>
 
       <div className={styles.sixBody}>
-        <p className={styles.sixLabel}>Message reçu</p>
-        <div className={styles.quote}>{scene.incoming.text}</div>
+        <div className={styles.received}>
+          <div className={styles.receivedBubble}>{scene.incoming.text}</div>
+          <span className={styles.receivedTime}>Reçu à {scene.incoming.time}</span>
+        </div>
 
         {scene.scam ? (
           <>
-            <div className={styles.alert} data-on={step >= 1 || undefined}>
-              <ShieldAlert size={20} />
-              <div>
-                <b>{scene.scam.title}</b>
-                <p>{scene.scam.text}</p>
+            <div className={styles.group} data-reveal data-on={step >= 1 || undefined}>
+              <div className={styles.alertRow}>
+                <TriangleAlert size={20} />
+                <div>
+                  <b>{scene.scam.title}</b>
+                  <p>{scene.scam.text}</p>
+                </div>
               </div>
             </div>
-            <div className={styles.scamActions} data-on={step >= 2 || undefined}>
+            <p className={styles.groupHeader} data-reveal data-on={step >= 2 || undefined}>
+              Que faire ?
+            </p>
+            <div className={styles.group} data-reveal data-on={step >= 2 || undefined}>
               {scene.scam.actions.map((a, i) => (
-                <span key={a} data-pressed={(picked && i === 0) || undefined}>
+                <div key={a} className={styles.actionRow} data-pressed={(picked && i === 0) || undefined}>
                   {a}
-                </span>
+                </div>
               ))}
             </div>
           </>
         ) : (
           <>
-            <p className={styles.understood} data-on={step >= 1 || undefined}>
-              <Sparkles size={13} />
+            <p className={styles.context} data-reveal data-on={step >= 1 || undefined}>
               {scene.understood}
             </p>
-            <span className={styles.chip} data-on={step >= 1 || undefined}>
-              {scene.chip}
-            </span>
-            <div className={styles.suggestions}>
-              {scene.suggestions?.map((s, i) => (
-                <div
-                  key={s}
-                  className={styles.suggestion}
-                  data-on={step >= 2 || undefined}
-                  data-picked={(picked && i === scene.pick) || undefined}
-                  data-dim={(picked && i !== scene.pick) || undefined}
-                  style={{ transitionDelay: step === 2 ? `${i * 160}ms` : "0ms" }}
-                >
-                  {s}
-                  {picked && i === scene.pick && (
-                    <span className={styles.check}>
-                      <Check size={12} strokeWidth={3} />
-                    </span>
-                  )}
+            {scene.setting && (
+              <div className={styles.group} data-reveal data-on={step >= 1 || undefined}>
+                <div className={styles.settingRow}>
+                  <span>{scene.setting.label}</span>
+                  <span className={styles.settingValue}>
+                    {scene.setting.value}
+                    <ChevronRight size={16} strokeWidth={2.2} />
+                  </span>
                 </div>
-              ))}
+              </div>
+            )}
+
+            <p className={styles.groupHeader} data-reveal data-on={step >= 2 || undefined}>
+              Réponses proposées
+            </p>
+            <div className={styles.group} data-reveal data-on={step >= 2 || undefined}>
+              {scene.suggestions?.map((text, i) => {
+                const chosen = picked && i === scene.pick;
+                return (
+                  <div
+                    key={text}
+                    className={styles.replyRow}
+                    data-chosen={chosen || undefined}
+                    data-dim={(picked && !chosen) || undefined}
+                  >
+                    <span className={styles.radio} data-on={chosen || undefined}>
+                      {chosen && <Check size={11} strokeWidth={3.2} />}
+                    </span>
+                    <span>{text}</span>
+                  </div>
+                );
+              })}
             </div>
-            <div className={styles.copyBtn} data-done={picked || undefined}>
+
+            <div className={styles.copyBtn} data-reveal data-on={step >= 2 || undefined} data-done={picked || undefined}>
               {picked ? <Check size={16} /> : <Copy size={16} />}
-              {picked ? "Copié" : "Copier"}
+              {picked ? "Copié" : "Copier la réponse"}
             </div>
           </>
         )}

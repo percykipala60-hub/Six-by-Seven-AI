@@ -1,81 +1,86 @@
+/* Écrans de Six dans « Comment ça marche » : mêmes conventions iOS que l'écran principal. */
 .screen {
   height: 100%;
   display: flex;
   flex-direction: column;
-  background: #f5f6f9;
-  color: #0e1526;
+  background: #f2f2f7;
+  color: #000;
+  letter-spacing: -0.01em;
 }
 
 .top {
   display: flex;
   align-items: center;
-  gap: 9px;
-  padding: 4px 16px 12px;
-  border-bottom: 1px solid #e3e6ee;
+  gap: 8px;
+  padding: 2px 14px 9px;
+  background: rgb(249 249 249 / 0.94);
+  border-bottom: 0.5px solid rgb(60 60 67 / 0.29);
 }
 
 .top b {
-  font: 800 18px var(--font-wordmark);
+  font: 800 17px var(--font-wordmark);
   letter-spacing: -0.03em;
 }
 
 .back {
   color: #2d5fe6;
-  margin-left: -6px;
+  margin-left: -8px;
 }
 
 .body {
   display: flex;
   flex-direction: column;
-  padding: 18px 16px;
+  padding: 16px 14px;
 }
 
+/* Grand titre façon iOS. */
 .title {
-  margin: 0;
-  font-size: 23px;
+  margin: 0 2px;
+  font-size: 24px;
   font-weight: 700;
   letter-spacing: -0.02em;
 }
 
 .sub {
-  margin: 4px 0 0;
-  font-size: 13.5px;
-  color: #6a7286;
+  margin: 4px 2px 0;
+  font-size: 13px;
+  color: rgb(60 60 67 / 0.6);
 }
 
+/* Contrôle segmenté iOS. */
 .segmented {
   display: flex;
-  gap: 2px;
-  margin-top: 16px;
-  padding: 3px;
-  border-radius: 10px;
-  background: #e6e9f0;
+  margin-top: 14px;
+  padding: 2px;
+  border-radius: 9px;
+  background: rgb(118 118 128 / 0.12);
 }
 
 .segmented span {
   flex: 1;
   text-align: center;
-  padding: 7px 4px;
-  border-radius: 8px;
+  padding: 6px 4px;
+  border-radius: 7px;
   font-size: 12.5px;
-  font-weight: 600;
-  color: #535b70;
+  font-weight: 500;
 }
 
 .segmented span[data-on] {
   background: #fff;
-  color: #0e1526;
-  box-shadow: 0 1px 3px rgb(14 21 38 / 0.12);
+  font-weight: 600;
+  box-shadow:
+    0 3px 8px rgb(0 0 0 / 0.12),
+    0 3px 1px rgb(0 0 0 / 0.04);
 }
 
+/* Bloc blanc d'une liste groupée, sans bordure. */
 .paste {
   margin-top: 14px;
-  padding: 12px 13px;
-  border-radius: 14px;
+  padding: 11px 12px;
+  border-radius: 11px;
   background: #fff;
-  border: 1px solid #e3e6ee;
   font-size: 13.5px;
-  line-height: 1.5;
+  line-height: 1.45;
 }
 
 .paste p {
@@ -83,7 +88,7 @@
 }
 
 .paste p + p {
-  margin-top: 6px;
+  margin-top: 5px;
 }
 
 .caret {
@@ -102,48 +107,55 @@
 }
 
 .meta {
-  margin: 10px 2px 0;
-  font-size: 12px;
-  color: #6a7286;
+  margin: 7px 12px 0;
+  font-size: 11.5px;
+  color: rgb(60 60 67 / 0.6);
 }
 
 .primary {
   margin-top: 16px;
-  padding: 13px;
-  border-radius: 14px;
-  background: #0e1526;
+  padding: 11px;
+  border-radius: 12px;
+  background: #2d5fe6;
   color: #fff;
   text-align: center;
-  font-size: 14.5px;
+  font-size: 15px;
   font-weight: 600;
 }
 
+/* Ligne d'action teintée, dans son propre bloc. */
 .ghost {
-  margin-top: 12px;
-  font-size: 13.5px;
-  font-weight: 600;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-radius: 11px;
+  background: #fff;
+  font-size: 14px;
   color: #2d5fe6;
 }
 
 .token {
-  border-radius: 5px;
-  padding: 1px 4px;
-  background: rgb(255 216 77 / 0.35);
+  border-radius: 4px;
+  padding: 0 3px;
+  background: rgb(255 204 0 / 0.28);
   transition:
     background-color 0.3s,
     color 0.3s;
 }
 
 .masked {
-  background: #ffd84d;
-  font: 700 0.8em ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: rgb(255 204 0 / 0.55);
+  font: 600 0.82em ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 
+/* Ligne de réglage avec interrupteur, comme dans Réglages. */
 .switchRow {
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-top: 14px;
+  padding: 8px 12px;
+  border-radius: 11px;
+  background: #fff;
   font-size: 14px;
 }
 
@@ -152,7 +164,7 @@
   width: 44px;
   height: 26px;
   border-radius: 13px;
-  background: #d6dae3;
+  background: rgb(120 120 128 / 0.16);
   transition: background-color 0.25s;
 }
 
@@ -164,7 +176,9 @@
   height: 22px;
   border-radius: 50%;
   background: #fff;
-  box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+  box-shadow:
+    0 3px 8px rgb(0 0 0 / 0.15),
+    0 3px 1px rgb(0 0 0 / 0.06);
   transition: transform 0.25s;
 }
 
@@ -176,10 +190,9 @@
   transform: translateX(18px);
 }
 
+/* Note de bas de bloc. */
 .count {
-  margin: 14px 0 0;
-  padding-top: 12px;
-  border-top: 1px solid #e3e6ee;
-  font-size: 13px;
-  color: #535b70;
+  margin: 7px 12px 0;
+  font-size: 11.5px;
+  color: rgb(60 60 67 / 0.6);
 }

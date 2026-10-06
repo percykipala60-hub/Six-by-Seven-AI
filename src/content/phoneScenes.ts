@@ -11,7 +11,8 @@ export type Scene = {
   contact: { name: string; initials: string; color: string; status: string };
   history: ChatMessage[];
   incoming: ChatMessage;
-  chip: string;
+  /** Réglage affiché comme une ligne de réglages iOS : « Ton · Chaleureux ». */
+  setting?: { label: string; value: string };
   understood?: string;
   suggestions?: string[];
   pick?: number;
@@ -25,8 +26,8 @@ export const scenes: Scene[] = [
     contact: { name: "Maman", initials: "M", color: "#e8a33d", status: "en ligne" },
     history: [{ from: "me", text: "Je finis tard ce soir, je t'appelle demain", time: "18:02" }],
     incoming: { from: "them", text: "Tu passes dimanche ? Ta tante sera là aussi 😊", time: "19:40" },
-    chip: "Ton chaleureux",
-    understood: "Une invitation en famille pour dimanche.",
+    setting: { label: "Ton", value: "Chaleureux" },
+    understood: "Invitation en famille, dimanche midi.",
     suggestions: [
       "Oui je viens ! Je peux apporter le dessert ?",
       "Dimanche c'est bon, j'arrive vers midi.",
@@ -43,8 +44,8 @@ export const scenes: Scene[] = [
       { from: "me", text: "Oui t'inquiète 👍", time: "10:15" },
     ],
     incoming: { from: "them", text: "Frérot tu peux me dépanner 50 000 FC jusqu'à vendredi ?", time: "14:31" },
-    chip: "Refuser poliment",
-    understood: "Une demande d'argent. Tu veux dire non sans le vexer.",
+    setting: { label: "Objectif", value: "Refuser poliment" },
+    understood: "Demande d'argent, à refuser sans le vexer.",
     suggestions: [
       "Désolé, ce mois-ci je suis vraiment juste. Je ne peux pas cette fois.",
       "J'aimerais t'aider mais là ce n'est pas possible, vraiment.",
@@ -62,8 +63,8 @@ export const scenes: Scene[] = [
       text: "Toujours rien reçu. C'est la deuxième fois, je commence à perdre patience.",
       time: "16:48",
     },
-    chip: "Ton professionnel",
-    understood: "Une cliente mécontente d'un retard de livraison.",
+    setting: { label: "Ton", value: "Professionnel" },
+    understood: "Cliente mécontente, livraison en retard.",
     suggestions: [
       "Bonjour Madame, je vérifie votre commande et je reviens vers vous avant 17h.",
       "Toutes nos excuses pour ce retard. Je m'en occupe aujourd'hui.",
@@ -77,8 +78,8 @@ export const scenes: Scene[] = [
     contact: { name: "nadia.mbuyi", initials: "N", color: "#d94f8a", status: "En ligne il y a 5 min" },
     history: [{ from: "them", text: "a répondu à ta story", time: "21:03" }],
     incoming: { from: "them", text: "Ta story m'a tellement fait rire 😂 on se voit quand ?", time: "21:04" },
-    chip: "Ton drôle",
-    understood: "Elle veut te revoir, l'ambiance est légère.",
+    setting: { label: "Ton", value: "Drôle" },
+    understood: "Elle propose de se voir, ton léger.",
     suggestions: [
       "Quand tu veux, mais c'est toi qui paies les jus 😄",
       "Samedi ? Je promets d'être moins drôle en vrai.",
@@ -96,7 +97,6 @@ export const scenes: Scene[] = [
       text: "FÉLICITATIONS ! Vous avez gagné 500 000 FC. Envoyez 5 000 FC de frais pour recevoir votre gain.",
       time: "11:20",
     },
-    chip: "Alerte",
     scam: {
       title: "Arnaque probable",
       text: "Personne ne demande de payer des frais pour recevoir un gain.",
