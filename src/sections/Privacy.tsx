@@ -5,7 +5,7 @@ import styles from "./Privacy.module.css";
 export function Privacy() {
   return (
     <section id={privacy.id} className={styles.section} aria-labelledby="privacy-title">
-      <div className={`container ${styles.grid}`}>
+      <div className="container">
         <Reveal className={styles.intro}>
           <h2 id="privacy-title">{privacy.title}</h2>
           <p>{privacy.text}</p>

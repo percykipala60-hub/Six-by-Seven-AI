@@ -61,6 +61,7 @@ export const nav = {
     { href: "/#securite", label: "Sécurité" },
     { href: "/#confidentialite", label: "Confidentialité" },
     { href: "/#seven-ai", label: "Seven.AI" },
+    { href: "/#questions", label: "Questions" },
   ],
 };
 
@@ -104,6 +105,18 @@ export const maskExample = {
     { original: "0123-4567", masked: "[COMPTE]" },
     ", mais ne le dis à personne.",
   ] satisfies MaskSegment[],
+};
+
+// Cartes « ce que fait Six », chacune montrée par une petite interface.
+export const features = {
+  id: "fonctions",
+  title: "Pensé pour tes vraies conversations.",
+  intro: "Famille, clients, amis, inconnus : Six t'aide à répondre juste, sans jamais parler à ta place.",
+  replies: { title: "Trois réponses, à ton image.", text: "Choisis le ton ou l'objectif. Six propose, tu gardes celle qui te ressemble." },
+  mask: { title: "Tes infos restent chez toi.", text: "Les noms, numéros et comptes sont remplacés avant que l'IA ne lise quoi que ce soit." },
+  apps: { title: "Toutes tes messageries.", text: "Colle une discussion, importe un export ou ajoute une capture d'écran." },
+  send: { title: "Tu envoies toi-même.", text: "Six copie la réponse. C'est toi qui l'envoies, depuis ton appli habituelle." },
+  light: { title: "Léger, même sans réseau.", text: "Il s'installe depuis un simple lien et s'ouvre même quand la connexion coupe." },
 };
 
 export const security = {
@@ -156,6 +169,39 @@ export const socials: { id: SocialId; name: string; handle?: string; href?: stri
   { id: "tiktok", name: "TikTok", handle: "@sevenai..dc", href: "https://www.tiktok.com/@sevenai..dc" },
   { id: "facebook", name: "Facebook", handle: "Seven.AI", href: "https://www.facebook.com/profile.php?id=61595213814728" },
 ];
+
+// Questions fréquentes : réponses tirées de ce que le site dit déjà, sans promesse nouvelle.
+export const faq = {
+  id: "questions",
+  title: "Questions fréquentes",
+  intro: "Ce qu'on nous demande le plus souvent avant d'essayer Six.",
+  items: [
+    {
+      q: "Six envoie-t-il des messages à ma place ?",
+      a: "Non. Six te propose des réponses, tu choisis celle qui te convient, tu la copies et tu l'envoies toi-même depuis ton appli habituelle.",
+    },
+    {
+      q: "Six lit-il mes conversations tout seul ?",
+      a: "Non. Six ne voit que ce que tu lui montres : un texte collé, l'export d'une conversation ou une capture d'écran.",
+    },
+    {
+      q: "Que deviennent mes données ?",
+      a: "Avant l'analyse, les noms, numéros, codes et adresses sont remplacés. La conversation est effacée une fois la réponse prête. Seuls ton compte et ton quota d'utilisation sont enregistrés.",
+    },
+    {
+      q: "Et si un message ressemble à une arnaque ?",
+      a: "Six te prévient avant de proposer quoi que ce soit. Une alerte reste une aide : en cas de doute, appelle l'organisme concerné par son numéro officiel.",
+    },
+    {
+      q: "Sur quels appareils fonctionne Six ?",
+      a: "Sur iPhone, Android, Mac et Windows, et dans n'importe quel navigateur avec la version web. Toutes les versions font la même chose.",
+    },
+    {
+      q: "Quand sort Six ?",
+      a: "La version finale sort le 15 octobre. La bêta web est déjà ouverte : tu peux l'essayer dès maintenant dans ton navigateur.",
+    },
+  ],
+};
 
 // Page « Télécharger ».
 export const downloadPage = {

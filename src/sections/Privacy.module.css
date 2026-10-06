@@ -1,59 +1,53 @@
 .section {
-  padding-block: var(--section-space);
+  padding-block: 0 var(--section-space);
 }
 
-.grid {
-  display: grid;
-  gap: 56px;
-}
-
-@media (min-width: 960px) {
-  .grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 96px;
-    align-items: start;
-  }
-  .intro {
-    position: sticky;
-    top: 120px;
-  }
-}
-
-.grid > * {
-  min-width: 0;
+.intro {
+  max-width: 860px;
+  margin: 0 auto clamp(40px, 6vw, 72px);
+  text-align: center;
 }
 
 .intro h2 {
-  font-size: clamp(50px, 6.8vw, 96px);
-  max-width: 10ch;
+  font-size: clamp(44px, 6.4vw, 88px);
 }
 
 .intro p {
-  margin-top: 28px;
-  font-size: 19px;
+  margin: 24px auto 0;
+  max-width: 34em;
+  font-size: 18px;
   color: var(--ink-2);
-  max-width: 30em;
 }
 
 .points {
+  display: grid;
+  gap: 0 32px;
   margin: 0;
 }
 
-.point {
-  padding-block: 28px;
-  border-top: 1px solid var(--line-strong);
+@media (min-width: 700px) {
+  .points {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
-.point:last-child {
-  border-bottom: 1px solid var(--line-strong);
+@media (min-width: 1080px) {
+  .points {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.point {
+  padding-block: 24px;
+  border-top: 2px solid var(--ink);
 }
 
 .point dt {
-  font: 600 28px/1.15 var(--font-display);
+  font: 600 26px/1.15 var(--font-display);
 }
 
 .point dd {
-  margin: 8px 0 0;
-  font-size: 17px;
+  margin: 10px 0 0;
+  font-size: 16px;
   color: var(--ink-2);
 }
