@@ -55,6 +55,18 @@ export function How() {
               <DevicePhone follow={false} finish="blue">
                 {screens}
               </DevicePhone>
+              {/* Sur téléphone : les étapes en onglets juste sous l'appareil, son écran suit le toucher. */}
+              <div className={styles.mobileSteps} role="tablist" aria-label="Étapes">
+                {how.steps.map((step, i) => (
+                  <button key={step.short} type="button" role="tab" aria-selected={active === i} onClick={() => setActive(i)}>
+                    {step.short}
+                  </button>
+                ))}
+              </div>
+              <p className={styles.mobileText} aria-live="polite">
+                <b>{how.steps[active].title}</b>
+                {how.steps[active].text}
+              </p>
               <div className={styles.zoom}>
                 <ScreenZoom kind="phone" model="pro" width={PHONE_SCREEN_PX.w} height={PHONE_SCREEN_PX.h}>
                   {screens}

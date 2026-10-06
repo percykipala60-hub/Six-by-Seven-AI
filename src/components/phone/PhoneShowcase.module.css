@@ -56,8 +56,9 @@
   position: relative;
   border: 0;
   background: none;
-  padding: 8px 0 10px;
-  font: 500 13px var(--font-body);
+  min-height: 44px;
+  padding: 12px 4px 14px;
+  font: 500 14px var(--font-body);
   color: var(--mut);
   cursor: pointer;
   transition: color 0.2s;

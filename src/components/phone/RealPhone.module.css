@@ -33,7 +33,16 @@
   cursor: grabbing;
 }
 
-/* Coloris inspirés des téléphones haut de gamme actuels. */
+/* Coloris inspirés des téléphones haut de gamme actuels. L'argent est redéclaré ici pour les pastilles
+   placées hors du téléphone (sous le modèle 3D), sinon elles n'avaient aucune couleur. */
+[data-finish="silver"] {
+  --metal: #c9cdd3;
+  --metal-hi: #f4f6f8;
+  --metal-lo: #80868f;
+  --metal-glass: #dde0e4;
+  --lens-ring: #a9aeb5;
+}
+
 [data-finish="orange"] {
   --metal: #d4672c;
   --metal-hi: #f7a66a;
@@ -457,25 +466,47 @@
 
 .swatches {
   display: flex;
-  gap: 8px;
+  gap: 2px;
 }
 
+/* Bouton de 44 px (taille confortable au doigt) ; la pastille visible est dessinée au centre. */
 .swatch {
-  width: 18px;
-  height: 18px;
+  position: relative;
+  width: 44px;
+  height: 44px;
   padding: 0;
-  border-radius: 50%;
   border: 0;
+  border-radius: 50%;
+  background: transparent;
   cursor: pointer;
-  background: radial-gradient(circle at 35% 30%, var(--metal-hi), var(--metal) 55%, var(--metal-lo));
-  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.15);
-  transition: box-shadow 0.2s;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.swatch[aria-checked="true"] {
-  box-shadow:
-    0 0 0 2px var(--bg, #ffffff),
-    0 0 0 3.5px var(--ink, #0e1526);
+.swatch::before {
+  content: "";
+  position: absolute;
+  inset: 9px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--metal-hi), var(--metal) 55%, var(--metal-lo));
+  /* Contour toujours visible : la pastille argent ne disparaît plus sur le fond blanc. */
+  box-shadow: inset 0 0 0 1px rgb(14 21 38 / 0.22);
+}
+
+.swatch::after {
+  content: "";
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.swatch[aria-checked="true"]::after {
+  border-color: var(--ink, #0e1526);
+}
+
+.swatch:focus-visible {
+  outline-offset: 0;
 }
 
 .hint {

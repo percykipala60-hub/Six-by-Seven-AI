@@ -50,6 +50,67 @@
   }
 }
 
+/* Onglets d'étapes : téléphone et tablette seulement. Sur grand écran, le défilement pilote l'appareil. */
+.mobileSteps {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin: 8px auto 0;
+  padding: 4px;
+  width: fit-content;
+  border-radius: var(--radius-pill);
+  background: var(--bg-soft);
+}
+
+.mobileSteps button {
+  min-height: 44px;
+  padding: 0 20px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  font: 600 15px var(--font-body);
+  color: var(--mut);
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
+}
+
+.mobileSteps button[aria-selected="true"] {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgb(14 21 38 / 0.12);
+}
+
+.mobileText {
+  max-width: 30em;
+  margin: 16px auto 0;
+  min-height: 7.5em;
+  text-align: center;
+  font-size: 16px;
+  color: var(--ink-2);
+}
+
+.mobileText b {
+  display: block;
+  margin-bottom: 6px;
+  font: 600 24px/1.15 var(--font-display);
+  color: var(--ink);
+}
+
+@media (min-width: 960px) {
+  .mobileSteps,
+  .mobileText {
+    display: none;
+  }
+}
+
+@media (max-width: 959px) {
+  .steps {
+    display: none;
+  }
+}
+
 .zoom {
   display: flex;
   justify-content: center;
