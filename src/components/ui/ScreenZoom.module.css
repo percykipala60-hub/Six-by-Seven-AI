@@ -1,0 +1,111 @@
+.trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  background: var(--surface);
+  font: 600 14px var(--font-body);
+  color: var(--ink);
+  cursor: pointer;
+  transition:
+    background-color 0.15s,
+    border-color 0.15s;
+}
+
+.trigger:hover {
+  background: var(--bg-soft);
+  border-color: var(--ink);
+}
+
+.dialog {
+  width: 100vw;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  padding: 56px 16px 16px;
+  border: 0;
+  background: transparent;
+  overflow: hidden;
+}
+
+.dialog[open] {
+  display: grid;
+  place-items: center;
+}
+
+.dialog::backdrop {
+  background: rgb(9 15 27 / 0.72);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+.close {
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top));
+  right: 12px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.14);
+  color: #fff;
+  cursor: pointer;
+}
+
+.close:hover {
+  background: rgb(255 255 255 / 0.24);
+}
+
+.frame {
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 30px 80px rgb(0 0 0 / 0.45);
+}
+
+.frame[data-kind="phone"] {
+  /* Bord noir du téléphone autour de l'écran. */
+  border-radius: 48px;
+  outline: 10px solid #08090b;
+}
+
+.frame[data-kind="desktop"] {
+  border-radius: 12px;
+  outline: 10px solid #08090b;
+}
+
+.screen {
+  position: absolute;
+  top: 0;
+  left: 0;
+  overflow: hidden;
+  transform-origin: 0 0;
+  background: #000;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Îlot de l'iPhone ou trou de caméra du Galaxy, comme sur l'appareil 3D. */
+.camera {
+  position: absolute;
+  z-index: 30;
+  top: 10px;
+  left: 50%;
+  width: 92px;
+  height: 27px;
+  margin-left: -46px;
+  border-radius: 20px;
+  background: #000;
+}
+
+.camera[data-model="ultra"] {
+  top: 9px;
+  width: 11px;
+  height: 11px;
+  margin-left: -5.5px;
+  border-radius: 50%;
+}

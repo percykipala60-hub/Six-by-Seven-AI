@@ -40,6 +40,10 @@
   box-shadow: -20px 0 40px rgb(0 0 0 / 0.25);
 }
 
+.zoom {
+  margin-top: 10px;
+}
+
 .apps {
   display: flex;
   flex-wrap: wrap;

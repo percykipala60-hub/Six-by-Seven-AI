@@ -37,6 +37,12 @@
 }
 
 /* Onglets des appareils, avec la progression du défilement automatique. */
+.zoom {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
 .tabs {
   display: flex;
   justify-content: center;

@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { sceneDuration, scenes, stepDurations } from "../../content/phoneScenes";
 import { DevicePhone } from "../phone3d/DevicePhone";
 import { AppChat, SixScreen } from "./Screens";
+import { ScreenZoom } from "../ui/ScreenZoom";
+import { PHONE_SCREEN_PX } from "./screenSize";
 import styles from "./PhoneShowcase.module.css";
 
 // Le téléphone de l'accueil joue seul une suite de scènes, d'une appli à l'autre.
@@ -53,17 +55,21 @@ export function PhoneShowcase() {
   const inSix = step >= 1 && step <= 3;
   const sent = !scene.scam && step >= 4 ? scene.suggestions?.[scene.pick ?? 0] : undefined;
 
+  const screen = (
+    <div key={index} className={styles.scene}>
+      <div className={styles.layer} data-hidden={inSix || undefined} data-side="app">
+        <AppChat scene={scene} showIncoming={step >= 0} sent={sent} />
+      </div>
+      <div className={styles.layer} data-hidden={!inSix || undefined} data-side="six">
+        <SixScreen scene={scene} step={step} />
+      </div>
+    </div>
+  );
+
   return (
     <div ref={rootRef} className={styles.showcase}>
       <DevicePhone hint swatches finish="silver" label="Démonstration : un message arrive dans une messagerie, Six propose des réponses, la réponse choisie est envoyée.">
-        <div key={index} className={styles.scene}>
-          <div className={styles.layer} data-hidden={inSix || undefined} data-side="app">
-            <AppChat scene={scene} showIncoming={step >= 0} sent={sent} />
-          </div>
-          <div className={styles.layer} data-hidden={!inSix || undefined} data-side="six">
-            <SixScreen scene={scene} step={step} />
-          </div>
-        </div>
+        {screen}
       </DevicePhone>
 
       <div className={styles.apps} role="tablist" aria-label="Exemples par application">
@@ -90,6 +96,9 @@ export function PhoneShowcase() {
           </button>
         ))}
       </div>
+      <ScreenZoom kind="phone" model="pro" width={PHONE_SCREEN_PX.w} height={PHONE_SCREEN_PX.h} className={styles.zoom}>
+        {screen}
+      </ScreenZoom>
     </div>
   );
 }

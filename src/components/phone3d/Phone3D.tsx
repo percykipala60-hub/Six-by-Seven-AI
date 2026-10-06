@@ -30,8 +30,8 @@ const FINISHES: { id: Finish; name: string }[] = [
   { id: "rose", name: "Bois de rose" },
 ];
 
-// Taille de l'interface affichée sur l'écran du téléphone, en pixels CSS.
-export const PHONE_SCREEN_PX = { w: 276, h: 600 };
+import { PHONE_SCREEN_PX } from "../phone/screenSize";
+export { PHONE_SCREEN_PX };
 // Pose de repos : de face, l'écran légèrement tourné vers la gauche du visiteur (on voit le flanc droit).
 export const DEFAULT_POSE: Pose = { x: -4, y: -16, z: -1.5 };
 

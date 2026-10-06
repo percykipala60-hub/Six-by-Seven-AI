@@ -11,6 +11,7 @@ import { DEFAULT_POSE, PHONE_SCREEN_PX, PhoneScreen, phonePxScale, phoneScreenRa
 import { CssLayer, DEG, Rig, ScreenAnchor, Studio, createScreenElement, useDragInput, useInView, type Pose } from "./stage";
 import { SixScreen } from "../phone/Screens";
 import { DesktopScreen } from "../phone/DesktopScreen";
+import { ScreenZoom } from "../ui/ScreenZoom";
 import styles from "./DeviceShowcase.module.css";
 
 type Device = { id: PlatformId; name: string };
@@ -108,6 +109,24 @@ export default function DeviceShowcase3D({ initial, label }: DeviceShowcaseProps
           </Rig>
         </Canvas>
         <div className={styles.shadow} aria-hidden="true" />
+      </div>
+
+      <div className={styles.zoom}>
+        {(() => {
+          const id = SHOWCASE_DEVICES[index].id;
+          if (id === "ios" || id === "android")
+            return (
+              <ScreenZoom kind="phone" model={id === "ios" ? "pro" : "ultra"} width={PHONE_SCREEN_PX.w} height={PHONE_SCREEN_PX.h}>
+                <SixScreen scene={scenes[id === "ios" ? 0 : 2]} step={3} />
+              </ScreenZoom>
+            );
+          const kind = id as LaptopKind;
+          return (
+            <ScreenZoom kind="desktop" width={LAPTOP_SCREEN_PX[kind].w} height={LAPTOP_SCREEN_PX[kind].h}>
+              <DesktopScreen os={kind} width={LAPTOP_SCREEN_PX[kind].w} height={LAPTOP_SCREEN_PX[kind].h} />
+            </ScreenZoom>
+          );
+        })()}
       </div>
 
       <div className={styles.tabs} role="tablist" aria-label="Appareils">

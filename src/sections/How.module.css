@@ -50,6 +50,12 @@
   }
 }
 
+.zoom {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+}
+
 .screens {
   position: absolute;
   inset: 0;

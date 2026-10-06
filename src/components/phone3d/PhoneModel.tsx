@@ -46,7 +46,7 @@ function useMaterials(finish: Finish) {
       }),
       lensInner: new THREE.MeshStandardMaterial({ color: "#1b1e26", metalness: 0.9, roughness: 0.3, envMapIntensity: 0.5 }),
       // Barillet en métal sombre et fines bagues claires à l'intérieur de l'objectif.
-      barrel: new THREE.MeshStandardMaterial({ color: "#1d2027", metalness: 0.9, roughness: 0.4, envMapIntensity: 0.6, side: THREE.DoubleSide }),
+      barrel: new THREE.MeshStandardMaterial({ color: "#0a0b0e", metalness: 0.6, roughness: 0.5, envMapIntensity: 0.3, side: THREE.DoubleSide }),
       barrelLight: new THREE.MeshStandardMaterial({ color: "#a9afba", metalness: 1, roughness: 0.22, envMapIntensity: 1.2 }),
       barrelDim: new THREE.MeshStandardMaterial({ color: "#23262d", metalness: 1, roughness: 0.35, envMapIntensity: 0.6 }),
       // Élément optique : bleu nuit profond avec traitement irisé.
@@ -56,22 +56,23 @@ function useMaterials(finish: Finish) {
         roughness: 0.06,
         clearcoat: 1,
         clearcoatRoughness: 0.04,
-        envMapIntensity: 0.9,
-        iridescence: 0.9,
+        envMapIntensity: 0.45,
+        iridescence: 0.7,
         iridescenceIOR: 2,
         iridescenceThicknessRange: [280, 760],
       }),
-      pupil: new THREE.MeshStandardMaterial({ color: "#000000", roughness: 0.5 }),
+      pupil: new THREE.MeshStandardMaterial({ color: "#000000", roughness: 0.6, envMapIntensity: 0 }),
       // Verre saphir de protection : presque invisible, il ne se voit qu'à ses reflets.
+      // Verre de protection : teinte noire (il n'éclaircit pas l'objectif), seuls ses reflets se voient.
       cover: new THREE.MeshPhysicalMaterial({
-        color: "#ffffff",
+        color: "#000000",
         metalness: 0,
         roughness: 0,
         clearcoat: 1,
         transparent: true,
-        opacity: 0.16,
+        opacity: 0.3,
         depthWrite: false,
-        envMapIntensity: 2.4,
+        envMapIntensity: 1.6,
       }),
       // Liseré d'ombre autour des boutons, et verre du bouton de commande de l'appareil photo.
       gap: new THREE.MeshStandardMaterial({ color: "#050506", roughness: 0.6 }),
@@ -85,8 +86,8 @@ function useMaterials(finish: Finish) {
         roughness: 0.06,
         clearcoat: 1,
         clearcoatRoughness: 0.04,
-        envMapIntensity: 0.9,
-        iridescence: 0.9,
+        envMapIntensity: 0.45,
+        iridescence: 0.7,
         iridescenceIOR: 1.8,
         iridescenceThicknessRange: [200, 600],
       }),
@@ -136,8 +137,8 @@ function AntennaLines({ w, h, d, bevel, m }: { w: number; h: number; d: number; 
 }
 // Ordonnée d'un point situé à `frac` de la hauteur en partant du haut.
 const yAt = (h: number, frac: number) => h / 2 - frac * h;
-// Demi-angle d'ouverture de la calotte du verre de protection.
-const COVER = 0.75;
+// Demi-angle d'ouverture du verre de protection : à peine bombé.
+const COVER = 0.32;
 
 // Objectif complet, orienté vers l'arrière (-z), posé sur une surface à la profondeur `z`.
 // « apple » : bague métal épaisse au chanfrein poli, large anneau noir, grand verre fumé très réfléchissant.
@@ -154,8 +155,9 @@ function Lens({ x, y, z, r, m, look = "apple", height: heightIn }: { x: number; 
   // Le puits ne descend jamais plus bas que la surface qui porte l'objectif (sinon elle le boucherait).
   const k = Math.min(1, (height - 0.012) / 0.14);
   const at = (depth: number): [number, number, number] => [0, 0, top + depth * k];
-  const element = g * 0.36; // rayon de la lentille, petite et au fond
-  const capAngle = 0.35;
+  const element = g * 0.5; // rayon de la lentille au fond de l'objectif
+  const coverR = g / Math.sin(COVER);
+  const capAngle = 0.4;
   const capR = element / Math.sin(capAngle);
   return (
     <group position={[x, y, z]}>
@@ -170,36 +172,19 @@ function Lens({ x, y, z, r, m, look = "apple", height: heightIn }: { x: number; 
       <mesh position={at(-0.002)} rotation={FACE} material={m.housing}>
         <ringGeometry args={[g, r * blackOuter, 72]} />
       </mesh>
-      {/* Barillet : paroi intérieure sombre qui descend dans l'objectif */}
-      <mesh rotation={rot} position={at(0.07)} scale={[1, k, 1]} material={m.barrel}>
-        <cylinderGeometry args={[g, g, 0.14, 64, 1, true, 0, Math.PI * 2]} />
+      {/* L'objectif, simplement posé au fond : paroi sombre, puis la lentille irisée */}
+      <mesh rotation={rot} position={at(0.04)} scale={[1, k, 1]} material={m.barrel}>
+        <cylinderGeometry args={[g, g, 0.08, 64, 1, true, 0, Math.PI * 2]} />
       </mesh>
-      {/* Bagues intérieures en gradins : l'ouverture rétrécit à mesure qu'on descend */}
-      <mesh position={at(0.025)} rotation={FACE} material={m.barrelDim}>
-        <ringGeometry args={[g * 0.84, g, 72]} />
+      <mesh position={at(0.08)} rotation={FACE} material={m.pupil}>
+        <ringGeometry args={[element, g, 72]} />
       </mesh>
-      <mesh position={at(0.026)} rotation={FACE} material={m.barrelLight}>
-        <ringGeometry args={[g * 0.83, g * 0.845, 72]} />
-      </mesh>
-      <mesh position={at(0.06)} rotation={FACE} material={m.barrel}>
-        <ringGeometry args={[g * 0.62, g * 0.83, 72]} />
-      </mesh>
-      <mesh position={at(0.061)} rotation={FACE} material={m.barrelLight}>
-        <ringGeometry args={[g * 0.61, g * 0.625, 72]} />
-      </mesh>
-      <mesh position={at(0.095)} rotation={FACE} material={m.barrelDim}>
-        <ringGeometry args={[element, g * 0.61, 72]} />
-      </mesh>
-      {/* Petite lentille au fond, à peine bombée, très sombre et irisée */}
-      <mesh position={[0, 0, at(0.125)[2] + capR * Math.cos(capAngle)]} rotation={[-Math.PI / 2, 0, 0]} material={apple ? m.element : m.elementGreen}>
+      <mesh position={[0, 0, at(0.08)[2] + capR * Math.cos(capAngle)]} rotation={[-Math.PI / 2, 0, 0]} material={apple ? m.element : m.elementGreen}>
         <sphereGeometry args={[capR, 48, 12, 0, Math.PI * 2, 0, capAngle]} />
       </mesh>
-      <mesh position={at(0.135)} rotation={FACE} material={m.pupil}>
-        <circleGeometry args={[element, 48]} />
-      </mesh>
-      {/* Verre de protection plat qui ferme l'objectif : il reflète la lumière par-dessus tout l'intérieur */}
-      <mesh position={at(-0.003)} rotation={FACE} material={m.cover}>
-        <circleGeometry args={[g, 72]} />
+      {/* Verre de protection légèrement bombé qui recouvre toute la caméra : on le voit à ses reflets */}
+      <mesh position={[0, 0, top - 0.002 + coverR * Math.cos(COVER)]} rotation={[-Math.PI / 2, 0, 0]} material={m.cover}>
+        <sphereGeometry args={[coverR, 72, 12, 0, Math.PI * 2, 0, COVER]} />
       </mesh>
     </group>
   );

@@ -5,6 +5,8 @@ import { Reveal } from "../components/ui/Reveal";
 import { DevicePhone } from "../components/phone3d/DevicePhone";
 import { ImportScreen, VerifyScreen } from "../components/phone/HowScreens";
 import { SixScreen } from "../components/phone/Screens";
+import { ScreenZoom } from "../components/ui/ScreenZoom";
+import { PHONE_SCREEN_PX } from "../components/phone/screenSize";
 import styles from "./How.module.css";
 
 // Récit au défilement : le téléphone reste en place, son écran suit l'étape lue.
@@ -25,6 +27,20 @@ export function How() {
     return () => io.disconnect();
   }, []);
 
+  const screens = (
+    <div className={styles.screens}>
+      <div className={styles.screenLayer} data-on={active === 0 || undefined}>
+        <ImportScreen />
+      </div>
+      <div className={styles.screenLayer} data-on={active === 1 || undefined}>
+        <VerifyScreen active={active === 1} />
+      </div>
+      <div className={styles.screenLayer} data-on={active === 2 || undefined}>
+        <SixScreen scene={scenes[0]} step={3} />
+      </div>
+    </div>
+  );
+
   return (
     <section id={how.id} className={styles.section} aria-labelledby="how-title">
       <div className="container">
@@ -37,18 +53,13 @@ export function How() {
           <div className={styles.phoneCol}>
             <div className={styles.sticky}>
               <DevicePhone follow={false} finish="blue">
-                <div className={styles.screens}>
-                  <div className={styles.screenLayer} data-on={active === 0 || undefined}>
-                    <ImportScreen />
-                  </div>
-                  <div className={styles.screenLayer} data-on={active === 1 || undefined}>
-                    <VerifyScreen active={active === 1} />
-                  </div>
-                  <div className={styles.screenLayer} data-on={active === 2 || undefined}>
-                    <SixScreen scene={scenes[0]} step={3} />
-                  </div>
-                </div>
+                {screens}
               </DevicePhone>
+              <div className={styles.zoom}>
+                <ScreenZoom kind="phone" model="pro" width={PHONE_SCREEN_PX.w} height={PHONE_SCREEN_PX.h}>
+                  {screens}
+                </ScreenZoom>
+              </div>
             </div>
           </div>
 
