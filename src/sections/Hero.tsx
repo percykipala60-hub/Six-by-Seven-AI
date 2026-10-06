@@ -1,8 +1,6 @@
-import { ArrowRight } from "lucide-react";
-import { Link } from "react-router";
-import { app, hero } from "../content/site";
+import { hero } from "../content/site";
 import { AppButton } from "../components/ui/AppButton";
-import { BetaLink } from "../components/ui/BetaLink";
+import { BetaButton } from "../components/ui/BetaButton";
 import { Reveal } from "../components/ui/Reveal";
 import { PhoneShowcase } from "../components/phone/PhoneShowcase";
 import styles from "./Hero.module.css";
@@ -19,19 +17,10 @@ export function Hero() {
           </h1>
           <p className={styles.lead}>{hero.lead}</p>
           <div className={styles.ctas}>
-            <AppButton kind="download" long variant="primary" />
-            <AppButton kind="web" long variant="secondary" />
+            <BetaButton />
+            <AppButton kind="download" long variant="secondary" badge={false} />
           </div>
-          <BetaLink tone="light" className={styles.beta} />
-          <p className={styles.meta}>
-            <span>{app.release}</span>
-            <span aria-hidden="true">·</span>
-            <span>{app.download.platforms}</span>
-            <Link to={`/${hero.more.href}`} className={styles.textLink}>
-              {hero.more.label}
-              <ArrowRight size={15} aria-hidden="true" />
-            </Link>
-          </p>
+          <p className={styles.meta}>{hero.meta}</p>
         </Reveal>
 
         <Reveal delay={200} className={styles.visual}>

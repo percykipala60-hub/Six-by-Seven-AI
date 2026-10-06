@@ -1,8 +1,8 @@
 import { Globe, Smartphone } from "lucide-react";
-import { app, launch, socials } from "../content/site";
+import { app, beta, launch, socials } from "../content/site";
 import { SocialIcon } from "../components/brand/SocialIcon";
 import { AppButton } from "../components/ui/AppButton";
-import { BetaLink } from "../components/ui/BetaLink";
+import { BetaButton } from "../components/ui/BetaButton";
 import { Reveal } from "../components/ui/Reveal";
 import styles from "./Launch.module.css";
 
@@ -21,6 +21,15 @@ export function Launch() {
           <p>{launch.text}</p>
         </Reveal>
 
+        <Reveal className={styles.beta}>
+          <div>
+            <p className={styles.betaTag}>{beta.tag}</p>
+            <h3>{beta.title}</h3>
+            <p>{beta.text}</p>
+          </div>
+          <BetaButton />
+        </Reveal>
+
         <div className={styles.options}>
           {options.map(({ kind, Icon, copy }, i) => (
             <Reveal key={kind} delay={i * 100} className={styles.option}>
@@ -30,14 +39,11 @@ export function Launch() {
               </div>
               <h3>{copy.title}</h3>
               <p>{copy.text}</p>
-              <AppButton kind={kind} long variant={kind === "download" ? "primary" : "secondary"} className={styles.optionBtn} />
+              <p className={styles.date}>{launch.date}</p>
+              <AppButton kind={kind} long variant="secondary" badge={false} className={styles.optionBtn} />
             </Reveal>
           ))}
         </div>
-
-        <p className={styles.betaLine}>
-          <BetaLink />
-        </p>
 
         <Reveal className={styles.follow}>
           <p>{launch.follow}</p>

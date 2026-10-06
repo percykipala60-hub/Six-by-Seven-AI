@@ -71,9 +71,48 @@
   align-self: flex-start;
 }
 
-.betaLine {
-  margin-top: 28px;
-  text-align: center;
+/* Bêta : disponible maintenant, donc en tête et en bleu. */
+.beta {
+  display: grid;
+  gap: 24px;
+  align-items: center;
+  max-width: 960px;
+  margin: 0 auto 16px;
+  padding: clamp(24px, 3.4vw, 36px);
+  border-radius: var(--radius-lg);
+  background: var(--acc-soft);
+}
+
+@media (min-width: 760px) {
+  .beta {
+    grid-template-columns: 1fr auto;
+    gap: 40px;
+  }
+}
+
+.betaTag {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--acc);
+}
+
+.beta h3 {
+  margin-top: 6px;
+  font-size: clamp(28px, 3vw, 36px);
+}
+
+.beta p:not(.betaTag) {
+  margin-top: 8px;
+  max-width: 36em;
+  color: var(--ink-2);
+}
+
+.date {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
 }
 
 .follow {

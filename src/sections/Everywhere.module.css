@@ -38,21 +38,23 @@
 
 .apps ul {
   list-style: none;
-  margin: 0;
+  margin: 8px 0 0;
   padding: 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 0.5em;
-  font: italic 500 clamp(34px, 5.4vw, 72px) / 1.1 var(--font-display);
-  letter-spacing: -0.01em;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 24px 12px;
+  max-width: 760px;
 }
 
 .apps li {
-  color: var(--ink);
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-2);
 }
 
-.apps li:not(:last-child)::after {
-  content: "·";
-  margin-left: 0.5em;
-  color: var(--line-strong);
+.apps li svg {
+  filter: drop-shadow(0 6px 14px rgb(14 21 38 / 0.12));
 }

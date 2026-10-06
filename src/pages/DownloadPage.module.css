@@ -42,15 +42,17 @@
   gap: 10px;
   padding: 16px 26px;
   border-radius: var(--radius-pill);
-  background: var(--ink);
-  color: var(--bg);
+  /* Même bleu que les boutons principaux du reste du site. */
+  background: var(--brand-blue-deep);
+  color: #fff;
   font-weight: 600;
   font-size: 16px;
   text-decoration: none;
+  transition: background-color 0.15s;
 }
 
 a.mainBtn:hover {
-  background: color-mix(in srgb, var(--ink) 85%, var(--bg));
+  background: var(--brand-blue);
 }
 
 /* Avant la sortie : le bouton reste visible mais inactif. */

@@ -1,5 +1,6 @@
 import { everywhere } from "../content/site";
 import { Reveal } from "../components/ui/Reveal";
+import { MessagingAppIcon } from "../components/brand/MessagingAppIcon";
 import styles from "./Everywhere.module.css";
 
 export function Everywhere() {
@@ -14,7 +15,10 @@ export function Everywhere() {
           <p className={styles.appsLabel}>{everywhere.appsLabel}</p>
           <ul>
             {everywhere.apps.map((a) => (
-              <li key={a}>{a}</li>
+              <li key={a.id}>
+                <MessagingAppIcon app={a.id} size={64} />
+                <span>{a.name}</span>
+              </li>
             ))}
           </ul>
         </Reveal>

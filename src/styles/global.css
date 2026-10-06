@@ -78,6 +78,10 @@ button {
   background: var(--acc-soft);
 }
 
+[id] {
+  scroll-margin-top: 88px;
+}
+
 .container {
   max-width: var(--container);
   margin-inline: auto;

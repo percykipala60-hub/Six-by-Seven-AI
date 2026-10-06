@@ -65,49 +65,20 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 16px 28px;
+  gap: 12px;
   margin-top: 40px;
 }
 
-.beta {
-  margin-top: 22px;
+@media (max-width: 520px) {
+  .ctas > * {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
 }
 
 .meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px 12px;
-  margin-top: 14px;
+  margin-top: 18px;
+  max-width: 34em;
   font-size: 14px;
   color: var(--mut);
-}
-
-.meta .textLink {
-  margin-left: 12px;
-  font-size: 14px;
-}
-
-.textLink {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 500;
-  color: var(--ink);
-  text-decoration: none;
-  border-bottom: 1px solid var(--line-strong);
-  padding-bottom: 3px;
-  transition: border-color 0.15s;
-}
-
-.textLink:hover {
-  border-color: var(--ink);
-}
-
-.textLink svg {
-  transition: transform 0.2s;
-}
-
-.textLink:hover svg {
-  transform: translateX(3px);
 }

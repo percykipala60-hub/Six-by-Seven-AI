@@ -4,6 +4,7 @@ import { Menu, X } from "lucide-react";
 import { app, nav } from "../../content/site";
 import { SixLogo } from "../brand/Logos";
 import { AppButton } from "../ui/AppButton";
+import { BetaButton } from "../ui/BetaButton";
 import styles from "./Nav.module.css";
 
 // Barre de navigation : transparente en haut de l'accueil, puis voilée de blanc au défilement.
@@ -29,6 +30,30 @@ export function Nav() {
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
+  // Sur l'accueil, le lien de la section en cours de lecture est mis en évidence.
+  const [current, setCurrent] = useState<string | null>(null);
+  useEffect(() => {
+    if (pathname !== "/") {
+      setCurrent(null);
+      return;
+    }
+    const ids = nav.links.map((l) => l.href.split("#")[1]).filter(Boolean);
+    // Toutes les sections sont observées : dans une section sans lien (ex. la sortie), aucun lien n'est souligné.
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) if (e.isIntersecting) setCurrent(ids.includes(e.target.id) ? e.target.id : null);
+      },
+      { rootMargin: "-40% 0px -55% 0px" },
+    );
+    document.querySelectorAll("main section").forEach((el) => io.observe(el));
+    const onTop = () => window.scrollY < window.innerHeight * 0.5 && setCurrent(null);
+    window.addEventListener("scroll", onTop, { passive: true });
+    return () => {
+      io.disconnect();
+      window.removeEventListener("scroll", onTop);
+    };
+  }, [pathname]);
+
   const close = () => setOpen(false);
 
   return (
@@ -40,14 +65,14 @@ export function Nav() {
 
         <nav className={styles.links} aria-label="Navigation principale">
           {nav.links.map((link) => (
-            <Link key={link.href} to={link.href}>
+            <Link key={link.href} to={link.href} aria-current={current === link.href.split("#")[1] ? "location" : undefined}>
               {link.label}
             </Link>
           ))}
         </nav>
 
         <div className={styles.actions}>
-          <AppButton kind="web" size="sm" variant="secondary" className={`${styles.cta} ${styles.ctaWeb}`} badge={false} />
+          <BetaButton size="sm" variant="secondary" long={false} className={`${styles.cta} ${styles.ctaWeb}`} />
           {!onDownloadPage && (
             <AppButton kind="download" size="sm" variant="primary" className={styles.cta} badge={false} />
           )}
@@ -72,8 +97,8 @@ export function Nav() {
             </Link>
           ))}
           <div className={styles.mobileCtas}>
-            {!onDownloadPage && <AppButton kind="download" long onClick={close} />}
-            <AppButton kind="web" long variant="secondary" onClick={close} />
+            <BetaButton onClick={close} />
+            {!onDownloadPage && <AppButton kind="download" long variant="secondary" badge={false} onClick={close} />}
           </div>
         </div>
       </nav>

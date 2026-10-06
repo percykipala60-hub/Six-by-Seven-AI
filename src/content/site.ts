@@ -18,6 +18,7 @@ export const beta = {
   url: "",
   tag: "Bêta",
   label: "Essayer la bêta web",
+  short: "Bêta web",
   open: "Ouvrir la bêta web",
   finalRelease: "Dans ton navigateur, rien à installer. La version finale sort le 15 octobre.",
   title: "La bêta web est ouverte",
@@ -60,14 +61,13 @@ export const nav = {
     { href: "/#securite", label: "Sécurité" },
     { href: "/#confidentialite", label: "Confidentialité" },
     { href: "/#seven-ai", label: "Seven.AI" },
-    { href: "/telecharger#beta", label: "Bêta" },
   ],
 };
 
 export const hero = {
   title: "L'IA propose. Tu décides.",
   lead: "Un message auquel tu ne sais pas quoi répondre ? Colle-le dans Six. Il te propose trois réponses, tu prends celle qui te ressemble et tu l'envoies toi-même.",
-  more: { href: "#comment", label: "Voir comment ça marche" },
+  meta: "Bêta ouverte dès maintenant. Version finale le 15 octobre sur iPhone, Android, Mac et Windows.",
 };
 
 export const how = {
@@ -128,7 +128,14 @@ export const privacy = {
 export const everywhere = {
   title: "Léger, même sur un vieux téléphone.",
   text: "Six s'installe depuis un simple lien, sans passer par un store. L'appli s'ouvre même quand le réseau coupe, et elle a été pensée pour les petits écrans.",
-  apps: ["WhatsApp", "Messenger", "Telegram", "Instagram", "SMS", "Email"],
+  apps: [
+    { id: "whatsapp", name: "WhatsApp" },
+    { id: "messenger", name: "Messenger" },
+    { id: "telegram", name: "Telegram" },
+    { id: "instagram", name: "Instagram" },
+    { id: "sms", name: "SMS" },
+    { id: "email", name: "E-mail" },
+  ] as const,
   appsLabel: "Fonctionne avec les conversations de",
 };
 
@@ -166,6 +173,7 @@ export const downloadPage = {
 export const launch = {
   title: "Six sort le 15 octobre.",
   text: "Choisis comment tu veux l'utiliser. Les deux versions font exactement la même chose.",
+  date: "Le 15 octobre",
   follow: "Suis Seven.AI pour être prévenu le jour du lancement.",
 };
 

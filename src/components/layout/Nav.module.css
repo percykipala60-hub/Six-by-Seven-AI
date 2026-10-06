@@ -36,7 +36,7 @@
 
 .links {
   display: flex;
-  gap: 30px;
+  gap: 26px;
   margin-right: auto;
 }
 
@@ -49,8 +49,25 @@
   transition: opacity 0.15s;
 }
 
-.links a:hover {
+.links a:hover,
+.links a[aria-current] {
   opacity: 1;
+}
+
+/* Section en cours : un trait discret sous le lien. */
+.links a {
+  position: relative;
+}
+
+.links a[aria-current]::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -6px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--acc);
 }
 
 .actions {
@@ -97,7 +114,7 @@
   margin-top: 24px;
 }
 
-@media (max-width: 1140px) {
+@media (max-width: 1020px) {
   .links {
     display: none;
   }
@@ -121,7 +138,7 @@
   }
 }
 
-@media (min-width: 1141px) {
+@media (min-width: 1021px) {
   .mobile {
     display: none;
   }
