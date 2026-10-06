@@ -2,9 +2,7 @@ import { useEffect, useMemo } from "react";
 import { ArrowRight, ArrowUpRight, Download } from "lucide-react";
 import { Link } from "react-router";
 import { app, beta, downloadPage, type PlatformId } from "../content/site";
-import { scenes } from "../content/phoneScenes";
-import { DevicePhone } from "../components/phone3d/DevicePhone";
-import { SixScreen } from "../components/phone/Screens";
+import { DeviceShowcase } from "../components/phone3d/DeviceShowcase";
 import styles from "./DownloadPage.module.css";
 
 // Devine l'appareil du visiteur pour lui proposer directement sa version.
@@ -56,9 +54,8 @@ export function DownloadPage() {
         </div>
 
         <div className={styles.heroVisual}>
-          <DevicePhone finish="silver" follow={false}>
-            <SixScreen scene={scenes[0]} step={3} />
-          </DevicePhone>
+          {/* Carrousel des appareils : commence par celui du visiteur. */}
+          <DeviceShowcase initial={detectedId} />
         </div>
       </div>
 

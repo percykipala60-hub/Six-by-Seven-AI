@@ -1,0 +1,79 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+}
+
+.stage {
+  position: relative;
+  width: 100%;
+  max-width: 640px;
+  aspect-ratio: 1.15;
+  cursor: grab;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.grabbing {
+  cursor: grabbing;
+}
+
+.stage canvas {
+  touch-action: pan-y;
+}
+
+.shadow {
+  position: absolute;
+  left: 25%;
+  right: 25%;
+  bottom: 4%;
+  height: 30px;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(14 21 38 / 0.28), transparent);
+  filter: blur(6px);
+  pointer-events: none;
+}
+
+/* Onglets des appareils, avec la progression du défilement automatique. */
+.tabs {
+  display: flex;
+  justify-content: center;
+  gap: 4px 22px;
+  flex-wrap: wrap;
+}
+
+.tabs button {
+  position: relative;
+  border: 0;
+  background: none;
+  padding: 8px 0 10px;
+  font: 500 14px var(--font-body);
+  color: var(--mut);
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.tabs button:hover,
+.tabs button[aria-selected="true"] {
+  color: var(--ink);
+}
+
+.progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 2px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--ink);
+  transform-origin: left;
+  animation: fill linear both;
+}
+
+@keyframes fill {
+  from {
+    transform: scaleX(0);
+  }
+}
