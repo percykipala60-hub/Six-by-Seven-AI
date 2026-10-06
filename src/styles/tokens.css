@@ -53,26 +53,9 @@
   color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg: #0b1120;
-    --bg-soft: #111a2e;
-    --surface: #141e34;
-    --ink: #f2f5fa;
-    --ink-2: #c3cada;
-    --mut: #8b93a7;
-    --line: #1f2a44;
-    --line-strong: #2c3956;
-    --acc: #6b93ff;
-    --acc-ink: #090f1b;
-    --acc-soft: #18254a;
-    --warn: #ff9d88;
-    --warn-bg: #3a1d1c;
-    --dark-bg: #070c16;
-    color-scheme: dark;
-  }
-}
-
+/* Pas de bascule automatique en thème sombre : l'alternance de sections sombres (haut de page,
+   sécurité, pied de page) et de sections blanches fait partie du design, quel que soit le réglage
+   de l'appareil. Le thème sombre reste disponible à la demande via data-theme="dark". */
 :root[data-theme="dark"] {
   --bg: #0b1120;
   --bg-soft: #111a2e;
