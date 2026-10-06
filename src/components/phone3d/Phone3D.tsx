@@ -37,7 +37,7 @@ const FINISHES: { id: Finish; name: string }[] = [
 const SCREEN_PX = { w: 276, h: 600 };
 const RETURN_DELAY = 2600;
 const DEG = Math.PI / 180;
-const DEFAULT_POSE = { x: -4, y: 16, z: -1.5 };
+const DEFAULT_POSE = { x: -4, y: -16, z: -1.5 };
 
 type Input = {
   dragging: boolean;
@@ -50,7 +50,7 @@ type Input = {
 // Téléphone en vraie 3D (WebGL) : volumes, métal, verre et reflets calculés par la carte graphique.
 export default function Phone3D({
   children,
-  // Pose de repos : de face, légèrement tourné pour montrer le flanc gauche, le haut un peu en arrière.
+  // Pose de repos : de face, l'écran légèrement tourné vers la gauche du visiteur (on voit le flanc droit).
   pose = DEFAULT_POSE,
   follow = true,
   float = true,
