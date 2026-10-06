@@ -60,10 +60,9 @@ export function DownloadPage() {
         <ul className={`container ${styles.tiles}`}>
           {app.platforms.map((p) => (
             <li key={p.id}>
-              <a href={`#${p.id}`} className={styles.tile} data-current={p.id === detectedId || undefined}>
+              <a href={`#${p.id}`} className={styles.tile}>
                 <span>
                   <b>{p.name}</b>
-                  {p.id === detectedId && <small>{downloadPage.yours}</small>}
                 </span>
                 <img src={PHOTO[p.id]} alt="" loading="lazy" />
               </a>
@@ -90,7 +89,6 @@ export function DownloadPage() {
         <ul className={styles.grid}>
           {app.platforms.map((p) => (
             <li key={p.id} id={p.id} className={styles.card}>
-              {p.id === detectedId && <span className={styles.badge}>{downloadPage.yours}</span>}
               <img src={PHOTO[p.id]} alt={`Six sur ${p.name}`} loading="lazy" />
               <h3>{p.name}</h3>
               <p className={styles.system}>{p.system}</p>

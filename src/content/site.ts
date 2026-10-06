@@ -209,7 +209,6 @@ export const downloadPage = {
   intro: "Sur ton téléphone, ton ordinateur ou dans le navigateur. Les versions font toutes la même chose.",
   others: "Toutes les plateformes",
   otherLink: "Autres plateformes et version web",
-  yours: "Ton appareil",
   download: "Télécharger",
   open: "Ouvrir",
   available: "Disponible maintenant",

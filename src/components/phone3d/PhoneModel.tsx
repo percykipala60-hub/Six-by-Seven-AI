@@ -64,6 +64,10 @@ function useMaterials(finish: Finish) {
       pupil: new THREE.MeshStandardMaterial({ color: "#000000", roughness: 0.6, envMapIntensity: 0 }),
       // Verre saphir de protection : presque invisible, il ne se voit qu'à ses reflets.
       // Verre de protection : teinte noire (il n'éclaircit pas l'objectif), seuls ses reflets se voient.
+      // Anneau miroir sous le verre : métal sombre poli comme un miroir.
+      mirror: new THREE.MeshPhysicalMaterial({ color: "#23252c", metalness: 1, roughness: 0.04, clearcoat: 1, envMapIntensity: 1.3 }),
+      // Bord du verre de protection, visible quand on regarde l'objectif de biais.
+      coverEdge: new THREE.MeshPhysicalMaterial({ color: "#0d0f14", metalness: 0.2, roughness: 0.05, clearcoat: 1, envMapIntensity: 1.6 }),
       cover: new THREE.MeshPhysicalMaterial({
         color: "#000000",
         metalness: 0,
@@ -137,42 +141,72 @@ function AntennaLines({ w, h, d, bevel, m }: { w: number; h: number; d: number; 
 }
 // Ordonnée d'un point situé à `frac` de la hauteur en partant du haut.
 const yAt = (h: number, frac: number) => h / 2 - frac * h;
-// Demi-angle d'ouverture du verre de protection : à peine bombé.
-const COVER = 0.32;
+// Demi-angle d'ouverture du verre de protection : bombé de façon presque invisible.
+const COVER = 0.1;
 
 // Objectif complet, orienté vers l'arrière (-z), posé sur une surface à la profondeur `z`.
 // « apple » : bague métal épaisse au chanfrein poli, large anneau noir, grand verre fumé très réfléchissant.
 // « samsung » : fine bague métal en cylindre haut, liseré noir étroit, verre teinté vert-bleu.
-function Lens({ x, y, z, r, m, look = "apple", height: heightIn }: { x: number; y: number; z: number; r: number; m: M; look?: "apple" | "samsung"; height?: number }) {
+// Objectif d'après un vrai iPhone : bague métal au dessus plat (à peine chanfreiné), verre de protection
+// qui dépasse légèrement de la bague et dont on sent le bord, bombé de façon presque invisible.
+// Sous le verre, un anneau miroir ; au centre de ce miroir, la caméra, enfoncée.
+// `large` : le troisième objectif de l'iPhone, dont la caméra intérieure est nettement plus grande que celle
+// des deux objectifs alignés verticalement.
+function Lens({
+  x,
+  y,
+  z,
+  r,
+  m,
+  look = "apple",
+  height: heightIn,
+  large = false,
+}: {
+  x: number;
+  y: number;
+  z: number;
+  r: number;
+  m: M;
+  look?: "apple" | "samsung";
+  height?: number;
+  large?: boolean;
+}) {
   const rot: [number, number, number] = [Math.PI / 2, 0, 0];
   const apple = look === "apple";
   const height = heightIn ?? (apple ? 0.18 : 0.22);
-  const top = -height; // face supérieure de la bague (l'objectif sort vers -z)
-  const blackOuter = apple ? 0.8 : 0.86;
-  const glass = apple ? 0.64 : 0.7;
-  const g = r * glass; // rayon de l'ouverture
-  // Profondeurs sous le verre de protection : l'objectif est un puits, pas un disque plat.
-  // Le puits ne descend jamais plus bas que la surface qui porte l'objectif (sinon elle le boucherait).
+  const top = -height; // dessus de la bague (l'objectif sort vers -z)
+  const inner = r * (apple ? 0.86 : 0.88); // bord intérieur de la bague : le verre commence ici
+  const g = r * (apple ? (large ? 0.62 : 0.44) : 0.55); // ouverture de la caméra au centre du miroir
+  const glassRise = 0.022; // le verre monte un peu au-dessus de la bague
+  // Profondeur de la caméra sous le miroir ; jamais plus bas que la surface qui porte l'objectif.
   const k = Math.min(1, (height - 0.012) / 0.14);
   const at = (depth: number): [number, number, number] => [0, 0, top + depth * k];
-  const element = g * 0.68; // rayon de la lentille : large, mais au fond de l'objectif
-  const coverR = g / Math.sin(COVER);
+  const element = g * 0.76;
   const capAngle = 0.24;
   const capR = element / Math.sin(capAngle);
+  const coverR = inner / Math.sin(COVER);
+  const glassTop = top - glassRise;
   return (
     <group position={[x, y, z]}>
-      {/* Bague métallique (tube ouvert : on voit l'intérieur de l'objectif) et son chanfrein poli */}
+      {/* Bague métallique : flanc, dessus plat et fin chanfrein qui accroche la lumière */}
       <mesh rotation={rot} position={[0, 0, top / 2]} material={m.polished}>
         <cylinderGeometry args={[r, r, height, 72, 1, true]} />
       </mesh>
-      <mesh position={[0, 0, top]} material={m.polished}>
-        <torusGeometry args={[(r * (blackOuter + 1)) / 2, (r * (1 - blackOuter)) / 2, 18, 96]} />
+      <mesh position={[0, 0, top]} rotation={FACE} material={m.polished}>
+        <ringGeometry args={[inner, r - 0.012, 96]} />
       </mesh>
-      {/* Anneau noir brillant autour de l'ouverture */}
-      <mesh position={at(-0.002)} rotation={FACE} material={m.housing}>
-        <ringGeometry args={[g, r * blackOuter, 72]} />
+      <mesh position={[0, 0, top + 0.006]} material={m.polished}>
+        <torusGeometry args={[r - 0.012, 0.012, 8, 96]} />
       </mesh>
-      {/* L'objectif, simplement posé au fond : paroi sombre, puis la lentille irisée */}
+      {/* Bord du verre : on sent le cercle qui dépasse de la bague */}
+      <mesh rotation={rot} position={[0, 0, top - glassRise / 2]} material={m.coverEdge}>
+        <cylinderGeometry args={[inner, inner, glassRise, 96, 1, true]} />
+      </mesh>
+      {/* Anneau miroir sous le verre */}
+      <mesh position={[0, 0, top + 0.003]} rotation={FACE} material={m.mirror}>
+        <ringGeometry args={[g, inner, 96]} />
+      </mesh>
+      {/* La caméra, enfoncée au centre du miroir */}
       <mesh rotation={rot} position={at(0.06)} scale={[1, k, 1]} material={m.barrel}>
         <cylinderGeometry args={[g, g, 0.12, 64, 1, true, 0, Math.PI * 2]} />
       </mesh>
@@ -182,9 +216,9 @@ function Lens({ x, y, z, r, m, look = "apple", height: heightIn }: { x: number; 
       <mesh position={[0, 0, at(0.12)[2] + capR * Math.cos(capAngle)]} rotation={[-Math.PI / 2, 0, 0]} material={apple ? m.element : m.elementGreen}>
         <sphereGeometry args={[capR, 48, 12, 0, Math.PI * 2, 0, capAngle]} />
       </mesh>
-      {/* Verre de protection légèrement bombé qui recouvre toute la caméra : on le voit à ses reflets */}
-      <mesh position={[0, 0, top - 0.002 + coverR * Math.cos(COVER)]} rotation={[-Math.PI / 2, 0, 0]} material={m.cover}>
-        <sphereGeometry args={[coverR, 72, 12, 0, Math.PI * 2, 0, COVER]} />
+      {/* Verre de protection : bombé si peu qu'on ne voit presque pas la courbure */}
+      <mesh position={[0, 0, glassTop + coverR * Math.cos(COVER)]} rotation={[-Math.PI / 2, 0, 0]} material={m.cover}>
+        <sphereGeometry args={[coverR, 96, 6, 0, Math.PI * 2, 0, COVER]} />
       </mesh>
     </group>
   );
@@ -433,7 +467,7 @@ export function PhoneModel({ model, finish, wallpaper }: { model: Model; finish:
               <>
                 <Lens x={x1} y={y1} z={z} r={lr} m={m} />
                 <Lens x={x1} y={y2} z={z} r={lr} m={m} />
-                <Lens x={x3} y={(y1 + y2) / 2} z={z} r={lr} m={m} />
+                <Lens x={x3} y={(y1 + y2) / 2} z={z} r={lr} m={m} large />
                 <Dot x={xr} y={y1 + 0.15} z={z - 0.002} r={0.42} material={m.flash} />
                 <Dot x={xr} y={(y1 + y2) / 2} z={z - 0.002} r={0.06} material={m.sensor} />
                 <Dot x={xr} y={y2 - 0.15} z={z - 0.002} r={0.38} material={m.sensor} />
