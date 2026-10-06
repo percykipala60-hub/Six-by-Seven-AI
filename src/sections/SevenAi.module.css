@@ -6,9 +6,8 @@
   display: grid;
   gap: 48px;
   align-items: center;
-  border-radius: calc(var(--radius-lg) + 8px);
-  padding: clamp(36px, 6vw, 80px);
-  background: var(--bg-soft);
+  padding-top: clamp(48px, 7vw, 96px);
+  border-top: 1px solid var(--line-strong);
 }
 
 @media (min-width: 900px) {

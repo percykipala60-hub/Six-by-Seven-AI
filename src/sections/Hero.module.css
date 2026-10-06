@@ -54,12 +54,6 @@
   color: var(--mut);
 }
 
-/* Scène claire et arrondie sous le texte : le téléphone y est présenté comme un produit. */
 .stage {
-  margin-top: clamp(40px, 5vw, 56px);
-  padding: clamp(32px, 5vw, 64px) 16px clamp(24px, 3vw, 40px);
-  border-radius: calc(var(--radius-lg) + 12px);
-  background:
-    radial-gradient(70% 60% at 50% 100%, rgb(77 124 254 / 0.08), transparent 70%),
-    var(--bg-soft);
+  margin-top: clamp(40px, 5vw, 64px);
 }

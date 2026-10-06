@@ -3,13 +3,8 @@
 }
 
 .tile {
-  border-radius: calc(var(--radius-lg) + 8px);
-  background: var(--bg-soft);
-  padding-block: clamp(48px, 7vw, 96px);
-  /* Les marges du conteneur deviennent l'intérieur de la carte : on la décolle des bords d'écran. */
-  max-width: calc(var(--container) - 2 * var(--gutter));
-  width: calc(100% - 2 * var(--gutter));
-  padding-inline: clamp(24px, 6vw, 80px);
+  padding-top: clamp(48px, 7vw, 96px);
+  border-top: 1px solid var(--line-strong);
 }
 
 .grid {

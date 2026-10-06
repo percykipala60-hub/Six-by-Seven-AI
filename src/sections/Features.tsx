@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Check, Copy } from "lucide-react";
 import { everywhere, features, maskExample } from "../content/site";
 import { scenes } from "../content/phoneScenes";
@@ -20,7 +20,7 @@ function useTicker(count: number, ms: number) {
 
 const replyScenes = scenes.filter((s) => !s.scam && s.suggestions);
 
-// Ce que fait Six, montré par de petites interfaces réelles plutôt que par des icônes.
+// Ce que fait Six, rangée par rangée comme dans un magazine : un titre, un texte, et l'interface réelle à côté.
 export function Features() {
   return (
     <section id={features.id} className={styles.section} aria-labelledby="features-title">
@@ -30,46 +30,45 @@ export function Features() {
           <p>{features.intro}</p>
         </Reveal>
 
-        <div className={styles.grid}>
-          <Reveal className={`${styles.tile} ${styles.wide}`}>
-            <TileText title={features.replies.title} text={features.replies.text} />
+        <div className={styles.rows}>
+          <Row title={features.replies.title} text={features.replies.text}>
             <RepliesDemo />
-          </Reveal>
-          <Reveal delay={80} className={styles.tile}>
-            <TileText title={features.mask.title} text={features.mask.text} />
+          </Row>
+          <Row title={features.mask.title} text={features.mask.text}>
             <MaskDemo />
-          </Reveal>
-          <Reveal className={styles.tile}>
-            <TileText title={features.apps.title} text={features.apps.text} />
+          </Row>
+          <Row title={features.apps.title} text={features.apps.text}>
             <ul className={styles.apps}>
               {everywhere.apps.map((a) => (
                 <li key={a.id}>
-                  <MessagingAppIcon app={a.id} size={52} />
+                  <MessagingAppIcon app={a.id} size={48} />
                   <span>{a.name}</span>
                 </li>
               ))}
             </ul>
-          </Reveal>
-          <Reveal delay={80} className={styles.tile}>
-            <TileText title={features.send.title} text={features.send.text} />
+          </Row>
+          <Row title={features.send.title} text={features.send.text}>
             <SendDemo />
-          </Reveal>
-          <Reveal delay={160} className={styles.tile}>
-            <TileText title={features.light.title} text={features.light.text} />
+          </Row>
+          <Row title={features.light.title} text={features.light.text}>
             <OfflineDemo />
-          </Reveal>
+          </Row>
         </div>
       </div>
     </section>
   );
 }
 
-function TileText({ title, text }: { title: string; text: string }) {
+// Une rangée : le titre et le texte à gauche, la démonstration à droite, séparées des autres par un filet.
+function Row({ title, text, children }: { title: string; text: string; children: ReactNode }) {
   return (
-    <div className={styles.text}>
-      <h3>{title}</h3>
-      <p>{text}</p>
-    </div>
+    <Reveal className={styles.row}>
+      <div className={styles.text}>
+        <h3>{title}</h3>
+        <p>{text}</p>
+      </div>
+      <div className={styles.demo}>{children}</div>
+    </Reveal>
   );
 }
 
