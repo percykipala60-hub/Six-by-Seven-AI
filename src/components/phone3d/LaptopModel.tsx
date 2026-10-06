@@ -568,7 +568,7 @@ export function LaptopModel({ kind, screenEl, lidAngle = 112 }: { kind: LaptopKi
         {/* Logo au centre du dos du capot */}
         <mesh geometry={geo.logo} position={[0, lidH / 2, -lidT - 0.003]} rotation={[0, Math.PI, 0]} material={mats.logo} />
         <mesh geometry={geo.bezel} position={[0, lidH / 2, 0.02]} material={mats.glass} />
-        <ScreenAnchor el={screenEl} scale={pxScale} position={[0, dispCenterY, 0.03]} />
+        <ScreenAnchor el={screenEl} scale={pxScale} radius={parseFloat(spec.screenRadius)} position={[0, dispCenterY, 0.03]} />
         {!mac && (
           // Webcam au centre de la bordure du haut (sur le Mac, elle est dans l'encoche de l'écran).
           <mesh position={[0, disp.bottom + disp.h + (lidH - disp.bottom - disp.h) / 2, 0.03]} material={mats.lens}>

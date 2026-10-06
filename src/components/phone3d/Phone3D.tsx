@@ -73,7 +73,7 @@ export default function Phone3D({
           <CssLayer />
           <Rig input={input} pose={pose} float={float}>
             <PhoneModel model={model} finish={currentFinish} />
-            <ScreenAnchor el={screenEl} scale={phonePxScale(model)} position={[0, 0, SPECS[model].d / 2 + 0.01]} />
+            <ScreenAnchor el={screenEl} scale={phonePxScale(model)} radius={phoneScreenRadiusPx(model)} position={[0, 0, SPECS[model].d / 2 + 0.01]} />
           </Rig>
         </Canvas>
         <div className={styles.shadow} aria-hidden="true" />
@@ -129,4 +129,4 @@ export function PhoneScreen({ model, children }: { model: Model; children: React
 // Taille d'un pixel de l'interface en unités 3D : l'image occupe la largeur moins la bordure.
 export const phonePxScale = (model: Model) => (SPECS[model].w - 2 * SPECS[model].inset) / PHONE_SCREEN_PX.w;
 // Coins de l'image concentriques à ceux du téléphone.
-const phoneScreenRadiusPx = (model: Model) => Math.max(SPECS[model].r - SPECS[model].inset, 0.08) / phonePxScale(model);
+export const phoneScreenRadiusPx = (model: Model) => Math.max(SPECS[model].r - SPECS[model].inset, 0.08) / phonePxScale(model);

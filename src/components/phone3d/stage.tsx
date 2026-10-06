@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import * as THREE from "three";
 import { CSS3DObject, CSS3DRenderer } from "three/examples/jsm/renderers/CSS3DRenderer.js";
+import { roundedRect } from "./geometry";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Environment, Lightformer } from "@react-three/drei";
 // Photo de studio HDR (CC0, Poly Haven) : métal et verre reflètent une vraie pièce, pas des formes géométriques.
@@ -191,6 +192,9 @@ export function Rig({
 }
 
 // Moteur CSS 3D de three.js : un seul par scène, il affiche toutes les interfaces posées sur des écrans.
+// Le calque des interfaces passe SOUS l'image 3D : chaque écran y est visible à travers une « fenêtre »
+// découpée dans l'image (voir ScreenAnchor). Ce qui se trouve devant l'écran (coque, capot, clavier)
+// le cache donc naturellement, quel que soit l'angle.
 export function CssLayer() {
   const { scene, camera, size, gl } = useThree();
   const renderer = useMemo(() => {
@@ -200,8 +204,10 @@ export function CssLayer() {
   }, []);
 
   useEffect(() => {
-    const host = gl.domElement.parentElement;
-    host?.appendChild(renderer.domElement);
+    const canvas = gl.domElement;
+    Object.assign(canvas.style, { position: "relative", zIndex: "1" });
+    renderer.domElement.style.zIndex = "0";
+    canvas.parentElement?.insertBefore(renderer.domElement, canvas);
     return () => renderer.domElement.remove();
   }, [gl, renderer]);
 
@@ -219,9 +225,19 @@ export function createScreenElement(width: number, height: number) {
   return div;
 }
 
-// Accroche un élément DOM sur une surface de la scène. `scale` : taille d'un pixel CSS en unités 3D.
+// Matériau de la fenêtre : écrit un pixel totalement transparent, sans mélange, là où se trouve l'écran.
+const HOLE = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: false, opacity: 0, blending: THREE.NoBlending });
+
+// Accroche un élément DOM sur une surface de la scène. `scale` : taille d'un pixel CSS en unités 3D,
+// `radius` : arrondi des coins de l'écran, en pixels CSS.
 // L'élément est masqué dès que la surface ne fait plus face à la caméra (ou que l'appareil est caché).
-export function ScreenAnchor({ el, scale, position }: { el: HTMLDivElement; scale: number; position: [number, number, number] }) {
+export function ScreenAnchor({ el, scale, position, radius = 0 }: { el: HTMLDivElement; scale: number; position: [number, number, number]; radius?: number }) {
+  // Fenêtre découpée dans l'image 3D, un peu plus petite que l'interface pour ne jamais laisser voir de liseré.
+  const hole = useMemo(() => {
+    const w = (parseFloat(el.style.width) - 3) * scale;
+    const h = (parseFloat(el.style.height) - 3) * scale;
+    return new THREE.ShapeGeometry(roundedRect(w, h, Math.min(Math.max(radius - 1.5, 0) * scale, w / 2, h / 2)), 24);
+  }, [el, scale, radius]);
   const { camera } = useThree();
   const anchor = useRef<THREE.Group>(null);
   const tmp = useMemo(() => ({ n: new THREE.Vector3(), p: new THREE.Vector3(), q: new THREE.Quaternion(), s: new THREE.Vector3() }), []);
@@ -252,5 +268,9 @@ export function ScreenAnchor({ el, scale, position }: { el: HTMLDivElement; scal
     if (el.style.visibility !== vis) el.style.visibility = vis;
   });
 
-  return <group ref={anchor} position={position} />;
+  return (
+    <group ref={anchor} position={position}>
+      <mesh geometry={hole} material={HOLE} />
+    </group>
+  );
 }

@@ -7,7 +7,7 @@ import { scenes } from "../../content/phoneScenes";
 import { PhoneModel } from "./PhoneModel";
 import { LaptopModel, LAPTOP_SCREEN_PX, type LaptopKind } from "./LaptopModel";
 import { SPECS } from "./geometry";
-import { DEFAULT_POSE, PHONE_SCREEN_PX, PhoneScreen, phonePxScale } from "./Phone3D";
+import { DEFAULT_POSE, PHONE_SCREEN_PX, PhoneScreen, phonePxScale, phoneScreenRadiusPx } from "./Phone3D";
 import { CssLayer, DEG, Rig, ScreenAnchor, Studio, createScreenElement, useDragInput, useInView, type Pose } from "./stage";
 import { SixScreen } from "../phone/Screens";
 import { DesktopScreen } from "../phone/DesktopScreen";
@@ -96,6 +96,7 @@ export default function DeviceShowcase3D({ initial, label }: DeviceShowcaseProps
                     <ScreenAnchor
                       el={els[d.id]}
                       scale={phonePxScale(d.id === "ios" ? "pro" : "ultra")}
+                      radius={phoneScreenRadiusPx(d.id === "ios" ? "pro" : "ultra")}
                       position={[0, 0, SPECS[d.id === "ios" ? "pro" : "ultra"].d / 2 + 0.01]}
                     />
                   </>
