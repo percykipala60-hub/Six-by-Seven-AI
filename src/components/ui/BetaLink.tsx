@@ -3,7 +3,7 @@ import { Link } from "react-router";
 import { beta } from "../../content/site";
 import styles from "./BetaLink.module.css";
 
-type Props = { tone?: "dark" | "light"; className?: string };
+type Props = { tone?: "light"; className?: string };
 
 // Lien « Essayer la bêta » précédé de l'étiquette « Bêta ».
 // Tant que l'adresse n'est pas renseignée, il mène à l'encart bêta de la page Télécharger.

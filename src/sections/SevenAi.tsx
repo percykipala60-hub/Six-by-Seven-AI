@@ -8,7 +8,7 @@ export function SevenAi() {
   return (
     <section id={sevenAi.id} className={styles.section} aria-labelledby="seven-title">
       <div className="container">
-        <Reveal className={`dark ${styles.card}`}>
+        <Reveal className={styles.card}>
           <div className={styles.mark}>
             <SevenMark size={190} title="Seven.AI" />
           </div>

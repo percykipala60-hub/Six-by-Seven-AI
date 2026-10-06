@@ -10,8 +10,8 @@
     color 0.25s;
 }
 
-.onDark {
-  color: var(--dark-ink);
+.top {
+  color: var(--ink);
 }
 
 .solid {

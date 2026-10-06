@@ -49,24 +49,6 @@
   background: var(--bg-soft);
 }
 
-.light {
-  background: var(--brand-white);
-  color: var(--navy-950);
-}
-
-.light:hover {
-  background: #fff;
-}
-
-.outlineDark {
-  color: var(--dark-ink);
-  border-color: var(--navy-600);
-}
-
-.outlineDark:hover {
-  background: var(--navy-800);
-}
-
 .sm {
   font-size: 14px;
   padding: 10px 18px;

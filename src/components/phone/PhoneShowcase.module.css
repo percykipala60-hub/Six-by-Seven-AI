@@ -54,14 +54,14 @@
   background: none;
   padding: 8px 0 10px;
   font: 500 13px var(--font-body);
-  color: var(--dark-mut);
+  color: var(--mut);
   cursor: pointer;
   transition: color 0.2s;
 }
 
 .app:hover,
 .app[aria-selected="true"] {
-  color: var(--dark-ink);
+  color: var(--ink);
 }
 
 .progress {
@@ -71,7 +71,7 @@
   bottom: 2px;
   height: 2px;
   border-radius: 2px;
-  background: var(--dark-ink);
+  background: var(--ink);
   transform-origin: left;
   animation: fill linear both;
 }

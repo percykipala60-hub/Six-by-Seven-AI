@@ -78,12 +78,6 @@ button {
   background: var(--acc-soft);
 }
 
-.dark {
-  background: var(--dark-bg);
-  color: var(--dark-ink);
-  color-scheme: dark;
-}
-
 .container {
   max-width: var(--container);
   margin-inline: auto;

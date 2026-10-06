@@ -466,8 +466,8 @@
 
 .swatch[aria-checked="true"] {
   box-shadow:
-    0 0 0 2px var(--dark-bg, #090f1b),
-    0 0 0 3.5px var(--dark-ink, #f2f5fa);
+    0 0 0 2px var(--bg, #ffffff),
+    0 0 0 3.5px var(--ink, #0e1526);
 }
 
 .hint {
@@ -475,7 +475,7 @@
   align-items: center;
   gap: 7px;
   font-size: 13px;
-  color: var(--dark-mut);
+  color: var(--mut);
   transition: opacity 0.4s;
 }
 

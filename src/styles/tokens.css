@@ -12,8 +12,8 @@
   --brand-white: #f2f5fa;
 
   /* Thème clair (pages de contenu) */
-  --bg: #f7f8fb;
-  --bg-soft: #eef1f7;
+  --bg: #ffffff;
+  --bg-soft: #f3f5f9;
   --surface: #ffffff;
   --ink: #0e1526;
   --ink-2: #3c4459;
@@ -27,14 +27,6 @@
   --mask-ink: #0e1526;
   --warn: #c2361f;
   --warn-bg: #fdece8;
-
-  /* Zones sombres (hero, sécurité, Seven.AI, pied de page) */
-  --dark-bg: var(--navy-950);
-  --dark-surface: var(--navy-800);
-  --dark-ink: var(--brand-white);
-  --dark-ink-2: #b7bfd1;
-  --dark-mut: #7c869e;
-  --dark-line: #1f2a44;
 
   --font-display: "Cormorant Garamond", "Cormorant", Garamond, Georgia, serif;
   --font-body: "Manrope", system-ui, -apple-system, sans-serif;
@@ -53,9 +45,8 @@
   color-scheme: light;
 }
 
-/* Pas de bascule automatique en thème sombre : l'alternance de sections sombres (haut de page,
-   sécurité, pied de page) et de sections blanches fait partie du design, quel que soit le réglage
-   de l'appareil. Le thème sombre reste disponible à la demande via data-theme="dark". */
+/* Site entièrement blanc, quel que soit le réglage de l'appareil : pas de bascule automatique
+   en thème sombre. Le thème sombre reste disponible à la demande via data-theme="dark". */
 :root[data-theme="dark"] {
   --bg: #0b1120;
   --bg-soft: #111a2e;
@@ -70,6 +61,5 @@
   --acc-soft: #18254a;
   --warn: #ff9d88;
   --warn-bg: #3a1d1c;
-  --dark-bg: #070c16;
   color-scheme: dark;
 }

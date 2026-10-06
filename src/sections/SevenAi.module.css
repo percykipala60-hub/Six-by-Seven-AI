@@ -8,7 +8,7 @@
   align-items: center;
   border-radius: calc(var(--radius-lg) + 8px);
   padding: clamp(36px, 6vw, 80px);
-  background: var(--navy-800);
+  background: var(--bg-soft);
 }
 
 @media (min-width: 900px) {
@@ -27,7 +27,9 @@
   place-items: center;
   aspect-ratio: 1.25;
   border-radius: var(--radius-lg);
+  /* Le logo garde son fond officiel bleu nuit : le trait blanc du 7 y reste blanc, comme dans le texte. */
   background: var(--navy-950);
+  color: var(--brand-white);
   padding: 24px;
 }
 
@@ -51,7 +53,7 @@
 .body {
   margin-top: 20px;
   font-size: 18px;
-  color: var(--dark-ink-2);
+  color: var(--ink-2);
 }
 
 .six {
@@ -60,12 +62,12 @@
   gap: 14px;
   margin-top: 32px;
   padding-top: 24px;
-  border-top: 1px solid var(--navy-600);
+  border-top: 1px solid var(--line-strong);
   font-size: 15px;
-  color: var(--dark-mut);
+  color: var(--mut);
 }
 
 .six svg {
   flex: none;
-  color: var(--dark-ink);
+  color: var(--ink);
 }

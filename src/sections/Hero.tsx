@@ -9,7 +9,7 @@ import styles from "./Hero.module.css";
 
 export function Hero() {
   return (
-    <section className={`dark ${styles.hero}`} aria-labelledby="hero-title">
+    <section className={styles.hero} aria-labelledby="hero-title">
       <div className={`container ${styles.grid}`}>
         <Reveal className={styles.text}>
           <h1 id="hero-title" className={styles.title}>
@@ -19,10 +19,10 @@ export function Hero() {
           </h1>
           <p className={styles.lead}>{hero.lead}</p>
           <div className={styles.ctas}>
-            <AppButton kind="download" long variant="light" />
-            <AppButton kind="web" long variant="outlineDark" />
+            <AppButton kind="download" long variant="primary" />
+            <AppButton kind="web" long variant="secondary" />
           </div>
-          <BetaLink tone="dark" className={styles.beta} />
+          <BetaLink tone="light" className={styles.beta} />
           <p className={styles.meta}>
             <span>{app.release}</span>
             <span aria-hidden="true">·</span>

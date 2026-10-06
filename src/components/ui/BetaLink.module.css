@@ -29,15 +29,6 @@
   border-radius: 6px;
 }
 
-.dark {
-  color: var(--dark-ink);
-}
-
-.dark .tag {
-  background: var(--brand-blue);
-  color: #fff;
-}
-
 .light {
   color: var(--acc);
 }

@@ -6,7 +6,7 @@ import { SixLogo } from "../brand/Logos";
 import { AppButton } from "../ui/AppButton";
 import styles from "./Nav.module.css";
 
-// Barre de navigation : transparente sur le hero sombre de l'accueil, claire ailleurs.
+// Barre de navigation : transparente en haut de l'accueil, puis voilée de blanc au défilement.
 export function Nav() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -32,7 +32,7 @@ export function Nav() {
   const close = () => setOpen(false);
 
   return (
-    <header className={[styles.bar, overHero ? styles.onDark : styles.solid].join(" ")}>
+    <header className={[styles.bar, overHero ? styles.top : styles.solid].join(" ")}>
       <div className={`container ${styles.inner}`}>
         <Link className={styles.logo} to="/" onClick={close}>
           <SixLogo size={30} />
@@ -47,9 +47,9 @@ export function Nav() {
         </nav>
 
         <div className={styles.actions}>
-          <AppButton kind="web" size="sm" variant={overHero ? "outlineDark" : "secondary"} className={`${styles.cta} ${styles.ctaWeb}`} badge={false} />
+          <AppButton kind="web" size="sm" variant="secondary" className={`${styles.cta} ${styles.ctaWeb}`} badge={false} />
           {!onDownloadPage && (
-            <AppButton kind="download" size="sm" variant={overHero ? "light" : "primary"} className={styles.cta} badge={false} />
+            <AppButton kind="download" size="sm" variant="primary" className={styles.cta} badge={false} />
           )}
           <button
             type="button"

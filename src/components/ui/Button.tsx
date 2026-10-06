@@ -4,7 +4,7 @@ import styles from "./Button.module.css";
 
 type Props = AnchorHTMLAttributes<HTMLAnchorElement> & {
   href: string;
-  variant?: "primary" | "secondary" | "light" | "outlineDark";
+  variant?: "primary" | "secondary";
   size?: "md" | "sm";
 };
 

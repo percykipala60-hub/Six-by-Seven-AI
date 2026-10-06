@@ -6,7 +6,7 @@ import styles from "./Footer.module.css";
 
 export function Footer() {
   return (
-    <footer className={`dark ${styles.footer}`}>
+    <footer className={styles.footer}>
       <div className={`container ${styles.top}`}>
         <div className={styles.brand}>
           <SixLogo size={34} />

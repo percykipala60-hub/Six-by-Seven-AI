@@ -24,7 +24,7 @@ export function StudioPage() {
   if (laptop) return <LaptopStudio kind={laptop} x={tilt} y={angle} />;
   const shown = only === null ? combos : [combos[Number(only)]];
   return (
-    <div className="dark" style={{ padding: "90px 24px 40px", display: "flex", flexWrap: "wrap", gap: 24, justifyContent: "center" }}>
+    <div style={{ padding: "90px 24px 40px", display: "flex", flexWrap: "wrap", gap: 24, justifyContent: "center" }}>
       {shown.map((c) => (
         <DevicePhone key={c.model + c.finish} model={c.model} finish={c.finish} pose={{ x: tilt, y: angle, z: 0 }} follow={false} float={false}>
           <div style={{ position: "absolute", inset: 0, background: "#f5f6f9" }} />

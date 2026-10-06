@@ -30,15 +30,15 @@
 .body {
   margin-top: 28px;
   font-size: 19px;
-  color: var(--dark-ink-2);
+  color: var(--ink-2);
   max-width: 28em;
 }
 
 .note {
   margin-top: 28px;
   padding-top: 20px;
-  border-top: 1px solid var(--dark-line);
+  border-top: 1px solid var(--line);
   font-size: 14px;
-  color: var(--dark-mut);
+  color: var(--mut);
   max-width: 34em;
 }

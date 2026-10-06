@@ -9,7 +9,7 @@ const scamScene = scenes.find((s) => s.scam)!;
 
 export function Security() {
   return (
-    <section id={security.id} className={`dark ${styles.section}`} aria-labelledby="security-title">
+    <section id={security.id} className={styles.section} aria-labelledby="security-title">
       <div className={`container ${styles.grid}`}>
         <Reveal className={styles.text}>
           <h2 id="security-title" className={styles.title}>

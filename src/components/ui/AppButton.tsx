@@ -5,7 +5,7 @@ import styles from "./AppButton.module.css";
 
 type Props = {
   kind: "download" | "web";
-  variant?: "primary" | "secondary" | "light" | "outlineDark";
+  variant?: "primary" | "secondary";
   size?: "md" | "sm";
   /** Libellé court (« Télécharger ») ou long (« Télécharger l'application »). */
   long?: boolean;
