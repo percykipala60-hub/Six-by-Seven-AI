@@ -23,6 +23,52 @@
   color: var(--ink-2);
 }
 
+/* Encart de la version bêta, en tête de page. */
+.beta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  max-width: 960px;
+  margin: 0 auto 16px;
+  padding: clamp(28px, 4vw, 44px);
+  border-radius: var(--radius-lg);
+  background: linear-gradient(135deg, var(--brand-blue-deep), #1c3fa8);
+  color: #fff;
+  scroll-margin-top: 96px;
+}
+
+.beta > div {
+  max-width: 34em;
+}
+
+.betaTag {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgb(255 255 255 / 0.18);
+}
+
+.beta h2 {
+  margin-top: 12px;
+  font-size: clamp(32px, 4vw, 48px);
+}
+
+.beta p {
+  margin-top: 8px;
+  color: rgb(255 255 255 / 0.82);
+}
+
+.beta .soonLarge {
+  border-color: rgb(255 255 255 / 0.4);
+  color: #fff;
+}
+
 /* Version recommandée pour l'appareil du visiteur. */
 .featured {
   display: flex;

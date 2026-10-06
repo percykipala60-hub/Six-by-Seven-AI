@@ -12,6 +12,17 @@ export const brand = {
 // tant qu'ils sont vides, les boutons mènent à la section « Télécharger » avec la date de sortie.
 export type PlatformId = "ios" | "android" | "mac" | "windows";
 
+// Version bêta, ouverte avant la sortie officielle.
+// Colle ici l'adresse de la bêta : tous les boutons « Essayer la bêta » pointeront dessus.
+export const beta = {
+  url: "",
+  tag: "Bêta",
+  label: "Essayer la bêta",
+  title: "La bêta est ouverte",
+  text: "Essaie Six dès maintenant, avant la sortie officielle. Certaines fonctions peuvent encore changer, et tes retours nous aident à les améliorer.",
+  pending: "Lien de la bêta bientôt disponible",
+};
+
 export const app = {
   webUrl: "", // adresse de la version web, ex. https://app.exemple.com
   // Liens de téléchargement par plateforme : vides tant que les versions ne sont pas publiées.
@@ -47,6 +58,7 @@ export const nav = {
     { href: "/#securite", label: "Sécurité" },
     { href: "/#confidentialite", label: "Confidentialité" },
     { href: "/#seven-ai", label: "Seven.AI" },
+    { href: "/telecharger#beta", label: "Bêta" },
   ],
 };
 

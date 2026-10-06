@@ -2,6 +2,7 @@ import { ArrowRight } from "lucide-react";
 import { Link } from "react-router";
 import { app, hero } from "../content/site";
 import { AppButton } from "../components/ui/AppButton";
+import { BetaLink } from "../components/ui/BetaLink";
 import { Reveal } from "../components/ui/Reveal";
 import { PhoneShowcase } from "../components/phone/PhoneShowcase";
 import styles from "./Hero.module.css";
@@ -21,6 +22,7 @@ export function Hero() {
             <AppButton kind="download" long variant="light" />
             <AppButton kind="web" long variant="outlineDark" />
           </div>
+          <BetaLink tone="dark" className={styles.beta} />
           <p className={styles.meta}>
             <span>{app.release}</span>
             <span aria-hidden="true">·</span>

@@ -2,6 +2,7 @@ import { Globe, Smartphone } from "lucide-react";
 import { app, launch, socials } from "../content/site";
 import { SocialIcon } from "../components/brand/SocialIcon";
 import { AppButton } from "../components/ui/AppButton";
+import { BetaLink } from "../components/ui/BetaLink";
 import { Reveal } from "../components/ui/Reveal";
 import styles from "./Launch.module.css";
 
@@ -33,6 +34,10 @@ export function Launch() {
             </Reveal>
           ))}
         </div>
+
+        <p className={styles.betaLine}>
+          <BetaLink />
+        </p>
 
         <Reveal className={styles.follow}>
           <p>{launch.follow}</p>

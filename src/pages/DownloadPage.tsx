@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from "react";
-import { Download, Laptop, Monitor, Smartphone, TabletSmartphone } from "lucide-react";
-import { app, downloadPage, type PlatformId } from "../content/site";
+import { ArrowUpRight, Download, Laptop, Monitor, Smartphone, TabletSmartphone } from "lucide-react";
+import { app, beta, downloadPage, type PlatformId } from "../content/site";
 import { AppButton } from "../components/ui/AppButton";
 import { SixAppIcon } from "../components/brand/Logos";
 import styles from "./DownloadPage.module.css";
@@ -41,6 +41,22 @@ export function DownloadPage() {
           <h1>{downloadPage.title}</h1>
           <p>{downloadPage.intro}</p>
         </header>
+
+        <section id="beta" className={styles.beta}>
+          <div>
+            <span className={styles.betaTag}>{beta.tag}</span>
+            <h2>{beta.title}</h2>
+            <p>{beta.text}</p>
+          </div>
+          {beta.url ? (
+            <a className={`${styles.dl} ${styles.dlLarge}`} href={beta.url} target="_blank" rel="noopener noreferrer">
+              {beta.label}
+              <ArrowUpRight size={18} aria-hidden="true" />
+            </a>
+          ) : (
+            <span className={`${styles.soon} ${styles.soonLarge}`}>{beta.pending}</span>
+          )}
+        </section>
 
         {detected && (
           <section className={styles.featured} aria-label={downloadPage.detected}>

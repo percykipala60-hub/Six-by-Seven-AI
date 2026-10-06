@@ -71,12 +71,16 @@
   margin-top: 40px;
 }
 
+.beta {
+  margin-top: 22px;
+}
+
 .meta {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 12px;
-  margin-top: 22px;
+  margin-top: 14px;
   font-size: 14px;
   color: var(--dark-mut);
 }

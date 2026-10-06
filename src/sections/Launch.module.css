@@ -71,6 +71,11 @@
   align-self: flex-start;
 }
 
+.betaLine {
+  margin-top: 28px;
+  text-align: center;
+}
+
 .follow {
   margin-top: clamp(48px, 6vw, 72px);
   text-align: center;
