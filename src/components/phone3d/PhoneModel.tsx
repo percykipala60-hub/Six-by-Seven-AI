@@ -12,7 +12,7 @@ const FINISH_COLORS: Record<Finish, { metal: string; glass: string }> = {
   blue: { metal: "#33446e", glass: "#3a4a74" },
   rose: { metal: "#b9808f", glass: "#c99aa6" },
   // Violet cobalt du Galaxy S26 Ultra : cadre plus clair et satiné, dos en verre mat plus profond.
-  violet: { metal: "#76729f", glass: "#4a4670" },
+  violet: { metal: "#65618f", glass: "#393660" },
 };
 
 // Arrondi des arêtes du cadre : bords bombés sur l'iPhone, flancs plats sur le Galaxy.
@@ -23,7 +23,8 @@ function useMaterials(finish: Finish) {
     const c = FINISH_COLORS[finish];
     return {
       // Aluminium satiné : métallique, légèrement rugueux.
-      metal: new THREE.MeshPhysicalMaterial({ color: c.metal, metalness: 1, roughness: 0.34, clearcoat: 0.25, clearcoatRoughness: 0.4 }),
+      // Le violet du Galaxy est un aluminium anodisé clair : moins métallique, sinon il reflète le studio et vire au bleu nuit.
+      metal: new THREE.MeshPhysicalMaterial({ color: c.metal, metalness: finish === "violet" ? 0.45 : 1, roughness: finish === "violet" ? 0.4 : 0.34, clearcoat: 0.25, clearcoatRoughness: 0.4 }),
       // Bagues d'objectifs et boutons : même teinte, plus polie.
       polished: new THREE.MeshPhysicalMaterial({ color: c.metal, metalness: 1, roughness: 0.16 }),
       // Verre arrière dépoli.
@@ -45,18 +46,18 @@ function useMaterials(finish: Finish) {
       }),
       lensInner: new THREE.MeshStandardMaterial({ color: "#1b1e26", metalness: 0.9, roughness: 0.3, envMapIntensity: 0.5 }),
       // Barillet en métal sombre et fines bagues claires à l'intérieur de l'objectif.
-      barrel: new THREE.MeshStandardMaterial({ color: "#2b2f38", metalness: 0.9, roughness: 0.32, envMapIntensity: 0.9 }),
+      barrel: new THREE.MeshStandardMaterial({ color: "#1d2027", metalness: 0.9, roughness: 0.4, envMapIntensity: 0.6, side: THREE.DoubleSide }),
       barrelLight: new THREE.MeshStandardMaterial({ color: "#a9afba", metalness: 1, roughness: 0.22, envMapIntensity: 1.2 }),
       barrelDim: new THREE.MeshStandardMaterial({ color: "#23262d", metalness: 1, roughness: 0.35, envMapIntensity: 0.6 }),
       // Élément optique : bleu nuit profond avec traitement irisé.
       element: new THREE.MeshPhysicalMaterial({
-        color: "#050609",
+        color: "#030407",
         metalness: 0,
-        roughness: 0.2,
-        clearcoat: 0.2,
-        clearcoatRoughness: 0.3,
-        envMapIntensity: 0.25,
-        iridescence: 0.12,
+        roughness: 0.06,
+        clearcoat: 1,
+        clearcoatRoughness: 0.04,
+        envMapIntensity: 0.9,
+        iridescence: 0.9,
         iridescenceIOR: 2,
         iridescenceThicknessRange: [280, 760],
       }),
@@ -68,23 +69,24 @@ function useMaterials(finish: Finish) {
         roughness: 0,
         clearcoat: 1,
         transparent: true,
-        opacity: 0.09,
+        opacity: 0.16,
         depthWrite: false,
-        envMapIntensity: 1.4,
+        envMapIntensity: 2.4,
       }),
       // Liseré d'ombre autour des boutons, et verre du bouton de commande de l'appareil photo.
       gap: new THREE.MeshStandardMaterial({ color: "#050506", roughness: 0.6 }),
       control: new THREE.MeshPhysicalMaterial({ color: "#0b0c10", metalness: 0.2, roughness: 0.08, clearcoat: 1, envMapIntensity: 1 }),
       // Flash : grand diffuseur blanc laiteux.
-      flash: new THREE.MeshPhysicalMaterial({ color: "#f4f1ea", emissive: "#1d1c18", roughness: 0.45, clearcoat: 1, envMapIntensity: 0.6 }),
+      flash: new THREE.MeshPhysicalMaterial({ color: "#efe9da", emissive: "#141310", roughness: 0.55, clearcoat: 1, clearcoatRoughness: 0.2, envMapIntensity: 0.5 }),
       // Verre teinté vert-bleu des objectifs Samsung.
       elementGreen: new THREE.MeshPhysicalMaterial({
-        color: "#05080a",
+        color: "#03060a",
         metalness: 0,
-        roughness: 0.2,
-        clearcoat: 0.2,
-        envMapIntensity: 0.25,
-        iridescence: 0.12,
+        roughness: 0.06,
+        clearcoat: 1,
+        clearcoatRoughness: 0.04,
+        envMapIntensity: 0.9,
+        iridescence: 0.9,
         iridescenceIOR: 1.8,
         iridescenceThicknessRange: [200, 600],
       }),
@@ -144,36 +146,60 @@ function Lens({ x, y, z, r, m, look = "apple", height: heightIn }: { x: number; 
   const rot: [number, number, number] = [Math.PI / 2, 0, 0];
   const apple = look === "apple";
   const height = heightIn ?? (apple ? 0.18 : 0.22);
-  const top = -height; // face supérieure de la bague
+  const top = -height; // face supérieure de la bague (l'objectif sort vers -z)
   const blackOuter = apple ? 0.8 : 0.86;
   const glass = apple ? 0.64 : 0.7;
-  const coverR = (r * glass) / Math.sin(COVER);
+  const g = r * glass; // rayon de l'ouverture
+  // Profondeurs sous le verre de protection : l'objectif est un puits, pas un disque plat.
+  // Le puits ne descend jamais plus bas que la surface qui porte l'objectif (sinon elle le boucherait).
+  const k = Math.min(1, (height - 0.012) / 0.14);
+  const at = (depth: number): [number, number, number] => [0, 0, top + depth * k];
+  const element = g * 0.36; // rayon de la lentille, petite et au fond
+  const capAngle = 0.35;
+  const capR = element / Math.sin(capAngle);
   return (
     <group position={[x, y, z]}>
-      {/* Bague métallique et son chanfrein poli qui accroche un fin trait de lumière */}
+      {/* Bague métallique (tube ouvert : on voit l'intérieur de l'objectif) et son chanfrein poli */}
       <mesh rotation={rot} position={[0, 0, top / 2]} material={m.polished}>
-        <cylinderGeometry args={[r, r, height, 72]} />
+        <cylinderGeometry args={[r, r, height, 72, 1, true]} />
       </mesh>
       <mesh position={[0, 0, top]} material={m.polished}>
         <torusGeometry args={[(r * (blackOuter + 1)) / 2, (r * (1 - blackOuter)) / 2, 18, 96]} />
       </mesh>
-      {/* Anneau noir brillant */}
-      <mesh position={[0, 0, top - 0.002]} rotation={FACE} material={m.housing}>
-        <ringGeometry args={[r * glass, r * blackOuter, 72]} />
+      {/* Anneau noir brillant autour de l'ouverture */}
+      <mesh position={at(-0.002)} rotation={FACE} material={m.housing}>
+        <ringGeometry args={[g, r * blackOuter, 72]} />
       </mesh>
-      {/* Élément optique, bague intérieure et pupille, sous le verre */}
-      <mesh position={[0, 0, top - 0.003]} rotation={FACE} material={apple ? m.element : m.elementGreen}>
-        <circleGeometry args={[r * glass, 72]} />
+      {/* Barillet : paroi intérieure sombre qui descend dans l'objectif */}
+      <mesh rotation={rot} position={at(0.07)} scale={[1, k, 1]} material={m.barrel}>
+        <cylinderGeometry args={[g, g, 0.14, 64, 1, true, 0, Math.PI * 2]} />
       </mesh>
-      <mesh position={[0, 0, top - 0.004]} rotation={FACE} material={m.barrelDim}>
-        <ringGeometry args={[r * glass * 0.46, r * glass * 0.5, 72]} />
+      {/* Bagues intérieures en gradins : l'ouverture rétrécit à mesure qu'on descend */}
+      <mesh position={at(0.025)} rotation={FACE} material={m.barrelDim}>
+        <ringGeometry args={[g * 0.84, g, 72]} />
       </mesh>
-      <mesh position={[0, 0, top - 0.005]} rotation={FACE} material={m.pupil}>
-        <circleGeometry args={[r * glass * 0.3, 48]} />
+      <mesh position={at(0.026)} rotation={FACE} material={m.barrelLight}>
+        <ringGeometry args={[g * 0.83, g * 0.845, 72]} />
       </mesh>
-      {/* Verre bombé de protection : il reflète la pièce comme sur les photos */}
-      <mesh position={[0, 0, top - 0.003 + coverR * Math.cos(COVER)]} rotation={[-Math.PI / 2, 0, 0]} material={m.cover}>
-        <sphereGeometry args={[coverR, 72, 16, 0, Math.PI * 2, 0, COVER]} />
+      <mesh position={at(0.06)} rotation={FACE} material={m.barrel}>
+        <ringGeometry args={[g * 0.62, g * 0.83, 72]} />
+      </mesh>
+      <mesh position={at(0.061)} rotation={FACE} material={m.barrelLight}>
+        <ringGeometry args={[g * 0.61, g * 0.625, 72]} />
+      </mesh>
+      <mesh position={at(0.095)} rotation={FACE} material={m.barrelDim}>
+        <ringGeometry args={[element, g * 0.61, 72]} />
+      </mesh>
+      {/* Petite lentille au fond, à peine bombée, très sombre et irisée */}
+      <mesh position={[0, 0, at(0.125)[2] + capR * Math.cos(capAngle)]} rotation={[-Math.PI / 2, 0, 0]} material={apple ? m.element : m.elementGreen}>
+        <sphereGeometry args={[capR, 48, 12, 0, Math.PI * 2, 0, capAngle]} />
+      </mesh>
+      <mesh position={at(0.135)} rotation={FACE} material={m.pupil}>
+        <circleGeometry args={[element, 48]} />
+      </mesh>
+      {/* Verre de protection plat qui ferme l'objectif : il reflète la lumière par-dessus tout l'intérieur */}
+      <mesh position={at(-0.003)} rotation={FACE} material={m.cover}>
+        <circleGeometry args={[g, 72]} />
       </mesh>
     </group>
   );
@@ -440,7 +466,7 @@ export function PhoneModel({ model, finish }: { model: Model; finish: Finish }) 
             const sx = ix - 1.45;
             return (
               <>
-                <mesh geometry={geos.island} position={[ix, iy, back - 0.006 - 0.055]} material={m.polished} />
+                <mesh geometry={geos.island} position={[ix, iy, back - 0.006 - 0.055]} material={m.metal} />
                 {[0, 1, 2].map((i) => (
                   <Lens key={i} x={ix} y={yTop - i * step} z={islandTop} r={big} m={m} look="samsung" height={0.07} />
                 ))}

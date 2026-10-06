@@ -3,6 +3,7 @@ import * as THREE from "three";
 import { Canvas } from "@react-three/fiber";
 import { DevicePhone } from "../components/phone3d/DevicePhone";
 import { LaptopModel, type LaptopKind } from "../components/phone3d/LaptopModel";
+import { PhoneModel } from "../components/phone3d/PhoneModel";
 import { CssLayer, DEG, Studio, createScreenElement } from "../components/phone3d/stage";
 import type { Finish, Model } from "../components/phone/RealPhone";
 
@@ -21,6 +22,8 @@ export function StudioPage() {
   const tilt = Number(params.get("x") ?? 4);
   const only = params.get("c");
   const laptop = params.get("laptop") as LaptopKind | null;
+  const phone = params.get("phone") as Model | null;
+  if (phone) return <PhoneStudio model={phone} finish={(params.get("finish") as Finish) ?? (phone === "pro" ? "silver" : "violet")} />;
   if (laptop) return <LaptopStudio kind={laptop} x={tilt} y={angle} dist={Number(params.get("d") ?? 80)} focus={(params.get("f") ?? "0,0").split(",").map(Number) as [number, number]} />;
   const shown = only === null ? combos : [combos[Number(only)]];
   return (
@@ -56,6 +59,25 @@ function LaptopStudio({ kind, x, y, dist, focus }: { kind: LaptopKind; x: number
         <group rotation={cam ? [0, 0, 0] : [x * DEG, y * DEG, 0]} position={cam ? [0, 0, 0] : [0, -5, 0]}>
           <LaptopModel kind={kind} screenEl={el} />
         </group>
+      </Canvas>
+    </div>
+  );
+}
+
+// ?phone=pro|ultra&cam=x,y,z&look=x,y,z : gros plan libre sur un téléphone (cm), pour contrôler les objectifs.
+function PhoneStudio({ model, finish }: { model: Model; finish: Finish }) {
+  const params = new URLSearchParams(window.location.search);
+  const cam = (params.get("cam")?.split(",").map(Number) ?? [0, 0, -30]) as [number, number, number];
+  const look = (params.get("look")?.split(",").map(Number) ?? [0, 0, 0]) as [number, number, number];
+  return (
+    <div style={{ position: "relative", height: "100vh", background: "#ffffff" }}>
+      <Canvas
+        camera={{ position: cam, fov: 30, near: 0.5, far: 400 }}
+        gl={{ antialias: true, toneMapping: THREE.NeutralToneMapping }}
+        onCreated={({ camera }) => camera.lookAt(...look)}
+      >
+        <Studio />
+        <PhoneModel model={model} finish={finish} />
       </Canvas>
     </div>
   );

@@ -212,7 +212,13 @@ export function CssLayer() {
   }, [gl, renderer]);
 
   useEffect(() => renderer.setSize(size.width, size.height), [renderer, size]);
-  useFrame(() => renderer.render(scene, camera));
+  // Rendu en dernier (priorité 1), une fois toutes les animations de l'image appliquées : l'image 3D et
+  // les interfaces sont dessinées avec exactement la même position. Sinon l'interface avait une image
+  // de retard et ses coins tremblaient autour de la fenêtre pendant les mouvements.
+  useFrame(() => {
+    gl.render(scene, camera);
+    renderer.render(scene, camera);
+  }, 1);
   return null;
 }
 
