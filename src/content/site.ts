@@ -17,9 +17,11 @@ export type PlatformId = "ios" | "android" | "mac" | "windows";
 export const beta = {
   url: "",
   tag: "Bêta",
-  label: "Essayer la bêta",
-  title: "La bêta est ouverte",
-  text: "Essaie Six dès maintenant, avant la sortie officielle. Certaines fonctions peuvent encore changer, et tes retours nous aident à les améliorer.",
+  label: "Essayer la bêta web",
+  open: "Ouvrir la bêta web",
+  finalRelease: "Dans ton navigateur, rien à installer. La version finale sort le 15 octobre.",
+  title: "La bêta web est ouverte",
+  text: "Essaie Six dès maintenant dans ton navigateur, avant la sortie officielle. Certaines fonctions peuvent encore changer, et tes retours nous aident à les améliorer.",
   pending: "Lien de la bêta bientôt disponible",
 };
 

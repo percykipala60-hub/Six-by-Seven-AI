@@ -21,7 +21,6 @@ function detectPlatform(): PlatformId | null {
 // puis la liste des plateformes séparées par de fins traits, et la bêta en une ligne.
 export function DownloadPage() {
   const detectedId = useMemo(detectPlatform, []);
-  const detected = app.platforms.find((p) => p.id === detectedId);
 
   useEffect(() => {
     document.title = `${downloadPage.title} · Six by Seven.AI`;
@@ -37,19 +36,17 @@ export function DownloadPage() {
           <h1>{downloadPage.title}</h1>
           <p className={styles.intro}>{downloadPage.intro}</p>
 
+          {/* Action principale : la bêta, seule version disponible avant la sortie. */}
           <div className={styles.primary}>
-            {detected?.url ? (
-              <a className={styles.mainBtn} href={detected.url} rel="noopener noreferrer">
-                <Download size={18} aria-hidden="true" />
-                Télécharger pour {detected.name}
-              </a>
-            ) : (
-              <span className={styles.mainBtn} aria-disabled="true">
-                <Download size={18} aria-hidden="true" />
-                {detected ? `Télécharger pour ${detected.name}` : downloadPage.download}
-              </span>
-            )}
-            {!detected?.url && <p className={styles.release}>{app.release}</p>}
+            <a
+              className={styles.mainBtn}
+              href={beta.url || "#beta"}
+              {...(beta.url ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+            >
+              {beta.open}
+              <ArrowUpRight size={18} aria-hidden="true" />
+            </a>
+            <p className={styles.release}>{beta.finalRelease}</p>
           </div>
 
           <a className={styles.webLink} href="#plateformes">
