@@ -1,18 +1,13 @@
 import { useEffect, useMemo } from "react";
-import { ArrowUpRight, Download, Laptop, Monitor, Smartphone, TabletSmartphone } from "lucide-react";
+import { ArrowRight, ArrowUpRight, Download } from "lucide-react";
+import { Link } from "react-router";
 import { app, beta, downloadPage, type PlatformId } from "../content/site";
-import { AppButton } from "../components/ui/AppButton";
-import { SixAppIcon } from "../components/brand/Logos";
+import { scenes } from "../content/phoneScenes";
+import { DevicePhone } from "../components/phone3d/DevicePhone";
+import { SixScreen } from "../components/phone/Screens";
 import styles from "./DownloadPage.module.css";
 
-const icons: Record<PlatformId, typeof Smartphone> = {
-  ios: Smartphone,
-  android: TabletSmartphone,
-  mac: Laptop,
-  windows: Monitor,
-};
-
-// Devine l'appareil du visiteur pour mettre sa version en avant.
+// Devine l'appareil du visiteur pour lui proposer directement sa version.
 function detectPlatform(): PlatformId | null {
   const ua = navigator.userAgent;
   if (/iPhone|iPad|iPod/i.test(ua)) return "ios";
@@ -22,6 +17,8 @@ function detectPlatform(): PlatformId | null {
   return null;
 }
 
+// Page de téléchargement, mise en page éditoriale : un en-tête avec l'action principale,
+// puis la liste des plateformes séparées par de fins traits, et la bêta en une ligne.
 export function DownloadPage() {
   const detectedId = useMemo(detectPlatform, []);
   const detected = app.platforms.find((p) => p.id === detectedId);
@@ -35,76 +32,96 @@ export function DownloadPage() {
 
   return (
     <div className={styles.page}>
-      <div className="container">
-        <header className={styles.head}>
-          <SixAppIcon size={64} />
+      <div className={`container ${styles.hero}`}>
+        <div className={styles.heroText}>
           <h1>{downloadPage.title}</h1>
-          <p>{downloadPage.intro}</p>
-        </header>
+          <p className={styles.intro}>{downloadPage.intro}</p>
 
-        <section id="beta" className={styles.beta}>
-          <div>
-            <span className={styles.betaTag}>{beta.tag}</span>
-            <h2>{beta.title}</h2>
-            <p>{beta.text}</p>
+          <div className={styles.primary}>
+            {detected?.url ? (
+              <a className={styles.mainBtn} href={detected.url} rel="noopener noreferrer">
+                <Download size={18} aria-hidden="true" />
+                Télécharger pour {detected.name}
+              </a>
+            ) : (
+              <span className={styles.mainBtn} aria-disabled="true">
+                <Download size={18} aria-hidden="true" />
+                {detected ? `Télécharger pour ${detected.name}` : downloadPage.download}
+              </span>
+            )}
+            {!detected?.url && <p className={styles.release}>{app.release}</p>}
           </div>
-          {beta.url ? (
-            <a className={`${styles.dl} ${styles.dlLarge}`} href={beta.url} target="_blank" rel="noopener noreferrer">
-              {beta.label}
-              <ArrowUpRight size={18} aria-hidden="true" />
-            </a>
-          ) : (
-            <span className={`${styles.soon} ${styles.soonLarge}`}>{beta.pending}</span>
-          )}
-        </section>
 
-        {detected && (
-          <section className={styles.featured} aria-label={downloadPage.detected}>
-            <div className={styles.featuredText}>
-              <p className={styles.label}>{downloadPage.detected}</p>
-              <h2>Six pour {detected.name}</h2>
-              <p className={styles.system}>{detected.system}</p>
-            </div>
-            <PlatformAction url={detected.url} large />
-          </section>
-        )}
+          <a className={styles.webLink} href="#plateformes">
+            {downloadPage.otherLink}
+            <ArrowRight size={15} aria-hidden="true" />
+          </a>
+        </div>
 
-        <h2 className={styles.gridTitle}>{downloadPage.others}</h2>
-        <ul className={styles.grid}>
-          {app.platforms.map((p) => {
-            const Icon = icons[p.id];
-            return (
-              <li key={p.id} className={styles.card} data-current={p.id === detectedId || undefined}>
-                <Icon size={26} aria-hidden="true" className={styles.icon} />
-                <h3>{p.name}</h3>
-                <p>{p.system}</p>
-                <PlatformAction url={p.url} />
-              </li>
-            );
-          })}
-        </ul>
-
-        <section id="web" className={styles.web}>
-          <div>
-            <h2>{downloadPage.webTitle}</h2>
-            <p>{downloadPage.webText}</p>
-          </div>
-          <AppButton kind="web" long variant="light" />
-        </section>
+        <div className={styles.heroVisual}>
+          <DevicePhone finish="silver" follow={false}>
+            <SixScreen scene={scenes[0]} step={3} />
+          </DevicePhone>
+        </div>
       </div>
-    </div>
-  );
-}
 
-// Bouton de téléchargement d'une plateforme, ou la date de sortie tant que le lien n'existe pas.
-function PlatformAction({ url, large }: { url: string; large?: boolean }) {
-  if (!url) {
-    return <span className={large ? `${styles.soon} ${styles.soonLarge}` : styles.soon}>{downloadPage.soon}</span>;
-  }
-  return (
-    <a className={large ? `${styles.dl} ${styles.dlLarge}` : styles.dl} href={url} rel="noopener noreferrer">
-      <Download size={large ? 18 : 16} aria-hidden="true" />
-      {downloadPage.download}
-    </a>
+      <section id="plateformes" className={`container ${styles.list}`} aria-labelledby="plateformes-title">
+        <h2 id="plateformes-title">{downloadPage.others}</h2>
+        <ul>
+          {app.platforms.map((p) => (
+            <li key={p.id} className={styles.row}>
+              <span className={styles.name}>
+                {p.name}
+                {p.id === detectedId && <span className={styles.yours}>{downloadPage.yours}</span>}
+              </span>
+              <span className={styles.system}>{p.system}</span>
+              <span className={styles.action}>
+                {p.url ? (
+                  <a href={p.url} rel="noopener noreferrer">
+                    {downloadPage.download}
+                    <Download size={15} aria-hidden="true" />
+                  </a>
+                ) : (
+                  <span className={styles.pending}>{app.release}</span>
+                )}
+              </span>
+            </li>
+          ))}
+          <li id="web" className={styles.row}>
+            <span className={styles.name}>{app.web.title}</span>
+            <span className={styles.system}>{app.web.platforms}</span>
+            <span className={styles.action}>
+              {app.webUrl ? (
+                <a href={app.webUrl} target="_blank" rel="noopener noreferrer">
+                  {downloadPage.open}
+                  <ArrowUpRight size={15} aria-hidden="true" />
+                </a>
+              ) : (
+                <span className={styles.pending}>{app.release}</span>
+              )}
+            </span>
+          </li>
+        </ul>
+      </section>
+
+      <section id="beta" className={`container ${styles.beta}`}>
+        <div>
+          <h2>{beta.title}</h2>
+          <p>{beta.text}</p>
+        </div>
+        {beta.url ? (
+          <a className={styles.betaLink} href={beta.url} target="_blank" rel="noopener noreferrer">
+            {beta.label}
+            <ArrowUpRight size={16} aria-hidden="true" />
+          </a>
+        ) : (
+          <span className={styles.pending}>{beta.pending}</span>
+        )}
+      </section>
+
+      <p className={`container ${styles.help}`}>
+        {downloadPage.help} <Link to="/legal/utilisation-ia">{downloadPage.helpLink}</Link>
+      </p>
+    </div>
   );
 }

@@ -151,13 +151,14 @@ export const socials: { id: SocialId; name: string; handle?: string; href?: stri
 // Page « Télécharger ».
 export const downloadPage = {
   title: "Télécharger Six",
-  intro: "Choisis ton appareil. Six sort le 15 octobre sur iPhone, Android, Mac et Windows.",
-  detected: "Pour ton appareil",
-  others: "Toutes les versions",
+  intro: "Sur ton téléphone, ton ordinateur ou dans le navigateur. Les versions font toutes la même chose.",
+  others: "Toutes les plateformes",
+  otherLink: "Autres plateformes et version web",
+  yours: "Ton appareil",
   download: "Télécharger",
-  soon: "Disponible le 15 oct.",
-  webTitle: "Pas envie d'installer ?",
-  webText: "La version web fait exactement la même chose, directement dans ton navigateur.",
+  open: "Ouvrir",
+  help: "Une question sur la façon dont Six utilise l'IA ?",
+  helpLink: "Lire notre page dédiée",
 };
 
 export const launch = {
