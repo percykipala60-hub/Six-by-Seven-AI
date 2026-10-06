@@ -292,7 +292,7 @@ export function LaptopModel({ kind, screenEl, lidAngle = 112 }: { kind: LaptopKi
     if (!mesh) return;
     const m = new THREE.Matrix4();
     dots.forEach(([x, z], i) => {
-      m.makeTranslation(x, h + 0.002, z);
+      m.makeTranslation(x, h + 0.008, z);
       mesh.setMatrixAt(i, m);
     });
     mesh.instanceMatrix.needsUpdate = true;
@@ -380,13 +380,13 @@ export function LaptopModel({ kind, screenEl, lidAngle = 112 }: { kind: LaptopKi
     <group>
       {/* Base : coque, puits du clavier, touches, pavé tactile */}
       <mesh geometry={geo.base} rotation={[-Math.PI / 2, 0, 0]} position={[0, h / 2, 0]} material={mats.body} />
-      <mesh geometry={geo.well} position={[spec.numpad ? 0 : 0, h + 0.003, kbFrontZ + geo.layout.totalD / 2]} material={mats.well} />
+      <mesh geometry={geo.well} position={[0, h + 0.01, kbFrontZ + geo.layout.totalD / 2]} material={mats.well} />
       <mesh geometry={geo.keys} position={[0, 0, kbFrontZ]} material={mats.key} />
-      <mesh geometry={legend.plane} position={[0, h + spec.keyRise + 0.003, kbFrontZ + geo.layout.totalD / 2]} material={legend.mat} />
-      <mesh geometry={geo.pad} position={[spec.trackpad.x, h + 0.003, padZ]} material={mats.pad} />
+      <mesh geometry={legend.plane} position={[0, h + spec.keyRise + 0.008, kbFrontZ + geo.layout.totalD / 2]} material={legend.mat} />
+      <mesh geometry={geo.pad} position={[spec.trackpad.x, h + 0.01, padZ]} material={mats.pad} />
       <Ports kind={kind} w={w} d={d} h={h} material={mats.dark} />
       {grille && (
-        <mesh position={[0, h + 0.004, (hingeZ + kbFrontZ) / 2 + 0.25]} rotation={[-Math.PI / 2, 0, 0]} material={grille}>
+        <mesh position={[0, h + 0.01, (hingeZ + kbFrontZ) / 2 + 0.25]} rotation={[-Math.PI / 2, 0, 0]} material={grille}>
           <planeGeometry args={[w - 5, 1.1]} />
         </mesh>
       )}
@@ -401,7 +401,7 @@ export function LaptopModel({ kind, screenEl, lidAngle = 112 }: { kind: LaptopKi
       {/* Aérations arrière (portable de jeu), derrière la charnière */}
       {kind === "windows" &&
         Array.from({ length: 16 }, (_, i) => (
-          <mesh key={i} position={[-w / 2 + 4 + i * ((w - 8) / 15), h + 0.004, -d / 2 + 1.0]} rotation={[-Math.PI / 2, 0, 0]} material={mats.dark}>
+          <mesh key={i} position={[-w / 2 + 4 + i * ((w - 8) / 15), h + 0.01, -d / 2 + 1.0]} rotation={[-Math.PI / 2, 0, 0]} material={mats.dark}>
             <planeGeometry args={[1.25, 1.1]} />
           </mesh>
         ))}
@@ -422,8 +422,8 @@ export function LaptopModel({ kind, screenEl, lidAngle = 112 }: { kind: LaptopKi
       {/* Capot ouvert, pivotant autour de la charnière */}
       <group position={[0, h + 0.2, hingeZ]} rotation={[-tilt, 0, 0]}>
         <mesh geometry={geo.lid} position={[0, lidH / 2, -lidT / 2]} material={mats.body} />
-        <mesh geometry={geo.bezel} position={[0, lidH / 2, 0.003]} material={mats.glass} />
-        <ScreenAnchor el={screenEl} scale={pxScale} position={[0, dispCenterY, 0.012]} />
+        <mesh geometry={geo.bezel} position={[0, lidH / 2, 0.02]} material={mats.glass} />
+        <ScreenAnchor el={screenEl} scale={pxScale} position={[0, dispCenterY, 0.03]} />
       </group>
     </group>
   );
@@ -475,13 +475,13 @@ function Ports({ kind, w, d, h, material }: { kind: LaptopKind; w: number; d: nu
   return (
     <group>
       {set.left.map((p) => (
-        <mesh key={`l${p.z}`} geometry={shape(p.w, p.h, p.r)} position={[-w / 2 - 0.004, h / 2, p.z]} rotation={[0, -Math.PI / 2, 0]} material={material} />
+        <mesh key={`l${p.z}`} geometry={shape(p.w, p.h, p.r)} position={[-w / 2 - 0.01, h / 2, p.z]} rotation={[0, -Math.PI / 2, 0]} material={material} />
       ))}
       {set.right.map((p) => (
-        <mesh key={`r${p.z}`} geometry={shape(p.w, p.h, p.r)} position={[w / 2 + 0.004, h / 2, p.z]} rotation={[0, Math.PI / 2, 0]} material={material} />
+        <mesh key={`r${p.z}`} geometry={shape(p.w, p.h, p.r)} position={[w / 2 + 0.01, h / 2, p.z]} rotation={[0, Math.PI / 2, 0]} material={material} />
       ))}
       {set.back.map((p) => (
-        <mesh key={`b${p.x}`} geometry={shape(p.w, p.h, p.r)} position={[p.x, h / 2, -d / 2 - 0.004]} rotation={[0, Math.PI, 0]} material={material} />
+        <mesh key={`b${p.x}`} geometry={shape(p.w, p.h, p.r)} position={[p.x, h / 2, -d / 2 - 0.01]} rotation={[0, Math.PI, 0]} material={material} />
       ))}
     </group>
   );

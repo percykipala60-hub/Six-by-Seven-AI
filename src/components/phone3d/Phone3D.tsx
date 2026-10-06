@@ -65,7 +65,8 @@ export default function Phone3D({
         <Canvas
           frameloop={active ? "always" : "never"}
           dpr={[1, 2]}
-          camera={{ position: [0, 0, 31], fov: 30 }}
+          // Plage de profondeur resserrée autour du téléphone : évite le scintillement sur mobile.
+          camera={{ position: [0, 0, 31], fov: 30, near: 18, far: 46 }}
           gl={{ antialias: true, alpha: true, toneMapping: THREE.NeutralToneMapping }}
         >
           <Studio />

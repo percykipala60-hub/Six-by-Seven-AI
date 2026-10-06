@@ -264,7 +264,7 @@ export function PhoneModel({ model, finish }: { model: Model; finish: Finish }) 
   return (
     <group>
       <mesh geometry={geos.body} material={m.metal} />
-      <mesh geometry={geos.front} position={[0, 0, d / 2 + 0.002]} material={m.frontGlass} />
+      <mesh geometry={geos.front} position={[0, 0, d / 2 + 0.006]} material={m.frontGlass} />
 
       {/* Boutons placés d'après le schéma officiel d'Apple (positions mesurées depuis le haut) :
           gauche : Action ~22 %, volume ~37 %, tiroir SIM ~66 % ; droite : bouton latéral ~37 %, commande photo ~66 %. */}
@@ -294,7 +294,7 @@ export function PhoneModel({ model, finish }: { model: Model; finish: Finish }) 
           <mesh geometry={geos.plateau} position={[0, h / 2 - 0.15 - 2.1, back - 0.07]} material={m.metal} />
           <mesh
             geometry={geos.panelPro}
-            position={[0, -h / 2 + 0.3 + geos.panelProH / 2, back - 0.002]}
+            position={[0, -h / 2 + 0.3 + geos.panelProH / 2, back - 0.006]}
             rotation={[0, Math.PI, 0]}
             material={m.frosted}
           />
@@ -325,9 +325,9 @@ export function PhoneModel({ model, finish }: { model: Model; finish: Finish }) 
         </>
       ) : (
         <>
-          <mesh geometry={geos.panelUltra} position={[0, 0, back - 0.002]} rotation={[0, Math.PI, 0]} material={m.frosted} />
+          <mesh geometry={geos.panelUltra} position={[0, 0, back - 0.006]} rotation={[0, Math.PI, 0]} material={m.frosted} />
           {(() => {
-            const z = back - 0.004;
+            const z = back - 0.008;
             const lr = 0.66;
             const x1 = w / 2 - 0.55 - lr;
             const x2 = x1 - 1.5;
