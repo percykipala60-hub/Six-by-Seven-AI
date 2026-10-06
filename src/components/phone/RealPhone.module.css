@@ -55,6 +55,14 @@
   --r: 30px;
 }
 
+[data-finish="violet"] {
+  --metal: #7d78b0;
+  --metal-hi: #b9b5e0;
+  --metal-lo: #3e3a6a;
+  --metal-glass: #5f5a92;
+  --lens-ring: #57528a;
+}
+
 [data-finish="blue"] {
   --metal: #34436a;
   --metal-hi: #7d8fbd;

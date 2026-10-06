@@ -5,7 +5,8 @@ import * as THREE from "three";
 // identique sur les quatre côtés, comme sur un vrai téléphone.
 export const SPECS = {
   pro: { w: 7.19, h: 15.0, d: 0.875, r: 1.15, inset: 0.27 },
-  ultra: { w: 7.19, h: 15.0, d: 0.86, r: 0.5, inset: 0.27 },
+  // Galaxy S26 Ultra : 163,6 × 78,1 × 7,9 mm, coins plus arrondis que les Ultra précédents, bordures très fines.
+  ultra: { w: 7.81, h: 16.36, d: 0.79, r: 0.92, inset: 0.24 },
 } as const;
 
 type Radii = { tl: number; tr: number; br: number; bl: number };

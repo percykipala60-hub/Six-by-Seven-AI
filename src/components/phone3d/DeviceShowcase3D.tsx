@@ -27,7 +27,8 @@ const CYCLE_MS = 5200;
 // Pose et taille de chaque appareil dans la scène (1 unité = 1 cm).
 const LAYOUT: Record<PlatformId, { pose: Pose; scale: number; x: number; y: number }> = {
   ios: { pose: DEFAULT_POSE, scale: 1.5, x: 0, y: 0 },
-  android: { pose: DEFAULT_POSE, scale: 1.5, x: 0, y: 0 },
+  // Le S26 Ultra mesure 16,4 cm contre 15 cm pour l'iPhone : même hauteur à l'écran.
+  android: { pose: DEFAULT_POSE, scale: 1.375, x: 0, y: 0 },
   mac: { pose: { x: 20, y: -26, z: 0 }, scale: 0.57, x: 0.2, y: -4.5 },
   windows: { pose: { x: 20, y: -26, z: 0 }, scale: 0.6, x: 0.2, y: -4.4 },
 };
@@ -91,7 +92,7 @@ export default function DeviceShowcase3D({ initial, label }: DeviceShowcaseProps
               <Slot key={d.id} id={d.id} active={i === index}>
                 {d.id === "ios" || d.id === "android" ? (
                   <>
-                    <PhoneModel model={d.id === "ios" ? "pro" : "ultra"} finish={d.id === "ios" ? "silver" : "blue"} />
+                    <PhoneModel model={d.id === "ios" ? "pro" : "ultra"} finish={d.id === "ios" ? "silver" : "violet"} />
                     <ScreenAnchor
                       el={els[d.id]}
                       scale={phonePxScale(d.id === "ios" ? "pro" : "ultra")}

@@ -11,7 +11,12 @@ const FINISH_COLORS: Record<Finish, { metal: string; glass: string }> = {
   orange: { metal: "#e2662a", glass: "#d9763f" },
   blue: { metal: "#33446e", glass: "#3a4a74" },
   rose: { metal: "#b9808f", glass: "#c99aa6" },
+  // Violet cobalt du Galaxy S26 Ultra : cadre plus clair et satiné, dos en verre mat plus profond.
+  violet: { metal: "#76729f", glass: "#4a4670" },
 };
+
+// Arrondi des arêtes du cadre : bords bombés sur l'iPhone, flancs plats sur le Galaxy.
+const EDGE_BEVEL: Record<Model, number> = { pro: 0.22, ultra: 0.12 };
 
 function useMaterials(finish: Finish) {
   return useMemo(() => {
@@ -84,6 +89,8 @@ function useMaterials(finish: Finish) {
         iridescenceThicknessRange: [200, 600],
       }),
       sensor: new THREE.MeshPhysicalMaterial({ color: "#000000", roughness: 0.15, clearcoat: 1, envMapIntensity: 0.35 }),
+      // Lignes d'antenne : fines bandes un ton plus sombre que le cadre.
+      antenna: new THREE.MeshStandardMaterial({ color: new THREE.Color(c.metal).multiplyScalar(0.5), roughness: 0.6, metalness: 0.2 }),
       // Parois des trous de la tranche (port, haut-parleurs) : noir mat, la lumière y meurt.
       hole: new THREE.MeshStandardMaterial({ color: "#070708", roughness: 0.9, metalness: 0, envMapIntensity: 0.04 }),
       // Logo Apple : métal poli miroir, de la teinte du coloris.
@@ -97,6 +104,34 @@ function useMaterials(finish: Finish) {
 type M = ReturnType<typeof useMaterials>;
 
 const FACE: [number, number, number] = [0, Math.PI, 0];
+
+// Îlot photo du S26 Ultra (cm).
+const ISLAND = { w: 1.75, h: 5.5 };
+
+// Lignes d'antenne : courtes bandes isolantes qui coupent le cadre métallique, près des quatre coins,
+// sur les flancs et sur les tranches du haut et du bas.
+function AntennaLines({ w, h, d, bevel, m }: { w: number; h: number; d: number; bevel: number; m: M }) {
+  const flat = d - 2 * bevel - 0.04;
+  const band = 0.05;
+  return (
+    <group>
+      {[-1, 1].flatMap((side) =>
+        [h / 2 - 1.9, -h / 2 + 1.9].map((y) => (
+          <mesh key={`s${side}${y}`} position={[side * (w / 2 + 0.0015), y, 0]} rotation={[0, (side * Math.PI) / 2, 0]} material={m.antenna}>
+            <planeGeometry args={[flat, band]} />
+          </mesh>
+        )),
+      )}
+      {[-1, 1].flatMap((end) =>
+        [-1, 1].map((sx) => (
+          <mesh key={`e${end}${sx}`} position={[sx * (w / 2 - 1.15), end * (h / 2 + 0.0015), 0]} rotation={[(-end * Math.PI) / 2, 0, Math.PI / 2]} material={m.antenna}>
+            <planeGeometry args={[flat, band]} />
+          </mesh>
+        )),
+      )}
+    </group>
+  );
+}
 // Ordonnée d'un point situé à `frac` de la hauteur en partant du haut.
 const yAt = (h: number, frac: number) => h / 2 - frac * h;
 // Demi-angle d'ouverture de la calotte du verre de protection.
@@ -105,13 +140,13 @@ const COVER = 0.75;
 // Objectif complet, orienté vers l'arrière (-z), posé sur une surface à la profondeur `z`.
 // « apple » : bague métal épaisse au chanfrein poli, large anneau noir, grand verre fumé très réfléchissant.
 // « samsung » : fine bague métal en cylindre haut, liseré noir étroit, verre teinté vert-bleu.
-function Lens({ x, y, z, r, m, look = "apple" }: { x: number; y: number; z: number; r: number; m: M; look?: "apple" | "samsung" }) {
+function Lens({ x, y, z, r, m, look = "apple", height: heightIn }: { x: number; y: number; z: number; r: number; m: M; look?: "apple" | "samsung"; height?: number }) {
   const rot: [number, number, number] = [Math.PI / 2, 0, 0];
   const apple = look === "apple";
-  const height = apple ? 0.18 : 0.22;
+  const height = heightIn ?? (apple ? 0.18 : 0.22);
   const top = -height; // face supérieure de la bague
-  const blackOuter = apple ? 0.8 : 0.9;
-  const glass = apple ? 0.64 : 0.78;
+  const blackOuter = apple ? 0.8 : 0.86;
+  const glass = apple ? 0.64 : 0.7;
   const coverR = (r * glass) / Math.sin(COVER);
   return (
     <group position={[x, y, z]}>
@@ -241,7 +276,7 @@ function EdgeShape({
 const SPEAKER_STEP = 0.16;
 const speakerHoles = (model: Model) =>
   model === "pro" ? [...Array(6)].flatMap((_, i) => [1.2 + i * SPEAKER_STEP, -(1.2 + i * SPEAKER_STEP)]) : [...Array(7)].map((_, i) => 1.15 + i * SPEAKER_STEP);
-const SPEN_X = -2.45;
+const SPEN_X = -2.6;
 
 // Volumes retirés du cadre sur la tranche du bas (axe des trous selon y).
 function bottomCutters(model: Model, h: number) {
@@ -308,7 +343,7 @@ export function PhoneModel({ model, finish }: { model: Model; finish: Finish }) 
   const back = -d / 2;
 
   const geos = useMemo(() => {
-    const body = solid(roundedSlab(w, h, d, r, 0.22));
+    const body = solid(roundedSlab(w, h, d, r, EDGE_BEVEL[model]));
     const front = new THREE.ShapeGeometry(roundedRect(w - 0.16, h - 0.16, r - 0.08), 48);
     const panelProH = h - 4.2 - 0.15 - 0.5 - 0.3;
     return {
@@ -320,15 +355,18 @@ export function PhoneModel({ model, finish }: { model: Model; finish: Finish }) 
       panelProH,
       // Dos en verre (ultra) : couvre tout le dos sauf un fin cadre.
       panelUltra: new THREE.ShapeGeometry(roundedRect(w - 0.3, h - 0.3, r - 0.12), 48),
-      logo: model === "pro" ? logoGeometry(APPLE_PATH, { height: 1.55 }) : logoGeometry(SAMSUNG_PATH, { width: 2.1 }),
+      logo: model === "pro" ? logoGeometry(APPLE_PATH, { height: 1.55 }) : logoGeometry(SAMSUNG_PATH, { width: 2.35 }),
+      // Îlot photo du S26 Ultra : pilule verticale en relief qui porte les trois grands objectifs.
+      island: roundedSlab(ISLAND.w, ISLAND.h, 0.11, ISLAND.w / 2, 0.045),
     };
   }, [w, h, d, r, model]);
   // Cadre percé : port USB-C, haut-parleurs, logement du S Pen (calcul en arrière-plan).
-  const body = useCarved(`phone-${model}`, geos.body, () => ({ base: roundedSlab(w, h, d, r, 0.22), cutters: bottomCutters(model, h) }));
+  const body = useCarved(`phone-${model}`, geos.body, () => ({ base: roundedSlab(w, h, d, r, EDGE_BEVEL[model]), cutters: bottomCutters(model, h) }));
 
   return (
     <group>
       <mesh geometry={body} material={[m.metal, m.hole]} />
+      <AntennaLines w={w} h={h} d={d} bevel={EDGE_BEVEL[model]} m={m} />
       <mesh geometry={geos.front} position={[0, 0, d / 2 + 0.006]} material={m.frontGlass} />
 
       {/* Boutons placés d'après le schéma officiel d'Apple (positions mesurées depuis le haut) :
@@ -388,23 +426,27 @@ export function PhoneModel({ model, finish }: { model: Model; finish: Finish }) 
       ) : (
         <>
           <mesh geometry={geos.panelUltra} position={[0, 0, back - 0.006]} rotation={[0, Math.PI, 0]} material={m.frosted} />
-          {/* Inscription de la marque en bas du dos */}
-          <mesh geometry={geos.logo} position={[0, -h / 2 + 1.25, back - 0.009]} rotation={[0, Math.PI, 0]} material={m.print} />
+          {/* Inscription de la marque, au quart inférieur du dos */}
+          <mesh geometry={geos.logo} position={[0, -h / 2 + 3.4, back - 0.009]} rotation={[0, Math.PI, 0]} material={m.print} />
           {(() => {
-            const z = back - 0.008;
-            const lr = 0.66;
-            const x1 = w / 2 - 0.55 - lr;
-            const x2 = x1 - 1.5;
-            const y1 = h / 2 - 0.6 - lr;
+            // Mesures relevées sur les photos officielles (dos vu de face, îlot en haut à gauche, donc côté x positif) :
+            // trois grands objectifs (≈ 14,5 mm) sur l'îlot, deux petits (≈ 8,4 mm) à côté, flash entre les deux.
+            const ix = w / 2 - 0.58 - ISLAND.w / 2;
+            const iy = h / 2 - 0.58 - ISLAND.h / 2;
+            const islandTop = back - 0.006 - 0.11;
+            const big = 0.725;
+            const step = 1.83;
+            const yTop = iy + step;
+            const sx = ix - 1.45;
             return (
               <>
-                {/* Colonne de trois objectifs, puis à droite : flash et laser en haut, un objectif au milieu. */}
-                <Lens x={x1} y={y1} z={z} r={lr} m={m} look="samsung" />
-                <Lens x={x1} y={y1 - 1.5} z={z} r={lr} m={m} look="samsung" />
-                <Lens x={x1} y={y1 - 3.0} z={z} r={lr} m={m} look="samsung" />
-                <Lens x={x2} y={y1 - 1.5} z={z} r={lr * 0.86} m={m} look="samsung" />
-                <Dot x={x2 + 0.28} y={y1 + 0.2} z={z - 0.002} r={0.2} material={m.flash} />
-                <Dot x={x2 - 0.28} y={y1 + 0.2} z={z - 0.002} r={0.2} material={m.sensor} />
+                <mesh geometry={geos.island} position={[ix, iy, back - 0.006 - 0.055]} material={m.polished} />
+                {[0, 1, 2].map((i) => (
+                  <Lens key={i} x={ix} y={yTop - i * step} z={islandTop} r={big} m={m} look="samsung" height={0.07} />
+                ))}
+                <Lens x={sx} y={yTop - 0.3} z={back - 0.006} r={0.42} m={m} look="samsung" height={0.13} />
+                <Lens x={sx} y={yTop - 1.98} z={back - 0.006} r={0.42} m={m} look="samsung" height={0.13} />
+                <Dot x={sx} y={yTop - 1.15} z={back - 0.009} r={0.13} material={m.flash} />
               </>
             );
           })()}

@@ -58,6 +58,22 @@
   background: #000;
 }
 
+/* Galaxy : simple trou rond pour la caméra avant, au lieu de l'îlot de l'iPhone. */
+.screen[data-model="ultra"] .island {
+  top: 9px;
+  width: 11px;
+  height: 11px;
+  margin-left: -5.5px;
+  border-radius: 50%;
+}
+
+/* Galaxy : barre de navigation plus fine. */
+.screen[data-model="ultra"] .homeBar {
+  width: 90px;
+  height: 3px;
+  margin-left: -45px;
+}
+
 .homeBar {
   position: absolute;
   z-index: 30;

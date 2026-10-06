@@ -12,7 +12,7 @@ const combos: { model: Model; finish: Finish }[] = [
   { model: "pro", finish: "silver" },
   { model: "pro", finish: "orange" },
   { model: "pro", finish: "blue" },
-  { model: "ultra", finish: "rose" },
+  { model: "ultra", finish: "violet" },
 ];
 
 export function StudioPage() {

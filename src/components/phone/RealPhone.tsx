@@ -22,7 +22,7 @@ type Props = {
   className?: string;
 };
 
-export type Finish = "silver" | "orange" | "blue" | "rose";
+export type Finish = "silver" | "orange" | "blue" | "rose" | "violet";
 export type Model = "pro" | "ultra";
 const FINISHES: { id: Finish; name: string }[] = [
   { id: "silver", name: "Argent" },

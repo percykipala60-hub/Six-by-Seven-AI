@@ -116,6 +116,7 @@ export function PhoneScreen({ model, children }: { model: Model; children: React
   return (
     <div
       className={styles.screen}
+      data-model={model}
       style={{ width: PHONE_SCREEN_PX.w, height: PHONE_SCREEN_PX.h, borderRadius: phoneScreenRadiusPx(model) }}
     >
       {children}
