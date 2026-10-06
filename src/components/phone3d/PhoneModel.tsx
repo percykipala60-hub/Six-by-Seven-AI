@@ -46,7 +46,7 @@ function useMaterials(finish: Finish) {
       }),
       lensInner: new THREE.MeshStandardMaterial({ color: "#1b1e26", metalness: 0.9, roughness: 0.3, envMapIntensity: 0.5 }),
       // Barillet en métal sombre et fines bagues claires à l'intérieur de l'objectif.
-      barrel: new THREE.MeshStandardMaterial({ color: "#0a0b0e", metalness: 0.6, roughness: 0.5, envMapIntensity: 0.3, side: THREE.DoubleSide }),
+      barrel: new THREE.MeshStandardMaterial({ color: "#2b3242", metalness: 0.8, roughness: 0.3, envMapIntensity: 0.6, side: THREE.DoubleSide }),
       barrelLight: new THREE.MeshStandardMaterial({ color: "#a9afba", metalness: 1, roughness: 0.22, envMapIntensity: 1.2 }),
       barrelDim: new THREE.MeshStandardMaterial({ color: "#23262d", metalness: 1, roughness: 0.35, envMapIntensity: 0.6 }),
       // Élément optique : bleu nuit profond avec traitement irisé.
@@ -65,7 +65,8 @@ function useMaterials(finish: Finish) {
       // Verre saphir de protection : presque invisible, il ne se voit qu'à ses reflets.
       // Verre de protection : teinte noire (il n'éclaircit pas l'objectif), seuls ses reflets se voient.
       // Anneau miroir sous le verre : métal sombre poli comme un miroir.
-      mirror: new THREE.MeshPhysicalMaterial({ color: "#23252c", metalness: 1, roughness: 0.04, clearcoat: 1, envMapIntensity: 1.3 }),
+      // Teinte bleu-gris discrète (pas tout noir), reflets nets.
+      mirror: new THREE.MeshPhysicalMaterial({ color: "#46506a", metalness: 1, roughness: 0.07, clearcoat: 1, clearcoatRoughness: 0.03, envMapIntensity: 1 }),
       // Bord du verre de protection, visible quand on regarde l'objectif de biais.
       coverEdge: new THREE.MeshPhysicalMaterial({ color: "#0d0f14", metalness: 0.2, roughness: 0.05, clearcoat: 1, envMapIntensity: 1.6 }),
       cover: new THREE.MeshPhysicalMaterial({
@@ -176,7 +177,7 @@ function Lens({
   const height = heightIn ?? (apple ? 0.18 : 0.22);
   const top = -height; // dessus de la bague (l'objectif sort vers -z)
   const inner = r * (apple ? 0.86 : 0.88); // bord intérieur de la bague : le verre commence ici
-  const g = r * (apple ? (large ? 0.62 : 0.44) : 0.55); // ouverture de la caméra au centre du miroir
+  const g = r * (apple ? (large ? 0.52 : 0.44) : 0.55); // ouverture de la caméra au centre du miroir
   const glassRise = 0.022; // le verre monte un peu au-dessus de la bague
   // Profondeur de la caméra sous le miroir ; jamais plus bas que la surface qui porte l'objectif.
   const k = Math.min(1, (height - 0.012) / 0.14);
@@ -373,6 +374,77 @@ function BottomEdge({ h, m, model }: { h: number; m: M; model: Model }) {
   );
 }
 
+// Diffuseur du flash : verre dépoli strié de fins cercles concentriques (lentille de Fresnel),
+// avec la LED à peine teintée au centre. Dessiné une fois dans une texture.
+let flashTexture: THREE.CanvasTexture | null = null;
+function getFlashTexture() {
+  if (flashTexture) return flashTexture;
+  const size = 256;
+  const c = document.createElement("canvas");
+  c.width = c.height = size;
+  const x = c.getContext("2d")!;
+  const mid = size / 2;
+  const base = x.createRadialGradient(mid, mid, 0, mid, mid, mid);
+  // Blanc très blanc, à peine jaunâtre.
+  base.addColorStop(0, "#fffdf4");
+  base.addColorStop(0.75, "#fbf8ec");
+  base.addColorStop(1, "#ece8da");
+  x.fillStyle = base;
+  x.fillRect(0, 0, size, size);
+  // Anneaux de Fresnel.
+  for (let rr = 6; rr < mid; rr += 5) {
+    x.beginPath();
+    x.arc(mid, mid, rr, 0, Math.PI * 2);
+    x.strokeStyle = rr % 10 < 5 ? "rgba(255,255,255,0.7)" : "rgba(120,112,90,0.08)";
+    x.lineWidth = 1.6;
+    x.stroke();
+  }
+  // LED vue à travers le diffuseur : un petit carré net, du même blanc très légèrement jaune.
+  x.fillStyle = "#fff8de";
+  x.strokeStyle = "rgba(200, 185, 140, 0.35)";
+  x.lineWidth = 2;
+  x.beginPath();
+  x.roundRect(mid - 30, mid - 30, 60, 60, 6);
+  x.fill();
+  x.stroke();
+  flashTexture = new THREE.CanvasTexture(c);
+  flashTexture.colorSpace = THREE.SRGBColorSpace;
+  flashTexture.anisotropy = 8;
+  return flashTexture;
+}
+
+// Flash : fine bague polie, diffuseur légèrement en retrait, et verre de protection par-dessus.
+function Flash({ x, y, z, r, m }: { x: number; y: number; z: number; r: number; m: M }) {
+  const mat = useMemo(
+    () =>
+      new THREE.MeshPhysicalMaterial({
+        map: getFlashTexture(),
+        emissive: "#ffffff",
+        emissiveMap: getFlashTexture(),
+        emissiveIntensity: 0.35,
+        roughness: 0.45,
+        clearcoat: 1,
+        clearcoatRoughness: 0.05,
+        envMapIntensity: 0.4,
+      }),
+    [],
+  );
+  return (
+    // Tout est posé AU-DESSUS de la surface (vers -z) : sinon la coque masque le diffuseur.
+    <group position={[x, y, z]}>
+      <mesh position={[0, 0, -0.006]} material={m.polished}>
+        <torusGeometry args={[r, r * 0.07, 10, 64]} />
+      </mesh>
+      <mesh rotation={FACE} position={[0, 0, -0.003]} material={m.gap}>
+        <ringGeometry args={[r * 0.9, r, 64]} />
+      </mesh>
+      <mesh rotation={FACE} position={[0, 0, -0.004]} material={mat}>
+        <circleGeometry args={[r * 0.9, 64]} />
+      </mesh>
+    </group>
+  );
+}
+
 function Dot({ x, y, z, r, material }: { x: number; y: number; z: number; r: number; material: THREE.Material }) {
   return (
     <mesh position={[x, y, z]} rotation={[0, Math.PI, 0]} material={material}>
@@ -468,7 +540,7 @@ export function PhoneModel({ model, finish, wallpaper }: { model: Model; finish:
                 <Lens x={x1} y={y1} z={z} r={lr} m={m} />
                 <Lens x={x1} y={y2} z={z} r={lr} m={m} />
                 <Lens x={x3} y={(y1 + y2) / 2} z={z} r={lr} m={m} large />
-                <Dot x={xr} y={y1 + 0.15} z={z - 0.002} r={0.42} material={m.flash} />
+                <Flash x={xr} y={y1 + 0.15} z={z - 0.002} r={0.42} m={m} />
                 <Dot x={xr} y={(y1 + y2) / 2} z={z - 0.002} r={0.06} material={m.sensor} />
                 <Dot x={xr} y={y2 - 0.15} z={z - 0.002} r={0.38} material={m.sensor} />
               </>
@@ -498,7 +570,7 @@ export function PhoneModel({ model, finish, wallpaper }: { model: Model; finish:
                 ))}
                 <Lens x={sx} y={yTop - 0.3} z={back - 0.006} r={0.42} m={m} look="samsung" height={0.13} />
                 <Lens x={sx} y={yTop - 1.98} z={back - 0.006} r={0.42} m={m} look="samsung" height={0.13} />
-                <Dot x={sx} y={yTop - 1.15} z={back - 0.009} r={0.13} material={m.flash} />
+                <Flash x={sx} y={yTop - 1.15} z={back - 0.009} r={0.14} m={m} />
               </>
             );
           })()}

@@ -65,75 +65,6 @@ a.mainBtn:hover {
   color: var(--mut);
 }
 
-/* ---------- Tuiles de choix de l'appareil ---------- */
-.tilesWrap {
-  margin-top: clamp(28px, 4vw, 44px);
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.tilesWrap::-webkit-scrollbar {
-  display: none;
-}
-
-.tiles {
-  list-style: none;
-  margin-block: 0;
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(150px, 1fr);
-  gap: 10px;
-}
-
-.tile {
-  position: relative;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-  height: 92px;
-  padding: 14px 10px 14px 16px;
-  border: 1.5px solid transparent;
-  border-radius: 16px;
-  background: var(--bg-soft);
-  color: var(--ink);
-  text-decoration: none;
-  overflow: hidden;
-  transition:
-    border-color 0.15s,
-    background-color 0.15s;
-}
-
-.tile:hover {
-  border-color: var(--line-strong);
-}
-
-.tile span {
-  display: grid;
-  gap: 2px;
-}
-
-.tile b {
-  font-size: 15px;
-  font-weight: 700;
-  line-height: 1.2;
-}
-
-.tile img {
-  width: 72px;
-  height: 72px;
-  object-fit: contain;
-  flex: none;
-}
-
-.tileIcon {
-  width: 34px;
-  height: 34px;
-  margin-right: 16px;
-  color: var(--navy-950);
-  stroke-width: 1.4;
-}
-
 /* ---------- Démonstration 3D ---------- */
 .stage {
   margin-top: clamp(24px, 4vw, 48px);
@@ -156,7 +87,7 @@ a.mainBtn:hover {
   padding: 0;
   display: grid;
   gap: 14px;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
 }
 
 /* Sur téléphone : deux fiches par ligne, comme dans une boutique en ligne. */
@@ -188,15 +119,8 @@ a.mainBtn:hover {
   scroll-margin-top: 96px;
 }
 
-.card img {
-  width: 100%;
-  aspect-ratio: 1;
-  object-fit: contain;
-  margin-bottom: 8px;
-}
-
 .card h3 {
-  font: 700 20px/1.2 var(--font-body);
+  font: 700 22px/1.2 var(--font-body);
   letter-spacing: -0.01em;
 }
 

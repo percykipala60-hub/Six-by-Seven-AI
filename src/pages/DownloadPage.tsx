@@ -15,16 +15,8 @@ function detectPlatform(): PlatformId | null {
   return null;
 }
 
-// Photos produit des appareils, tirées des modèles 3D du site (fond transparent).
-const PHOTO: Record<PlatformId, string> = {
-  ios: "/devices/iphone.webp",
-  android: "/devices/android.webp",
-  mac: "/devices/mac.webp",
-  windows: "/devices/windows.webp",
-};
-
-// Page de téléchargement, à la manière d'une page produit : tuiles de choix de l'appareil,
-// démonstration 3D, puis une fiche par plateforme avec sa photo et ses boutons.
+// Page de téléchargement, à la manière d'une page produit : l'action principale, la démonstration 3D
+// (le seul visuel), puis une fiche par plateforme avec son statut et ses boutons.
 export function DownloadPage() {
   const detectedId = useMemo(detectPlatform, []);
 
@@ -55,30 +47,6 @@ export function DownloadPage() {
         </div>
       </header>
 
-      {/* Tuiles de choix de l'appareil : elles mènent à la fiche correspondante. */}
-      <nav className={styles.tilesWrap} aria-label="Choisir un appareil">
-        <ul className={`container ${styles.tiles}`}>
-          {app.platforms.map((p) => (
-            <li key={p.id}>
-              <a href={`#${p.id}`} className={styles.tile}>
-                <span>
-                  <b>{p.name}</b>
-                </span>
-                <img src={PHOTO[p.id]} alt="" loading="lazy" />
-              </a>
-            </li>
-          ))}
-          <li>
-            <a href="#web" className={styles.tile}>
-              <span>
-                <b>{app.web.title}</b>
-              </span>
-              <Globe className={styles.tileIcon} aria-hidden="true" />
-            </a>
-          </li>
-        </ul>
-      </nav>
-
       <div className={`container ${styles.stage}`}>
         {/* Carrousel des appareils en 3D : commence par celui du visiteur. */}
         <DeviceShowcase initial={detectedId} />
@@ -89,7 +57,6 @@ export function DownloadPage() {
         <ul className={styles.grid}>
           {app.platforms.map((p) => (
             <li key={p.id} id={p.id} className={styles.card}>
-              <img src={PHOTO[p.id]} alt={`Six sur ${p.name}`} loading="lazy" />
               <h3>{p.name}</h3>
               <p className={styles.system}>{p.system}</p>
               <p className={styles.status}>{p.url ? downloadPage.available : app.release}</p>
