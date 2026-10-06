@@ -29,15 +29,15 @@ export function roundedRect(w: number, h: number, r: number | Radii) {
 }
 
 // Volume extrudé aux arêtes adoucies, centré sur l'origine.
-export function roundedSlab(w: number, h: number, depth: number, r: number | Radii, bevel: number) {
+export function roundedSlab(w: number, h: number, depth: number, r: number | Radii, bevel: number, detail = { bevel: 10, curve: 48 }) {
   const shape = roundedRect(w - bevel * 2, h - bevel * 2, shrink(r, bevel));
   const geo = new THREE.ExtrudeGeometry(shape, {
     depth: Math.max(depth - bevel * 2, 0.001),
     bevelEnabled: true,
     bevelThickness: bevel,
     bevelSize: bevel,
-    bevelSegments: 10,
-    curveSegments: 48,
+    bevelSegments: detail.bevel,
+    curveSegments: detail.curve,
   });
   geo.center();
   geo.computeVertexNormals();
