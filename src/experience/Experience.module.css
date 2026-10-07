@@ -4,7 +4,7 @@
   position: relative;
   height: calc((var(--units) + 1) * 100svh);
   /* Fond clair et doux : les appareils (argent, violet, noir) et les textes restent bien lisibles. */
-  --stage-bg: #eef1f6;
+  --stage-bg: #f1e9dc;
   --six-bg: #f2f2f7;
 }
 
@@ -20,8 +20,8 @@
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(ellipse 70% 60% at 50% 55%, #ffffff 0%, rgb(255 255 255 / 0) 70%),
-    linear-gradient(180deg, #f5f7fb 0%, var(--stage-bg) 60%, #e4e8f0 100%);
+    radial-gradient(ellipse 70% 60% at 50% 55%, #fffaf2 0%, rgb(255 250 242 / 0) 70%),
+    linear-gradient(180deg, #f8f3eb 0%, var(--stage-bg) 60%, #e8dccb 100%);
 }
 
 /* ---------- Haut de page ---------- */
@@ -182,7 +182,8 @@
   position: absolute;
   inset: 0;
   z-index: 4;
-  background: var(--six-bg);
+  /* Fond du guide aux couleurs du site ; l'interface de l'appli garde ses propres couleurs. */
+  background: var(--bg);
   visibility: hidden;
   opacity: 0;
 }

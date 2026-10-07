@@ -11,15 +11,16 @@
   --brand-blue-deep: #2d5fe6;
   --brand-white: #f2f5fa;
 
-  /* Thème clair (pages de contenu) */
-  --bg: #ffffff;
-  --bg-soft: #f3f5f9;
-  --surface: #ffffff;
+  /* Thème clair (pages de contenu) : un beige sable léger plutôt que du blanc pur.
+     Il réchauffe le site sans le charger et s'accorde avec le bleu nuit et le bleu de la marque. */
+  --bg: #f7f2ea;
+  --bg-soft: #efe6d8;
+  --surface: #fffcf7;
   --ink: #0e1526;
-  --ink-2: #3c4459;
-  --mut: #697187;
-  --line: #e1e5ee;
-  --line-strong: #cbd2df;
+  --ink-2: #3f4456;
+  --mut: #6e6b66;
+  --line: #e5dccd;
+  --line-strong: #d4c7b2;
   --acc: #2d5fe6;
   --acc-ink: #ffffff;
   --acc-soft: #e8eeff;

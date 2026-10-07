@@ -8,8 +8,8 @@ import styles from "./ParticleField.module.css";
 type Props = { theme?: "light" | "dark"; density?: number; className?: string };
 
 const PALETTES = {
-  // Surtout du gris, quelques touches aux couleurs de la marque et des messageries.
-  light: ["#c5cbd8", "#c5cbd8", "#c5cbd8", "#c5cbd8", "#4d7cfe", "#2d5fe6", "#7c5cf0", "#e8a33d", "#e5484d", "#25d366"],
+  // Surtout du sable foncé, quelques touches aux couleurs de la marque et des messageries.
+  light: ["#cbbca4", "#cbbca4", "#bfae94", "#d2c5b0", "#4d7cfe", "#2d5fe6", "#7c5cf0", "#e8a33d", "#e5484d", "#25d366"],
   dark: ["#2c3753", "#2c3753", "#3b4a70", "#4d7cfe", "#6b93ff", "#8fa8ff", "#7c5cf0"],
 };
 
