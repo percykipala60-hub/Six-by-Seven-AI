@@ -46,6 +46,10 @@ export function stepAt(p: number, [a, b]: readonly [number, number], count: numb
   return { i, s: clamp01(x - i) };
 }
 
+// Mise en page mesurée sur la page, lue par la scène 3D : bas du texte d'accueil, en fraction de la hauteur
+// de l'écran. Le cercle d'appareils se place dans l'espace libre en dessous, sans jamais passer derrière le texte.
+export const layout = { introBottom: 0.5 };
+
 type Listener = () => void;
 export const timeline = {
   /** Valeur visée, lue sur le défilement. */

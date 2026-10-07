@@ -3,13 +3,13 @@
 // s'avancent et la caméra entre dans leur écran pour un court guide de Six.
 
 export const experience = {
-  path: "/decouvrir",
   title: "Découvrir Six",
+  // Le titre et le texte du haut de page sont ceux de l'accroche (`hero` dans site.ts).
   intro: {
-    title: "Une seule appli. Tous tes écrans.",
-    text: "iPhone, Android, Mac ou Windows : Six t'aide à répondre à tes messages, partout.",
-    cue: "Fais défiler pour entrer dans Six",
+    cue: "Fais défiler pour découvrir Six",
   },
+  // Repère du lien « Comment ça marche » : le début du guide sur téléphone.
+  anchor: "comment",
   phone: {
     // Légendes affichées pendant que le téléphone s'avance.
     arrive: { title: "Un message arrive.", text: "Tu ne sais pas trop quoi répondre ?" },
@@ -20,7 +20,8 @@ export const experience = {
     arrive: { title: "Sur ordinateur aussi.", text: "La même appli, avec plus de place pour tes conversations." },
     done: { title: "Ton téléphone, ton ordinateur.", text: "Les deux versions font exactement la même chose." },
   },
-  // Guide sur téléphone : quatre étapes, chacune jouée au fil du défilement.
+  // Un seul guide d'utilisation, numéroté en continu : les étapes 1 à 4 se jouent sur le téléphone,
+  // puis le guide passe sur l'ordinateur pour les étapes 5 à 7.
   phoneGuide: [
     {
       title: "Colle la discussion.",
@@ -39,7 +40,6 @@ export const experience = {
       text: "Six copie ta réponse. Tu l'envoies toi-même, depuis ton appli habituelle.",
     },
   ],
-  // Guide sur ordinateur : trois étapes.
   desktopGuide: [
     {
       title: "Toutes tes conversations.",
@@ -54,17 +54,10 @@ export const experience = {
       text: "Gain miracle, faux conseiller : Six te prévient avant de proposer quoi que ce soit.",
     },
   ],
-  devices: {
-    ios: "iPhone 18 Pro Max",
-    android: "Galaxy S26 Ultra",
-    mac: "MacBook Pro",
-    windows: "PC Windows",
-  },
   steps: "Étape",
   labels: {
-    phone: "Six sur téléphone",
-    mac: "Six sur Mac",
-    windows: "Six sur Windows",
+    phone: "Sur téléphone",
+    laptop: "Sur ordinateur",
     empty: "Choisis une conversation",
     paste: "pour la coller dans",
   },

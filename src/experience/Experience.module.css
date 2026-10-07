@@ -39,18 +39,49 @@
   pointer-events: none;
 }
 
+.introContent {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
 .intro h1 {
-  margin: 22px 0 0;
-  max-width: 14ch;
-  font-size: clamp(2.2rem, 5.4vw, 4.4rem);
+  margin: 20px 0 0;
+  font-size: clamp(2.4rem, 5.6vw, 4.6rem);
   line-height: 1.02;
+}
+
+.intro h1 span {
+  display: block;
 }
 
 .intro p {
   margin: 14px 0 0;
-  max-width: 44ch;
-  font-size: clamp(1rem, 1.4vw, 1.15rem);
+  max-width: 52ch;
+  font-size: clamp(1rem, 1.3vw, 1.12rem);
   color: var(--ink-2);
+}
+
+.introActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 22px;
+  pointer-events: auto;
+}
+
+.intro .introMeta {
+  margin-top: 12px;
+  font-size: 0.85rem;
+  color: var(--mut);
+}
+
+/* Repère de « Comment ça marche », placé à la hauteur du guide sur téléphone. */
+.anchor {
+  position: absolute;
+  top: calc(var(--at) * 100svh);
+  scroll-margin-top: 0;
 }
 
 .cue {
@@ -582,5 +613,34 @@
 @media (prefers-reduced-motion: reduce) {
   .cue svg {
     animation: none;
+  }
+}
+
+/* Écran d'ordinateur peu haut : texte d'accueil resserré, pour laisser la place au cercle d'appareils
+   en dessous (le logo est déjà dans la barre du haut). */
+@media (max-height: 680px) and (min-aspect-ratio: 9/10) {
+  .intro {
+    padding-top: 84px;
+  }
+
+  /* Le logo porte un style en ligne (display) : !important pour le masquer. */
+  .introContent > :first-child,
+  .intro .introMeta,
+  .cue {
+    display: none !important;
+  }
+
+  .intro h1 {
+    margin-top: 0;
+    font-size: clamp(2rem, 8.5svh, 3.6rem);
+  }
+
+  .intro p {
+    margin-top: 10px;
+    font-size: 0.95rem;
+  }
+
+  .introActions {
+    margin-top: 16px;
   }
 }

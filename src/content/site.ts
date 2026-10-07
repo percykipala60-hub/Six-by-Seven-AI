@@ -84,29 +84,6 @@ export const manifesto = {
   text: "Six est l'assistant qui t'aide à répondre à tes messages, sans jamais parler à ta place.",
 };
 
-export const how = {
-  id: "comment",
-  title: "Comment ça marche",
-  intro: "Six ne lit pas tes messages tout seul et n'envoie rien à ta place. Tu lui montres une conversation, il t'aide à y répondre.",
-  steps: [
-    {
-      short: "Coller",
-      title: "Colle la discussion",
-      text: "Copie le texte, importe l'export d'une conversation WhatsApp ou ajoute une capture d'écran. Six reconnaît qui parle et à quel moment.",
-    },
-    {
-      short: "Vérifier",
-      title: "Vérifie ce qui part",
-      text: "Avant l'analyse, les noms, numéros, codes et adresses sont remplacés. Tu vois le texte tel que l'IA va le lire, et tu peux masquer ce qui serait passé à travers.",
-    },
-    {
-      short: "Choisir",
-      title: "Choisis ta réponse",
-      text: "Six te dit ce qu'il a compris, puis te propose trois réponses dans le ton voulu. Tu prends la tienne, tu la copies, tu l'envoies depuis ton appli habituelle.",
-    },
-  ],
-};
-
 // Exemple de masquage : chaque segment sensible a sa version originale et sa version masquée.
 export type MaskSegment = string | { original: string; masked: string };
 

@@ -1,4 +1,4 @@
-// Scènes jouées en boucle par le téléphone de l'accueil.
+// Conversations montrées sur les écrans des appareils et dans les guides de l'accueil.
 // Chaque scène : un message arrive dans une appli, on passe dans Six, on choisit une réponse, on revient l'envoyer.
 
 export type AppId = "whatsapp" | "messenger" | "telegram" | "instagram" | "sms";
@@ -105,13 +105,7 @@ export const scenes: Scene[] = [
   },
 ];
 
-// Durée de chaque étape d'une scène, en millisecondes :
-// message reçu → ouverture de Six → propositions → choix → retour et envoi.
-export const stepDurations = [1900, 1300, 1700, 1400, 2600];
-export const sceneDuration = (s: Scene) =>
-  (s.scam ? stepDurations.slice(0, 4) : stepDurations).reduce((a, b) => a + b, 0) + (s.scam ? 1200 : 0);
-
-// Écrans de Six montrés dans « Comment ça marche ».
+// Écrans de Six montrés dans le guide sur téléphone (coller, vérifier).
 export const howScreens = {
   import: {
     title: "Nouvelle réponse",

@@ -17,7 +17,10 @@ export function MobileCta() {
     const onScroll = () => setPast(window.scrollY > window.innerHeight * 0.85);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
-    const targets = [document.getElementById(app.sectionId), document.querySelector("footer")].filter(Boolean) as Element[];
+    // Masquée aussi pendant la visite animée : ses légendes et ses boutons occupent déjà le bas de l'écran.
+    const targets = [document.querySelector("[data-experience]"), document.getElementById(app.sectionId), document.querySelector("footer")].filter(
+      Boolean,
+    ) as Element[];
     const seen = new Set<Element>();
     const io = new IntersectionObserver((entries) => {
       for (const e of entries) (e.isIntersecting ? seen.add(e.target) : seen.delete(e.target));

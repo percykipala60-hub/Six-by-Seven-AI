@@ -1,25 +1,25 @@
-import { Hero } from "../sections/Hero";
-import { Manifesto } from "../sections/Manifesto";
-import { How } from "../sections/How";
+import { Experience } from "../experience/Experience";
+import { Launch } from "../sections/Launch";
 import { Features } from "../sections/Features";
 import { Security } from "../sections/Security";
 import { Privacy } from "../sections/Privacy";
+import { Manifesto } from "../sections/Manifesto";
 import { SevenAi } from "../sections/SevenAi";
 import { Faq } from "../sections/Faq";
-import { Launch } from "../sections/Launch";
 
+// Accueil : la visite animée de Six au défilement (téléphone puis ordinateur),
+// puis les sections habituelles, Télécharger d'abord.
 export function HomePage() {
   return (
     <>
-      <Hero />
-      <Manifesto />
-      <How />
+      <Experience />
+      <Launch />
       <Features />
       <Security />
       <Privacy />
+      <Manifesto />
       <SevenAi />
       <Faq />
-      <Launch />
     </>
   );
 }

@@ -1,19 +1,74 @@
-.reveal {
-  opacity: 0;
-  transform: translateY(14px);
-  transition:
-    opacity 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) var(--delay),
-    transform 0.7s cubic-bezier(0.2, 0.7, 0.2, 1) var(--delay);
+/* Apparition au défilement : chaque élément arrive de nulle part (flou, plus grand, un peu plus bas)
+   et vient se poser à sa place. Seul l'état de départ est décrit : l'arrivée reprend les styles
+   propres à l'élément. On utilise `translate` et `scale` (pas `transform`) pour ne jamais écraser
+   une transformation déjà présente. */
+@keyframes land {
+  from {
+    opacity: 0;
+    translate: 0 56px;
+    scale: 1.14;
+    filter: blur(14px);
+  }
 }
 
-.visible {
-  opacity: 1;
-  transform: none;
+/* Navigateurs récents : l'animation suit le défilement (elle se rejoue à l'envers en remontant). */
+@supports (animation-timeline: view()) {
+  .reveal > * {
+    animation: land linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 30%;
+  }
+
+  /* Éléments côte à côte : de petits décalages pour qu'ils se posent l'un après l'autre. */
+  .reveal > :nth-child(2) {
+    animation-range: entry 6% cover 34%;
+  }
+
+  .reveal > :nth-child(3) {
+    animation-range: entry 12% cover 38%;
+  }
+
+  .reveal > :nth-child(n + 4) {
+    animation-range: entry 18% cover 42%;
+  }
+}
+
+/* Autres navigateurs : même effet, joué une fois quand le bloc entre à l'écran. */
+@supports not (animation-timeline: view()) {
+  .reveal > * {
+    opacity: 0;
+    translate: 0 56px;
+    scale: 1.14;
+    filter: blur(14px);
+    transition:
+      opacity 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) var(--delay),
+      translate 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) var(--delay),
+      scale 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) var(--delay),
+      filter 0.9s cubic-bezier(0.2, 0.7, 0.2, 1) var(--delay);
+  }
+
+  .reveal > :nth-child(2) {
+    transition-delay: calc(var(--delay) + 90ms);
+  }
+
+  .reveal > :nth-child(n + 3) {
+    transition-delay: calc(var(--delay) + 180ms);
+  }
+
+  .visible > * {
+    opacity: 1;
+    translate: none;
+    scale: none;
+    filter: none;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .reveal {
-    opacity: 1;
-    transform: none;
+  .reveal > * {
+    animation: none !important;
+    opacity: 1 !important;
+    translate: none !important;
+    scale: none !important;
+    filter: none !important;
   }
 }

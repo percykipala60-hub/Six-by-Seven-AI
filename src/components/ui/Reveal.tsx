@@ -7,7 +7,7 @@ type Props = {
   delay?: number;
 };
 
-// Fait apparaître son contenu en fondu la première fois qu'il entre à l'écran.
+// Fait apparaître son contenu au défilement : chaque élément arrive flou et agrandi, puis se pose à sa place.
 export function Reveal({ children, className, delay = 0 }: Props) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);

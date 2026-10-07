@@ -12,7 +12,7 @@ import { DEG, ScreenAnchor, Studio, createScreenElement } from "../components/ph
 import { AppChat, SixScreen } from "../components/phone/Screens";
 import { DesktopScreen } from "../components/phone/DesktopScreen";
 import type { Model } from "../components/phone/RealPhone";
-import { T, easeInOut, mix, range, smooth, timeline, useTimeline } from "./timeline";
+import { T, easeInOut, layout, mix, range, smooth, timeline, useTimeline } from "./timeline";
 import { coveredAt } from "./overlays";
 
 export type PhoneId = "ios" | "android";
@@ -248,7 +248,8 @@ function Director({ phone, laptop, groups, markers }: DirectorProps) {
       // Sur le cercle : position et orientation (les appareils restent un peu tournés vers nous).
       const ringX = Math.sin(a) * R;
       const ringZ = Math.cos(a) * R;
-      const ringYaw = wrap(a) * 0.4;
+      // Orientation continue (sans saut quand l'appareil passe derrière le cercle).
+      const ringYaw = Math.sin(a) * 0.6;
       // Celui qui s'avance sort du cercle vers la caméra ; les autres rapetissent jusqu'à disparaître,
       // pour laisser toute la place à l'appareil et aux légendes.
       const keep = 1 - smooth(othersFocus);
@@ -262,11 +263,20 @@ function Director({ phone, laptop, groups, markers }: DirectorProps) {
     // Plans de caméra.
     const ring = (out: Shot) => {
       const w = (2 * R + 34) * (portrait ? 0.52 : 1);
-      const dist = Math.max(w / (2 * tanH * aspect), 52 / (2 * tanH)) + R * 0.6;
+      // Au début, le texte d'accueil occupe le haut de l'écran (à la fin, la dernière légende) :
+      // le cercle se range dans l'espace libre en dessous, au-dessus de l'invitation à défiler,
+      // puis remonte et grandit quand le texte s'efface.
+      const start = 1 - range(p, 0.6, 1.4);
+      const end = range(p, T.laptopExit[1] - 0.6, T.laptopExit[1]);
+      const textBottom = Math.max(start * Math.min(layout.introBottom + 0.02, 0.75), end * (portrait ? 0.3 : 0.24));
+      const zoneBottom = 1 - (size.height > 680 || portrait ? 60 / size.height : 0.02) * start;
+      const free = Math.max(zoneBottom - textBottom, 0.2);
+      // Hauteur apparente du cercle : environ 44 unités, plus l'avant qui est plus proche.
+      const dist = Math.max(w / (2 * tanH * aspect), 44 / (2 * tanH * free)) + R * 0.6;
       out.target.set(0, 0, 0);
       out.pos.set(0, 0.24, 1).normalize().multiplyScalar(dist);
-      // Au début et à la fin, le titre occupe le haut : le cercle descend un peu.
-      const lift = 2 * dist * tanH * 0.13 * Math.max(1 - range(p, 0.6, 1.4), range(p, T.laptopExit[1] - 0.6, T.laptopExit[1]));
+      const center = textBottom + free / 2; // centre de l'espace libre, depuis le haut de l'écran
+      const lift = 2 * dist * tanH * (center - 0.5);
       out.target.y += lift;
       out.pos.y += lift;
     };

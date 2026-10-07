@@ -1,10 +1,13 @@
-import { lazy, Suspense, useRef, useState, type CSSProperties } from "react";
+import { lazy, Suspense, useEffect, useRef, useState, type CSSProperties } from "react";
 import { ChevronDown } from "lucide-react";
 import { experience } from "../content/experience";
+import { hero } from "../content/site";
 import { SixLogo } from "../components/brand/Logos";
+import { AppButton } from "../components/ui/AppButton";
+import { BetaButton } from "../components/ui/BetaButton";
 import type { LaptopId, PhoneId } from "./ExperienceScene";
 import { DesktopGuide, PhoneGuide } from "./Guides";
-import { T, range, useTimelineDriver, useTimelineEffect, window01 } from "./timeline";
+import { T, layout, range, useTimelineDriver, useTimelineEffect, window01 } from "./timeline";
 import styles from "./Experience.module.css";
 
 const ExperienceScene = lazy(() => import("./ExperienceScene"));
@@ -39,15 +42,17 @@ export function Experience() {
 
   const { phone: P, laptop: L } = experience;
   const captions: CaptionProps[] = [
-    { from: T.phoneFront[0] + 0.4, to: T.phoneOpenSix + 0.05, eyebrow: experience.devices[devices.phone], ...P.arrive },
+    { from: T.phoneFront[0] + 0.4, to: T.phoneOpenSix + 0.05, eyebrow: experience.labels.phone, ...P.arrive },
     { from: T.phoneOpenSix, to: T.phoneDive[0] + 0.45, ...P.open },
     { from: T.phoneExit[0] + 0.3, to: T.phoneExit[1] - 0.05, ...P.done },
-    { from: T.laptopFront[0] + 0.45, to: T.laptopDive[0] + 0.4, eyebrow: experience.devices[devices.laptop], ...L.arrive },
+    { from: T.laptopFront[0] + 0.45, to: T.laptopDive[0] + 0.4, eyebrow: experience.labels.laptop, ...L.arrive },
     { from: T.laptopExit[1] - 0.45, to: T.total + 0.6, place: "top", ...L.done },
   ];
 
   return (
-    <section ref={section} className={styles.section} style={{ "--units": T.total } as CSSProperties} aria-label={experience.title}>
+    <section ref={section} className={styles.section} style={{ "--units": T.total } as CSSProperties} aria-label={experience.title} data-experience>
+      {/* « Comment ça marche » mène directement au guide sur téléphone. */}
+      <div id={experience.anchor} className={styles.anchor} style={{ "--at": T.phoneGuide[0] + 0.1 } as CSSProperties} />
       <div className={styles.stage}>
         <div className={styles.backdrop} aria-hidden="true" />
         {webgl && (
@@ -67,23 +72,50 @@ export function Experience() {
   );
 }
 
-// Haut de page : titre, logo et invitation à défiler, qui s'effacent dès qu'on avance.
+// Haut de page : logo, accroche, boutons et invitation à défiler, qui s'effacent dès qu'on avance.
 function Intro() {
   const ref = useRef<HTMLDivElement>(null);
+  const content = useRef<HTMLDivElement>(null);
+  // Hauteur occupée par le texte (sans le décalage du défilement) : la scène 3D place le cercle en dessous.
+  useEffect(() => {
+    const el = ref.current;
+    const c = content.current;
+    if (!el || !c) return;
+    const measure = () => {
+      if (el.clientHeight) layout.introBottom = (c.offsetTop + c.offsetHeight) / el.clientHeight;
+    };
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    ro.observe(c);
+    measure();
+    return () => ro.disconnect();
+  }, []);
   useTimelineEffect((p) => {
     const el = ref.current;
     if (!el) return;
     const o = 1 - range(p, 0.25, 0.8);
     el.style.opacity = String(o);
     el.style.visibility = o > 0 ? "visible" : "hidden";
+    el.inert = o < 0.5;
     el.style.transform = `translateY(${-range(p, 0, 0.8) * 40}px)`;
     el.style.filter = `blur(${range(p, 0.3, 0.8) * 8}px)`;
   });
   return (
     <div ref={ref} className={styles.intro}>
+      <div ref={content} className={styles.introContent}>
       <SixLogo size={26} />
-      <h1>{experience.intro.title}</h1>
-      <p>{experience.intro.text}</p>
+      <h1>
+        {hero.title.split(/(?<=\.) /).map((line) => (
+          <span key={line}>{line}</span>
+        ))}
+      </h1>
+      <p>{hero.lead}</p>
+      <div className={styles.introActions}>
+        <BetaButton />
+        <AppButton kind="download" variant="secondary" badge={false} />
+      </div>
+      <p className={styles.introMeta}>{hero.meta}</p>
+      </div>
       <span className={styles.cue}>
         {experience.intro.cue}
         <ChevronDown size={18} />
