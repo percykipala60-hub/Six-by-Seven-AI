@@ -46,6 +46,9 @@ export const STOPS = [
 export const GUIDE_STOP = STOPS[3];
 export const SCAM_STOP = STOPS[STOPS.length - 2];
 
+// Téléphone ou tablette (écran tactile sans souris) : version allégée, transitions plus courtes.
+export const isTouchDevice = () => typeof window !== "undefined" && window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+
 export const clamp01 = (x: number) => Math.min(1, Math.max(0, x));
 export const range = (p: number, a: number, b: number) => clamp01((p - a) / (b - a));
 export const mix = (a: number, b: number, t: number) => a + (b - a) * t;
@@ -189,7 +192,17 @@ export function useStepScroll(sectionRef: RefObject<HTMLElement | null>) {
       const lo = Math.min(u0, to);
       const hi = Math.max(u0, to);
       const camera = moves.some(([a, b]) => lo < b && hi > a);
-      const duration = reduced ? 0 : camera ? Math.min(3400, 1500 + dist * 650) : Math.min(1400, 650 + dist * 380);
+      // Sur téléphone, tout est plus court : les longues transitions y donnent une impression de lenteur.
+      const touch = isTouchDevice();
+      const duration = reduced
+        ? 0
+        : camera
+          ? touch
+            ? Math.min(1900, 900 + dist * 380)
+            : Math.min(3400, 1500 + dist * 650)
+          : touch
+            ? Math.min(900, 450 + dist * 260)
+            : Math.min(1400, 650 + dist * 380);
       const start = performance.now();
       busy = true;
       cancelAnimationFrame(raf);

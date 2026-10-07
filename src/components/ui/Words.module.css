@@ -32,6 +32,30 @@
   }
 }
 
+/* Téléphone : même arrivée, sans flou (très coûteux à animer sur des dizaines de mots). */
+@keyframes stick-lite {
+  0% {
+    opacity: 0;
+    transform: translate(var(--dx), var(--dy)) rotate(var(--rot)) scale(0.15);
+  }
+  55% {
+    opacity: 1;
+  }
+  78% {
+    transform: scale(1.07);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (hover: none) and (pointer: coarse) {
+  :global([data-words="on"]) .word {
+    animation-name: stick-lite;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   :global([data-words]) .word {
     animation: none !important;

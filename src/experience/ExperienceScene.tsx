@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, type ReactNode, type RefObject } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import * as THREE from "three";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
@@ -12,7 +12,7 @@ import { DEG, ScreenAnchor, Studio, createScreenElement } from "../components/ph
 import { AppChat, SixScreen } from "../components/phone/Screens";
 import { DesktopScreen } from "../components/phone/DesktopScreen";
 import type { Model } from "../components/phone/RealPhone";
-import { T, layout, mix, range, smooth, timeline, useTimeline } from "./timeline";
+import { T, isTouchDevice, layout, mix, range, smooth, timeline, useTimeline } from "./timeline";
 import { coveredAt } from "./overlays";
 
 export type PhoneId = "ios" | "android";
@@ -60,15 +60,17 @@ export default function ExperienceScene({ phone, laptop }: { phone: PhoneId; lap
     [],
   );
   const groups = useRef<Partial<Record<DeviceId, THREE.Group>>>({});
+  // Sur téléphone : moins de pixels à calculer et pas d'anticrénelage (mémoire et fluidité).
+  const [light] = useState(isTouchDevice);
   const markers = useRef<Partial<Record<DeviceId, THREE.Object3D>>>({});
 
   return (
     <>
       <Canvas
-        dpr={[1, 2]}
+        dpr={light ? [1, 1.25] : [1, 2]}
         style={{ position: "absolute", inset: 0, pointerEvents: "none" }}
         camera={{ position: [0, 14, 90], fov: 35, near: 1, far: 500 }}
-        gl={{ antialias: true, alpha: true, toneMapping: THREE.NeutralToneMapping }}
+        gl={{ antialias: !light, alpha: true, toneMapping: THREE.NeutralToneMapping, powerPreference: "high-performance" }}
       >
         <Studio />
         <Layers />
@@ -284,13 +286,15 @@ function Director({ phone, laptop, groups, markers }: DirectorProps) {
       const g = groups.current[id]!;
       const phoneish = isPhone(id);
       // Cadre : le téléphone occupe ~70 % de la hauteur, l'ordinateur la moitié de la largeur (un peu plus sur téléphone).
-      const h = phoneish ? PHONE_H * 1.4 : LAPTOP_W * 1.15;
-      const w = phoneish ? PHONE_H * 1.1 : LAPTOP_W / (portrait ? 0.85 : 0.46);
+      // Sur téléphone, l'appareil tient entre la barre du haut du site et la légende du bas : il occupe
+      // environ 60 % de la hauteur, centré vers 40 % depuis le haut (rien n'est caché sous la barre).
+      const h = phoneish ? PHONE_H * (portrait ? 1.7 : 1.4) : LAPTOP_W * 1.15;
+      const w = phoneish ? PHONE_H * 1.1 : LAPTOP_W / (portrait ? 0.74 : 0.46);
       const dist = Math.max(h / (2 * tanH), w / (2 * tanH * aspect));
       out.target.copy(g.position);
       // Légendes à gauche sur grand écran (l'appareil passe à droite), en bas sur téléphone (il monte).
       const visH = 2 * dist * tanH;
-      if (portrait) out.target.y -= visH * (phoneish ? 0.14 : 0.2);
+      if (portrait) out.target.y -= visH * 0.09;
       else out.target.x -= visH * aspect * (phoneish ? 0.17 : 0.235);
       out.pos.set(0, 0.16, 1).normalize().multiplyScalar(dist).add(out.target);
     };

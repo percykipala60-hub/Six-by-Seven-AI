@@ -28,6 +28,13 @@
   filter: none;
 }
 
+/* Téléphone : pas de flou animé. */
+@media (hover: none) and (pointer: coarse) {
+  .reveal > * {
+    filter: none !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .reveal > * {
     opacity: 1 !important;

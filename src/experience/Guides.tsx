@@ -241,8 +241,9 @@ export function DesktopGuide({ os }: { os: LaptopId }) {
   const scene = open >= 0 ? scenes[open] : null;
   // Sur téléphone, la fenêtre est étroite : la liste, puis la conversation en plein écran.
   const pane = portrait ? (i === 0 ? "list" : "main") : "both";
-  const W = portrait ? 420 : 860;
-  const H = portrait ? 620 : 560;
+  // Sur téléphone, une fenêtre étroite et haute : elle remplit l'écran sous le texte.
+  const W = portrait ? 360 : 860;
+  const H = portrait ? 600 : 560;
 
   return (
     <div ref={ref} className={styles.guide} data-kind="desktop" aria-hidden={!shown} inert={!shown}>

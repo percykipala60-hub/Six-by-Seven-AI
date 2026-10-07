@@ -22,10 +22,13 @@ export function ParticleField({ theme = "light", density = 1, className }: Props
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // Écran tactile : l'anneau reste au centre (il ne suit pas le doigt), avec moins de particules
+    // et une image sur deux, pour ménager le téléphone.
+    const touch = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
     const colors = PALETTES[theme];
 
     // Chaque particule : angle, distance au centre (en fraction du rayon), longueur, couleur, vitesse.
-    const parts = Array.from({ length: Math.round(520 * density) }, () => {
+    const parts = Array.from({ length: Math.round(520 * density * (touch ? 0.45 : 1)) }, () => {
       // Densité plus forte sur l'anneau, presque rien au centre.
       const u = Math.random();
       const r = 0.6 + Math.sign(u - 0.5) * Math.pow(Math.abs(u - 0.5) * 2, 1.6) * 0.5;
@@ -99,12 +102,15 @@ export function ParticleField({ theme = "light", density = 1, className }: Props
       }
     };
 
+    let frame = 0;
     const loop = (now: number) => {
-      if (visible) draw(now / 1000);
+      frame++;
+      if (visible && (!touch || frame % 2 === 0)) draw(now / 1000);
       raf = requestAnimationFrame(loop);
     };
 
     const onMove = (e: PointerEvent) => {
+      if (e.pointerType !== "mouse") return;
       const b = canvas.getBoundingClientRect();
       pointer.x = e.clientX - b.left;
       pointer.y = e.clientY - b.top;
