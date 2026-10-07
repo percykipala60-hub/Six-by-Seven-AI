@@ -43,20 +43,29 @@
   --lens-ring: #a9aeb5;
 }
 
-[data-finish="orange"] {
-  --metal: #d4672c;
-  --metal-hi: #f7a66a;
-  --metal-lo: #8a3a12;
-  --metal-glass: #c8703e;
-  --lens-ring: #b65523;
+/* Coloris de l'iPhone 18 Pro Max : Glacier (bleu très clair), Bordeaux, Noir. */
+[data-finish="glacier"] {
+  --metal: #b7c9d6;
+  --metal-hi: #e6f0f8;
+  --metal-lo: #6d8399;
+  --metal-glass: #bccfde;
+  --lens-ring: #8fa5b8;
 }
 
-[data-finish="rose"] {
-  --metal: #c08a98;
-  --metal-hi: #ecc4ce;
-  --metal-lo: #6f3445;
-  --metal-glass: #b9808f;
-  --lens-ring: #8d4f61;
+[data-finish="burgundy"] {
+  --metal: #4e1522;
+  --metal-hi: #a8566a;
+  --metal-lo: #34101a;
+  --metal-glass: #6e2636;
+  --lens-ring: #521a27;
+}
+
+[data-finish="black"] {
+  --metal: #2b2b2d;
+  --metal-hi: #74767d;
+  --metal-lo: #141518;
+  --metal-glass: #36373c;
+  --lens-ring: #2a2b2f;
 }
 
 /* Style « ultra » : angles plus francs. */
@@ -72,13 +81,6 @@
   --lens-ring: #57528a;
 }
 
-[data-finish="blue"] {
-  --metal: #34436a;
-  --metal-hi: #7d8fbd;
-  --metal-lo: #19213a;
-  --metal-glass: #2c3a5d;
-  --lens-ring: #2a3657;
-}
 
 @media (max-width: 1100px) {
   .stage {

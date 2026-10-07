@@ -31,7 +31,6 @@ Toute la configuration est dans `render.yaml` : à chaque `git push` sur `main`,
 ## Le jour du lancement
 
 - Renseigner `webUrl` et `downloadUrl` dans `src/content/site.ts` : tous les boutons « Télécharger » et « Version web » pointeront dessus.
-- Ajouter le lien LinkedIn dans `socials` (même fichier).
 - Compléter les passages entre crochets dans `src/content/legal.ts` et faire relire les textes.
 - En cas de nom de domaine, remplacer `six-by-sevenai.onrender.com` dans `index.html` (aperçu des liens partagés).
 

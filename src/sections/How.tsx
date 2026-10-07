@@ -52,7 +52,7 @@ export function How() {
         <div className={styles.story}>
           <div className={styles.phoneCol}>
             <div className={styles.sticky}>
-              <DevicePhone follow={false} finish="blue">
+              <DevicePhone follow={false} finish="burgundy">
                 {screens}
               </DevicePhone>
               {/* Sur téléphone : les étapes en onglets juste sous l'appareil, son écran suit le toucher. */}

@@ -22,13 +22,13 @@ type Props = {
   className?: string;
 };
 
-export type Finish = "silver" | "orange" | "blue" | "rose" | "violet";
+export type Finish = "silver" | "glacier" | "burgundy" | "black" | "violet";
 export type Model = "pro" | "ultra";
 const FINISHES: { id: Finish; name: string }[] = [
   { id: "silver", name: "Argent" },
-  { id: "orange", name: "Orange cosmique" },
-  { id: "blue", name: "Bleu intense" },
-  { id: "rose", name: "Bois de rose" },
+  { id: "glacier", name: "Glacier" },
+  { id: "burgundy", name: "Bordeaux" },
+  { id: "black", name: "Noir" },
 ];
 
 const EDGE_LAYERS = 16;

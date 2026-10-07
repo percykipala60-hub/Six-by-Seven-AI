@@ -25,9 +25,9 @@ export type Phone3DProps = {
 
 const FINISHES: { id: Finish; name: string }[] = [
   { id: "silver", name: "Argent" },
-  { id: "orange", name: "Orange cosmique" },
-  { id: "blue", name: "Bleu intense" },
-  { id: "rose", name: "Bois de rose" },
+  { id: "glacier", name: "Glacier" },
+  { id: "burgundy", name: "Bordeaux" },
+  { id: "black", name: "Noir" },
 ];
 
 import { PHONE_SCREEN_PX } from "../phone/screenSize";
@@ -66,7 +66,7 @@ export default function Phone3D({
           frameloop={active ? "always" : "never"}
           dpr={[1, 2]}
           // Plage de profondeur resserrée autour du téléphone : évite le scintillement sur mobile.
-          camera={{ position: [0, 0, 31], fov: 30, near: 18, far: 46 }}
+          camera={{ position: [0, 0, 34], fov: 30, near: 20, far: 50 }}
           gl={{ antialias: true, alpha: true, toneMapping: THREE.NeutralToneMapping }}
         >
           <Studio />
@@ -90,7 +90,7 @@ export default function Phone3D({
           )}
           {swatches && (
             <div className={controls.swatches} role="radiogroup" aria-label="Coloris du téléphone">
-              {FINISHES.filter((f) => f.id !== "rose").map((f) => (
+              {FINISHES.map((f) => (
                 <button
                   key={f.id}
                   type="button"

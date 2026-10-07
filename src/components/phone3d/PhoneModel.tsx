@@ -7,10 +7,11 @@ import { APPLE_PATH, SAMSUNG_PATH } from "./brandLogos";
 
 // Teintes des coloris (aluminium anodisé et verre arrière dépoli).
 const FINISH_COLORS: Record<Finish, { metal: string; glass: string }> = {
-  silver: { metal: "#d9dce0", glass: "#e6e8eb" },
-  orange: { metal: "#d9581a", glass: "#a4461a" },
-  blue: { metal: "#33446e", glass: "#3a4a74" },
-  rose: { metal: "#b9808f", glass: "#c99aa6" },
+  // iPhone 18 Pro Max : le verre du dos reprend exactement la teinte de l'aluminium.
+  silver: { metal: "#d9dce0", glass: "#e3e5e8" },
+  glacier: { metal: "#b7c9d6", glass: "#b3bec8" },
+  burgundy: { metal: "#4e1522", glass: "#45121e" },
+  black: { metal: "#2b2b2d", glass: "#232325" },
   // Violet cobalt du Galaxy S26 Ultra : cadre plus clair et satiné, dos en verre mat plus profond.
   violet: { metal: "#65618f", glass: "#393660" },
 };
@@ -24,7 +25,7 @@ function useMaterials(finish: Finish) {
     return {
       // Aluminium satiné : métallique, légèrement rugueux.
       // Le violet du Galaxy est un aluminium anodisé clair : moins métallique, sinon il reflète le studio et vire au bleu nuit.
-      metal: new THREE.MeshPhysicalMaterial({ color: c.metal, metalness: finish === "violet" ? 0.45 : finish === "orange" ? 0.72 : 1, roughness: finish === "violet" ? 0.4 : finish === "orange" ? 0.36 : 0.34, clearcoat: 0.25, clearcoatRoughness: 0.4 }),
+      metal: new THREE.MeshPhysicalMaterial({ color: c.metal, metalness: finish === "violet" ? 0.45 : finish === "silver" ? 1 : 0.75, roughness: finish === "violet" ? 0.4 : 0.34, clearcoat: 0.25, clearcoatRoughness: 0.4 }),
       // Bagues d'objectifs et boutons : même teinte, plus polie.
       polished: new THREE.MeshPhysicalMaterial({ color: c.metal, metalness: 1, roughness: 0.16 }),
       // Bague des objectifs, comme sur les photos d'Apple : aluminium de la couleur du téléphone, satiné,
@@ -33,7 +34,7 @@ function useMaterials(finish: Finish) {
       // Fine bague cuivrée et brillante des objectifs du Galaxy S26 Ultra.
       copper: new THREE.MeshPhysicalMaterial({ color: "#c79a8a", metalness: 1, roughness: 0.2, clearcoat: 0.8, clearcoatRoughness: 0.1 }),
       // Verre arrière dépoli.
-      frosted: new THREE.MeshPhysicalMaterial({ color: c.glass, metalness: 0.15, roughness: 0.55, clearcoat: finish === "orange" ? 0.25 : 0.6, clearcoatRoughness: 0.5 }),
+      frosted: new THREE.MeshPhysicalMaterial({ color: c.glass, metalness: 0.15, roughness: 0.55, clearcoat: finish === "silver" ? 0.6 : 0.3, clearcoatRoughness: 0.5 }),
       // Verre avant (sous l'écran) : noir profond, très brillant.
       frontGlass: new THREE.MeshPhysicalMaterial({ color: "#020203", metalness: 0, roughness: 0.06, clearcoat: 1, clearcoatRoughness: 0.05 }),
       housing: new THREE.MeshPhysicalMaterial({ color: "#060607", metalness: 0.3, roughness: 0.18, clearcoat: 1, envMapIntensity: 1 }),
@@ -575,7 +576,7 @@ export function PhoneModel({ model, finish, wallpaper }: { model: Model; finish:
           <mesh geometry={geos.logo} position={[0, -h / 2 + 0.3 + geos.panelProH / 2, back - 0.009]} rotation={[0, Math.PI, 0]} material={m.logo} />
           {(() => {
             const z = back - 0.15;
-            // Mesures relevées sur la photo officielle de l'iPhone 17 Pro (dos vu de face) :
+            // Mesures relevées sur les photos officielles de l'iPhone 17 Pro, reprises sur l'iPhone 18 Pro Max (même plateau) :
             // bague d'objectif ≈ 16 mm de diamètre, 19,5 mm entre les deux objectifs de gauche,
             // le troisième décalé de 18 mm vers la droite, à mi-hauteur.
             const lr = 0.8;

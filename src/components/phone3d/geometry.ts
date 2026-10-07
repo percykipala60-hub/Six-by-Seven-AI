@@ -4,7 +4,8 @@ import * as THREE from "three";
 // `inset` : distance entre le bord du téléphone et l'image (cadre métal visible + bordure noire),
 // identique sur les quatre côtés, comme sur un vrai téléphone.
 export const SPECS = {
-  pro: { w: 7.19, h: 15.0, d: 0.875, r: 1.15, inset: 0.27 },
+  // iPhone 18 Pro Max : 163,4 × 78 × 8,8 mm (fiche officielle, sortie le 18 septembre 2026).
+  pro: { w: 7.8, h: 16.34, d: 0.88, r: 1.25, inset: 0.27 },
   // Galaxy S26 Ultra : 163,6 × 78,1 × 7,9 mm, coins plus arrondis que les Ultra précédents, bordures très fines.
   ultra: { w: 7.81, h: 16.36, d: 0.79, r: 0.8, inset: 0.24 },
 } as const;

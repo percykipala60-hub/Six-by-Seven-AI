@@ -11,8 +11,9 @@ import type { Finish, Model } from "../components/phone/RealPhone";
 // Avec ?laptop=windows (ou mac), affiche l'ordinateur sous l'angle demandé (?x=…&y=…).
 const combos: { model: Model; finish: Finish }[] = [
   { model: "pro", finish: "silver" },
-  { model: "pro", finish: "orange" },
-  { model: "pro", finish: "blue" },
+  { model: "pro", finish: "glacier" },
+  { model: "pro", finish: "burgundy" },
+  { model: "pro", finish: "black" },
   { model: "ultra", finish: "violet" },
 ];
 

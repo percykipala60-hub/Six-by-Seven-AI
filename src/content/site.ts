@@ -173,7 +173,7 @@ export type SocialId = "whatsapp" | "instagram" | "linkedin" | "tiktok" | "faceb
 export const socials: { id: SocialId; name: string; handle?: string; href?: string }[] = [
   { id: "whatsapp", name: "WhatsApp", handle: "Chaîne Seven.AI", href: "https://whatsapp.com/channel/0029Vb9blFv4o7qVCCbRPi1Y" },
   { id: "instagram", name: "Instagram", handle: "@sevenai.dc", href: "https://www.instagram.com/sevenai.dc/" },
-  { id: "linkedin", name: "LinkedIn" },
+  { id: "linkedin", name: "LinkedIn", handle: "Seven.AI", href: "https://lnkd.in/p/dM_ZkJfP" },
   { id: "tiktok", name: "TikTok", handle: "@sevenai..dc", href: "https://www.tiktok.com/@sevenai..dc" },
   { id: "facebook", name: "Facebook", handle: "Seven.AI", href: "https://www.facebook.com/profile.php?id=61595213814728" },
 ];
