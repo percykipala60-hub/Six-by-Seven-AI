@@ -246,7 +246,8 @@ export function ScreenAnchor({ el, scale, position, radius = 0 }: { el: HTMLDivE
   }, [el, scale, radius]);
   const { camera } = useThree();
   const anchor = useRef<THREE.Group>(null);
-  const tmp = useMemo(() => ({ n: new THREE.Vector3(), p: new THREE.Vector3(), q: new THREE.Quaternion(), s: new THREE.Vector3() }), []);
+  const holeMesh = useRef<THREE.Mesh>(null);
+  const tmp = useMemo(() => ({ n: new THREE.Vector3(), p: new THREE.Vector3(), q: new THREE.Quaternion(), s: new THREE.Vector3(), v: new THREE.Vector3() }), []);
 
   useEffect(() => {
     const a = anchor.current;
@@ -266,17 +267,21 @@ export function ScreenAnchor({ el, scale, position, radius = 0 }: { el: HTMLDivE
     a.getWorldQuaternion(tmp.q);
     a.getWorldScale(tmp.s);
     tmp.n.set(0, 0, 1).applyQuaternion(tmp.q);
-    const facing = tmp.n.dot(camera.position.clone().sub(tmp.p)) > 0;
+    // Vu presque par la tranche, l'interface (CSS) et sa fenêtre (WebGL) ne tombent plus pile l'une sur
+    // l'autre : la fenêtre laissait voir le fond de la page, une ligne blanche qui semblait flotter le long
+    // du bord. Au-delà d'environ 80° on masque donc l'interface ET on referme la fenêtre : on voit le verre noir.
+    const facing = tmp.n.dot(tmp.v.copy(camera.position).sub(tmp.p).normalize()) > 0.17;
     let visibleChain = true;
     for (let o: THREE.Object3D | null = a; o; o = o.parent) if (!o.visible) visibleChain = false;
     const shown = facing && tmp.s.x > 0.02 && visibleChain;
     const vis = shown ? "visible" : "hidden";
     if (el.style.visibility !== vis) el.style.visibility = vis;
+    if (holeMesh.current) holeMesh.current.visible = shown;
   });
 
   return (
     <group ref={anchor} position={position}>
-      <mesh geometry={hole} material={HOLE} />
+      <mesh ref={holeMesh} geometry={hole} material={HOLE} />
     </group>
   );
 }
