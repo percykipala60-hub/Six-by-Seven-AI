@@ -1,6 +1,7 @@
 import { sevenAi } from "../content/site";
 import { SevenMark, SixMark } from "../components/brand/Logos";
 import { Reveal } from "../components/ui/Reveal";
+import { Words } from "../components/ui/Words";
 import styles from "./SevenAi.module.css";
 
 // Présentation de l'entreprise à travers l'histoire de ses logos.
@@ -14,8 +15,12 @@ export function SevenAi() {
           </div>
           <div className={styles.text}>
             <p className={styles.label}>{sevenAi.label}</p>
-            <h2 id="seven-title">{sevenAi.title}</h2>
-            <p className={styles.body}>{sevenAi.text}</p>
+            <h2 id="seven-title">
+              <Words>{sevenAi.title}</Words>
+            </h2>
+            <p className={styles.body}>
+              <Words delay={4}>{sevenAi.text}</Words>
+            </p>
             <p className={styles.six}>
               <SixMark size={26} />
               {sevenAi.sixStory}

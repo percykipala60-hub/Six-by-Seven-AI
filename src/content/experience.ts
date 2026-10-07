@@ -10,6 +10,8 @@ export const experience = {
   },
   // Repère du lien « Comment ça marche » : le début du guide sur téléphone.
   anchor: "comment",
+  // Repère du lien « Arnaques » : l'étape du guide sur les arnaques.
+  scamAnchor: "securite",
   phone: {
     // Légendes affichées pendant que le téléphone s'avance.
     arrive: { title: "Un message arrive.", text: "Tu ne sais pas trop quoi répondre ?" },

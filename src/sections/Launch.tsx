@@ -5,6 +5,7 @@ import { AppButton } from "../components/ui/AppButton";
 import { BetaButton } from "../components/ui/BetaButton";
 import { ParticleField } from "../components/ui/ParticleField";
 import { Reveal } from "../components/ui/Reveal";
+import { Words } from "../components/ui/Words";
 import styles from "./Launch.module.css";
 
 // Section de téléchargement, dans un grand panneau sombre à particules (comme sur antigravity.google) :
@@ -21,8 +22,12 @@ export function Launch() {
         <ParticleField theme="dark" density={0.8} />
         <div className={`container ${styles.inner}`}>
         <Reveal className={styles.head}>
-          <h2 id="download-title">{launch.title}</h2>
-          <p>{launch.text}</p>
+          <h2 id="download-title">
+            <Words>{launch.title}</Words>
+          </h2>
+          <p>
+            <Words delay={4}>{launch.text}</Words>
+          </p>
         </Reveal>
 
         <Reveal className={styles.beta}>

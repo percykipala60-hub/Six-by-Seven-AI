@@ -51,7 +51,7 @@
   line-height: 1.02;
 }
 
-.intro h1 span {
+.intro h1 > span {
   display: block;
 }
 
@@ -80,7 +80,8 @@
 /* Repère de « Comment ça marche », placé à la hauteur du guide sur téléphone. */
 .anchor {
   position: absolute;
-  top: calc(var(--at) * 100svh);
+  /* + 80 px : compense la marge réservée à la barre du haut lors d'un saut vers une ancre. */
+  top: calc(var(--at) * 100svh + 80px);
   scroll-margin-top: 0;
 }
 
@@ -324,8 +325,6 @@
 
 .stepItem[data-state="next"] {
   opacity: 0;
-  transform: translateY(26px);
-  filter: blur(10px);
 }
 
 .stepItem[data-state="past"] {

@@ -66,7 +66,7 @@ export const contact = {
 export const nav = {
   links: [
     { href: "/#comment", label: "Comment ça marche" },
-    { href: "/#securite", label: "Sécurité" },
+    { href: "/#securite", label: "Arnaques" },
     { href: "/#confidentialite", label: "Confidentialité" },
     { href: "/#seven-ai", label: "Seven.AI" },
     { href: "/#questions", label: "Questions" },
@@ -77,11 +77,6 @@ export const hero = {
   title: "L'IA propose. Tu décides.",
   lead: "Un message auquel tu ne sais pas quoi répondre ? Colle-le dans Six. Il te propose trois réponses, tu prends celle qui te ressemble et tu l'envoies toi-même.",
   meta: "Bêta ouverte dès maintenant. Version finale le 15 octobre sur iPhone, Android, Mac et Windows.",
-};
-
-// Phrase manifeste sous le haut de page (reprend ce que le site dit déjà de Six).
-export const manifesto = {
-  text: "Six est l'assistant qui t'aide à répondre à tes messages, sans jamais parler à ta place.",
 };
 
 // Exemple de masquage : chaque segment sensible a sa version originale et sa version masquée.
@@ -100,22 +95,8 @@ export const maskExample = {
   ] satisfies MaskSegment[],
 };
 
-// Cartes « ce que fait Six », chacune montrée par une petite interface.
-export const features = {
-  id: "fonctions",
-  title: "Pensé pour tes vraies conversations.",
-  intro: "Famille, clients, amis, inconnus : Six t'aide à répondre juste, sans jamais parler à ta place.",
-  replies: { title: "Trois réponses, à ton image.", text: "Choisis le ton ou l'objectif. Six propose, tu gardes celle qui te ressemble." },
-  mask: { title: "Tes infos restent chez toi.", text: "Les noms, numéros et comptes sont remplacés avant que l'IA ne lise quoi que ce soit." },
-  apps: { title: "Toutes tes messageries.", text: "Colle une discussion, importe un export ou ajoute une capture d'écran." },
-  send: { title: "Tu envoies toi-même.", text: "Six copie la réponse. C'est toi qui l'envoies, depuis ton appli habituelle." },
-  light: { title: "Léger, même sans réseau.", text: "Il s'installe depuis un simple lien et s'ouvre même quand la connexion coupe." },
-};
-
+// Remarque affichée à l'étape « arnaques » du guide.
 export const security = {
-  id: "securite",
-  title: "Les arnaques, il les voit venir.",
-  text: "Faux conseiller bancaire, gain miracle, proche qui écrit soudain depuis un nouveau numéro. Quand un message y ressemble, Six te prévient avant de proposer quoi que ce soit.",
   note: "Une alerte reste une aide. En cas de doute, appelle l'organisme concerné par son numéro officiel.",
 };
 
@@ -129,20 +110,6 @@ export const privacy = {
     { title: "Sept types d'informations masquées", text: "Noms, prénoms, numéros, codes, comptes, adresses et pseudos." },
     { title: "Tu as le dernier mot", text: "Le masquage n'est pas parfait. Si un nom passe, tu le masques toi-même avant l'envoi." },
   ],
-};
-
-export const everywhere = {
-  title: "Léger, même sur un vieux téléphone.",
-  text: "Six s'installe depuis un simple lien, sans passer par un store. L'appli s'ouvre même quand le réseau coupe, et elle a été pensée pour les petits écrans.",
-  apps: [
-    { id: "whatsapp", name: "WhatsApp" },
-    { id: "messenger", name: "Messenger" },
-    { id: "telegram", name: "Telegram" },
-    { id: "instagram", name: "Instagram" },
-    { id: "sms", name: "SMS" },
-    { id: "email", name: "E-mail" },
-  ] as const,
-  appsLabel: "Fonctionne avec les conversations de",
 };
 
 export const sevenAi = {
@@ -170,10 +137,6 @@ export const faq = {
   intro: "Ce qu'on nous demande le plus souvent avant d'essayer Six.",
   items: [
     {
-      q: "Six envoie-t-il des messages à ma place ?",
-      a: "Non. Six te propose des réponses, tu choisis celle qui te convient, tu la copies et tu l'envoies toi-même depuis ton appli habituelle.",
-    },
-    {
       q: "Six lit-il mes conversations tout seul ?",
       a: "Non. Six ne voit que ce que tu lui montres : un texte collé, l'export d'une conversation ou une capture d'écran.",
     },
@@ -182,8 +145,8 @@ export const faq = {
       a: "Avant l'analyse, les noms, numéros, codes et adresses sont remplacés. La conversation est effacée une fois la réponse prête. Seuls ton compte et ton quota d'utilisation sont enregistrés.",
     },
     {
-      q: "Et si un message ressemble à une arnaque ?",
-      a: "Six te prévient avant de proposer quoi que ce soit. Une alerte reste une aide : en cas de doute, appelle l'organisme concerné par son numéro officiel.",
+      q: "Faut-il une bonne connexion ?",
+      a: "Non. Six s'installe depuis un simple lien, sans passer par un store, et s'ouvre même quand le réseau coupe. Il a été pensé pour les petits écrans et les vieux téléphones.",
     },
     {
       q: "Sur quels appareils fonctionne Six ?",
@@ -225,7 +188,6 @@ export const footer = {
         { label: "Version web", href: "/telecharger#web" },
         { label: "Bêta web", href: "/telecharger#beta" },
         { label: "Comment ça marche", href: "/#comment" },
-        { label: "Fonctions", href: "/#fonctions" },
       ],
     },
     {

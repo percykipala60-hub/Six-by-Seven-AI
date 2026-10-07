@@ -5,9 +5,10 @@ import { hero } from "../content/site";
 import { SixLogo } from "../components/brand/Logos";
 import { AppButton } from "../components/ui/AppButton";
 import { BetaButton } from "../components/ui/BetaButton";
+import { Words } from "../components/ui/Words";
 import type { LaptopId, PhoneId } from "./ExperienceScene";
 import { DesktopGuide, PhoneGuide } from "./Guides";
-import { T, layout, range, useTimelineDriver, useTimelineEffect, window01 } from "./timeline";
+import { GUIDE_STOP, SCAM_STOP, T, layout, range, useStepScroll, useTimelineDriver, useTimelineEffect, window01 } from "./timeline";
 import styles from "./Experience.module.css";
 
 const ExperienceScene = lazy(() => import("./ExperienceScene"));
@@ -39,6 +40,7 @@ export function Experience() {
   const [devices] = useState(pickDevices);
   const [webgl] = useState(hasWebGL);
   useTimelineDriver(section);
+  useStepScroll(section);
 
   const { phone: P, laptop: L } = experience;
   const captions: CaptionProps[] = [
@@ -52,7 +54,8 @@ export function Experience() {
   return (
     <section ref={section} className={styles.section} style={{ "--units": T.total } as CSSProperties} aria-label={experience.title} data-experience>
       {/* « Comment ça marche » mène directement au guide sur téléphone. */}
-      <div id={experience.anchor} className={styles.anchor} style={{ "--at": T.phoneGuide[0] + 0.1 } as CSSProperties} />
+      <div id={experience.anchor} className={styles.anchor} style={{ "--at": GUIDE_STOP } as CSSProperties} />
+      <div id={experience.scamAnchor} className={styles.anchor} style={{ "--at": SCAM_STOP } as CSSProperties} />
       <div className={styles.stage}>
         <div className={styles.backdrop} aria-hidden="true" />
         {webgl && (
@@ -76,6 +79,11 @@ export function Experience() {
 function Intro() {
   const ref = useRef<HTMLDivElement>(null);
   const content = useRef<HTMLDivElement>(null);
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setReady(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
   // Hauteur occupée par le texte (sans le décalage du défilement) : la scène 3D place le cercle en dessous.
   useEffect(() => {
     const el = ref.current;
@@ -101,15 +109,19 @@ function Intro() {
     el.style.filter = `blur(${range(p, 0.3, 0.8) * 8}px)`;
   });
   return (
-    <div ref={ref} className={styles.intro}>
+    <div ref={ref} className={styles.intro} data-words={ready ? "on" : "off"}>
       <div ref={content} className={styles.introContent}>
       <SixLogo size={26} />
       <h1>
-        {hero.title.split(/(?<=\.) /).map((line) => (
-          <span key={line}>{line}</span>
+        {hero.title.split(/(?<=\.) /).map((line, k) => (
+          <span key={line}>
+            <Words delay={k * 2}>{line}</Words>
+          </span>
         ))}
       </h1>
-      <p>{hero.lead}</p>
+      <p>
+        <Words delay={5}>{hero.lead}</Words>
+      </p>
       <div className={styles.introActions}>
         <BetaButton />
         <AppButton kind="download" variant="secondary" badge={false} />
@@ -134,16 +146,22 @@ function Caption({ from, to, eyebrow, title, text, place = "side" }: CaptionProp
     if (!el) return;
     const o = window01(p, from, to, 0.22);
     const leaving = p > (from + to) / 2;
-    el.style.opacity = String(o);
+    // Les mots se collent à l'arrivée ; au départ, la légende s'efface et s'éloigne.
+    el.dataset.words = o > 0.05 ? "on" : "off";
+    el.style.opacity = String(leaving ? o : Math.min(1, o * 4));
     el.style.visibility = o > 0.001 ? "visible" : "hidden";
-    el.style.filter = o < 1 ? `blur(${(1 - o) * 10}px)` : "none";
-    el.style.transform = `translateY(${(1 - o) * (leaving ? -24 : 24)}px)`;
+    el.style.filter = leaving && o < 1 ? `blur(${(1 - o) * 10}px)` : "none";
+    el.style.transform = leaving ? `translateY(${(1 - o) * -24}px) scale(${0.96 + o * 0.04})` : "none";
   });
   return (
     <div ref={ref} className={styles.caption} data-place={place}>
       {eyebrow && <p className={styles.eyebrow}>{eyebrow}</p>}
-      <h2>{title}</h2>
-      <p>{text}</p>
+      <h2>
+        <Words>{title}</Words>
+      </h2>
+      <p>
+        <Words delay={title.split(" ").length + 2}>{text}</Words>
+      </p>
     </div>
   );
 }

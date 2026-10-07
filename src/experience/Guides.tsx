@@ -4,6 +4,7 @@ import { experience } from "../content/experience";
 import { howScreens, scenes } from "../content/phoneScenes";
 import { maskExample, security } from "../content/site";
 import { SixAppIcon } from "../components/brand/Logos";
+import { Words } from "../components/ui/Words";
 import { MessagingAppIcon } from "../components/brand/MessagingAppIcon";
 import { AppChat, SixScreen, StatusBar } from "../components/phone/Screens";
 import { PHONE_SCREEN_PX } from "../components/phone/screenSize";
@@ -81,9 +82,19 @@ function StepText({ i, label }: { i: number; label: string }) {
       </p>
       <div className={styles.stepStack}>
         {steps.map((s, k) => (
-          <div key={s.title} className={styles.stepItem} data-state={k === i ? "on" : k < i ? "past" : "next"} aria-hidden={k !== i}>
-            <h2>{s.title}</h2>
-            <p>{s.text}</p>
+          <div
+            key={s.title}
+            className={styles.stepItem}
+            data-state={k === i ? "on" : k < i ? "past" : "next"}
+            data-words={k === i ? "on" : "off"}
+            aria-hidden={k !== i}
+          >
+            <h2>
+              <Words>{s.title}</Words>
+            </h2>
+            <p>
+              <Words delay={s.title.split(" ").length + 2}>{s.text}</Words>
+            </p>
           </div>
         ))}
       </div>
