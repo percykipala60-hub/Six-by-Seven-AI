@@ -1,5 +1,5 @@
 // Pages légales. Version de départ : à faire relire avant la mise en ligne.
-// Les passages entre crochets sont des informations à compléter.
+// À ajouter dans les mentions légales dès que connus : forme juridique, siège, responsable de la publication.
 
 type Block = string | { list: string[] };
 export type LegalPage = {
@@ -129,16 +129,13 @@ export const legalPages: LegalPage[] = [
         body: [
           { list: [
             "Seven.AI",
-            "Forme juridique : [à compléter]",
-            "Siège : [à compléter]",
             "Contact : sevenai.dc@gmail.com · +243 985 002 388",
-            "Responsable de la publication : [à compléter]",
           ] },
         ],
       },
       {
         title: "Hébergement",
-        body: ["[Nom, adresse et contact de l'hébergeur]"],
+        body: ["Ce site est hébergé par Render Services, Inc. (render.com), aux États-Unis."],
       },
       {
         title: "Propriété intellectuelle",
