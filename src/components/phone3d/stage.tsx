@@ -65,9 +65,14 @@ export function useDragInput(wrapRef: RefObject<HTMLDivElement | null>, follow: 
     const s = input.current;
     let last = { x: 0, y: 0, t: 0 };
     const finePointer = window.matchMedia("(pointer: fine)").matches;
+    // Au doigt, on attend de connaître la direction du geste avant de faire tourner :
+    // un geste vertical fait défiler la page sans bouger le téléphone, un geste horizontal le fait
+    // tourner sur lui-même (sans bascule avant/arrière, qui gênait le défilement).
+    const SLOP = 8;
+    let pending: { x: number; y: number; id: number } | null = null;
+    let touch = false;
 
-    const down = (e: PointerEvent) => {
-      if (e.button !== 0 || (e.target as HTMLElement).closest("button")) return;
+    const start = (e: PointerEvent) => {
       s.dragging = true;
       setGrabbing(true);
       setTouched(true);
@@ -75,11 +80,27 @@ export function useDragInput(wrapRef: RefObject<HTMLDivElement | null>, follow: 
       last = { x: e.clientX, y: e.clientY, t: performance.now() };
       s.vel.x = s.vel.y = 0;
     };
+    const down = (e: PointerEvent) => {
+      if (e.button !== 0 || (e.target as HTMLElement).closest("button")) return;
+      touch = e.pointerType === "touch";
+      if (touch) pending = { x: e.clientX, y: e.clientY, id: e.pointerId };
+      else start(e);
+    };
     const move = (e: PointerEvent) => {
+      if (pending && e.pointerId === pending.id) {
+        const ax = Math.abs(e.clientX - pending.x);
+        const ay = Math.abs(e.clientY - pending.y);
+        if (ay > SLOP && ay >= ax) pending = null; // défilement : on laisse faire la page
+        else if (ax > SLOP) {
+          pending = null;
+          start(e);
+        }
+        return;
+      }
       if (!s.dragging) return;
       const now = performance.now();
       const dx = e.clientX - last.x;
-      const dy = e.clientY - last.y;
+      const dy = touch ? 0 : e.clientY - last.y;
       const dt = Math.max(now - last.t, 1);
       s.rot.y += dx * 0.5;
       s.rot.x = Math.min(80, Math.max(-80, s.rot.x + dy * 0.4));
@@ -88,6 +109,7 @@ export function useDragInput(wrapRef: RefObject<HTMLDivElement | null>, follow: 
       last = { x: e.clientX, y: e.clientY, t: now };
     };
     const up = (e: PointerEvent) => {
+      pending = null;
       if (!s.dragging) return;
       s.dragging = false;
       setGrabbing(false);
