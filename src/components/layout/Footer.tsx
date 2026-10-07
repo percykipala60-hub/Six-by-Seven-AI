@@ -13,8 +13,9 @@ const SOCIAL_LOGO: Record<SocialId, string> = {
   linkedin: SOCIAL_PATHS.linkedin,
 };
 
-// Lien interne (routeur) ou externe (nouvel onglet).
+// Lien interne (routeur), externe (nouvel onglet), ou e-mail / téléphone (ouvre l'appli correspondante).
 function FooterLink({ href, label }: { href: string; label: string }) {
+  if (href.startsWith("mailto:") || href.startsWith("tel:")) return <a href={href}>{label}</a>;
   if (href.startsWith("http"))
     return (
       <a href={href} target="_blank" rel="noopener noreferrer">

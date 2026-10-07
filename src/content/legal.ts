@@ -74,7 +74,7 @@ export const legalPages: LegalPage[] = [
       },
       {
         title: "8. Contact",
-        body: ["Pour toute question : [adresse e-mail de contact]."],
+        body: ["Pour toute question : sevenai.dc@gmail.com."],
       },
     ],
   },
@@ -114,7 +114,7 @@ export const legalPages: LegalPage[] = [
       {
         title: "6. Tes droits",
         body: [
-          "Tu peux à tout moment demander l'accès à tes données, leur correction ou la suppression de ton compte en écrivant à [adresse e-mail de contact].",
+          "Tu peux à tout moment demander l'accès à tes données, leur correction ou la suppression de ton compte en écrivant à sevenai.dc@gmail.com.",
         ],
       },
     ],
@@ -131,7 +131,7 @@ export const legalPages: LegalPage[] = [
             "Seven.AI",
             "Forme juridique : [à compléter]",
             "Siège : [à compléter]",
-            "Contact : [adresse e-mail de contact]",
+            "Contact : sevenai.dc@gmail.com · +243 985 002 388",
             "Responsable de la publication : [à compléter]",
           ] },
         ],
