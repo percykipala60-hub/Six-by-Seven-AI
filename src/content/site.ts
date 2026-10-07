@@ -71,6 +71,11 @@ export const hero = {
   meta: "Bêta ouverte dès maintenant. Version finale le 15 octobre sur iPhone, Android, Mac et Windows.",
 };
 
+// Phrase manifeste sous le haut de page (reprend ce que le site dit déjà de Six).
+export const manifesto = {
+  text: "Six est l'assistant qui t'aide à répondre à tes messages, sans jamais parler à ta place.",
+};
+
 export const how = {
   id: "comment",
   title: "Comment ça marche",

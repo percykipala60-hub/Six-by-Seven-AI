@@ -156,3 +156,14 @@
   opacity: 0.3;
   cursor: default;
 }
+
+/* « Six » en très grand, aligné à gauche et coupé net en bas. */
+.giant {
+  font: 500 clamp(140px, 30vw, 460px) / 0.78 var(--font-display);
+  letter-spacing: -0.06em;
+  color: var(--ink);
+  user-select: none;
+  overflow: hidden;
+  padding-block: 8px 0;
+  margin-bottom: clamp(16px, 2vw, 28px);
+}

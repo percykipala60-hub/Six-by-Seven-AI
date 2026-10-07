@@ -35,7 +35,7 @@
 }
 
 .title {
-  font-size: clamp(44px, 5.6vw, 84px);
+  font-size: clamp(36px, 4.4vw, 58px);
   max-width: 12ch;
 }
 

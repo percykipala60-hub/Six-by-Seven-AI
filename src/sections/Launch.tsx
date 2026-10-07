@@ -3,10 +3,12 @@ import { app, beta, launch, socials } from "../content/site";
 import { SocialIcon } from "../components/brand/SocialIcon";
 import { AppButton } from "../components/ui/AppButton";
 import { BetaButton } from "../components/ui/BetaButton";
+import { ParticleField } from "../components/ui/ParticleField";
 import { Reveal } from "../components/ui/Reveal";
 import styles from "./Launch.module.css";
 
-// Section de téléchargement : l'application ou la version web, puis les réseaux.
+// Section de téléchargement, dans un grand panneau sombre à particules (comme sur antigravity.google) :
+// la bêta, l'application ou la version web, puis les réseaux.
 export function Launch() {
   const linked = socials.filter((s) => s.href);
   const options = [
@@ -15,7 +17,9 @@ export function Launch() {
   ];
   return (
     <section id={app.sectionId} className={styles.section} aria-labelledby="download-title">
-      <div className="container">
+      <div className={`surface-dark ${styles.panel}`}>
+        <ParticleField theme="dark" density={0.8} />
+        <div className={`container ${styles.inner}`}>
         <Reveal className={styles.head}>
           <h2 id="download-title">{launch.title}</h2>
           <p>{launch.text}</p>
@@ -58,6 +62,7 @@ export function Launch() {
             ))}
           </ul>
         </Reveal>
+        </div>
       </div>
     </section>
   );

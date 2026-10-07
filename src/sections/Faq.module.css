@@ -20,7 +20,7 @@
 }
 
 .head h2 {
-  font-size: clamp(44px, 5.6vw, 80px);
+  font-size: clamp(36px, 4.2vw, 56px);
 }
 
 .head p {
@@ -44,7 +44,7 @@
   justify-content: space-between;
   gap: 24px;
   padding: 24px 0;
-  font: 600 clamp(20px, 2vw, 24px) / 1.25 var(--font-display);
+  font: 500 clamp(20px, 2vw, 24px) / 1.25 var(--font-display);
   cursor: pointer;
   list-style: none;
 }

@@ -28,8 +28,9 @@
   --warn: #c2361f;
   --warn-bg: #fdece8;
 
-  --font-display: "Cormorant Garamond", "Cormorant", Garamond, Georgia, serif;
-  --font-body: "Manrope", system-ui, -apple-system, sans-serif;
+  /* Google Sans : sans serif géométrique et légère, comme sur antigravity.google. */
+  --font-display: "Google Sans", "Manrope", system-ui, -apple-system, sans-serif;
+  --font-body: "Google Sans", "Manrope", system-ui, -apple-system, sans-serif;
   --font-wordmark: "Manrope", system-ui, sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 

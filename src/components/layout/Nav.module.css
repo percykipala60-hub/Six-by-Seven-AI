@@ -103,7 +103,7 @@
 .mobile > div > a {
   display: block;
   padding: 16px 0;
-  font: 600 26px var(--font-display);
+  font: 500 26px var(--font-display);
   letter-spacing: -0.01em;
   text-decoration: none;
   border-bottom: 1px solid var(--line);

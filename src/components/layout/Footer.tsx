@@ -24,7 +24,7 @@ function FooterLink({ href, label }: { href: string; label: string }) {
   return <Link to={href}>{label}</Link>;
 }
 
-// Pied de page en colonnes séparées par des filets, puis une barre légale avec les réseaux.
+// Pied de page en colonnes séparées par des filets, le nom en géant, puis une barre légale avec les réseaux.
 export function Footer() {
   return (
     <footer className={styles.footer}>
@@ -46,6 +46,11 @@ export function Footer() {
       <div className={`container ${styles.copyright}`}>
         <SixLogo size={26} />
         <p>{footer.copyright}</p>
+      </div>
+
+      {/* Le nom en géant, sur toute la largeur, comme sur antigravity.google. */}
+      <div className={`container ${styles.giant}`} aria-hidden="true">
+        Six
       </div>
 
       <div className={styles.bar}>
