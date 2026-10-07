@@ -48,8 +48,9 @@ export function WaveField({ theme = "light", className, fixed = false }: Props) 
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     // Écran tactile : moins de lignes et de points, une image sur deux.
     const touch = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
-    const ribbons = RIBBONS[theme];
-    const LINES = touch ? 10 : 18;
+    // Téléphone : un ruban de moins et moins de lignes par ruban.
+    const ribbons = touch ? RIBBONS[theme].slice(0, 3) : RIBBONS[theme];
+    const LINES = touch ? 8 : 18;
     const STEP = touch ? 18 : 12; // pas horizontal du tracé (px)
     const dark = theme === "dark";
 

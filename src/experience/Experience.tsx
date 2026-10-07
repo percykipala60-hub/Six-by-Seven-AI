@@ -105,8 +105,8 @@ function Intro() {
     el.style.opacity = String(o);
     el.style.visibility = o > 0 ? "visible" : "hidden";
     el.inert = o < 0.5;
-    el.style.transform = `translateY(${-range(p, 0, 0.8) * 40}px)`;
-    el.style.filter = `blur(${range(p, 0.3, 0.8) * 8}px)`;
+    // Fondu et léger glissement (sans flou : animer un flou sur un si grand bloc fait saccader).
+    el.style.transform = `translateY(${-range(p, 0, 0.8) * 40}px) scale(${1 - range(p, 0.3, 0.8) * 0.04})`;
   });
   return (
     <div ref={ref} className={styles.intro} data-words={ready ? "on" : "off"}>
@@ -138,7 +138,7 @@ function Intro() {
 
 type CaptionProps = { from: number; to: number; title: string; text: string; place?: "side" | "top" };
 
-// Légende de la scène 3D : elle sort du flou, monte légèrement, puis repart dans le flou.
+// Légende de la scène 3D : ses mots se collent un à un à l'arrivée, puis elle s'efface en s'éloignant.
 function Caption({ from, to, title, text, place = "side" }: CaptionProps) {
   const ref = useRef<HTMLDivElement>(null);
   useTimelineEffect((p) => {
@@ -150,7 +150,6 @@ function Caption({ from, to, title, text, place = "side" }: CaptionProps) {
     el.dataset.words = o > 0.05 ? "on" : "off";
     el.style.opacity = String(leaving ? o : Math.min(1, o * 4));
     el.style.visibility = o > 0.001 ? "visible" : "hidden";
-    el.style.filter = leaving && o < 1 ? `blur(${(1 - o) * 10}px)` : "none";
     el.style.transform = leaving ? `translateY(${(1 - o) * -24}px) scale(${0.96 + o * 0.04})` : "none";
   });
   return (

@@ -79,8 +79,27 @@ export const timeline = {
   target: 0,
   /** Valeur lissée, utilisée par toutes les animations. */
   p: 0,
+  /** Pendant une transition entre deux arrêts : valeur imposée, sans faire défiler la page à chaque image. */
+  override: null as number | null,
   listeners: new Set<Listener>(),
 };
+
+// Géométrie de la visite, mesurée seulement quand la mise en page change (et non à chaque image :
+// relire la position d'un élément force le navigateur à recalculer la page, source de saccades).
+const geom = { top: 0, height: 0, vh: 1 };
+const measure = (el: HTMLElement) => {
+  const r = el.getBoundingClientRect();
+  geom.top = r.top + window.scrollY;
+  geom.height = r.height;
+  geom.vh = window.innerHeight;
+};
+// Taille d'une unité de la ligne de temps, en pixels de défilement.
+const unitPx = () => Math.max((geom.height - geom.vh) / T.total, 1);
+// Position de défilement lue au moment du défilement (et non à chaque image, où la lire peut forcer
+// un recalcul de la page).
+let scrollY = typeof window !== "undefined" ? window.scrollY : 0;
+if (typeof window !== "undefined") window.addEventListener("scroll", () => (scrollY = window.scrollY), { passive: true });
+const scrollUnits = () => (scrollY - geom.top) / unitPx();
 
 const subscribe = (l: Listener) => {
   timeline.listeners.add(l);
@@ -96,19 +115,24 @@ export function useTimelineDriver(sectionRef: RefObject<HTMLElement | null>) {
     let raf = 0;
     let last = performance.now();
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const el = sectionRef.current;
+    if (!el) return;
+    measure(el);
+    const remeasure = () => measure(el);
+    const ro = new ResizeObserver(remeasure);
+    ro.observe(el);
+    ro.observe(document.body);
+    window.addEventListener("resize", remeasure);
     const read = () => {
-      const el = sectionRef.current;
-      if (!el) return;
-      const r = el.getBoundingClientRect();
-      const run = r.height - window.innerHeight;
-      timeline.target = run > 0 ? (clamp01(-r.top / run) * T.total) : 0;
+      timeline.target = timeline.override ?? clamp01(scrollUnits() / T.total) * T.total;
     };
     const tick = (now: number) => {
       const dt = Math.min((now - last) / 1000, 0.1);
       last = now;
       read();
-      // Lissage léger : les transitions entre arrêts sont déjà adoucies ; il reste utile si on tire l'ascenseur.
-      const k = reduced ? 1 : 1 - Math.exp(-dt * 12);
+      // Lissage léger, utile seulement si on tire l'ascenseur : les transitions entre arrêts sont
+      // déjà adoucies et appliquées telles quelles.
+      const k = reduced || timeline.override !== null ? 1 : 1 - Math.exp(-dt * 12);
       const next = timeline.p + (timeline.target - timeline.p) * k;
       const changed = Math.abs(next - timeline.p) > 1e-5;
       timeline.p = Math.abs(timeline.target - next) < 1e-4 ? timeline.target : next;
@@ -119,7 +143,11 @@ export function useTimelineDriver(sectionRef: RefObject<HTMLElement | null>) {
     timeline.p = timeline.target;
     timeline.listeners.forEach((l) => l());
     raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+      window.removeEventListener("resize", remeasure);
+    };
   }, [sectionRef]);
 }
 
@@ -155,36 +183,27 @@ export function useStepScroll(sectionRef: RefObject<HTMLElement | null>) {
     let trough = Infinity;
     let falling = false;
 
-    const geometry = () => {
-      const el = sectionRef.current;
-      if (!el) return null;
-      const r = el.getBoundingClientRect();
-      return { top: r.top + window.scrollY, unit: (r.height - window.innerHeight) / T.total, r };
-    };
     // La visite occupe l'écran : de son début jusqu'au moment où la section suivante arrive en haut.
-    const pinned = () => {
-      const g = geometry();
-      return !!g && g.r.top <= 1 && g.r.bottom >= -2;
-    };
-    const current = () => {
-      const g = geometry();
-      return g ? (window.scrollY - g.top) / g.unit : 0;
-    };
+    const pinned = () => window.scrollY >= geom.top - 1 && window.scrollY <= geom.top + geom.height + 2;
+    const current = () => timeline.override ?? scrollUnits();
+    // Fin de la visite : la section suivante arrive en haut de l'écran.
+    const exitStop = () => geom.height / unitPx();
     // Arrêt suivant (dir = 1) ou précédent (dir = -1) ; null quand il n'y en a plus.
     // Après le dernier arrêt, un dernier geste fait glisser la visite vers le haut et amène la section suivante.
     const nextStop = (dir: 1 | -1) => {
-      const g = geometry();
       const u = current();
-      const stops = g ? [...STOPS, g.r.height / g.unit] : STOPS;
+      const stops = [...STOPS, exitStop()];
       return dir > 0 ? (stops.find((s) => s > u + 0.02) ?? null) : ([...stops].reverse().find((s) => s < u - 0.02) ?? null);
     };
 
     const go = (to: number) => {
-      const g = geometry();
-      if (!g) return;
       const from = window.scrollY;
-      const target = g.top + to * g.unit;
+      const target = geom.top + to * unitPx();
       const u0 = current();
+      // Entre deux arrêts de la visite, la scène reste collée à l'écran : inutile de faire défiler la page
+      // à chaque image (c'était coûteux). On anime directement la ligne de temps, et la page ne défile
+      // qu'une fois, à l'arrivée. Pour sortir de la visite, on fait défiler pour de vrai.
+      const virtual = to <= T.total + 1e-6 && u0 <= T.total + 1e-6;
       const dist = Math.abs(to - u0);
       // Les mouvements d'appareils (le cercle qui tourne, l'appareil qui s'avance, la caméra qui entre
       // dans l'écran ou en ressort) prennent leur temps ; les étapes à l'intérieur de l'appli restent vives.
@@ -208,9 +227,17 @@ export function useStepScroll(sectionRef: RefObject<HTMLElement | null>) {
       cancelAnimationFrame(raf);
       const step = (now: number) => {
         const t = duration ? Math.min(1, (now - start) / duration) : 1;
-        window.scrollTo({ top: from + (target - from) * easeInOutSine(t), behavior: "instant" });
+        const e = easeInOutSine(t);
+        if (virtual) timeline.override = u0 + (to - u0) * e;
+        else window.scrollTo({ top: from + (target - from) * e, behavior: "instant" });
         if (t < 1) raf = requestAnimationFrame(step);
         else {
+          if (virtual) {
+            window.scrollTo({ top: target, behavior: "instant" });
+            // L'évènement de défilement n'arrivera qu'à l'image suivante : on note la position tout de suite.
+            scrollY = window.scrollY;
+            timeline.override = null;
+          }
           busy = false;
           const next = queued;
           queued = 0;
@@ -321,6 +348,7 @@ export function useStepScroll(sectionRef: RefObject<HTMLElement | null>) {
     window.addEventListener("keydown", onKey);
     return () => {
       cancelAnimationFrame(raf);
+      timeline.override = null;
       el.removeEventListener("wheel", onWheel);
       el.removeEventListener("touchstart", onTouchStart);
       el.removeEventListener("touchmove", onTouchMove);

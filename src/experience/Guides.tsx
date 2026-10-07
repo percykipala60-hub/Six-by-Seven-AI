@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { memo, useEffect, useRef, useState, type ReactNode } from "react";
 import { Check, ChevronLeft, Copy, Minus, Search, Square, TriangleAlert, X } from "lucide-react";
 import { experience } from "../content/experience";
 import { howScreens, scenes } from "../content/phoneScenes";
@@ -6,7 +6,7 @@ import { maskExample, security } from "../content/site";
 import { SixAppIcon } from "../components/brand/Logos";
 import { Words } from "../components/ui/Words";
 import { MessagingAppIcon } from "../components/brand/MessagingAppIcon";
-import { AppChat, SixScreen, StatusBar } from "../components/phone/Screens";
+import { AppChat as AppChatScreen, SixScreen as SixScreenBase, StatusBar } from "../components/phone/Screens";
 import { PHONE_SCREEN_PX } from "../components/phone/screenSize";
 import type { LaptopId } from "./ExperienceScene";
 import { phoneOverlayAt, laptopOverlayAt } from "./overlays";
@@ -16,6 +16,10 @@ import desk from "../components/phone/DesktopScreen.module.css";
 import styles from "./Experience.module.css";
 
 // ---------- Outils communs ----------
+
+// Écrans de l'appli mémorisés : pendant une étape, seul l'écran en cours est redessiné.
+const SixScreen = memo(SixScreenBase);
+const AppChat = memo(AppChatScreen);
 
 // Avancement dans le guide, arrondi au vingtième d'étape : le guide ne se redessine qu'à chaque palier.
 function useGuideStep(range: readonly [number, number], count: number) {
@@ -68,7 +72,7 @@ const ALL_STEPS = [...experience.phoneGuide, ...experience.desktopGuide];
 
 // Colonne de texte : l'étape en cours apparaît en sortant du flou, la précédente s'efface.
 // `i` est le numéro de l'étape dans le guide entier (0 à 6) ; seule une fine barre d'avancement l'indique.
-function StepText({ i }: { i: number }) {
+const StepText = memo(function StepText({ i }: { i: number }) {
   const steps = ALL_STEPS;
   return (
     <div className={styles.stepText}>
@@ -97,7 +101,7 @@ function StepText({ i }: { i: number }) {
       </div>
     </div>
   );
-}
+});
 
 // ---------- Guide sur téléphone ----------
 
@@ -149,7 +153,7 @@ function SixTop({ back }: { back?: boolean }) {
 }
 
 // Étape 1 : la discussion se colle ligne par ligne, puis Six reconnaît WhatsApp.
-function ImportStep({ s }: { s: number }) {
+const ImportStep = memo(function ImportStep({ s }: { s: number }) {
   const d = howScreens.import;
   const lines = d.transcript.filter((_, k) => s >= 0.1 + k * 0.18).length;
   return (
@@ -181,10 +185,10 @@ function ImportStep({ s }: { s: number }) {
       </div>
     </div>
   );
-}
+});
 
 // Étape 2 : les informations sensibles sont masquées une à une.
-function VerifyStep({ s }: { s: number }) {
+const VerifyStep = memo(function VerifyStep({ s }: { s: number }) {
   const d = howScreens.verify;
   let k = 0;
   return (
@@ -215,7 +219,7 @@ function VerifyStep({ s }: { s: number }) {
       </div>
     </div>
   );
-}
+});
 
 // ---------- Guide sur ordinateur ----------
 

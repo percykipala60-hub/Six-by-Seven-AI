@@ -282,7 +282,8 @@ function Director({ phone, laptop, groups, markers, still: calm = false }: Direc
       g.rotation.set(mix(-6 * DEG, isPhone(id) ? -4 * DEG : 4 * DEG, f), mix(ringYaw, HERO_YAW[id], smooth(f)), isPhone(id) ? -1.5 * DEG * f : 0);
       g.scale.setScalar(SCALE[id] * Math.max(keep, 0.001));
     }
-    for (const id of ORDER) groups.current[id]?.updateMatrixWorld(true);
+    // Pas de mise à jour de toutes les pièces des appareils ici (des milliers d'objets) : le repère
+    // visé par la caméra met à jour sa seule chaîne de parents quand on lit sa position (getWorldPosition).
 
     // Plans de caméra.
     const ring = (out: Shot) => {

@@ -118,7 +118,7 @@
   color: var(--ink);
   visibility: hidden;
   pointer-events: none;
-  will-change: opacity, transform, filter;
+  will-change: opacity, transform;
 }
 
 .caption h2,
@@ -245,20 +245,17 @@
   inset: 0;
   transition:
     opacity 0.45s ease,
-    transform 0.55s cubic-bezier(0.2, 0.7, 0.2, 1),
-    filter 0.45s ease;
+    transform 0.55s cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
 .screenLayer[data-state="next"] {
   opacity: 0;
   transform: translateY(24px) scale(0.98);
-  filter: blur(6px);
 }
 
 .screenLayer[data-state="past"] {
   opacity: 0;
   transform: translateY(-24px) scale(0.98);
-  filter: blur(6px);
 }
 
 .typed {
@@ -311,8 +308,7 @@
   grid-area: 1 / 1;
   transition:
     opacity 0.5s ease,
-    transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1),
-    filter 0.5s ease;
+    transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 
 .stepItem[data-state="next"] {
@@ -322,7 +318,6 @@
 .stepItem[data-state="past"] {
   opacity: 0;
   transform: translateY(-26px);
-  filter: blur(10px);
 }
 
 /* Éléments de l'interface qui apparaissent au fil du défilement. */
@@ -637,15 +632,6 @@
   }
 }
 
-/* Téléphone : pas de flou animé sur les écrans et les textes du guide (coûteux), le reste est identique. */
-@media (hover: none) and (pointer: coarse) {
-  .screenLayer,
-  .stepItem,
-  .intro,
-  .caption {
-    filter: none !important;
-  }
-}
 
 /* Halo couleur sable derrière les textes posés sur les vagues : ils restent nets et lisibles. */
 .intro h1,

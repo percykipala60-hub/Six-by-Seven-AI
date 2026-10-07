@@ -1,10 +1,11 @@
-import type { CSSProperties } from "react";
+import { memo, type CSSProperties } from "react";
 import styles from "./Words.module.css";
 
 // Texte découpé en mots : quand un parent passe en data-words="on", chaque mot surgit de nulle part
-// (minuscule, flou, décalé) et vient se coller à sa place, l'un après l'autre.
+// (minuscule, décalé) et vient se coller à sa place, l'un après l'autre.
 // Sans parent qui pilote l'effet, le texte s'affiche normalement.
-export function Words({ children, delay = 0 }: { children: string; delay?: number }) {
+// Mémorisé : un texte inchangé n'est jamais redessiné (les guides se mettent à jour souvent).
+export const Words = memo(function Words({ children, delay = 0 }: { children: string; delay?: number }) {
   const words = children.split(/\s+/).filter(Boolean);
   return (
     <>
@@ -30,4 +31,4 @@ export function Words({ children, delay = 0 }: { children: string; delay?: numbe
       ))}
     </>
   );
-}
+});

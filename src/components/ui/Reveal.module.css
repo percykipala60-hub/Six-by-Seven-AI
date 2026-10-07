@@ -1,16 +1,14 @@
-/* Éléments sans texte découpé (cartes, images, listes) : ils arrivent du fond, flous et plus petits,
-   puis se posent. On utilise `translate` et `scale` (pas `transform`) pour ne pas écraser
+/* Éléments sans texte découpé (cartes, images, listes) : ils arrivent du fond, plus petits,
+   puis se posent (sans flou animé, qui fait saccader). On utilise `translate` et `scale` (pas `transform`) pour ne pas écraser
    une transformation propre à l'élément. Les textes en <Words> ont leur propre effet, mot par mot. */
 .reveal > :not(:has([data-word])) {
   opacity: 0;
   translate: 0 40px;
   scale: 0.9;
-  filter: blur(12px);
   transition:
     opacity 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) var(--delay),
     translate 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) var(--delay),
-    scale 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) var(--delay),
-    filter 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) var(--delay);
+    scale 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) var(--delay);
 }
 
 .reveal > :nth-child(2):not(:has([data-word])) {
@@ -25,14 +23,6 @@
   opacity: 1;
   translate: none;
   scale: none;
-  filter: none;
-}
-
-/* Téléphone : pas de flou animé. */
-@media (hover: none) and (pointer: coarse) {
-  .reveal > * {
-    filter: none !important;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
