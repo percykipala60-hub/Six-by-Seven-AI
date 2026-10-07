@@ -6,6 +6,7 @@ import { SixLogo } from "../components/brand/Logos";
 import { AppButton } from "../components/ui/AppButton";
 import { BetaButton } from "../components/ui/BetaButton";
 import { Words } from "../components/ui/Words";
+import { ParticleField } from "../components/ui/ParticleField";
 import type { LaptopId, PhoneId } from "./ExperienceScene";
 import { DesktopGuide, PhoneGuide } from "./Guides";
 import { GUIDE_STOP, SCAM_STOP, T, layout, range, useStepScroll, useTimelineDriver, useTimelineEffect, window01 } from "./timeline";
@@ -44,10 +45,10 @@ export function Experience() {
 
   const { phone: P, laptop: L } = experience;
   const captions: CaptionProps[] = [
-    { from: T.phoneFront[0] + 0.4, to: T.phoneOpenSix + 0.05, eyebrow: experience.labels.phone, ...P.arrive },
+    { from: T.phoneFront[0] + 0.4, to: T.phoneOpenSix + 0.05, ...P.arrive },
     { from: T.phoneOpenSix, to: T.phoneDive[0] + 0.45, ...P.open },
     { from: T.phoneExit[0] + 0.3, to: T.phoneExit[1] - 0.05, ...P.done },
-    { from: T.laptopFront[0] + 0.45, to: T.laptopDive[0] + 0.4, eyebrow: experience.labels.laptop, ...L.arrive },
+    { from: T.laptopFront[0] + 0.45, to: T.laptopDive[0] + 0.4, ...L.arrive },
     { from: T.laptopExit[1] - 0.45, to: T.total + 0.6, place: "top", ...L.done },
   ];
 
@@ -58,6 +59,8 @@ export function Experience() {
       <div id={experience.scamAnchor} className={styles.anchor} style={{ "--at": SCAM_STOP } as CSSProperties} />
       <div className={styles.stage}>
         <div className={styles.backdrop} aria-hidden="true" />
+        {/* Anneau de particules qui suit le curseur, derrière les appareils. */}
+        <ParticleField density={0.9} />
         {webgl && (
           <Suspense fallback={null}>
             <ExperienceScene phone={devices.phone} laptop={devices.laptop} />
@@ -136,10 +139,10 @@ function Intro() {
   );
 }
 
-type CaptionProps = { from: number; to: number; eyebrow?: string; title: string; text: string; place?: "side" | "top" };
+type CaptionProps = { from: number; to: number; title: string; text: string; place?: "side" | "top" };
 
 // Légende de la scène 3D : elle sort du flou, monte légèrement, puis repart dans le flou.
-function Caption({ from, to, eyebrow, title, text, place = "side" }: CaptionProps) {
+function Caption({ from, to, title, text, place = "side" }: CaptionProps) {
   const ref = useRef<HTMLDivElement>(null);
   useTimelineEffect((p) => {
     const el = ref.current;
@@ -155,7 +158,6 @@ function Caption({ from, to, eyebrow, title, text, place = "side" }: CaptionProp
   });
   return (
     <div ref={ref} className={styles.caption} data-place={place}>
-      {eyebrow && <p className={styles.eyebrow}>{eyebrow}</p>}
       <h2>
         <Words>{title}</Words>
       </h2>

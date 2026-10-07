@@ -56,10 +56,7 @@ export const experience = {
       text: "Gain miracle, faux conseiller : Six te prévient avant de proposer quoi que ce soit.",
     },
   ],
-  steps: "Étape",
   labels: {
-    phone: "Sur téléphone",
-    laptop: "Sur ordinateur",
     empty: "Choisis une conversation",
     paste: "pour la coller dans",
   },

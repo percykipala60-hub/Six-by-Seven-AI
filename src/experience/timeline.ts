@@ -51,6 +51,8 @@ export const range = (p: number, a: number, b: number) => clamp01((p - a) / (b -
 export const mix = (a: number, b: number, t: number) => a + (b - a) * t;
 export const smooth = (t: number) => t * t * (3 - 2 * t);
 export const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+// Départ et arrivée en douceur, sans accélération brutale au milieu (mouvements de caméra).
+export const easeInOutSine = (t: number) => -(Math.cos(Math.PI * t) - 1) / 2;
 export const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
 
 // Apparition puis disparition d'un élément sur [a, b] : monte sur `fade`, reste, redescend sur `fade`.
@@ -174,15 +176,21 @@ export function useStepScroll(sectionRef: RefObject<HTMLElement | null>) {
       if (!g) return;
       const from = window.scrollY;
       const target = g.top + to * g.unit;
-      const dist = Math.abs(to - current());
-      // Durée selon le chemin à parcourir : une étape du guide ≈ 1 s, une plongée dans l'écran un peu plus.
-      const duration = reduced ? 0 : Math.min(1800, 650 + dist * 380);
+      const u0 = current();
+      const dist = Math.abs(to - u0);
+      // Les mouvements d'appareils (le cercle qui tourne, l'appareil qui s'avance, la caméra qui entre
+      // dans l'écran ou en ressort) prennent leur temps ; les étapes à l'intérieur de l'appli restent vives.
+      const moves = [T.phoneFront, T.phoneDive, T.phoneExit, T.laptopFront, T.laptopDive, T.laptopExit, T.outro];
+      const lo = Math.min(u0, to);
+      const hi = Math.max(u0, to);
+      const camera = moves.some(([a, b]) => lo < b && hi > a);
+      const duration = reduced ? 0 : camera ? Math.min(3400, 1500 + dist * 650) : Math.min(1400, 650 + dist * 380);
       const start = performance.now();
       busy = true;
       cancelAnimationFrame(raf);
       const step = (now: number) => {
         const t = duration ? Math.min(1, (now - start) / duration) : 1;
-        window.scrollTo({ top: from + (target - from) * easeInOut(t), behavior: "instant" });
+        window.scrollTo({ top: from + (target - from) * easeInOutSine(t), behavior: "instant" });
         if (t < 1) raf = requestAnimationFrame(step);
         else {
           busy = false;

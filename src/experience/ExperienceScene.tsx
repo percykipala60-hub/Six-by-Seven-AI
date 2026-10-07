@@ -12,7 +12,7 @@ import { DEG, ScreenAnchor, Studio, createScreenElement } from "../components/ph
 import { AppChat, SixScreen } from "../components/phone/Screens";
 import { DesktopScreen } from "../components/phone/DesktopScreen";
 import type { Model } from "../components/phone/RealPhone";
-import { T, easeInOut, layout, mix, range, smooth, timeline, useTimeline } from "./timeline";
+import { T, layout, mix, range, smooth, timeline, useTimeline } from "./timeline";
 import { coveredAt } from "./overlays";
 
 export type PhoneId = "ios" | "android";
@@ -314,16 +314,16 @@ function Director({ phone, laptop, groups, markers }: DirectorProps) {
       [T.phoneFront[0], ring],
       [T.phoneFront[1], (o) => hero(phone, o)],
       [T.phoneDive[0], (o) => hero(phone, o)],
-      [T.phoneDive[1], (o) => dive(phone, o), easeInOut],
+      [T.phoneDive[1], (o) => dive(phone, o)],
       [T.phoneExit[0] + 0.25, (o) => dive(phone, o)],
-      [T.phoneExit[0] + 0.75, (o) => hero(phone, o), easeInOut],
+      [T.phoneExit[0] + 0.75, (o) => hero(phone, o)],
       [T.phoneExit[1], ring],
       [T.laptopFront[0], ring],
       [T.laptopFront[1], (o) => hero(laptop, o)],
       [T.laptopDive[0], (o) => hero(laptop, o)],
-      [T.laptopDive[1], (o) => dive(laptop, o), easeInOut],
+      [T.laptopDive[1], (o) => dive(laptop, o)],
       [T.laptopExit[0] + 0.25, (o) => dive(laptop, o)],
-      [T.laptopExit[0] + 0.75, (o) => hero(laptop, o), easeInOut],
+      [T.laptopExit[0] + 0.75, (o) => hero(laptop, o)],
       [T.laptopExit[1], ring],
       [T.total, ring],
     ];

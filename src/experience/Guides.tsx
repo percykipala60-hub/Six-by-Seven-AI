@@ -67,8 +67,8 @@ function Fit({ w, h, children, className }: { w: number; h: number; children: Re
 const ALL_STEPS = [...experience.phoneGuide, ...experience.desktopGuide];
 
 // Colonne de texte : l'étape en cours apparaît en sortant du flou, la précédente s'efface.
-// `i` est le numéro de l'étape dans le guide entier (0 à 6).
-function StepText({ i, label }: { i: number; label: string }) {
+// `i` est le numéro de l'étape dans le guide entier (0 à 6) ; seule une fine barre d'avancement l'indique.
+function StepText({ i }: { i: number }) {
   const steps = ALL_STEPS;
   return (
     <div className={styles.stepText}>
@@ -77,9 +77,6 @@ function StepText({ i, label }: { i: number; label: string }) {
           <span key={k} data-on={k <= i || undefined} />
         ))}
       </div>
-      <p className={styles.eyebrow}>
-        {experience.steps} {i + 1} / {steps.length} · {label}
-      </p>
       <div className={styles.stepStack}>
         {steps.map((s, k) => (
           <div
@@ -124,7 +121,7 @@ export function PhoneGuide() {
   return (
     <div ref={ref} className={styles.guide} data-kind="phone" aria-hidden={!shown} inert={!shown}>
       <div className={styles.guideInner}>
-        <StepText i={i} label={experience.labels.phone} />
+        <StepText i={i} />
         <Fit w={PHONE_SCREEN_PX.w} h={PHONE_SCREEN_PX.h} className={styles.phoneFit}>
           <div className={styles.phonePanel}>
             {screens.map((node, k) => (
@@ -250,7 +247,7 @@ export function DesktopGuide({ os }: { os: LaptopId }) {
   return (
     <div ref={ref} className={styles.guide} data-kind="desktop" aria-hidden={!shown} inert={!shown}>
       <div className={styles.guideInner}>
-        <StepText i={experience.phoneGuide.length + i} label={experience.labels.laptop} />
+        <StepText i={experience.phoneGuide.length + i} />
         <Fit w={W} h={H} className={styles.deskFit}>
           <div className={styles.window} data-os={os} style={{ width: W, height: H }}>
             <div className={styles.titleBar}>

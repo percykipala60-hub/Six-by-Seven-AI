@@ -2,8 +2,9 @@ import { useEffect, useRef } from "react";
 import styles from "./ParticleField.module.css";
 
 // Champ de particules en anneau, inspiré de la page d'accueil d'antigravity.google :
-// de petits traits qui tournent lentement autour d'un vide central (là où se trouve le texte)
-// et s'écartent un peu du pointeur. Immobile si l'utilisateur préfère moins d'animations.
+// de petits traits qui tournent autour d'un vide central. L'anneau suit le curseur (les particules
+// proches du centre le rattrapent plus vite que celles du bord, ce qui forme une traîne) et, quand
+// le curseur s'arrête, continue de tourner autour de lui. Immobile si l'utilisateur préfère moins d'animations.
 type Props = { theme?: "light" | "dark"; density?: number; className?: string };
 
 const PALETTES = {
@@ -33,7 +34,7 @@ export function ParticleField({ theme = "light", density = 1, className }: Props
         r: Math.max(0.36, r),
         len: 1.5 + Math.random() * 4.5,
         c: colors[Math.floor(Math.random() * colors.length)],
-        v: (0.012 + Math.random() * 0.02) * (Math.random() < 0.85 ? 1 : -1),
+        v: (0.07 + Math.random() * 0.1) * (Math.random() < 0.85 ? 1 : -1),
         ph: Math.random() * Math.PI * 2,
       };
     });
@@ -42,7 +43,11 @@ export function ParticleField({ theme = "light", density = 1, className }: Props
     let h = 0;
     let raf = 0;
     let visible = true;
-    const pointer = { x: -9999, y: -9999 };
+    // Position du curseur, et deux centres qui le rattrapent, l'un vite (intérieur de l'anneau), l'autre lentement (bord).
+    const pointer = { x: NaN, y: NaN };
+    const fast = { x: 0, y: 0 };
+    const slow = { x: 0, y: 0 };
+    let last = 0;
 
     const resize = () => {
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -51,29 +56,37 @@ export function ParticleField({ theme = "light", density = 1, className }: Props
       canvas.width = Math.round(w * dpr);
       canvas.height = Math.round(h * dpr);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      if (!last) {
+        fast.x = slow.x = w / 2;
+        fast.y = slow.y = h / 2;
+      }
       if (reduce) draw(0);
     };
 
     const draw = (t: number) => {
+      const dt = last ? Math.min(t - last, 0.1) : 0;
+      last = t;
+      // Sans curseur (écran tactile, curseur hors de la zone), l'anneau revient au centre.
+      const tx = Number.isNaN(pointer.x) ? w / 2 : pointer.x;
+      const ty = Number.isNaN(pointer.y) ? h / 2 : pointer.y;
+      const kf = 1 - Math.exp(-dt * 7);
+      const ks = 1 - Math.exp(-dt * 2.5);
+      fast.x += (tx - fast.x) * kf;
+      fast.y += (ty - fast.y) * kf;
+      slow.x += (tx - slow.x) * ks;
+      slow.y += (ty - slow.y) * ks;
+
       ctx.clearRect(0, 0, w, h);
-      const cx = w / 2;
-      const cy = h / 2;
-      const R = Math.max(w, h) * 0.5;
+      const R = Math.min(Math.max(w, h) * 0.34, 460);
       for (const p of parts) {
         const a = p.a + t * p.v;
         const rr = R * (p.r + Math.sin(t * 0.6 + p.ph) * 0.008);
-        let x = cx + Math.cos(a) * rr;
-        let y = cy + Math.sin(a) * rr * 0.72;
-        // Le pointeur repousse doucement les particules proches.
-        const dx = x - pointer.x;
-        const dy = y - pointer.y;
-        const d2 = dx * dx + dy * dy;
-        if (d2 < 22000) {
-          const f = (1 - d2 / 22000) * 18;
-          const d = Math.sqrt(d2) || 1;
-          x += (dx / d) * f;
-          y += (dy / d) * f;
-        }
+        // Centre propre à la particule : entre le centre rapide et le centre lent, selon sa distance.
+        const k = Math.min(1, Math.max(0, (p.r - 0.36) / 0.7));
+        const cx = fast.x + (slow.x - fast.x) * k;
+        const cy = fast.y + (slow.y - fast.y) * k;
+        const x = cx + Math.cos(a) * rr;
+        const y = cy + Math.sin(a) * rr * 0.72;
         // Trait orienté vers le centre, comme une limaille autour d'un aimant.
         const ux = Math.cos(a);
         const uy = Math.sin(a) * 0.72;
@@ -97,7 +110,7 @@ export function ParticleField({ theme = "light", density = 1, className }: Props
       pointer.y = e.clientY - b.top;
     };
     const onLeave = () => {
-      pointer.x = pointer.y = -9999;
+      pointer.x = pointer.y = NaN;
     };
 
     const ro = new ResizeObserver(resize);
