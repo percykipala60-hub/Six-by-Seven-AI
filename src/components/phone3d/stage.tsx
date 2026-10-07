@@ -228,9 +228,11 @@ export const overscanStyle: CSSProperties = {
 export const overscanFov = (fov: number) => (2 * Math.atan(Math.tan((fov * Math.PI) / 360) * (1 + 2 * OVERSCAN)) * 180) / Math.PI;
 
 // Moteur CSS 3D de three.js : un seul par scène, il affiche toutes les interfaces posées sur des écrans.
-// Le calque des interfaces passe SOUS l'image 3D : chaque écran y est visible à travers une « fenêtre »
-// découpée dans l'image (voir ScreenAnchor). Ce qui se trouve devant l'écran (coque, capot, clavier)
-// le cache donc naturellement, quel que soit l'angle.
+// Le calque des interfaces passe AU-DESSUS de l'image 3D, qui dessine du verre noir à leur place
+// (voir ScreenAnchor). Sur certains téléphones, l'image 3D s'affiche une image après les interfaces :
+// avec une fenêtre transparente, ce décalage laissait voir le fond de la page (bande beige) pendant les
+// mouvements. Désormais, au pire, on aperçoit un liseré de verre noir, confondu avec la bordure.
+// Rien ne passe devant un écran dans nos scènes (il est masqué dès qu'il ne fait plus face à la caméra).
 export function CssLayer() {
   const { scene, camera, size, gl } = useThree();
   const renderer = useMemo(() => {
@@ -242,8 +244,8 @@ export function CssLayer() {
   useEffect(() => {
     const canvas = gl.domElement;
     Object.assign(canvas.style, { position: "relative", zIndex: "1" });
-    renderer.domElement.style.zIndex = "0";
-    canvas.parentElement?.insertBefore(renderer.domElement, canvas);
+    renderer.domElement.style.zIndex = "2";
+    canvas.parentElement?.appendChild(renderer.domElement);
     return () => renderer.domElement.remove();
   }, [gl, renderer]);
 
@@ -267,14 +269,15 @@ export function createScreenElement(width: number, height: number) {
   return div;
 }
 
-// Matériau de la fenêtre : écrit un pixel totalement transparent, sans mélange, là où se trouve l'écran.
-const HOLE = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: false, opacity: 0, blending: THREE.NoBlending });
+// Verre noir dessiné sous chaque interface : si l'image 3D et l'interface se décalent un instant,
+// c'est lui qu'on aperçoit (comme la bordure de l'écran), jamais le fond de la page.
+const HOLE = new THREE.MeshBasicMaterial({ color: 0x000000 });
 
 // Accroche un élément DOM sur une surface de la scène. `scale` : taille d'un pixel CSS en unités 3D,
 // `radius` : arrondi des coins de l'écran, en pixels CSS.
 // L'élément est masqué dès que la surface ne fait plus face à la caméra (ou que l'appareil est caché).
 export function ScreenAnchor({ el, scale, position, radius = 0 }: { el: HTMLDivElement; scale: number; position: [number, number, number]; radius?: number }) {
-  // Fenêtre découpée dans l'image 3D, un peu plus petite que l'interface pour ne jamais laisser voir de liseré.
+  // Verre noir sous l'interface, un peu plus petit qu'elle pour ne jamais dépasser de ses coins arrondis.
   const hole = useMemo(() => {
     const w = (parseFloat(el.style.width) - 3) * scale;
     const h = (parseFloat(el.style.height) - 3) * scale;
@@ -303,9 +306,8 @@ export function ScreenAnchor({ el, scale, position, radius = 0 }: { el: HTMLDivE
     a.getWorldQuaternion(tmp.q);
     a.getWorldScale(tmp.s);
     tmp.n.set(0, 0, 1).applyQuaternion(tmp.q);
-    // Vu presque par la tranche, l'interface (CSS) et sa fenêtre (WebGL) ne tombent plus pile l'une sur
-    // l'autre : la fenêtre laissait voir le fond de la page, une ligne blanche qui semblait flotter le long
-    // du bord. Au-delà d'environ 80° on masque donc l'interface ET on referme la fenêtre : on voit le verre noir.
+    // Vu presque par la tranche, l'interface (CSS) et l'appareil (WebGL) ne tombent plus pile l'un sur
+    // l'autre. Au-delà d'environ 80°, on masque donc l'interface : on voit le verre de l'appareil.
     const facing = tmp.n.dot(tmp.v.copy(camera.position).sub(tmp.p).normalize()) > 0.17;
     let visibleChain = true;
     for (let o: THREE.Object3D | null = a; o; o = o.parent) if (!o.visible) visibleChain = false;

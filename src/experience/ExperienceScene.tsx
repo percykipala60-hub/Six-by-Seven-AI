@@ -156,7 +156,8 @@ function Layers() {
   const { scene, camera, size, gl } = useThree();
   const css = useMemo(() => {
     const r = new CSS3DRenderer();
-    Object.assign(r.domElement.style, { position: "absolute", inset: "0", pointerEvents: "none", zIndex: "0" });
+    // Au-dessus de l'image 3D (voir CssLayer dans stage.tsx).
+    Object.assign(r.domElement.style, { position: "absolute", inset: "0", pointerEvents: "none", zIndex: "2" });
     return r;
   }, []);
 
