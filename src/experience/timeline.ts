@@ -144,8 +144,13 @@ export function useStepScroll(sectionRef: RefObject<HTMLElement | null>) {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let raf = 0;
     let busy = false;
+    // Geste fait pendant une transition : joué dès qu'elle se termine (un seul retenu).
+    let queued: 0 | 1 | -1 = 0;
+    // Suivi des gestes de molette, pour en reconnaître le début (voir onWheel).
     let lastWheel = 0;
-    let quietUntil = 0;
+    let peak = 0;
+    let trough = Infinity;
+    let falling = false;
 
     const geometry = () => {
       const el = sectionRef.current;
@@ -194,7 +199,9 @@ export function useStepScroll(sectionRef: RefObject<HTMLElement | null>) {
         if (t < 1) raf = requestAnimationFrame(step);
         else {
           busy = false;
-          quietUntil = performance.now() + 350;
+          const next = queued;
+          queued = 0;
+          if (next) advance(next);
         }
       };
       raf = requestAnimationFrame(step);
@@ -209,21 +216,45 @@ export function useStepScroll(sectionRef: RefObject<HTMLElement | null>) {
       return true;
     };
 
+    // Un geste = un arrêt, ni plus ni moins. Un pavé tactile envoie des dizaines d'évènements par geste,
+    // puis une traîne d'élan qui décroît : on ne réagit qu'au début d'un geste, c'est-à-dire après une pause
+    // (plus de 0,2 s sans évènement), ou quand l'intensité remonte nettement après avoir baissé (nouveau geste lancé
+    // pendant l'élan du précédent). Un geste fait pendant une transition est retenu et joué ensuite.
+    const isNewGesture = (abs: number, gap: number) => {
+      if (gap > 220) {
+        peak = trough = abs;
+        falling = false;
+        return true;
+      }
+      if (abs > peak) peak = abs;
+      if (!falling && abs < peak * 0.6) {
+        falling = true;
+        trough = abs;
+      }
+      if (falling) trough = Math.min(trough, abs);
+      if (falling && abs >= 10 && abs > trough * 3) {
+        peak = trough = abs;
+        falling = false;
+        return true;
+      }
+      return false;
+    };
+
     const onWheel = (e: WheelEvent) => {
       if (e.ctrlKey || Math.abs(e.deltaY) < Math.abs(e.deltaX)) return;
-      const now = performance.now();
+      // Heure de création de l'évènement (et non de son traitement, qui peut être retardé pendant une transition).
+      const now = e.timeStamp;
       const gap = now - lastWheel;
       lastWheel = now;
+      const abs = Math.abs(e.deltaY);
+      const fresh = isNewGesture(abs, gap);
       if (!pinned()) return;
       const dir = e.deltaY > 0 ? 1 : -1;
       if (nextStop(dir) === null && !busy) return; // au bout de la visite : défilement normal
       e.preventDefault();
-      // Un seul arrêt par geste : on ignore l'élan des pavés tactiles pendant et juste après une transition.
-      if (busy || (now < quietUntil && gap < 160) || Math.abs(e.deltaY) < 2) {
-        quietUntil = Math.max(quietUntil, now + 120);
-        return;
-      }
-      advance(dir);
+      if (!fresh || abs < 1) return;
+      if (busy) queued = dir;
+      else advance(dir);
     };
 
     let touch: { y: number; decided: boolean; mine: boolean } | null = null;
@@ -248,7 +279,9 @@ export function useStepScroll(sectionRef: RefObject<HTMLElement | null>) {
       touch = null;
       if (!t?.mine) return;
       const dy = t.y - e.changedTouches[0].clientY;
-      if (!busy && Math.abs(dy) > 30) advance(dy > 0 ? 1 : -1);
+      if (Math.abs(dy) <= 30) return;
+      if (busy) queued = dy > 0 ? 1 : -1;
+      else advance(dy > 0 ? 1 : -1);
     };
 
     const onKey = (e: KeyboardEvent) => {
@@ -257,7 +290,10 @@ export function useStepScroll(sectionRef: RefObject<HTMLElement | null>) {
       const down = ["ArrowDown", "PageDown"].includes(e.key) || (e.key === " " && !e.shiftKey);
       const up = ["ArrowUp", "PageUp"].includes(e.key) || (e.key === " " && e.shiftKey);
       if (!down && !up) return;
-      if (busy && pinned()) return e.preventDefault();
+      if (busy && pinned()) {
+        queued = down ? 1 : -1;
+        return e.preventDefault();
+      }
       if (advance(down ? 1 : -1)) e.preventDefault();
     };
 
