@@ -347,19 +347,32 @@
   box-shadow: inset 0 0 0 0.5px rgb(255 255 255 / 0.3);
 }
 
-.dock i {
-  width: 34px;
-  height: 34px;
-  border-radius: 9px;
-  background: linear-gradient(160deg, #e8ecf3, #b9c2d3);
+/* Apps du Dock, avec un point sous celles qui sont ouvertes. */
+.dockApp {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
 }
 
-.dock i:nth-child(2) {
-  background: linear-gradient(160deg, #34c759, #1f8f3d);
+.dockApp[data-open]::after {
+  content: "";
+  position: absolute;
+  bottom: -5px;
+  left: 50%;
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 0.55);
 }
 
-.dock i:nth-child(4) {
-  background: linear-gradient(160deg, #ff9f0a, #e0650b);
+.dockSep {
+  width: 1px;
+  height: 30px;
+  margin-inline: 2px;
+  background: rgb(0 0 0 / 0.18);
 }
 
 .taskbar {
@@ -376,11 +389,30 @@
   border-top: 1px solid rgb(0 0 0 / 0.08);
 }
 
-.taskbar i {
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  background: linear-gradient(160deg, #ffcf48, #f0a90a);
+/* Apps épinglées ; un petit trait bleu sous l'app ouverte, comme sur Windows 11. */
+.taskApp {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 5px;
+}
+
+.taskApp[data-open] {
+  background: rgb(255 255 255 / 0.7);
+}
+
+.taskApp[data-open]::after {
+  content: "";
+  position: absolute;
+  bottom: 1px;
+  left: 50%;
+  width: 12px;
+  height: 3px;
+  margin-left: -6px;
+  border-radius: 2px;
+  background: #0067c0;
 }
 
 /* Bouton Démarrer : logo Windows bleu. */
@@ -403,6 +435,14 @@
 .trayClock {
   position: absolute;
   right: 14px;
-  font-size: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  font-size: 11px;
+  line-height: 1.25;
   color: #222;
+}
+
+.trayClock small {
+  font-size: 11px;
 }

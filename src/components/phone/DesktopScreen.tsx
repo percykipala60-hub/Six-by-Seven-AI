@@ -1,6 +1,7 @@
 import { Check, Copy, Minus, Search, Square, X } from "lucide-react";
 import { scenes } from "../../content/phoneScenes";
 import { SixAppIcon } from "../brand/Logos";
+import { Edge, FileExplorer, Finder, Mail, Messages, MicrosoftStore, Photos, Safari, TaskView } from "./AppIcons";
 import type { LaptopKind } from "../phone3d/LaptopModel";
 import { APPLE_PATH, WINDOWS_PATH } from "../phone3d/brandLogos";
 import styles from "./DesktopScreen.module.css";
@@ -113,12 +114,17 @@ export function DesktopScreen({ os, width, height }: { os: LaptopKind; width: nu
       </div>
 
       {os === "mac" ? (
+        // Dock de macOS : Finder, Safari, Messages, Mail, Photos, puis Six ; un point sous les apps ouvertes.
         <div className={styles.dock} aria-hidden="true">
-          <i />
-          <i />
-          <SixAppIcon size={34} />
-          <i />
-          <i />
+          {[Finder, Safari, Messages, Mail, Photos].map((Icon, i) => (
+            <span key={i} className={styles.dockApp} data-open={i === 0 || undefined}>
+              <Icon size={36} />
+            </span>
+          ))}
+          <span className={styles.dockSep} />
+          <span className={styles.dockApp} data-open>
+            <SixAppIcon size={30} />
+          </span>
         </div>
       ) : (
         <div className={styles.taskbar} aria-hidden="true">
@@ -126,10 +132,19 @@ export function DesktopScreen({ os, width, height }: { os: LaptopKind; width: nu
           <span className={styles.taskSearch}>
             <Search size={12} /> Rechercher
           </span>
-          <i />
-          <SixAppIcon size={26} />
-          <i />
-          <span className={styles.trayClock}>9:41</span>
+          {/* Barre des tâches de Windows 11 : Vue des tâches, Explorateur, Edge, Microsoft Store, puis Six (ouverte). */}
+          {[TaskView, FileExplorer, Edge, MicrosoftStore].map((Icon, i) => (
+            <span key={i} className={styles.taskApp}>
+              <Icon size={30} />
+            </span>
+          ))}
+          <span className={styles.taskApp} data-open>
+            <SixAppIcon size={22} />
+          </span>
+          <span className={styles.trayClock}>
+            9:41
+            <small>07/10/2026</small>
+          </span>
         </div>
       )}
     </div>
