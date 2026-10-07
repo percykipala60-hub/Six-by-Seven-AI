@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
 import * as THREE from "three";
 import { CSS3DObject, CSS3DRenderer } from "three/examples/jsm/renderers/CSS3DRenderer.js";
 import { roundedRect } from "./geometry";
@@ -212,6 +212,20 @@ export function Rig({
 
   return <group ref={group}>{children}</group>;
 }
+
+// Marge de dessin : la zone 3D déborde de 20 % de chaque côté de son emplacement, sans changer la mise en page.
+// Un appareil qui penche, flotte ou qu'on fait tourner n'est ainsi jamais coupé par les bords.
+// La marge laisse passer les clics (pointer-events: none) ; le glisser reste géré par l'emplacement.
+export const OVERSCAN = 0.2;
+export const overscanStyle: CSSProperties = {
+  position: "absolute",
+  inset: `-${OVERSCAN * 100}%`,
+  width: "auto",
+  height: "auto",
+  pointerEvents: "none",
+};
+// Champ de vision élargi d'autant : l'appareil garde exactement la même taille à l'écran.
+export const overscanFov = (fov: number) => (2 * Math.atan(Math.tan((fov * Math.PI) / 360) * (1 + 2 * OVERSCAN)) * 180) / Math.PI;
 
 // Moteur CSS 3D de three.js : un seul par scène, il affiche toutes les interfaces posées sur des écrans.
 // Le calque des interfaces passe SOUS l'image 3D : chaque écran y est visible à travers une « fenêtre »

@@ -6,7 +6,7 @@
 
 /* Même encombrement que le téléphone en CSS, pour qu'aucun des deux ne fasse sauter la mise en page. */
 .stage {
-  --scale: 1;
+  --scale: 0.85;
   position: relative;
   width: calc(360px * var(--scale));
   height: calc(684px * var(--scale));
@@ -19,13 +19,13 @@
 
 @media (max-width: 1100px) {
   .stage {
-    --scale: 0.9;
+    --scale: 0.78;
   }
 }
 
 @media (max-width: 520px) {
   .stage {
-    --scale: 0.8;
+    --scale: 0.7;
   }
 }
 

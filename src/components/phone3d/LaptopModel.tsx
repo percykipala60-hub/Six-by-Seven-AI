@@ -8,7 +8,8 @@ import { ScreenAnchor } from "./stage";
 
 // Ordinateurs portables modélisés à leurs dimensions réelles (1 unité = 1 cm). Les ports, les logements
 // des touches et le pavé tactile sont de vrais creux dans la coque.
-// « mac » : inspiré du MacBook Pro 16 pouces (aluminium, encoche, haut-parleurs de part et d'autre du clavier).
+// « mac » : MacBook Pro 16 pouces M5 Pro (mars 2026), en noir sidéral : encoche, haut-parleurs de part et
+// d'autre du clavier, 35,57 × 24,81 × 1,68 cm.
 // « windows » : inspiré du Surface Laptop 15 pouces de 2024 (aluminium noir, écran 3:2 aux coins arrondis,
 // aucune grille visible, grand pavé tactile centré).
 export type LaptopKind = "mac" | "windows";
@@ -58,11 +59,13 @@ export const LAPTOP_SPECS: Record<LaptopKind, Spec> = {
     hingeInset: 0.45,
     u: 1.9,
     trackpad: { w: 16.2, h: 9.4, x: 0, front: 0.9 },
-    body: "#d6d8dc",
-    bodyMetal: 1,
-    bodyRough: 0.33,
+    // Noir sidéral : aluminium anodisé très sombre, satiné.
+    body: "#1b1c1f",
+    // Peu métallique : sinon l'aluminium sombre renvoie tout le blanc du studio et paraît argenté.
+    bodyMetal: 0.2,
+    bodyRough: 0.6,
     // Touches extra-plates du MacBook : elles affleurent presque le plateau.
-    keys: "#1a1b1e",
+    keys: "#0e0f11",
     speakers: true,
     keyRise: 0.035,
     keyT: 0.16,
@@ -281,10 +284,10 @@ export function LaptopModel({
         color: spec.body,
         metalness: spec.bodyMetal,
         roughness: spec.bodyRough,
-        clearcoat: mac ? 0.2 : 0,
+        clearcoat: 0,
         clearcoatRoughness: 0.5,
-        envMapIntensity: mac ? 1 : 0.16,
-        specularIntensity: mac ? 1 : 0.16,
+        envMapIntensity: mac ? 0.13 : 0.16,
+        specularIntensity: mac ? 0.2 : 0.16,
       }),
       // Parois et fond des trous (ports, logements des touches) : métal sombre, la lumière y meurt vite.
       cavity: new THREE.MeshStandardMaterial({
@@ -301,14 +304,14 @@ export function LaptopModel({
         envMapIntensity: mac ? 0.12 : 0.08,
         specularIntensity: 0.22,
       }),
-      // Pavé tactile : verre poli sur le Mac, verre satiné noir sur le PC.
+      // Pavé tactile : verre noir sidéral légèrement satiné sur le Mac, verre satiné noir sur le PC.
       pad: new THREE.MeshPhysicalMaterial({
-        color: mac ? "#cfd2d6" : "#202125",
-        metalness: mac ? 0.9 : 0,
-        roughness: mac ? 0.22 : 0.55,
-        clearcoat: mac ? 0.8 : 0,
-        envMapIntensity: mac ? 1 : 0.12,
-        specularIntensity: mac ? 1 : 0.12,
+        color: mac ? "#1d1e21" : "#202125",
+        metalness: mac ? 0.2 : 0,
+        roughness: mac ? 0.4 : 0.55,
+        clearcoat: mac ? 0.3 : 0,
+        envMapIntensity: mac ? 0.18 : 0.12,
+        specularIntensity: mac ? 0.3 : 0.12,
       }),
       // Bordures de l'écran : noir anti-reflet. Un verre trop poli renvoyait de grandes taches de lumière
       // qui se déplaçaient au moindre mouvement (surtout sur la bande sous l'écran).
@@ -333,7 +336,7 @@ export function LaptopModel({
       }),
       // Logo du capot : métal poli miroir.
       logo: new THREE.MeshPhysicalMaterial({
-        color: mac ? "#f1f2f4" : "#5d6068",
+        color: mac ? "#6a6c73" : "#5d6068",
         metalness: 1,
         roughness: 0.06,
         clearcoat: 1,
@@ -567,6 +570,7 @@ export function LaptopModel({
       <mesh geometry={geo.pad} position={[spec.trackpad.x, h - 0.065, padZ]} material={mats.pad} />
       <PortInsides kind={kind} w={w} h={h} tongue={mats.tongue} gold={mats.gold} />
       {spec.speakers && <instancedMesh ref={dotsRef} args={[geo.dot, mats.dark, dots.length]} />}
+      <Underside kind={kind} w={w} d={d} cavity={mats.cavity} />
 
       {/* Charnière : une barre presque sur toute la largeur */}
       <mesh position={[0, h + 0.2, hingeZ]} rotation={[0, 0, Math.PI / 2]} material={mats.hinge}>
@@ -593,6 +597,181 @@ export function LaptopModel({
           </mesh>
         )}
       </group>
+    </group>
+  );
+}
+
+// ---------- Dessous de l'ordinateur : pieds, vis, grilles d'aération, inscriptions ----------
+
+// Tête de vis vue de dessous : métal, cernée d'un liseré, avec l'empreinte pentalobe (Mac) ou Torx (PC).
+const screwTextures: Partial<Record<LaptopKind, THREE.CanvasTexture>> = {};
+function screwTexture(kind: LaptopKind) {
+  const cached = screwTextures[kind];
+  if (cached) return cached;
+  const S = 128;
+  const c = document.createElement("canvas");
+  c.width = c.height = S;
+  const x = c.getContext("2d")!;
+  const mid = S / 2;
+  const g = x.createRadialGradient(mid - 14, mid - 14, 4, mid, mid, mid);
+  g.addColorStop(0, kind === "mac" ? "#8d9097" : "#7b7e85");
+  g.addColorStop(0.7, kind === "mac" ? "#4a4c52" : "#3d3f45");
+  g.addColorStop(1, "#141518");
+  x.fillStyle = g;
+  x.beginPath();
+  x.arc(mid, mid, mid - 2, 0, Math.PI * 2);
+  x.fill();
+  // Empreinte : 5 lobes (pentalobe Apple) ou étoile à 6 branches (Torx).
+  const lobes = kind === "mac" ? 5 : 6;
+  x.fillStyle = "#0b0b0d";
+  x.beginPath();
+  for (let i = 0; i <= lobes * 2; i++) {
+    const a = (i / (lobes * 2)) * Math.PI * 2 - Math.PI / 2;
+    const rr = i % 2 === 0 ? S * 0.3 : S * 0.17;
+    const px = mid + Math.cos(a) * rr;
+    const py = mid + Math.sin(a) * rr;
+    if (i === 0) x.moveTo(px, py);
+    else x.lineTo(px, py);
+  }
+  x.closePath();
+  x.fill();
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  screwTextures[kind] = tex;
+  return tex;
+}
+
+// Inscriptions du dessous, dessinées dans une texture : « MacBook Pro » gravé au centre sur le Mac,
+// logo Microsoft et mentions réglementaires sur le PC.
+function bottomLabelTexture(kind: LaptopKind) {
+  const W = 1200;
+  const H = 300;
+  const c = document.createElement("canvas");
+  c.width = W;
+  c.height = H;
+  const x = c.getContext("2d")!;
+  x.textAlign = "center";
+  x.textBaseline = "middle";
+  if (kind === "mac") {
+    x.fillStyle = "rgba(255,255,255,0.9)";
+    x.font = '500 150px -apple-system, "SF Pro Display", "Segoe UI", Arial, sans-serif';
+    x.fillText("MacBook Pro", W / 2, H / 2);
+  } else {
+    // Logo Microsoft (quatre carreaux), puis deux lignes de petites mentions.
+    const s = 46;
+    const ox = W / 2 - s - 3;
+    const oy = 30;
+    x.fillStyle = "rgba(255,255,255,0.85)";
+    x.fillRect(ox, oy, s, s);
+    x.fillRect(ox + s + 6, oy, s, s);
+    x.fillRect(ox, oy + s + 6, s, s);
+    x.fillRect(ox + s + 6, oy + s + 6, s, s);
+    x.font = '400 34px "Segoe UI", Arial, sans-serif';
+    x.fillText("Surface Laptop  ·  Designed by Microsoft  ·  Assembled in China", W / 2, 190);
+    x.fillText("Model 2113  ·  20V ⎓ 3.25A  ·  CE  FC", W / 2, 240);
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 8;
+  return tex;
+}
+
+// Pose des petites fentes d'aération (instances) : chaque fente est un rectangle arrondi creusé dans la coque.
+function SlotGrid({ slots, len, wid, material }: { slots: [number, number][]; len: number; wid: number; material: THREE.Material }) {
+  const ref = useRef<THREE.InstancedMesh>(null);
+  const geo = useMemo(() => new THREE.ShapeGeometry(roundedRect(len, wid, wid / 2), 6).rotateX(Math.PI / 2), [len, wid]);
+  useLayoutEffect(() => {
+    const mesh = ref.current;
+    if (!mesh) return;
+    const m = new THREE.Matrix4();
+    slots.forEach(([sx, sz], i) => {
+      m.makeTranslation(sx, -0.002, sz);
+      mesh.setMatrixAt(i, m);
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+  }, [slots]);
+  return <instancedMesh ref={ref} args={[geo, material, slots.length]} />;
+}
+
+// Le dessous, d'après les photos des vrais ordinateurs.
+// Mac (MacBook Pro 16 pouces 2021-2026) : quatre pieds ronds, huit vis pentalobe, grilles d'aspiration le long
+// des deux côtés, sortie d'air chaude à l'arrière sous la charnière, « MacBook Pro » gravé au centre.
+// PC : deux longs pieds, grande grille d'aspiration vers l'arrière, sortie d'air à l'arrière, dix vis Torx,
+// trappe d'accès au SSD, logo et mentions réglementaires.
+function Underside({ kind, w, d, cavity }: { kind: LaptopKind; w: number; d: number; cavity: THREE.Material }) {
+  const mac = kind === "mac";
+  const mats = useMemo(
+    () => ({
+      rubber: new THREE.MeshStandardMaterial({ color: "#0d0d0f", roughness: 0.85, metalness: 0, envMapIntensity: 0.1 }),
+      screw: new THREE.MeshStandardMaterial({ map: screwTexture(kind), metalness: 0.7, roughness: 0.35, envMapIntensity: 0.6 }),
+      label: new THREE.MeshStandardMaterial({ map: bottomLabelTexture(kind), transparent: true, opacity: mac ? 0.28 : 0.4, depthWrite: false, roughness: 0.5 }),
+      seam: new THREE.MeshStandardMaterial({ color: "#060607", roughness: 0.8 }),
+      door: new THREE.MeshStandardMaterial({ color: "#232428", roughness: 0.6, metalness: 0.15 }),
+    }),
+    [kind, mac],
+  );
+  const down = (g: THREE.BufferGeometry) => g.rotateX(Math.PI / 2);
+
+  const layout = useMemo(() => {
+    const feet: { x: number; z: number; w: number; d: number }[] = mac
+      ? [-1, 1].flatMap((sx) => [-1, 1].map((sz) => ({ x: sx * (w / 2 - 2.6), z: sz * (d / 2 - 2.3), w: 1.2, d: 1.2 })))
+      : [-1, 1].map((sz) => ({ x: 0, z: sz * (d / 2 - 1.5), w: w - 5, d: 0.62 }));
+    const screws: [number, number][] = mac
+      ? [-1, 1].flatMap((sz) => [-1, 1].flatMap((sx) => [[sx * (w / 2 - 1.05), sz * (d / 2 - 0.85)] as [number, number], [sx * (w / 2 - 11.5), sz * (d / 2 - 0.85)] as [number, number]]))
+      : [
+          ...[-1, 1].flatMap((sz) => [-1, 1].flatMap((sx) => [[sx * (w / 2 - 1.0), sz * (d / 2 - 0.75)] as [number, number], [sx * 6, sz * (d / 2 - 0.75)] as [number, number]])),
+          [-(w / 2 - 1.0), 0],
+          [w / 2 - 1.0, 0],
+        ];
+    // Sortie d'air à l'arrière, sous la charnière : une rangée de fentes courtes.
+    const exhaust: [number, number][] = [];
+    const exW = mac ? 24 : 22;
+    for (let i = 0; i < Math.round(exW / 0.3); i++) exhaust.push([-exW / 2 + i * 0.3, -d / 2 + 0.55]);
+    // Aspiration : le long des côtés (Mac) ou grande grille rectangulaire vers l'arrière (PC).
+    const intake: [number, number][] = [];
+    if (mac) {
+      for (const sx of [-1, 1]) for (let i = 0; i < 30; i++) intake.push([sx * (w / 2 - 0.85), -7.5 + i * 0.42]);
+    } else {
+      for (let row = 0; row < 5; row++)
+        for (let col = 0; col < 62; col++) intake.push([-10.5 + col * 0.345 + (row % 2) * 0.17, -8.6 + row * 1.08]);
+    }
+    return { feet, screws, exhaust, intake };
+  }, [mac, w, d]);
+
+  const geos = useMemo(
+    () => ({
+      screw: down(new THREE.CircleGeometry(0.11, 24)),
+      label: down(new THREE.PlaneGeometry(mac ? 7 : 12, mac ? 1.75 : 3)),
+      door: down(new THREE.ShapeGeometry(roundedRect(2.6, 4.2, 0.25), 12)),
+      doorIn: down(new THREE.ShapeGeometry(roundedRect(2.52, 4.12, 0.22), 12)),
+    }),
+    [mac],
+  );
+  const feetGeos = useMemo(
+    () => layout.feet.map((f) => down(roundedSlab(f.w, f.d, 0.08, Math.min(f.w, f.d) / 2, 0.035, { bevel: 4, curve: 20 }))),
+    [layout],
+  );
+
+  return (
+    <group>
+      {/* Pieds en caoutchouc, qui dépassent légèrement sous la coque */}
+      {feetGeos.map((g, i) => (
+        <mesh key={i} geometry={g} position={[layout.feet[i].x, -0.03, layout.feet[i].z]} material={mats.rubber} />
+      ))}
+      {layout.screws.map(([sx, sz], i) => (
+        <mesh key={i} geometry={geos.screw} position={[sx, -0.0025, sz]} material={mats.screw} />
+      ))}
+      <SlotGrid slots={layout.exhaust} len={0.09} wid={0.42} material={cavity} />
+      {mac ? <SlotGrid slots={layout.intake} len={0.55} wid={0.1} material={cavity} /> : <SlotGrid slots={layout.intake} len={0.12} wid={0.85} material={cavity} />}
+      {!mac && (
+        // Trappe d'accès au SSD : fin liseré sombre et vis Torx.
+        <group position={[7.5, 0, 4.2]}>
+          <mesh geometry={geos.door} position={[0, -0.0018, 0]} material={mats.seam} />
+          <mesh geometry={geos.doorIn} position={[0, -0.0021, 0]} material={mats.door} />
+          <mesh geometry={geos.screw} position={[0, -0.0026, 1.7]} material={mats.screw} />
+        </group>
+      )}
+      <mesh geometry={geos.label} position={[0, -0.0024, mac ? 0 : d / 2 - 4.2]} material={mats.label} />
     </group>
   );
 }

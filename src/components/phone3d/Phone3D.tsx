@@ -6,7 +6,7 @@ import { Rotate3d } from "lucide-react";
 import type { Finish, Model } from "../phone/RealPhone";
 import { PhoneModel } from "./PhoneModel";
 import { SPECS } from "./geometry";
-import { CssLayer, Rig, ScreenAnchor, Studio, createScreenElement, useDragInput, useInView, type Pose } from "./stage";
+import { CssLayer, Rig, ScreenAnchor, Studio, createScreenElement, useDragInput, useInView, type Pose, overscanFov, overscanStyle } from "./stage";
 import controls from "../phone/RealPhone.module.css";
 import styles from "./Phone3D.module.css";
 
@@ -66,7 +66,8 @@ export default function Phone3D({
           frameloop={active ? "always" : "never"}
           dpr={[1, 2]}
           // Plage de profondeur resserrée autour du téléphone : évite le scintillement sur mobile.
-          camera={{ position: [0, 0, 34], fov: 30, near: 20, far: 50 }}
+          style={overscanStyle}
+          camera={{ position: [0, 0, 34], fov: overscanFov(30), near: 20, far: 50 }}
           gl={{ antialias: true, alpha: true, toneMapping: THREE.NeutralToneMapping }}
         >
           <Studio />

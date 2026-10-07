@@ -8,7 +8,7 @@ import { PhoneModel } from "./PhoneModel";
 import { LaptopModel, LAPTOP_SCREEN_PX, type LaptopKind } from "./LaptopModel";
 import { SPECS } from "./geometry";
 import { DEFAULT_POSE, PHONE_SCREEN_PX, PhoneScreen, phonePxScale, phoneScreenRadiusPx } from "./Phone3D";
-import { CssLayer, DEG, Rig, ScreenAnchor, Studio, createScreenElement, useDragInput, useInView, type Pose } from "./stage";
+import { CssLayer, DEG, Rig, ScreenAnchor, Studio, createScreenElement, useDragInput, useInView, type Pose, overscanFov, overscanStyle } from "./stage";
 import { SixScreen } from "../phone/Screens";
 import { DesktopScreen } from "../phone/DesktopScreen";
 import { ScreenZoom } from "../ui/ScreenZoom";
@@ -82,7 +82,8 @@ export default function DeviceShowcase3D({ initial, label }: DeviceShowcaseProps
           dpr={[1, 2]}
           // Plage de profondeur resserrée autour des appareils (au lieu de 0,1 à 2000) :
           // les téléphones ont une précision de profondeur limitée, sinon les surfaces proches scintillent.
-          camera={{ position: [0, 1.5, 46], fov: 30, near: 24, far: 72 }}
+          style={overscanStyle}
+          camera={{ position: [0, 1.5, 46], fov: overscanFov(30), near: 24, far: 72 }}
           gl={{ antialias: true, alpha: true, toneMapping: THREE.NeutralToneMapping }}
         >
           <Studio />
