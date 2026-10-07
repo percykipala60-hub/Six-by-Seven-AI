@@ -60,7 +60,7 @@ export function Experience() {
       <div className={styles.stage}>
         <div className={styles.backdrop} aria-hidden="true" />
         {/* Anneau de particules qui suit le curseur, derrière les appareils. */}
-        <ParticleField density={0.9} />
+        <ParticleField density={1} />
         {webgl && (
           <Suspense fallback={null}>
             <ExperienceScene phone={devices.phone} laptop={devices.laptop} />

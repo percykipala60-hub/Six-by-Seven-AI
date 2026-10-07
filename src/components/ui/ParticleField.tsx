@@ -8,9 +8,9 @@ import styles from "./ParticleField.module.css";
 type Props = { theme?: "light" | "dark"; density?: number; className?: string };
 
 const PALETTES = {
-  // Surtout du sable foncé, quelques touches aux couleurs de la marque et des messageries.
-  light: ["#cbbca4", "#cbbca4", "#bfae94", "#d2c5b0", "#4d7cfe", "#2d5fe6", "#7c5cf0", "#e8a33d", "#e5484d", "#25d366"],
-  dark: ["#2c3753", "#2c3753", "#3b4a70", "#4d7cfe", "#6b93ff", "#8fa8ff", "#7c5cf0"],
+  // Bleu et blanc : bleu nuit, bleu de la marque, bleu ciel, bleu pâle, et du blanc.
+  light: ["#0e1526", "#1b2540", "#2d5fe6", "#2d5fe6", "#4d7cfe", "#6b93ff", "#4fb3ec", "#7cc8f2", "#a9dcf7", "#ffffff", "#ffffff", "#ffffff"],
+  dark: ["#2d5fe6", "#4d7cfe", "#6b93ff", "#8fa8ff", "#4fb3ec", "#7cc8f2", "#a9dcf7", "#dfe8ff", "#ffffff", "#ffffff"],
 };
 
 export function ParticleField({ theme = "light", density = 1, className }: Props) {
@@ -28,7 +28,7 @@ export function ParticleField({ theme = "light", density = 1, className }: Props
     const colors = PALETTES[theme];
 
     // Chaque particule : angle, distance au centre (en fraction du rayon), longueur, couleur, vitesse.
-    const parts = Array.from({ length: Math.round(520 * density * (touch ? 0.45 : 1)) }, () => {
+    const parts = Array.from({ length: Math.round(1000 * density * (touch ? 0.4 : 1)) }, () => {
       // Densité plus forte sur l'anneau, presque rien au centre.
       const u = Math.random();
       const r = 0.6 + Math.sign(u - 0.5) * Math.pow(Math.abs(u - 0.5) * 2, 1.6) * 0.5;
