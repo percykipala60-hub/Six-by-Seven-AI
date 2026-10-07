@@ -3,12 +3,12 @@ import { app, beta, launch, socials } from "../content/site";
 import { SocialIcon } from "../components/brand/SocialIcon";
 import { AppButton } from "../components/ui/AppButton";
 import { BetaButton } from "../components/ui/BetaButton";
-import { ParticleField } from "../components/ui/ParticleField";
+import { WaveField } from "../components/ui/WaveField";
 import { Reveal } from "../components/ui/Reveal";
 import { Words } from "../components/ui/Words";
 import styles from "./Launch.module.css";
 
-// Section de téléchargement, dans un grand panneau sombre à particules (comme sur antigravity.google) :
+// Section de téléchargement, dans un grand panneau bleu nuit parcouru de vagues (façon PS4) :
 // la bêta, l'application ou la version web, puis les réseaux.
 export function Launch() {
   const linked = socials.filter((s) => s.href);
@@ -19,7 +19,7 @@ export function Launch() {
   return (
     <section id={app.sectionId} className={styles.section} aria-labelledby="download-title">
       <div className={`surface-dark ${styles.panel}`}>
-        <ParticleField theme="dark" density={0.8} />
+        <WaveField theme="dark" />
         <div className={`container ${styles.inner}`}>
         <Reveal className={styles.head}>
           <h2 id="download-title">

@@ -6,7 +6,6 @@ import { SixLogo } from "../components/brand/Logos";
 import { AppButton } from "../components/ui/AppButton";
 import { BetaButton } from "../components/ui/BetaButton";
 import { Words } from "../components/ui/Words";
-import { ParticleField } from "../components/ui/ParticleField";
 import type { LaptopId, PhoneId } from "./ExperienceScene";
 import { DesktopGuide, PhoneGuide } from "./Guides";
 import { GUIDE_STOP, SCAM_STOP, T, layout, range, useStepScroll, useTimelineDriver, useTimelineEffect, window01 } from "./timeline";
@@ -59,8 +58,6 @@ export function Experience() {
       <div id={experience.scamAnchor} className={styles.anchor} style={{ "--at": SCAM_STOP } as CSSProperties} />
       <div className={styles.stage}>
         <div className={styles.backdrop} aria-hidden="true" />
-        {/* Anneau de particules qui suit le curseur, derrière les appareils. */}
-        <ParticleField density={1} />
         {webgl && (
           <Suspense fallback={null}>
             <ExperienceScene phone={devices.phone} laptop={devices.laptop} />

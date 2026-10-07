@@ -168,10 +168,12 @@ function Layers() {
 
   useFrame(() => {
     const covered = coveredAt(timeline.p);
-    const vis = covered ? "hidden" : "visible";
-    if (gl.domElement.style.visibility !== vis) {
-      gl.domElement.style.visibility = vis;
-      css.domElement.style.visibility = vis;
+    // Opacité (et non visibility) : les écrans posés sur les appareils règlent eux-mêmes leur
+    // visibility et resteraient visibles à travers le fond transparent du guide.
+    const op = covered ? "0" : "1";
+    if (gl.domElement.style.opacity !== op) {
+      gl.domElement.style.opacity = op;
+      css.domElement.style.opacity = op;
     }
     if (covered) return;
     gl.render(scene, camera);

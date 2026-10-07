@@ -28,7 +28,7 @@
   color: var(--ink-2);
 }
 
-/* Halo sombre derrière le titre : il ressort au-dessus des particules. */
+/* Halo sombre derrière le titre : il ressort au-dessus des vagues. */
 .head h2,
 .head p {
   text-shadow:

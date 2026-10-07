@@ -4,7 +4,6 @@
   position: relative;
   height: calc((var(--units) + 1) * 100svh);
   /* Fond clair et doux : les appareils (argent, violet, noir) et les textes restent bien lisibles. */
-  --stage-bg: #f1e9dc;
   --six-bg: #f2f2f7;
 }
 
@@ -16,12 +15,11 @@
   isolation: isolate;
 }
 
+/* Lueur douce au centre ; elle laisse voir les vagues du fond du site. */
 .backdrop {
   position: absolute;
   inset: 0;
-  background:
-    radial-gradient(ellipse 70% 60% at 50% 55%, #fffaf2 0%, rgb(255 250 242 / 0) 70%),
-    linear-gradient(180deg, #f8f3eb 0%, var(--stage-bg) 60%, #e8dccb 100%);
+  background: radial-gradient(ellipse 70% 60% at 50% 55%, rgb(255 250 242 / 0.7) 0%, rgb(255 250 242 / 0) 70%);
 }
 
 /* ---------- Haut de page ---------- */
@@ -182,8 +180,9 @@
   position: absolute;
   inset: 0;
   z-index: 4;
-  /* Fond du guide aux couleurs du site ; l'interface de l'appli garde ses propres couleurs. */
-  background: var(--bg);
+  /* Fond du guide aux couleurs du site, assez transparent pour laisser voir les vagues ;
+     l'interface de l'appli garde ses propres couleurs. */
+  background: color-mix(in srgb, var(--bg) 35%, transparent);
   visibility: hidden;
   opacity: 0;
 }
@@ -648,7 +647,7 @@
   }
 }
 
-/* Halo couleur sable derrière les textes posés sur les particules : ils restent nets et lisibles. */
+/* Halo couleur sable derrière les textes posés sur les vagues : ils restent nets et lisibles. */
 .intro h1,
 .intro p,
 .caption h2,
