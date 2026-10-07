@@ -67,6 +67,9 @@ export default function ExperienceScene({ phone, laptop }: { phone: PhoneId; lap
   return (
     <>
       <Canvas
+        // Sur téléphone, une image n'est calculée que lorsque la visite avance (voir Invalidator) :
+        // à l'arrêt, la carte graphique se repose et tout le reste de la page reste fluide.
+        frameloop={light ? "demand" : "always"}
         dpr={light ? [1, 1.25] : [1, 2]}
         style={{ position: "absolute", inset: 0, pointerEvents: "none" }}
         camera={{ position: [0, 14, 90], fov: 35, near: 1, far: 500 }}
@@ -74,7 +77,8 @@ export default function ExperienceScene({ phone, laptop }: { phone: PhoneId; lap
       >
         <Studio />
         <Layers />
-        <Director phone={phone} laptop={laptop} groups={groups} markers={markers} />
+        {light && <Invalidator />}
+        <Director phone={phone} laptop={laptop} groups={groups} markers={markers} still={light} />
         {ORDER.map((id) => (
           <group key={id} ref={(g) => void (g ? (groups.current[id] = g) : delete groups.current[id])}>
             {isPhone(id) ? (
@@ -176,7 +180,23 @@ function Layers() {
   return null;
 }
 
+// Demande une nouvelle image à chaque mouvement de la ligne de temps (mode « à la demande »).
+function Invalidator() {
+  const invalidate = useThree((s) => s.invalidate);
+  useEffect(() => {
+    const redraw = () => invalidate();
+    timeline.listeners.add(redraw);
+    invalidate();
+    return () => {
+      timeline.listeners.delete(redraw);
+    };
+  }, [invalidate]);
+  return null;
+}
+
 type DirectorProps = {
+  /** Pas de balancement ni de flottement (téléphone : la scène ne bouge que quand on avance). */
+  still?: boolean;
   phone: PhoneId;
   laptop: LaptopId;
   groups: RefObject<Partial<Record<DeviceId, THREE.Group>>>;
@@ -184,7 +204,7 @@ type DirectorProps = {
 };
 
 // Mise en scène : rotation du cercle, appareil qui s'avance, et trajet de la caméra, tout dérivé du défilement.
-function Director({ phone, laptop, groups, markers }: DirectorProps) {
+function Director({ phone, laptop, groups, markers, still: calm = false }: DirectorProps) {
   const { camera, size } = useThree();
   const cam = camera as THREE.PerspectiveCamera;
   const tmp = useMemo(
@@ -232,7 +252,7 @@ function Director({ phone, laptop, groups, markers }: DirectorProps) {
     const tanH = Math.tan((cam.fov * DEG) / 2);
 
     // Petit balancement du cercle quand il est vu en entier (au début et à la fin).
-    const idle = Math.max(1 - range(p, 0.4, 1.1), range(p, T.laptopExit[1] - 0.3, T.total));
+    const idle = calm ? 0 : Math.max(1 - range(p, 0.4, 1.1), range(p, T.laptopExit[1] - 0.3, T.total));
     const th = theta(p) + Math.sin(t * 0.35) * 0.12 * idle;
     // Immobile pendant qu'on entre dans un écran (sinon l'image tremble à cette distance).
     const still = Math.max(
@@ -246,7 +266,7 @@ function Director({ phone, laptop, groups, markers }: DirectorProps) {
       const f = id === phone ? focusPhone(p) : id === laptop ? focusLaptop(p) : 0;
       const othersFocus = Math.max(focusPhone(p), focusLaptop(p)) * (f > 0 ? 0 : 1);
       const a = ANGLE[id] + th;
-      const bob = Math.sin(t * 0.9 + ANGLE[id] * 2) * 0.35 * (1 - still);
+      const bob = calm ? 0 : Math.sin(t * 0.9 + ANGLE[id] * 2) * 0.35 * (1 - still);
       // Sur le cercle : position et orientation (les appareils restent un peu tournés vers nous).
       const ringX = Math.sin(a) * R;
       const ringZ = Math.cos(a) * R;

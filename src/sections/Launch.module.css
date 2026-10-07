@@ -28,6 +28,14 @@
   color: var(--ink-2);
 }
 
+/* Halo sombre derrière le titre : il ressort au-dessus des particules. */
+.head h2,
+.head p {
+  text-shadow:
+    0 0 8px var(--navy-950),
+    0 0 20px var(--navy-950);
+}
+
 .options {
   display: grid;
   gap: 16px;

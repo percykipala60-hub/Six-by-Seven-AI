@@ -647,3 +647,14 @@
     filter: none !important;
   }
 }
+
+/* Halo couleur sable derrière les textes posés sur les particules : ils restent nets et lisibles. */
+.intro h1,
+.intro p,
+.caption h2,
+.caption p {
+  text-shadow:
+    0 0 6px var(--bg),
+    0 0 14px var(--bg),
+    0 0 28px var(--bg);
+}

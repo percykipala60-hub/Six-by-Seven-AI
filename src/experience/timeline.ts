@@ -310,17 +310,21 @@ export function useStepScroll(sectionRef: RefObject<HTMLElement | null>) {
       if (advance(down ? 1 : -1)) e.preventDefault();
     };
 
-    window.addEventListener("wheel", onWheel, { passive: false });
-    window.addEventListener("touchstart", onTouchStart, { passive: true });
-    window.addEventListener("touchmove", onTouchMove, { passive: false });
-    window.addEventListener("touchend", onTouchEnd, { passive: true });
+    // Molette et doigt : écoutés sur la visite seulement. Ailleurs, la page défile librement,
+    // sans que le navigateur attende notre code à chaque mouvement (défilement fluide).
+    const el = sectionRef.current;
+    if (!el) return;
+    el.addEventListener("wheel", onWheel, { passive: false });
+    el.addEventListener("touchstart", onTouchStart, { passive: true });
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
+    el.addEventListener("touchend", onTouchEnd, { passive: true });
     window.addEventListener("keydown", onKey);
     return () => {
       cancelAnimationFrame(raf);
-      window.removeEventListener("wheel", onWheel);
-      window.removeEventListener("touchstart", onTouchStart);
-      window.removeEventListener("touchmove", onTouchMove);
-      window.removeEventListener("touchend", onTouchEnd);
+      el.removeEventListener("wheel", onWheel);
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove", onTouchMove);
+      el.removeEventListener("touchend", onTouchEnd);
       window.removeEventListener("keydown", onKey);
     };
   }, [sectionRef]);
