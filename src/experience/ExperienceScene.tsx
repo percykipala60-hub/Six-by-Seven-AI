@@ -60,7 +60,7 @@ export default function ExperienceScene({ phone, laptop }: { phone: PhoneId; lap
     [],
   );
   const groups = useRef<Partial<Record<DeviceId, THREE.Group>>>({});
-  // Sur téléphone : moins de pixels à calculer et pas d'anticrénelage (mémoire et fluidité).
+  // Sur téléphone : image calculée seulement quand la visite avance, sans mouvements décoratifs.
   const [light] = useState(isTouchDevice);
   const markers = useRef<Partial<Record<DeviceId, THREE.Object3D>>>({});
 
@@ -70,10 +70,12 @@ export default function ExperienceScene({ phone, laptop }: { phone: PhoneId; lap
         // Sur téléphone, une image n'est calculée que lorsque la visite avance (voir Invalidator) :
         // à l'arrêt, la carte graphique se repose et tout le reste de la page reste fluide.
         frameloop={light ? "demand" : "always"}
-        dpr={light ? [1, 1.25] : [1, 2]}
+        // Haute définition partout : sur téléphone, l'image n'étant calculée que pendant les transitions,
+        // la netteté ne coûte presque rien (la basse définition donnait des appareils pixelisés).
+        dpr={[1, 2]}
         style={{ position: "absolute", inset: 0, pointerEvents: "none" }}
         camera={{ position: [0, 14, 90], fov: 35, near: 1, far: 500 }}
-        gl={{ antialias: !light, alpha: true, toneMapping: THREE.NeutralToneMapping, powerPreference: "high-performance" }}
+        gl={{ antialias: true, alpha: true, toneMapping: THREE.NeutralToneMapping, powerPreference: "high-performance" }}
       >
         <Studio />
         <Layers />
