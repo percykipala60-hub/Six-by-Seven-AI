@@ -229,7 +229,7 @@ export const footer = {
   languages: [
     { code: "fr", label: "Français" },
     { code: "en", label: "English" },
-    { code: "ln", label: "Lingála" },
+    { code: "ln", label: "Lingala" },
     { code: "sw", label: "Kiswahili" },
     { code: "pt", label: "Português" },
     { code: "es", label: "Español" },
