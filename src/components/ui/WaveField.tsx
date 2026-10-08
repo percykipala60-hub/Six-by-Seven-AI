@@ -81,10 +81,16 @@ export function WaveField({ theme = "light", className, fixed = false }: Props) 
       if (reduce) draw(0);
     };
 
+    // Horloge propre aux vagues : elle n'avance que lorsqu'on les dessine. Avant, l'heure réelle continuait
+    // de tourner pendant les pauses (défilement sur téléphone, vagues hors de l'écran) et, à la reprise,
+    // les rubans sautaient d'un coup à une autre position.
     let last = 0;
-    const draw = (t: number) => {
-      const dt = last ? Math.min(t - last, 0.1) : 0;
-      last = t;
+    let clock = 0;
+    const draw = (now: number) => {
+      const dt = last ? Math.min(now - last, 0.05) : 0;
+      last = now;
+      clock += dt;
+      const t = clock;
       const active = !Number.isNaN(pointer.x);
       // Le point soulevé suit le curseur avec un peu de retard, et retombe quand il s'en va.
       const kk = 1 - Math.exp(-dt * 6);
@@ -138,9 +144,12 @@ export function WaveField({ theme = "light", className, fixed = false }: Props) 
 
       // Points lumineux.
       for (const m of motes) {
-        const x = ((m.x + t * m.v) % 1) * w;
+        // Les points sortent par la droite et reviennent par la gauche en fondu (pas d'apparition brusque).
+        const px = (m.x + t * m.v) % 1;
+        const x = px * w;
+        const edge = Math.min(1, px / 0.08, (1 - px) / 0.08);
         const y = (m.y + Math.sin(t * 0.4 + m.ph) * 0.02) * h;
-        const a = (dark ? 0.5 : 0.35) * (0.5 + 0.5 * Math.sin(t * 0.8 + m.ph));
+        const a = (dark ? 0.5 : 0.35) * (0.5 + 0.5 * Math.sin(t * 0.8 + m.ph)) * edge;
         ctx.fillStyle = dark ? `rgba(200, 220, 255, ${a.toFixed(3)})` : `rgba(45, 95, 230, ${(a * 0.6).toFixed(3)})`;
         ctx.beginPath();
         ctx.arc(x, y, m.r, 0, Math.PI * 2);

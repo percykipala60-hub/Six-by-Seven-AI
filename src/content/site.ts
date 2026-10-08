@@ -224,7 +224,19 @@ export const footer = {
     { label: "Utilisation de l'IA", href: "/legal/utilisation-ia" },
     { label: "Mentions légales", href: "/legal/mentions-legales" },
   ],
-  locale: "Français",
+  // Choix de la langue : le site est écrit en français, les autres langues sont traduites
+  // automatiquement par Google Traduction. Chaque langue est écrite dans sa propre langue.
+  languages: [
+    { code: "fr", label: "Français" },
+    { code: "en", label: "English" },
+    { code: "ln", label: "Lingála" },
+    { code: "sw", label: "Kiswahili" },
+    { code: "pt", label: "Português" },
+    { code: "es", label: "Español" },
+    { code: "ar", label: "العربية" },
+    { code: "zh-CN", label: "中文" },
+  ],
+  languageLabel: "Langue du site",
   follow: "Rejoignez-nous sur",
   soon: "Bientôt",
   copyright: "Copyright © 2026 Seven.AI. Tous droits réservés.",

@@ -1,6 +1,7 @@
 import { Link } from "react-router";
 import { footer, socials, type SocialId } from "../../content/site";
 import { SixLogo } from "../brand/Logos";
+import { LanguagePicker } from "./LanguagePicker";
 import { APP_PATHS, SOCIAL_PATHS } from "../phone3d/brandLogos";
 import styles from "./Footer.module.css";
 
@@ -57,7 +58,9 @@ export function Footer() {
       <div className={styles.bar}>
         <div className={`container ${styles.barInner}`}>
           <ul className={styles.legal}>
-            <li className={styles.locale}>{footer.locale}</li>
+            <li className={styles.locale}>
+              <LanguagePicker />
+            </li>
             {footer.legal.map((l) => (
               <li key={l.href}>
                 <Link to={l.href}>{l.label}</Link>

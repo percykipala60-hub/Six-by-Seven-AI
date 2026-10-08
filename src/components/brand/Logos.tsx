@@ -84,6 +84,8 @@ export function SixLogo({ className, size = 30 }: { className?: string; size?: n
       style={{ display: "inline-flex", alignItems: "center", gap: size * 0.3 }}
       role="img"
       aria-label="Six by Seven.AI"
+      // Nom de marque : jamais traduit.
+      translate="no"
     >
       <SixMark size={size} />
       <span style={{ font: `800 ${size * 0.82}px/1 var(--font-wordmark)`, letterSpacing: "-0.03em" }}>Six</span>
