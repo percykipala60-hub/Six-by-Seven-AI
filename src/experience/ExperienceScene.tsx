@@ -8,7 +8,7 @@ import { PhoneModel } from "../components/phone3d/PhoneModel";
 import { LaptopModel, LAPTOP_SCREEN_PX, LAPTOP_SPECS, type LaptopKind } from "../components/phone3d/LaptopModel";
 import { SPECS } from "../components/phone3d/geometry";
 import { PHONE_SCREEN_PX, PhoneScreen, phonePxScale, phoneScreenRadiusPx } from "../components/phone3d/Phone3D";
-import { DEG, ScreenAnchor, Studio, createScreenElement } from "../components/phone3d/stage";
+import { DEG, ScreenAnchor, Studio, createScreenAligner, createScreenElement } from "../components/phone3d/stage";
 import { AppChat, SixScreen } from "../components/phone/Screens";
 import { DesktopScreen } from "../components/phone/DesktopScreen";
 import type { Model } from "../components/phone/RealPhone";
@@ -156,8 +156,8 @@ function Layers() {
   const { scene, camera, size, gl } = useThree();
   const css = useMemo(() => {
     const r = new CSS3DRenderer();
-    // Au-dessus de l'image 3D (voir CssLayer dans stage.tsx).
-    Object.assign(r.domElement.style, { position: "absolute", inset: "0", pointerEvents: "none", zIndex: "2" });
+    // Sous l'image 3D, visible à travers les fenêtres des écrans (voir CssLayer dans stage.tsx).
+    Object.assign(r.domElement.style, { position: "absolute", inset: "0", pointerEvents: "none", zIndex: "0" });
     return r;
   }, []);
 
@@ -168,6 +168,8 @@ function Layers() {
     return () => css.domElement.remove();
   }, [gl, css]);
   useEffect(() => css.setSize(size.width, size.height), [css, size]);
+  // Recale les écrans sur les appareils si le navigateur les affiche décalés (voir stage.tsx).
+  const align = useMemo(createScreenAligner, []);
 
   useFrame(() => {
     const covered = coveredAt(timeline.p);
@@ -181,6 +183,7 @@ function Layers() {
     if (covered) return;
     gl.render(scene, camera);
     css.render(scene, camera);
+    align(scene, camera, css, gl.domElement);
   }, 1);
   return null;
 }

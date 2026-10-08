@@ -228,11 +228,10 @@ export const overscanStyle: CSSProperties = {
 export const overscanFov = (fov: number) => (2 * Math.atan(Math.tan((fov * Math.PI) / 360) * (1 + 2 * OVERSCAN)) * 180) / Math.PI;
 
 // Moteur CSS 3D de three.js : un seul par scène, il affiche toutes les interfaces posées sur des écrans.
-// Le calque des interfaces passe AU-DESSUS de l'image 3D, qui dessine du verre noir à leur place
-// (voir ScreenAnchor). Sur certains téléphones, l'image 3D s'affiche une image après les interfaces :
-// avec une fenêtre transparente, ce décalage laissait voir le fond de la page (bande beige) pendant les
-// mouvements. Désormais, au pire, on aperçoit un liseré de verre noir, confondu avec la bordure.
-// Rien ne passe devant un écran dans nos scènes (il est masqué dès qu'il ne fait plus face à la caméra).
+// Le calque des interfaces passe SOUS l'image 3D : chaque écran y est visible à travers une « fenêtre »
+// découpée dans l'image (voir ScreenAnchor). Ce qui se trouve devant l'écran (coque, capot, clavier)
+// le cache donc naturellement, quel que soit l'angle. Si le navigateur affiche les interfaces décalées
+// (vu sur Safari, iPhone), createScreenAligner les remet en face de leur fenêtre.
 export function CssLayer() {
   const { scene, camera, size, gl } = useThree();
   const renderer = useMemo(() => {
@@ -244,20 +243,75 @@ export function CssLayer() {
   useEffect(() => {
     const canvas = gl.domElement;
     Object.assign(canvas.style, { position: "relative", zIndex: "1" });
-    renderer.domElement.style.zIndex = "2";
-    canvas.parentElement?.appendChild(renderer.domElement);
+    renderer.domElement.style.zIndex = "0";
+    canvas.parentElement?.insertBefore(renderer.domElement, canvas);
     return () => renderer.domElement.remove();
   }, [gl, renderer]);
 
   useEffect(() => renderer.setSize(size.width, size.height), [renderer, size]);
+  const align = useMemo(createScreenAligner, []);
   // Rendu en dernier (priorité 1), une fois toutes les animations de l'image appliquées : l'image 3D et
   // les interfaces sont dessinées avec exactement la même position. Sinon l'interface avait une image
   // de retard et ses coins tremblaient autour de la fenêtre pendant les mouvements.
   useFrame(() => {
     gl.render(scene, camera);
     renderer.render(scene, camera);
+    align(scene, camera, renderer, gl.domElement);
   }, 1);
   return null;
+}
+
+// Recalage des interfaces sur l'image 3D. Sur certains téléphones (Safari, iPhone), le navigateur n'affiche
+// pas les interfaces CSS 3D exactement là où la 3D les attend : l'image de l'écran apparaissait plus bas
+// que sa fenêtre (bande en haut, bas de l'écran caché). De temps en temps, on compare donc la place
+// réelle d'un écran (getBoundingClientRect) à celle calculée par la 3D, et on décale tout le calque des
+// interfaces de l'écart mesuré. Là où tout est déjà aligné, l'écart est nul et rien ne bouge.
+export function createScreenAligner() {
+  const corr = { x: 0, y: 0 };
+  let last = -Infinity;
+  let runs = 0;
+  const v = new THREE.Vector3();
+  return (scene: THREE.Scene, camera: THREE.Camera, css: CSS3DRenderer, canvas: HTMLCanvasElement) => {
+    const now = performance.now();
+    if (runs > 3 && now - last < 300) return;
+    last = now;
+    runs++;
+    // Repère : l'écran visible le plus grand.
+    let best: { el: HTMLElement; x0: number; y0: number; x1: number; y1: number } | null = null;
+    let bestArea = 0;
+    const box = canvas.getBoundingClientRect();
+    scene.traverse((o) => {
+      if (!(o instanceof CSS3DObject)) return;
+      const obj = o;
+      if (obj.element.style.visibility === "hidden") return;
+      for (let p: THREE.Object3D | null = obj; p; p = p.parent) if (!p.visible) return;
+      const w = parseFloat(obj.element.style.width) / 2;
+      const h = parseFloat(obj.element.style.height) / 2;
+      let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+      for (const [cx, cy] of [[-w, -h], [w, -h], [w, h], [-w, h]]) {
+        v.set(cx, cy, 0).applyMatrix4(obj.matrixWorld).project(camera);
+        if (v.z < -1 || v.z > 1) return; // coin derrière la caméra : mesure impossible
+        const x = ((v.x + 1) / 2) * box.width;
+        const y = ((1 - v.y) / 2) * box.height;
+        x0 = Math.min(x0, x); y0 = Math.min(y0, y); x1 = Math.max(x1, x); y1 = Math.max(y1, y);
+      }
+      const area = (x1 - x0) * (y1 - y0);
+      if (area > bestArea && x1 - x0 > 20) {
+        bestArea = area;
+        best = { el: obj.element, x0, y0, x1, y1 };
+      }
+    });
+    if (!best) return;
+    const { el, x0, y0, x1, y1 } = best as { el: HTMLElement; x0: number; y0: number; x1: number; y1: number };
+    const r = el.getBoundingClientRect();
+    const ex = r.left - box.left + r.width / 2 - (x0 + x1) / 2;
+    const ey = r.top - box.top + r.height / 2 - (y0 + y1) / 2;
+    if (Math.abs(ex) > 200 || Math.abs(ey) > 200) return; // mesure aberrante
+    if (Math.abs(ex) < 0.5 && Math.abs(ey) < 0.5) return;
+    corr.x -= ex;
+    corr.y -= ey;
+    css.domElement.style.translate = `${corr.x.toFixed(1)}px ${corr.y.toFixed(1)}px`;
+  };
 }
 
 // Élément DOM qui portera l'interface d'un écran (rempli via un portail React côté page).
@@ -269,15 +323,14 @@ export function createScreenElement(width: number, height: number) {
   return div;
 }
 
-// Verre noir dessiné sous chaque interface : si l'image 3D et l'interface se décalent un instant,
-// c'est lui qu'on aperçoit (comme la bordure de l'écran), jamais le fond de la page.
-const HOLE = new THREE.MeshBasicMaterial({ color: 0x000000 });
+// Matériau de la fenêtre : écrit un pixel totalement transparent, sans mélange, là où se trouve l'écran.
+const HOLE = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: false, opacity: 0, blending: THREE.NoBlending });
 
 // Accroche un élément DOM sur une surface de la scène. `scale` : taille d'un pixel CSS en unités 3D,
 // `radius` : arrondi des coins de l'écran, en pixels CSS.
 // L'élément est masqué dès que la surface ne fait plus face à la caméra (ou que l'appareil est caché).
 export function ScreenAnchor({ el, scale, position, radius = 0 }: { el: HTMLDivElement; scale: number; position: [number, number, number]; radius?: number }) {
-  // Verre noir sous l'interface, un peu plus petit qu'elle pour ne jamais dépasser de ses coins arrondis.
+  // Fenêtre découpée dans l'image 3D, un peu plus petite que l'interface pour ne jamais laisser voir de liseré.
   const hole = useMemo(() => {
     const w = (parseFloat(el.style.width) - 3) * scale;
     const h = (parseFloat(el.style.height) - 3) * scale;
