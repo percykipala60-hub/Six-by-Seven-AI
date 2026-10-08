@@ -175,8 +175,16 @@ export function useStepScroll(sectionRef: RefObject<HTMLElement | null>) {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let raf = 0;
     let busy = false;
-    // Geste fait pendant une transition : joué dès qu'elle se termine (un seul retenu).
-    let queued: 0 | 1 | -1 = 0;
+    // Gestes faits pendant une transition : joués à la suite dès qu'elle se termine. Ceux qui veulent
+    // aller vite enchaînent deux ou trois gestes : chacun compte (jusqu'à 3 en attente).
+    let queued = { dir: 1 as 1 | -1, n: 0 };
+    const queue = (dir: 1 | -1) => {
+      queued = { dir, n: queued.dir === dir ? Math.min(queued.n + 1, 3) : 1 };
+    };
+    // Début de la dernière étape lancée : une simple remontée de l'élan juste après n'est pas un nouveau
+    // geste (rebond du pavé tactile), alors qu'une vraie reprise après une pause en est toujours un.
+    let stepStartedAt = -Infinity;
+    const SAME_GESTURE_MS = 500;
     // Suivi des gestes de molette, pour en reconnaître le début (voir onWheel).
     let lastWheel = 0;
     let peak = 0;
@@ -224,6 +232,7 @@ export function useStepScroll(sectionRef: RefObject<HTMLElement | null>) {
             : Math.min(1400, 650 + dist * 380);
       const start = performance.now();
       busy = true;
+      stepStartedAt = performance.now();
       cancelAnimationFrame(raf);
       const step = (now: number) => {
         const t = duration ? Math.min(1, (now - start) / duration) : 1;
@@ -239,9 +248,10 @@ export function useStepScroll(sectionRef: RefObject<HTMLElement | null>) {
             timeline.override = null;
           }
           busy = false;
-          const next = queued;
-          queued = 0;
-          if (next) advance(next);
+          if (queued.n > 0) {
+            queued.n--;
+            if (!advance(queued.dir)) queued.n = 0;
+          }
         }
       };
       raf = requestAnimationFrame(step);
@@ -260,11 +270,11 @@ export function useStepScroll(sectionRef: RefObject<HTMLElement | null>) {
     // puis une traîne d'élan qui décroît : on ne réagit qu'au début d'un geste, c'est-à-dire après une pause
     // (plus de 0,2 s sans évènement), ou quand l'intensité remonte nettement après avoir baissé (nouveau geste lancé
     // pendant l'élan du précédent). Un geste fait pendant une transition est retenu et joué ensuite.
-    const isNewGesture = (abs: number, gap: number) => {
+    const isNewGesture = (abs: number, gap: number): "pause" | "rise" | null => {
       if (gap > 220) {
         peak = trough = abs;
         falling = false;
-        return true;
+        return "pause";
       }
       if (abs > peak) peak = abs;
       if (!falling && abs < peak * 0.6) {
@@ -272,12 +282,14 @@ export function useStepScroll(sectionRef: RefObject<HTMLElement | null>) {
         trough = abs;
       }
       if (falling) trough = Math.min(trough, abs);
-      if (falling && abs >= 10 && abs > trough * 3) {
+      // Remontée nette seulement : l'élan d'un pavé tactile a de petits rebonds qu'on ne doit pas prendre
+      // pour un nouveau geste (sinon un seul geste faisait passer deux étapes).
+      if (falling && abs >= 16 && abs > trough * 4) {
         peak = trough = abs;
         falling = false;
-        return true;
+        return "rise";
       }
-      return false;
+      return null;
     };
 
     const onWheel = (e: WheelEvent) => {
@@ -293,7 +305,9 @@ export function useStepScroll(sectionRef: RefObject<HTMLElement | null>) {
       if (nextStop(dir) === null && !busy) return; // au bout de la visite : défilement normal
       e.preventDefault();
       if (!fresh || abs < 1) return;
-      if (busy) queued = dir;
+      // Remontée de l'élan juste après le départ d'une étape : c'est la fin du même geste, on l'ignore.
+      if (fresh === "rise" && now - stepStartedAt < SAME_GESTURE_MS) return;
+      if (busy) queue(dir);
       else advance(dir);
     };
 
@@ -320,7 +334,7 @@ export function useStepScroll(sectionRef: RefObject<HTMLElement | null>) {
       if (!t?.mine) return;
       const dy = t.y - e.changedTouches[0].clientY;
       if (Math.abs(dy) <= 30) return;
-      if (busy) queued = dy > 0 ? 1 : -1;
+      if (busy) queue(dy > 0 ? 1 : -1);
       else advance(dy > 0 ? 1 : -1);
     };
 
@@ -331,7 +345,7 @@ export function useStepScroll(sectionRef: RefObject<HTMLElement | null>) {
       const up = ["ArrowUp", "PageUp"].includes(e.key) || (e.key === " " && e.shiftKey);
       if (!down && !up) return;
       if (busy && pinned()) {
-        queued = down ? 1 : -1;
+        queue(down ? 1 : -1);
         return e.preventDefault();
       }
       if (advance(down ? 1 : -1)) e.preventDefault();

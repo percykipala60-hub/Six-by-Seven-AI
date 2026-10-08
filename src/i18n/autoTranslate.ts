@@ -43,6 +43,7 @@ export function startAutoTranslate() {
   if (typeof window === "undefined" || !isTranslated()) return;
   document.documentElement.dataset.translated = currentLanguage();
   protectReactFromTranslation();
+  protectBrandNames();
   const holder = document.createElement("div");
   holder.id = "google_translate_element";
   holder.style.display = "none";
@@ -72,3 +73,50 @@ function protectReactFromTranslation() {
     return insertBefore.call(this, node, ref) as T;
   };
 }
+
+// Les noms Six et Seven.AI ne se traduisent jamais (Google traduirait « Six » comme le chiffre).
+// Chaque fois qu'ils apparaissent dans un texte de la page, on les place dans un élément marqué
+// translate="no", que Google Traduction laisse tel quel. Surveille aussi les textes affichés plus tard.
+const BRAND = /\b(Six|Seven\.AI)\b/;
+function protectBrandNames() {
+  const wrap = (node: Text) => {
+    const parent = node.parentElement;
+    if (!parent || parent.closest("script, style, [translate='no'], .notranslate")) return;
+    const text = node.nodeValue ?? "";
+    if (!BRAND.test(text)) return;
+    // Les espaces autour du nom vont dans l'élément protégé : Google Traduction rogne les espaces au bord
+    // des passages qu'il traduit, ce qui collait les mots (« ndaniSixAnakupa »).
+    // La ponctuation qui suit le nom y va aussi (sinon « Six. Il… » devenait « SixAnakupa… »).
+    const parts = text.split(/(\s?\b(?:Six|Seven\.AI)\b[.,;:!?]?\s?)/);
+    // Une seule enveloppe pour toute la phrase : dans un conteneur en ligne flexible (questions), les
+    // morceaux deviendraient sinon des blocs séparés, sur plusieurs lignes.
+    const frag = document.createElement("span");
+    parts.forEach((part, i) => {
+      if (!part) return;
+      if (i % 2 === 1) {
+        const span = document.createElement("span");
+        span.className = "notranslate";
+        span.setAttribute("translate", "no");
+        span.style.whiteSpace = "pre";
+        span.textContent = part;
+        frag.appendChild(span);
+      } else frag.appendChild(document.createTextNode(part));
+    });
+    parent.replaceChild(frag, node);
+  };
+  const scan = (root: Node) => {
+    if (root.nodeType === Node.TEXT_NODE) return wrap(root as Text);
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    const found: Text[] = [];
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) found.push(n as Text);
+    found.forEach(wrap);
+  };
+  scan(document.body);
+  new MutationObserver((records) => {
+    for (const r of records) {
+      if (r.type === "characterData") scan(r.target);
+      else r.addedNodes.forEach(scan);
+    }
+  }).observe(document.body, { childList: true, subtree: true, characterData: true });
+}
+
