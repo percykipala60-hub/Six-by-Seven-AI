@@ -266,12 +266,23 @@ export function CssLayer() {
 // que sa fenêtre (bande en haut, bas de l'écran caché). De temps en temps, on compare donc la place
 // réelle d'un écran (getBoundingClientRect) à celle calculée par la 3D, et on décale tout le calque des
 // interfaces de l'écart mesuré. Là où tout est déjà aligné, l'écart est nul et rien ne bouge.
+// iPhone et iPad (tous les navigateurs y utilisent le moteur de Safari).
+const IOS =
+  typeof navigator !== "undefined" &&
+  (/iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
+// Sur iPhone, Safari affiche les interfaces CSS 3D environ 2 % trop bas (mesuré sur une vidéo d'écran :
+// bande vide en haut, barre d'accueil sur le cadre en bas), sans que la mise en page le reflète :
+// le recalage automatique n'y voit rien. On remonte donc chaque écran de 2,2 % de sa hauteur.
+const IOS_SCREEN_LIFT = 0.022;
+
 export function createScreenAligner() {
   const corr = { x: 0, y: 0 };
   let last = -Infinity;
   let runs = 0;
   const v = new THREE.Vector3();
   return (scene: THREE.Scene, camera: THREE.Camera, css: CSS3DRenderer, canvas: HTMLCanvasElement) => {
+    // Sur iPhone, la correction fixe (IOS_SCREEN_LIFT) s'en charge ; le recalage l'annulerait.
+    if (IOS) return;
     const now = performance.now();
     if (runs > 3 && now - last < 300) return;
     last = now;
@@ -346,6 +357,8 @@ export function ScreenAnchor({ el, scale, position, radius = 0 }: { el: HTMLDivE
     if (!a) return;
     const obj = new CSS3DObject(el);
     obj.scale.setScalar(scale);
+    // iPhone : écran remonté pour compenser le décalage de Safari (la fenêtre, elle, ne bouge pas).
+    if (IOS) obj.position.y = parseFloat(el.style.height) * scale * IOS_SCREEN_LIFT;
     a.add(obj);
     return () => {
       a.remove(obj);
