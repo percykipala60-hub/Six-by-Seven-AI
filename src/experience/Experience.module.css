@@ -93,12 +93,26 @@
   display: inline-flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
+  width: max-content;
+  max-width: calc(100vw - 2 * var(--gutter));
+  text-align: center;
   font-size: 0.85rem;
   color: var(--mut);
+  text-shadow:
+    0 0 6px var(--bg),
+    0 0 14px var(--bg);
+}
+
+/* Première ligne plus visible : c'est le conseil pour bien vivre la visite. */
+.cue b {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--ink);
 }
 
 .cue svg {
+  margin-top: 2px;
   animation: nudge 1.6s ease-in-out infinite;
 }
 
@@ -614,9 +628,18 @@
 
   /* Le logo porte un style en ligne (display) : !important pour le masquer. */
   .introContent > :first-child,
-  .intro .introMeta,
-  .cue {
+  .intro .introMeta {
     display: none !important;
+  }
+
+  /* L'invitation à défiler reste, réduite à sa première ligne. */
+  .cue {
+    bottom: 12px;
+  }
+
+  .cue > span,
+  .cue svg {
+    display: none;
   }
 
   .intro h1 {
@@ -644,4 +667,22 @@
     0 0 6px var(--bg),
     0 0 14px var(--bg),
     0 0 28px var(--bg);
+}
+
+/* Téléphone peu haut : le petit logo (déjà dans la barre du haut) et la ligne « Bêta ouverte… »
+   laissent leur place au cercle d'appareils et à l'invitation à défiler. */
+@media (max-aspect-ratio: 9/10) and (max-height: 760px) {
+  .intro {
+    padding-top: calc(72px + 2svh);
+  }
+
+  /* Le logo porte un style en ligne (display) : !important pour le masquer. */
+  .introContent > :first-child,
+  .intro .introMeta {
+    display: none !important;
+  }
+
+  .intro h1 {
+    margin-top: 0;
+  }
 }

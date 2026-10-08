@@ -302,7 +302,8 @@ function Director({ phone, laptop, groups, markers, still: calm = false }: Direc
       const start = 1 - range(p, 0.6, 1.4);
       const end = range(p, T.laptopExit[1] - 0.6, T.laptopExit[1]);
       const textBottom = Math.max(start * Math.min(layout.introBottom + 0.02, 0.75), end * (portrait ? 0.3 : 0.24));
-      const zoneBottom = 1 - (size.height > 680 || portrait ? 60 / size.height : 0.02) * start;
+      // Bas de l'espace libre : juste au-dessus de l'invitation à défiler (mesurée sur la page).
+      const zoneBottom = 1 - (1 - Math.min(layout.cueTop - 0.015, 0.98)) * start;
       const free = Math.max(zoneBottom - textBottom, 0.2);
       // Hauteur apparente du cercle : environ 44 unités, plus l'avant qui est plus proche.
       const dist = Math.max(w / (2 * tanH * aspect), 44 / (2 * tanH * free)) + R * 0.6;

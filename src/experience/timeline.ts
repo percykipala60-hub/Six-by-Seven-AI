@@ -71,7 +71,8 @@ export function stepAt(p: number, [a, b]: readonly [number, number], count: numb
 
 // Mise en page mesurée sur la page, lue par la scène 3D : bas du texte d'accueil, en fraction de la hauteur
 // de l'écran. Le cercle d'appareils se place dans l'espace libre en dessous, sans jamais passer derrière le texte.
-export const layout = { introBottom: 0.5 };
+// Haut de l'invitation à défiler (même unité) : le cercle s'arrête au-dessus d'elle.
+export const layout = { introBottom: 0.5, cueTop: 0.92 };
 
 type Listener = () => void;
 export const timeline = {

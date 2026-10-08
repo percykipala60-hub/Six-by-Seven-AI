@@ -12,7 +12,10 @@ import { useLocation } from "react-router";
 import { GUIDE_STOP, SCAM_STOP, T, goToStop, layout, range, useStepScroll, useTimelineDriver, useTimelineEffect, window01 } from "./timeline";
 import styles from "./Experience.module.css";
 
-const ExperienceScene = lazy(() => import("./ExperienceScene"));
+// La 3D (le plus gros fichier du site) commence à se télécharger dès l'ouverture de la page, en même
+// temps que le reste, au lieu d'attendre que la page soit affichée : les appareils apparaissent plus tôt.
+const sceneModule = import("./ExperienceScene");
+const ExperienceScene = lazy(() => sceneModule);
 
 const hasWebGL = () => {
   try {
@@ -104,6 +107,7 @@ export function Experience() {
 function Intro() {
   const ref = useRef<HTMLDivElement>(null);
   const content = useRef<HTMLDivElement>(null);
+  const cue = useRef<HTMLSpanElement>(null);
   const [ready, setReady] = useState(false);
   useEffect(() => {
     const id = requestAnimationFrame(() => setReady(true));
@@ -115,11 +119,16 @@ function Intro() {
     const c = content.current;
     if (!el || !c) return;
     const measure = () => {
-      if (el.clientHeight) layout.introBottom = (c.offsetTop + c.offsetHeight) / el.clientHeight;
+      if (!el.clientHeight) return;
+      layout.introBottom = (c.offsetTop + c.offsetHeight) / el.clientHeight;
+      // Invitation masquée (écran peu haut) : le cercle peut descendre jusqu'en bas.
+      const k = cue.current;
+      layout.cueTop = k && k.offsetParent ? k.offsetTop / el.clientHeight : 0.98;
     };
     const ro = new ResizeObserver(measure);
     ro.observe(el);
     ro.observe(c);
+    if (cue.current) ro.observe(cue.current);
     measure();
     return () => ro.disconnect();
   }, []);
@@ -153,8 +162,9 @@ function Intro() {
       </div>
       <p className={styles.introMeta}>{hero.meta}</p>
       </div>
-      <span className={styles.cue}>
-        {experience.intro.cue}
+      <span ref={cue} className={styles.cue}>
+        <b>{experience.intro.cue}</b>
+        <span>{experience.intro.cueHint}</span>
         <ChevronDown size={18} />
       </span>
     </div>

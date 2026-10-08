@@ -6,7 +6,9 @@ export const experience = {
   title: "Découvrir Six",
   // Le titre et le texte du haut de page sont ceux de l'accroche (`hero` dans site.ts).
   intro: {
-    cue: "Fais défiler pour découvrir Six",
+    // Invitation sous le cercle d'appareils : la visite se vit étape par étape.
+    cue: "Fais défiler pas à pas, lentement",
+    cueHint: "pour vivre pleinement l'expérience",
   },
   // Repère du lien « Comment ça marche » : le début du guide sur téléphone.
   anchor: "comment",
