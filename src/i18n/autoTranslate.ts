@@ -28,7 +28,47 @@ export function setLanguage(code: string) {
   const domains = ["", `; domain=${host}`, `; domain=.${host}`];
   for (const d of domains) document.cookie = `${COOKIE}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/${d}`;
   if (code !== SOURCE_LANGUAGE) document.cookie = `${COOKIE}=/${SOURCE_LANGUAGE}/${code}; path=/`;
+  // On retient où l'on était pour y revenir après le rechargement (sinon on se retrouvait tout en haut).
+  try {
+    const doc = document.documentElement;
+    sessionStorage.setItem(SCROLL_KEY, JSON.stringify({ y: window.scrollY, fromBottom: doc.scrollHeight - window.scrollY }));
+  } catch {
+    /* stockage indisponible : on rechargera simplement en haut */
+  }
   window.location.reload();
+}
+
+const SCROLL_KEY = "six:scroll-after-language";
+
+// Après un changement de langue : revient à la position d'avant. Près du bas de page (le choix de
+// langue est dans le pied de page), on se repère par rapport au bas, car la traduction change un peu
+// la longueur de la page. On réajuste quelques instants, le temps que la traduction se pose, et on
+// s'arrête dès que le visiteur fait lui-même défiler la page.
+export function restoreScrollAfterLanguage(): boolean {
+  let saved: { y: number; fromBottom: number } | null = null;
+  try {
+    const raw = sessionStorage.getItem(SCROLL_KEY);
+    sessionStorage.removeItem(SCROLL_KEY);
+    saved = raw ? JSON.parse(raw) : null;
+  } catch {
+    saved = null;
+  }
+  if (!saved) return false;
+  const { y, fromBottom } = saved;
+  let stopped = false;
+  const stop = () => (stopped = true);
+  window.addEventListener("wheel", stop, { once: true, passive: true });
+  window.addEventListener("touchstart", stop, { once: true, passive: true });
+  window.addEventListener("keydown", stop, { once: true });
+  const place = () => {
+    if (stopped) return;
+    const doc = document.documentElement;
+    const nearBottom = fromBottom < window.innerHeight * 2.5;
+    const top = nearBottom ? doc.scrollHeight - fromBottom : y;
+    window.scrollTo({ top, behavior: "instant" });
+  };
+  [0, 120, 400, 900, 1600, 2600, 4000].forEach((ms) => window.setTimeout(place, ms));
+  return true;
 }
 
 declare global {
