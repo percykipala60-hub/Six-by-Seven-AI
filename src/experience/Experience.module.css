@@ -1,8 +1,9 @@
 /* Visite animée de Six. La section est très haute ; la scène reste collée à l'écran pendant le défilement. */
 
+/* La visite n'occupe qu'un écran : ses étapes avancent au fil des gestes, pas du défilement de la page. */
 .section {
   position: relative;
-  height: calc((var(--units) + 1) * 100svh);
+  height: 100svh;
   /* Fond clair et doux : les appareils (argent, violet, noir) et les textes restent bien lisibles. */
   --six-bg: #f2f2f7;
 }
@@ -76,10 +77,11 @@
 }
 
 /* Repère de « Comment ça marche », placé à la hauteur du guide sur téléphone. */
+/* Repères des liens du menu, en haut de la visite (l'étape visée est jouée par la visite elle-même).
+   + 80 px : compense la marge réservée à la barre du haut lors d'un saut vers une ancre. */
 .anchor {
   position: absolute;
-  /* + 80 px : compense la marge réservée à la barre du haut lors d'un saut vers une ancre. */
-  top: calc(var(--at) * 100svh + 80px);
+  top: 80px;
   scroll-margin-top: 0;
 }
 

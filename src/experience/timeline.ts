@@ -1,7 +1,7 @@
 import { useEffect, useSyncExternalStore, type RefObject } from "react";
 
-// Ligne de temps de la page « Découvrir ». Le défilement est mesuré en « écrans » :
-// 1 unité = une hauteur de fenêtre parcourue. Toutes les animations (3D, légendes, guides)
+// Ligne de temps de la visite animée de l'accueil. Sa position est mesurée en « écrans » (unité historique) :
+// elle avance par étapes au fil des gestes du visiteur. Toutes les animations (3D, légendes, guides)
 // lisent la même valeur lissée, `timeline.p`.
 
 export const T = {
@@ -75,60 +75,57 @@ export const layout = { introBottom: 0.5 };
 
 type Listener = () => void;
 export const timeline = {
-  /** Valeur visée, lue sur le défilement. */
+  /** Position de la visite (en « écrans »), fixée par les gestes du visiteur et les transitions. */
   target: 0,
-  /** Valeur lissée, utilisée par toutes les animations. */
+  /** Valeur suivie par toutes les animations (égale à target, lissée si le visiteur préfère moins d'animations). */
   p: 0,
-  /** Pendant une transition entre deux arrêts : valeur imposée, sans faire défiler la page à chaque image. */
-  override: null as number | null,
   listeners: new Set<Listener>(),
 };
 
-// Géométrie de la visite, mesurée seulement quand la mise en page change (et non à chaque image :
-// relire la position d'un élément force le navigateur à recalculer la page, source de saccades).
-const geom = { top: 0, height: 0, vh: 1 };
+// La visite n'occupe qu'un écran dans la page : ses étapes ne dépendent pas du défilement, seulement
+// des gestes faits sur elle. Avant, elle occupait près de 17 écrans de page : un défilement rapide
+// depuis le bas du site la traversait et s'arrêtait n'importe où au milieu (souvent sur « Colle la
+// discussion »), et chaque fin d'étape demandait de recaler la page, ce qui faisait trembler l'écran
+// des appareils sur iPhone.
+
+// Géométrie de la visite dans la page, mesurée seulement quand la mise en page change.
+const geom = { top: 0, height: 0 };
 const measure = (el: HTMLElement) => {
   const r = el.getBoundingClientRect();
   geom.top = r.top + window.scrollY;
   geom.height = r.height;
-  geom.vh = window.innerHeight;
 };
-// Taille d'une unité de la ligne de temps, en pixels de défilement.
-const unitPx = () => Math.max((geom.height - geom.vh) / T.total, 1);
-// Position de défilement lue au moment du défilement (et non à chaque image, où la lire peut forcer
-// un recalcul de la page).
-let scrollY = typeof window !== "undefined" ? window.scrollY : 0;
-const scrollUnits = () => (scrollY - geom.top) / unitPx();
-// La visite occupe l'écran : de son début jusqu'au moment où la section suivante arrive en haut.
-const insideTour = (y: number) => y >= geom.top - 1 && y <= geom.top + geom.height + 2;
+// La visite est entièrement à l'écran (en haut de la fenêtre) : les gestes y font avancer les étapes.
+const tourOnScreen = () => Math.abs(window.scrollY - geom.top) <= 4;
 
-// Pendant la visite, la page ne défile pas d'une étape à l'autre : la position vient de
-// timeline.override. Faire défiler la page à chaque arrivée créait, sur iPhone, un saut d'une image
-// (l'écran de l'appareil tremblait puis revenait). On ne recale donc la page sur la visite que lorsque
-// c'est utile : avant d'en sortir, avant un rechargement (changement de langue, page quittée).
-export function syncScroll() {
-  if (timeline.override === null) return;
-  window.scrollTo({ top: geom.top + timeline.override * unitPx(), behavior: "instant" });
-  scrollY = window.scrollY;
-  timeline.override = null;
-}
-
+// Étape atteinte, gardée pendant la session : un rechargement (y compris ceux que Safari fait seul)
+// ou un changement de langue ramène à la même étape.
+const SAVE_KEY = "six:tour-step";
+const savePosition = () => {
+  try {
+    sessionStorage.setItem(SAVE_KEY, String(timeline.target));
+  } catch {
+    /* stockage indisponible */
+  }
+};
+const savedPosition = () => {
+  try {
+    const v = parseFloat(sessionStorage.getItem(SAVE_KEY) ?? "");
+    return Number.isFinite(v) ? Math.min(Math.max(v, 0), T.total) : null;
+  } catch {
+    return null;
+  }
+};
+// Rechargement, retour arrière ou changement de langue (marqué par autoTranslate) : on reprend l'étape.
+const isReturnVisit = () => {
+  const nav = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
+  return nav?.type === "reload" || nav?.type === "back_forward";
+};
 if (typeof window !== "undefined") {
-  window.addEventListener(
-    "scroll",
-    () => {
-      scrollY = window.scrollY;
-      // Le visiteur a quitté la visite par un autre moyen (ascenseur, touche Fin…) : la page reprend la main.
-      if (timeline.override !== null && !tweening && !insideTour(scrollY)) timeline.override = null;
-    },
-    { passive: true },
-  );
-  window.addEventListener("six:sync-scroll", syncScroll);
-  window.addEventListener("pagehide", syncScroll);
-  document.addEventListener("visibilitychange", () => document.visibilityState === "hidden" && syncScroll());
+  window.addEventListener("pagehide", savePosition);
+  window.addEventListener("six:sync-scroll", savePosition);
 }
-// Une transition de la visite est en cours.
-let tweening = false;
+
 // En développement : ligne de temps accessible aux scripts de test.
 if (import.meta.env.DEV && typeof window !== "undefined") (window as unknown as { __timeline: typeof timeline }).__timeline = timeline;
 
@@ -139,8 +136,7 @@ const subscribe = (l: Listener) => {
   };
 };
 
-// Pilote la ligne de temps depuis le défilement de `sectionRef` : la section mesure (total + 1) écrans,
-// la scène reste collée en haut pendant ce temps.
+// Fait suivre `timeline.p` à la position de la visite, image par image, et prévient les animations.
 export function useTimelineDriver(sectionRef: RefObject<HTMLElement | null>) {
   useEffect(() => {
     let raf = 0;
@@ -154,23 +150,19 @@ export function useTimelineDriver(sectionRef: RefObject<HTMLElement | null>) {
     ro.observe(el);
     ro.observe(document.body);
     window.addEventListener("resize", remeasure);
-    const read = () => {
-      timeline.target = timeline.override ?? clamp01(scrollUnits() / T.total) * T.total;
-    };
+    if (isReturnVisit()) timeline.target = savedPosition() ?? 0;
     const tick = (now: number) => {
       const dt = Math.min((now - last) / 1000, 0.1);
       last = now;
-      read();
-      // Lissage léger, utile seulement si on tire l'ascenseur : les transitions entre arrêts sont
-      // déjà adoucies et appliquées telles quelles.
-      const k = reduced || timeline.override !== null ? 1 : 1 - Math.exp(-dt * 12);
+      // Les transitions sont déjà adoucies : on les suit telles quelles (lissage seulement si le
+      // visiteur préfère moins d'animations, où les étapes changent sans transition).
+      const k = reduced ? 1 - Math.exp(-dt * 12) : 1;
       const next = timeline.p + (timeline.target - timeline.p) * k;
       const changed = Math.abs(next - timeline.p) > 1e-5;
       timeline.p = Math.abs(timeline.target - next) < 1e-4 ? timeline.target : next;
       if (changed) timeline.listeners.forEach((l) => l());
       raf = requestAnimationFrame(tick);
     };
-    read();
     timeline.p = timeline.target;
     timeline.listeners.forEach((l) => l());
     raf = requestAnimationFrame(tick);
@@ -198,9 +190,13 @@ export function useTimelineEffect(apply: (p: number) => void) {
   });
 }
 
-// Défilement étape par étape : tant que la visite occupe l'écran, un geste vers le bas ou vers le haut
+// Aller à une étape précise (liens « Comment ça marche », « Arnaques ») : envoyé par la page.
+export const goToStop = (stop: number) => window.dispatchEvent(new CustomEvent("six:goto", { detail: stop }));
+
+// Défilement étape par étape : quand la visite est à l'écran, un geste vers le bas ou vers le haut
 // amène à l'arrêt suivant ou précédent, avec une transition jouée automatiquement.
-// Au dernier arrêt, un geste vers le bas rend la main au défilement normal de la page.
+// Au dernier arrêt, un geste vers le bas fait glisser la page jusqu'à la section suivante ;
+// au premier arrêt, un geste vers le haut laisse la page défiler normalement.
 export function useStepScroll(sectionRef: RefObject<HTMLElement | null>) {
   useEffect(() => {
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -222,28 +218,16 @@ export function useStepScroll(sectionRef: RefObject<HTMLElement | null>) {
     let trough = Infinity;
     let falling = false;
 
-    const pinned = () => timeline.override !== null || insideTour(window.scrollY);
-    const current = () => timeline.override ?? scrollUnits();
-    // Fin de la visite : la section suivante arrive en haut de l'écran.
-    const exitStop = () => geom.height / unitPx();
+    // Après le dernier arrêt : sortie de la visite (la page glisse jusqu'à la section suivante).
+    const EXIT = T.total + 1;
     // Arrêt suivant (dir = 1) ou précédent (dir = -1) ; null quand il n'y en a plus.
-    // Après le dernier arrêt, un dernier geste fait glisser la visite vers le haut et amène la section suivante.
     const nextStop = (dir: 1 | -1) => {
-      const u = current();
-      const stops = [...STOPS, exitStop()];
+      const u = timeline.target;
+      const stops = [...STOPS, EXIT];
       return dir > 0 ? (stops.find((s) => s > u + 0.02) ?? null) : ([...stops].reverse().find((s) => s < u - 0.02) ?? null);
     };
 
-    const go = (to: number) => {
-      const u0 = current();
-      const virtual = to <= T.total + 1e-6 && u0 <= T.total + 1e-6;
-      // Sortie de la visite : on fait vraiment défiler la page, à partir de la position de la visite.
-      if (!virtual) syncScroll();
-      const from = window.scrollY;
-      const target = geom.top + to * unitPx();
-      // Entre deux arrêts de la visite, la scène reste collée à l'écran : inutile de faire défiler la page
-      // à chaque image (c'était coûteux). On anime directement la ligne de temps, et la page ne défile
-      // qu'une fois, à l'arrivée. Pour sortir de la visite, on fait défiler pour de vrai.
+    const duration = (u0: number, to: number) => {
       const dist = Math.abs(to - u0);
       // Les mouvements d'appareils (le cercle qui tourne, l'appareil qui s'avance, la caméra qui entre
       // dans l'écran ou en ressort) prennent leur temps ; les étapes à l'intérieur de l'appli restent vives.
@@ -253,35 +237,48 @@ export function useStepScroll(sectionRef: RefObject<HTMLElement | null>) {
       const camera = moves.some(([a, b]) => lo < b && hi > a);
       // Sur téléphone, tout est plus court : les longues transitions y donnent une impression de lenteur.
       const touch = isTouchDevice();
-      const duration = reduced
-        ? 0
-        : camera
-          ? touch
-            ? Math.min(1900, 900 + dist * 380)
-            : Math.min(3400, 1500 + dist * 650)
-          : touch
-            ? Math.min(900, 450 + dist * 260)
-            : Math.min(1400, 650 + dist * 380);
-      const start = performance.now();
+      if (reduced) return 0;
+      if (camera) return touch ? Math.min(1900, 900 + dist * 380) : Math.min(3400, 1500 + dist * 650);
+      return touch ? Math.min(900, 450 + dist * 260) : Math.min(1400, 650 + dist * 380);
+    };
+
+    const finish = () => {
+      busy = false;
+      savePosition();
+      if (queued.n > 0) {
+        queued.n--;
+        if (!advance(queued.dir)) queued.n = 0;
+      }
+    };
+
+    const go = (to: number) => {
       busy = true;
-      tweening = true;
       stepStartedAt = performance.now();
       cancelAnimationFrame(raf);
+      const start = performance.now();
+      if (to === EXIT) {
+        // Sortie : la page défile pour de vrai jusqu'à la section suivante (la visite garde sa dernière étape).
+        const from = window.scrollY;
+        const target = geom.top + geom.height;
+        const d = reduced ? 0 : isTouchDevice() ? 900 : 1100;
+        const step = (now: number) => {
+          const t = d ? Math.min(1, (now - start) / d) : 1;
+          window.scrollTo({ top: from + (target - from) * easeInOutSine(t), behavior: "instant" });
+          if (t < 1) raf = requestAnimationFrame(step);
+          else finish();
+        };
+        raf = requestAnimationFrame(step);
+        return;
+      }
+      const u0 = timeline.target;
+      const d = duration(u0, to);
       const step = (now: number) => {
-        const t = duration ? Math.min(1, (now - start) / duration) : 1;
-        const e = easeInOutSine(t);
-        if (virtual) timeline.override = u0 + (to - u0) * e;
-        else window.scrollTo({ top: from + (target - from) * e, behavior: "instant" });
+        const t = d ? Math.min(1, (now - start) / d) : 1;
+        timeline.target = u0 + (to - u0) * easeInOutSine(t);
         if (t < 1) raf = requestAnimationFrame(step);
         else {
-          // Arrivée : la visite garde sa position (timeline.override), la page n'est pas déplacée.
-          if (virtual) timeline.override = to;
-          busy = false;
-          tweening = false;
-          if (queued.n > 0) {
-            queued.n--;
-            if (!advance(queued.dir)) queued.n = 0;
-          }
+          timeline.target = to;
+          finish();
         }
       };
       raf = requestAnimationFrame(step);
@@ -289,7 +286,7 @@ export function useStepScroll(sectionRef: RefObject<HTMLElement | null>) {
 
     // Avance d'un arrêt ; renvoie false si le geste doit faire défiler la page normalement.
     const advance = (dir: 1 | -1) => {
-      if (!pinned()) return false;
+      if (!tourOnScreen()) return false;
       const to = nextStop(dir);
       if (to === null) return false;
       go(to);
@@ -330,9 +327,9 @@ export function useStepScroll(sectionRef: RefObject<HTMLElement | null>) {
       lastWheel = now;
       const abs = Math.abs(e.deltaY);
       const fresh = isNewGesture(abs, gap);
-      if (!pinned()) return;
+      if (!tourOnScreen() && !busy) return;
       const dir = e.deltaY > 0 ? 1 : -1;
-      if (nextStop(dir) === null && !busy) return; // au bout de la visite : défilement normal
+      if (nextStop(dir) === null && !busy) return; // au début de la visite, vers le haut : défilement normal
       e.preventDefault();
       if (!fresh || abs < 1) return;
       // Remontée de l'élan juste après le départ d'une étape : c'est la fin du même geste, on l'ignore.
@@ -350,11 +347,11 @@ export function useStepScroll(sectionRef: RefObject<HTMLElement | null>) {
       const dy = touch.y - e.touches[0].clientY; // > 0 : le doigt monte, la page descendrait
       if (!touch.decided) {
         if (Math.abs(dy) < 6) {
-          if (pinned()) e.preventDefault();
+          if (tourOnScreen()) e.preventDefault();
           return;
         }
         touch.decided = true;
-        touch.mine = pinned() && (busy || nextStop(dy > 0 ? 1 : -1) !== null);
+        touch.mine = busy || (tourOnScreen() && nextStop(dy > 0 ? 1 : -1) !== null);
       }
       if (touch.mine) e.preventDefault();
     };
@@ -374,11 +371,19 @@ export function useStepScroll(sectionRef: RefObject<HTMLElement | null>) {
       const down = ["ArrowDown", "PageDown"].includes(e.key) || (e.key === " " && !e.shiftKey);
       const up = ["ArrowUp", "PageUp"].includes(e.key) || (e.key === " " && e.shiftKey);
       if (!down && !up) return;
-      if (busy && pinned()) {
+      if (busy) {
         queue(down ? 1 : -1);
         return e.preventDefault();
       }
       if (advance(down ? 1 : -1)) e.preventDefault();
+    };
+
+    // Aller directement à une étape (liens du menu) : la page remonte sur la visite, puis la transition se joue.
+    const onGoto = (e: Event) => {
+      const stop = (e as CustomEvent<number>).detail;
+      window.scrollTo({ top: geom.top, behavior: "instant" });
+      queued.n = 0;
+      go(stop);
     };
 
     // Molette et doigt : écoutés sur la visite seulement. Ailleurs, la page défile librement,
@@ -390,14 +395,16 @@ export function useStepScroll(sectionRef: RefObject<HTMLElement | null>) {
     el.addEventListener("touchmove", onTouchMove, { passive: false });
     el.addEventListener("touchend", onTouchEnd, { passive: true });
     window.addEventListener("keydown", onKey);
+    window.addEventListener("six:goto", onGoto);
     return () => {
       cancelAnimationFrame(raf);
-      syncScroll();
+      savePosition();
       el.removeEventListener("wheel", onWheel);
       el.removeEventListener("touchstart", onTouchStart);
       el.removeEventListener("touchmove", onTouchMove);
       el.removeEventListener("touchend", onTouchEnd);
       window.removeEventListener("keydown", onKey);
+      window.removeEventListener("six:goto", onGoto);
     };
   }, [sectionRef]);
 }

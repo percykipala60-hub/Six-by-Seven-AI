@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState, type CSSProperties } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { experience } from "../content/experience";
 import { hero } from "../content/site";
@@ -8,7 +8,8 @@ import { BetaButton } from "../components/ui/BetaButton";
 import { Words } from "../components/ui/Words";
 import type { LaptopId, PhoneId } from "./ExperienceScene";
 import { DesktopGuide, PhoneGuide } from "./Guides";
-import { GUIDE_STOP, SCAM_STOP, T, layout, range, useStepScroll, useTimelineDriver, useTimelineEffect, window01 } from "./timeline";
+import { useLocation } from "react-router";
+import { GUIDE_STOP, SCAM_STOP, T, goToStop, layout, range, useStepScroll, useTimelineDriver, useTimelineEffect, window01 } from "./timeline";
 import styles from "./Experience.module.css";
 
 const ExperienceScene = lazy(() => import("./ExperienceScene"));
@@ -50,6 +51,21 @@ export function Experience() {
     return () => io.disconnect();
   }, []);
   useStepScroll(section);
+  // Liens du menu « Comment ça marche » (#comment) et « Arnaques » (#securite) : la visite joue la
+  // transition jusqu'à l'étape visée. Pas lors d'un rechargement : on reste à l'étape où l'on était.
+  const { hash } = useLocation();
+  const shownHash = useRef<string | null>(null);
+  useEffect(() => {
+    if (shownHash.current === hash) return; // même adresse (double passage en développement)
+    const first = shownHash.current === null;
+    shownHash.current = hash;
+    if (first) {
+      const nav = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
+      if (nav?.type === "reload" || nav?.type === "back_forward") return;
+    }
+    const stop = hash === `#${experience.anchor}` ? GUIDE_STOP : hash === `#${experience.scamAnchor}` ? SCAM_STOP : null;
+    if (stop !== null) goToStop(stop);
+  }, [hash]);
 
   const { phone: P, laptop: L } = experience;
   const captions: CaptionProps[] = [
@@ -61,10 +77,10 @@ export function Experience() {
   ];
 
   return (
-    <section ref={section} className={styles.section} style={{ "--units": T.total } as CSSProperties} aria-label={experience.title} data-experience>
+    <section ref={section} className={styles.section} aria-label={experience.title} data-experience>
       {/* « Comment ça marche » mène directement au guide sur téléphone. */}
-      <div id={experience.anchor} className={styles.anchor} style={{ "--at": GUIDE_STOP } as CSSProperties} />
-      <div id={experience.scamAnchor} className={styles.anchor} style={{ "--at": SCAM_STOP } as CSSProperties} />
+      <div id={experience.anchor} className={styles.anchor} />
+      <div id={experience.scamAnchor} className={styles.anchor} />
       <div className={styles.stage}>
         <div className={styles.backdrop} aria-hidden="true" />
         {webgl && (
