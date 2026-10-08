@@ -9,6 +9,11 @@ import studioHdr from "@pmndrs/assets/hdri/studio.exr.js";
 
 // Briques communes aux scènes 3D (téléphone seul, carrousel d'appareils).
 
+// iPhone et iPad (tous les navigateurs y utilisent le moteur de Safari).
+const IOS =
+  typeof navigator !== "undefined" &&
+  (/iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
+
 export const DEG = Math.PI / 180;
 const RETURN_DELAY = 2600;
 
@@ -266,10 +271,6 @@ export function CssLayer() {
 // que sa fenêtre (bande en haut, bas de l'écran caché). De temps en temps, on compare donc la place
 // réelle d'un écran (getBoundingClientRect) à celle calculée par la 3D, et on décale tout le calque des
 // interfaces de l'écart mesuré. Là où tout est déjà aligné, l'écart est nul et rien ne bouge.
-// iPhone et iPad (tous les navigateurs y utilisent le moteur de Safari).
-const IOS =
-  typeof navigator !== "undefined" &&
-  (/iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
 // Sur iPhone, Safari affiche les interfaces CSS 3D environ 2 % trop bas (mesuré sur une vidéo d'écran :
 // bande vide en haut, barre d'accueil sur le cadre en bas), sans que la mise en page le reflète :
 // le recalage automatique n'y voit rien. On remonte donc chaque écran de 2,2 % de sa hauteur.
@@ -331,6 +332,14 @@ export function createScreenElement(width: number, height: number) {
   div.style.width = `${width}px`;
   div.style.height = `${height}px`;
   div.style.pointerEvents = "none";
+  if (IOS) {
+    // Safari (iPhone) redessinait toute l'interface à chaque changement de taille pendant les transitions :
+    // l'écran clignotait (vide un instant) et les transitions saccadaient. Ainsi, il la garde prête et se
+    // contente de la déplacer et de l'agrandir.
+    div.style.willChange = "transform";
+    div.style.backfaceVisibility = "hidden";
+    div.style.setProperty("-webkit-backface-visibility", "hidden");
+  }
   return div;
 }
 

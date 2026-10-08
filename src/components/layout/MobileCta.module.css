@@ -14,9 +14,9 @@
     gap: 8px;
     padding: 8px;
     border-radius: 22px;
-    background: color-mix(in srgb, var(--surface) 88%, transparent);
-    backdrop-filter: saturate(1.4) blur(16px);
-    -webkit-backdrop-filter: saturate(1.4) blur(16px);
+    /* Fond presque opaque, sans flou : le flou, recalculé sur les vagues animées du fond, faisait
+       saccader le défilement sur téléphone. */
+    background: color-mix(in srgb, var(--surface) 97%, transparent);
     border: 1px solid var(--line);
     box-shadow: 0 10px 30px rgb(14 21 38 / 0.12);
     transform: translateY(calc(100% + 24px));

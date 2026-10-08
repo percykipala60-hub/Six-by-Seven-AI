@@ -22,6 +22,16 @@
   border-bottom-color: var(--line);
 }
 
+/* Téléphone : pas de flou derrière la barre. Il devait être recalculé à chaque image sur tout ce qui
+   bouge dessous (3D, vagues) et faisait saccader les transitions, surtout sur iPhone. */
+@media (hover: none) and (pointer: coarse) {
+  .solid {
+    background: color-mix(in srgb, var(--bg) 97%, transparent);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
 .inner {
   display: flex;
   align-items: center;
