@@ -29,6 +29,8 @@ export function setLanguage(code: string) {
   for (const d of domains) document.cookie = `${COOKIE}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/${d}`;
   if (code !== SOURCE_LANGUAGE) document.cookie = `${COOKIE}=/${SOURCE_LANGUAGE}/${code}; path=/`;
   // On retient où l'on était pour y revenir après le rechargement (sinon on se retrouvait tout en haut).
+  // La visite d'abord recale la page sur l'étape affichée.
+  window.dispatchEvent(new Event("six:sync-scroll"));
   try {
     const doc = document.documentElement;
     sessionStorage.setItem(SCROLL_KEY, JSON.stringify({ y: window.scrollY, fromBottom: doc.scrollHeight - window.scrollY }));

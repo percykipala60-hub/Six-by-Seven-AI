@@ -18,14 +18,19 @@ function ScrollManager() {
     const key = pathname + hash;
     if (previous === key) return; // même page (double passage en développement)
     shown.current = key;
+    if (previous === null) {
+      // Ouverture de la page. Après un changement de langue, on revient où l'on était. Lors d'un
+      // rechargement (y compris ceux que Safari fait tout seul), on ne saute pas à l'ancre de l'adresse
+      // (#comment menait à « Colle la discussion ») : le navigateur remet la page où elle était.
+      if (restoreScrollAfterLanguage()) return;
+      const nav = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
+      if (nav?.type === "reload" || nav?.type === "back_forward") return;
+    }
     if (hash) {
       document.getElementById(decodeURIComponent(hash.slice(1)))?.scrollIntoView();
       return;
     }
-    if (previous === null) {
-      restoreScrollAfterLanguage();
-      return;
-    }
+    if (previous === null) return;
     window.scrollTo(0, 0);
   }, [pathname, hash]);
   return null;

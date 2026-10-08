@@ -98,8 +98,39 @@ const unitPx = () => Math.max((geom.height - geom.vh) / T.total, 1);
 // Position de défilement lue au moment du défilement (et non à chaque image, où la lire peut forcer
 // un recalcul de la page).
 let scrollY = typeof window !== "undefined" ? window.scrollY : 0;
-if (typeof window !== "undefined") window.addEventListener("scroll", () => (scrollY = window.scrollY), { passive: true });
 const scrollUnits = () => (scrollY - geom.top) / unitPx();
+// La visite occupe l'écran : de son début jusqu'au moment où la section suivante arrive en haut.
+const insideTour = (y: number) => y >= geom.top - 1 && y <= geom.top + geom.height + 2;
+
+// Pendant la visite, la page ne défile pas d'une étape à l'autre : la position vient de
+// timeline.override. Faire défiler la page à chaque arrivée créait, sur iPhone, un saut d'une image
+// (l'écran de l'appareil tremblait puis revenait). On ne recale donc la page sur la visite que lorsque
+// c'est utile : avant d'en sortir, avant un rechargement (changement de langue, page quittée).
+export function syncScroll() {
+  if (timeline.override === null) return;
+  window.scrollTo({ top: geom.top + timeline.override * unitPx(), behavior: "instant" });
+  scrollY = window.scrollY;
+  timeline.override = null;
+}
+
+if (typeof window !== "undefined") {
+  window.addEventListener(
+    "scroll",
+    () => {
+      scrollY = window.scrollY;
+      // Le visiteur a quitté la visite par un autre moyen (ascenseur, touche Fin…) : la page reprend la main.
+      if (timeline.override !== null && !tweening && !insideTour(scrollY)) timeline.override = null;
+    },
+    { passive: true },
+  );
+  window.addEventListener("six:sync-scroll", syncScroll);
+  window.addEventListener("pagehide", syncScroll);
+  document.addEventListener("visibilitychange", () => document.visibilityState === "hidden" && syncScroll());
+}
+// Une transition de la visite est en cours.
+let tweening = false;
+// En développement : ligne de temps accessible aux scripts de test.
+if (import.meta.env.DEV && typeof window !== "undefined") (window as unknown as { __timeline: typeof timeline }).__timeline = timeline;
 
 const subscribe = (l: Listener) => {
   timeline.listeners.add(l);
@@ -191,8 +222,7 @@ export function useStepScroll(sectionRef: RefObject<HTMLElement | null>) {
     let trough = Infinity;
     let falling = false;
 
-    // La visite occupe l'écran : de son début jusqu'au moment où la section suivante arrive en haut.
-    const pinned = () => window.scrollY >= geom.top - 1 && window.scrollY <= geom.top + geom.height + 2;
+    const pinned = () => timeline.override !== null || insideTour(window.scrollY);
     const current = () => timeline.override ?? scrollUnits();
     // Fin de la visite : la section suivante arrive en haut de l'écran.
     const exitStop = () => geom.height / unitPx();
@@ -205,13 +235,15 @@ export function useStepScroll(sectionRef: RefObject<HTMLElement | null>) {
     };
 
     const go = (to: number) => {
+      const u0 = current();
+      const virtual = to <= T.total + 1e-6 && u0 <= T.total + 1e-6;
+      // Sortie de la visite : on fait vraiment défiler la page, à partir de la position de la visite.
+      if (!virtual) syncScroll();
       const from = window.scrollY;
       const target = geom.top + to * unitPx();
-      const u0 = current();
       // Entre deux arrêts de la visite, la scène reste collée à l'écran : inutile de faire défiler la page
       // à chaque image (c'était coûteux). On anime directement la ligne de temps, et la page ne défile
       // qu'une fois, à l'arrivée. Pour sortir de la visite, on fait défiler pour de vrai.
-      const virtual = to <= T.total + 1e-6 && u0 <= T.total + 1e-6;
       const dist = Math.abs(to - u0);
       // Les mouvements d'appareils (le cercle qui tourne, l'appareil qui s'avance, la caméra qui entre
       // dans l'écran ou en ressort) prennent leur temps ; les étapes à l'intérieur de l'appli restent vives.
@@ -232,6 +264,7 @@ export function useStepScroll(sectionRef: RefObject<HTMLElement | null>) {
             : Math.min(1400, 650 + dist * 380);
       const start = performance.now();
       busy = true;
+      tweening = true;
       stepStartedAt = performance.now();
       cancelAnimationFrame(raf);
       const step = (now: number) => {
@@ -241,13 +274,10 @@ export function useStepScroll(sectionRef: RefObject<HTMLElement | null>) {
         else window.scrollTo({ top: from + (target - from) * e, behavior: "instant" });
         if (t < 1) raf = requestAnimationFrame(step);
         else {
-          if (virtual) {
-            window.scrollTo({ top: target, behavior: "instant" });
-            // L'évènement de défilement n'arrivera qu'à l'image suivante : on note la position tout de suite.
-            scrollY = window.scrollY;
-            timeline.override = null;
-          }
+          // Arrivée : la visite garde sa position (timeline.override), la page n'est pas déplacée.
+          if (virtual) timeline.override = to;
           busy = false;
+          tweening = false;
           if (queued.n > 0) {
             queued.n--;
             if (!advance(queued.dir)) queued.n = 0;
@@ -362,7 +392,7 @@ export function useStepScroll(sectionRef: RefObject<HTMLElement | null>) {
     window.addEventListener("keydown", onKey);
     return () => {
       cancelAnimationFrame(raf);
-      timeline.override = null;
+      syncScroll();
       el.removeEventListener("wheel", onWheel);
       el.removeEventListener("touchstart", onTouchStart);
       el.removeEventListener("touchmove", onTouchMove);
