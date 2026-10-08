@@ -49,7 +49,9 @@ const DIVE_PX: Record<DeviceId, { x: number; y: number; w: number; h: number }> 
 
 type Shot = { pos: THREE.Vector3; target: THREE.Vector3 };
 
-export default function ExperienceScene({ phone, laptop }: { phone: PhoneId; laptop: LaptopId }) {
+// `active` : la visite est à l'écran. Sinon la scène ne calcule plus aucune image (elle continuait
+// à tourner pendant qu'on lisait les sections du bas, ce qui ralentissait toute la page).
+export default function ExperienceScene({ phone, laptop, active = true }: { phone: PhoneId; laptop: LaptopId; active?: boolean }) {
   const els = useMemo(
     () => ({
       ios: createScreenElement(PHONE_SCREEN_PX.w, PHONE_SCREEN_PX.h),
@@ -69,7 +71,7 @@ export default function ExperienceScene({ phone, laptop }: { phone: PhoneId; lap
       <Canvas
         // Sur téléphone, une image n'est calculée que lorsque la visite avance (voir Invalidator) :
         // à l'arrêt, la carte graphique se repose et tout le reste de la page reste fluide.
-        frameloop={light ? "demand" : "always"}
+        frameloop={!active ? "never" : light ? "demand" : "always"}
         // Haute définition partout : sur téléphone, l'image n'étant calculée que pendant les transitions,
         // la netteté ne coûte presque rien (la basse définition donnait des appareils pixelisés).
         dpr={[1, 2]}

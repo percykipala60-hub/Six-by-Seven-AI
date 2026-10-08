@@ -40,6 +40,15 @@ export function Experience() {
   const [devices] = useState(pickDevices);
   const [webgl] = useState(hasWebGL);
   useTimelineDriver(section);
+  // La visite est-elle à l'écran ? Sinon, la 3D se met en pause.
+  const [onScreen, setOnScreen] = useState(true);
+  useEffect(() => {
+    const el = section.current;
+    if (!el) return;
+    const io = new IntersectionObserver(([e]) => setOnScreen(e.isIntersecting));
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
   useStepScroll(section);
 
   const { phone: P, laptop: L } = experience;
@@ -60,7 +69,7 @@ export function Experience() {
         <div className={styles.backdrop} aria-hidden="true" />
         {webgl && (
           <Suspense fallback={null}>
-            <ExperienceScene phone={devices.phone} laptop={devices.laptop} />
+            <ExperienceScene phone={devices.phone} laptop={devices.laptop} active={onScreen} />
           </Suspense>
         )}
         <Intro />

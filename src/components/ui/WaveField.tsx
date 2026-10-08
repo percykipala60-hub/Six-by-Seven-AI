@@ -72,7 +72,7 @@ export function WaveField({ theme = "light", className, fixed = false }: Props) 
     const lift = { x: 0, y: 0, k: 0 };
 
     const resize = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, touch ? 1.5 : 2);
+      const dpr = Math.min(window.devicePixelRatio || 1, touch ? 1.25 : 2);
       w = canvas.clientWidth;
       h = canvas.clientHeight;
       canvas.width = Math.round(w * dpr);
@@ -149,10 +149,15 @@ export function WaveField({ theme = "light", className, fixed = false }: Props) 
       ctx.globalCompositeOperation = "source-over";
     };
 
+    // Téléphone : les vagues s'arrêtent pendant le défilement (redessiner un fond plein écran pendant que
+    // la page défile oblige le navigateur à tout recomposer, d'où des saccades) et reprennent juste après.
+    let scrollingUntil = 0;
+    const onScroll = () => (scrollingUntil = performance.now() + 180);
+    if (touch) window.addEventListener("scroll", onScroll, { passive: true });
     let frame = 0;
     const loop = (now: number) => {
       frame++;
-      if (visible && (!touch || frame % 2 === 0)) draw(now / 1000);
+      if (visible && (!touch || (frame % 2 === 0 && now > scrollingUntil))) draw(now / 1000);
       raf = requestAnimationFrame(loop);
     };
 
@@ -189,6 +194,7 @@ export function WaveField({ theme = "light", className, fixed = false }: Props) 
       cancelAnimationFrame(raf);
       ro.disconnect();
       io.disconnect();
+      window.removeEventListener("scroll", onScroll);
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerdown", place);
       window.removeEventListener("pointerup", onUp);
