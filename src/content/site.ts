@@ -9,7 +9,7 @@ export const brand = {
 };
 
 // Liens de l'application. À remplir le jour du lancement :
-// tant qu'ils sont vides, les boutons mènent à la section « Télécharger » avec la date de sortie.
+// tant qu'ils sont vides, les boutons mènent à la section « Télécharger » avec la mention « Bientôt disponible ».
 export type PlatformId = "ios" | "android" | "mac" | "windows";
 
 export const app = {
@@ -23,8 +23,8 @@ export const app = {
   ] satisfies { id: PlatformId; name: string; system: string; url: string }[],
   downloadPage: "/telecharger",
   sectionId: "telecharger",
-  release: "Disponible le 15 octobre",
-  releaseShort: "15 oct.",
+  release: "Bientôt disponible",
+  releaseShort: "Bientôt",
   download: {
     short: "Télécharger",
     long: "Télécharger l'application",
@@ -62,7 +62,7 @@ export const nav = {
 export const hero = {
   title: "L'IA propose. Tu décides.",
   lead: "Un message auquel tu ne sais pas quoi répondre ? Colle-le dans Six. Il te propose trois réponses, tu prends celle qui te ressemble et tu l'envoies toi-même.",
-  meta: "Disponible le 15 octobre sur iPhone, Android, Mac, Windows et dans le navigateur.",
+  meta: "Bientôt disponible sur iPhone, Android, Mac, Windows et dans le navigateur.",
 };
 
 // Exemple de masquage : chaque segment sensible a sa version originale et sa version masquée.
@@ -158,7 +158,7 @@ export const faq = {
     },
     {
       q: "Quand sort Six ?",
-      a: "Six sort le 15 octobre, sur iPhone, Android, Mac, Windows et en version web.",
+      a: "Très bientôt, sur iPhone, Android, Mac, Windows et en version web. Suis Seven.AI sur les réseaux pour être prévenu du lancement.",
     },
   ],
 };
@@ -230,15 +230,15 @@ export const downloadPage = {
   // Bouton principal en haut de la page : mène à la fiche de l'appareil du visiteur.
   main: "Télécharger",
   mainFor: "Télécharger pour",
-  release: "Disponible le 15 octobre sur iPhone, Android, Mac, Windows et dans le navigateur.",
+  release: "Bientôt disponible sur iPhone, Android, Mac, Windows et dans le navigateur.",
   help: "Une question sur la façon dont Six utilise l'IA ?",
   helpLink: "Lire notre page dédiée",
 };
 
 export const launch = {
-  title: "Six sort le 15 octobre.",
+  title: "Six arrive bientôt.",
   text: "Choisis comment tu veux l'utiliser. Les deux versions font exactement la même chose.",
-  date: "Le 15 octobre",
+  date: "Bientôt disponible",
   follow: "Suis Seven.AI pour être prévenu le jour du lancement.",
 };
 
@@ -275,7 +275,7 @@ export const footer = {
       title: "Seven.AI",
       links: [
         { label: "À propos", href: "/#seven-ai" },
-        { label: "Lancement du 15 octobre", href: "/#telecharger" },
+        { label: "Lancement de Six", href: "/#telecharger" },
         { label: "Mentions légales", href: "/legal/mentions-legales" },
       ],
     },

@@ -9,7 +9,7 @@ type Props = {
   size?: "md" | "sm";
   /** Libellé court (« Télécharger ») ou long (« Télécharger l'application »). */
   long?: boolean;
-  /** Affiche la date de sortie tant qu'aucun lien n'est renseigné. */
+  /** Affiche « Bientôt » tant qu'aucun lien n'est renseigné. */
   badge?: boolean;
   className?: string;
   onClick?: () => void;
