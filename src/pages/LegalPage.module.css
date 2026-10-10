@@ -49,15 +49,6 @@
   color: var(--mut);
 }
 
-.draft {
-  margin-top: 16px;
-  padding: 14px 18px;
-  border-radius: var(--radius-md);
-  background: var(--acc-soft);
-  color: var(--ink-2);
-  font-size: 14px;
-}
-
 .article section {
   margin-top: 48px;
 }

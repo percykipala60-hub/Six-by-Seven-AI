@@ -28,7 +28,6 @@ export function LegalPage() {
         <h1>{page.title}</h1>
         <p className={styles.summary}>{page.summary}</p>
         <p className={styles.meta}>{legalMeta.updated}</p>
-        <p className={styles.draft}>{legalMeta.draft}</p>
 
         {page.sections.map((s) => (
           <section key={s.title}>

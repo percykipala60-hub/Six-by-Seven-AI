@@ -14,7 +14,6 @@ export type LegalPage = {
 export const legalMeta = {
   eyebrow: "Informations légales",
   updated: "Dernière mise à jour : 10 octobre 2026",
-  draft: "Version provisoire, susceptible d'évoluer avant le lancement officiel de Six.",
   otherPages: "Autres documents",
   back: "Retour à l'accueil",
   manageCookies: "Gérer mes cookies",
