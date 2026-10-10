@@ -305,7 +305,7 @@ export const legalPages: LegalPage[] = [
         title: "Éditeur",
         body: [
           {
-            list: ["Seven.AI", `Contact : ${EMAIL} · +243 985 002 388`],
+            list: ["Seven.AI", `Contact : ${EMAIL}`],
           },
         ],
       },

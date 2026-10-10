@@ -42,9 +42,6 @@ export const app = {
 // Coordonnées de Seven.AI : utilisées dans le pied de page et les pages légales.
 export const contact = {
   email: "sevenai.dc@gmail.com",
-  // Espaces insécables : le numéro ne se coupe jamais en fin de ligne.
-  phone: "+243 985 002 388",
-  phoneHref: "tel:+243985002388",
 };
 
 export const nav = {
@@ -261,7 +258,6 @@ export const footer = {
         { label: "Plateformes disponibles", href: "/telecharger#plateformes" },
         { label: "Chaîne WhatsApp", href: "https://whatsapp.com/channel/0029Vb9blFv4o7qVCCbRPi1Y" },
         { label: `Nous écrire : ${contact.email}`, href: `mailto:${contact.email}` },
-        { label: `Appeler : ${contact.phone}`, href: contact.phoneHref },
       ],
     },
     {
