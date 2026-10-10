@@ -31,8 +31,8 @@ export const app = {
     platforms: "iPhone, Android, Mac et Windows",
   },
   web: {
-    short: "Version web",
-    long: "Ouvrir la version web",
+    short: "Six Web",
+    long: "Ouvrir Six Web",
     title: "La version web",
     text: "Utilise Six directement dans ton navigateur, sur téléphone comme sur ordinateur. Rien à installer.",
     platforms: "Tous les navigateurs",

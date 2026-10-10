@@ -166,7 +166,8 @@ function Intro() {
         <Words delay={5}>{hero.lead}</Words>
       </p>
       <div className={styles.introActions}>
-        <AppButton kind="download" />
+        <AppButton kind="web" />
+        <AppButton kind="download" variant="secondary" />
       </div>
       <p className={styles.introMeta}>{hero.meta}</p>
       </div>

@@ -71,6 +71,7 @@ export function Nav() {
         </nav>
 
         <div className={styles.actions}>
+          <AppButton kind="web" size="sm" variant="secondary" className={`${styles.cta} ${styles.ctaWeb}`} />
           {!onDownloadPage && (
             <AppButton kind="download" size="sm" variant="primary" className={styles.cta} />
           )}
@@ -95,7 +96,8 @@ export function Nav() {
             </Link>
           ))}
           <div className={styles.mobileCtas}>
-            {!onDownloadPage && <AppButton kind="download" long onClick={close} />}
+            <AppButton kind="web" onClick={close} />
+            {!onDownloadPage && <AppButton kind="download" long variant="secondary" onClick={close} />}
           </div>
         </div>
       </nav>
