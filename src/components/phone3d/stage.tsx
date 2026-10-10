@@ -280,7 +280,9 @@ export function addCssLayer(stage: Stage) {
 // interfaces de l'écart mesuré. Là où tout est déjà aligné, l'écart est nul et rien ne bouge.
 // Les anciennes versions de Safari (iPhone) affichaient ces interfaces environ 2 % trop bas ; on les
 // remontait alors de 2,2 %. Les versions récentes les placent correctement : la remontée laissait une
-// bande vide en bas de chaque écran (vidéo du 10 octobre 2026). Plus aucune correction sur iPhone.
+// bande vide en bas des écrans de la page Télécharger (vidéo du 10 octobre 2026). La visite de l'accueil,
+// elle, en a toujours besoin : la correction ne s'applique plus qu'à elle (voir createScreenAligner).
+const IOS_TOUR_LIFT = 0.022;
 
 export function createScreenAligner() {
   const corr = { x: 0, y: 0 };
@@ -288,10 +290,20 @@ export function createScreenAligner() {
   let runs = 0;
   const v = new THREE.Vector3();
   return (scene: THREE.Scene, camera: THREE.Camera, css: CSS3DRenderer, canvas: HTMLCanvasElement) => {
-    // Pas sur iPhone : Safari y place déjà les écrans correctement, mais sa mise en page ne reflète pas
-    // leur position réelle ; le recalage les décalait à tort vers le bas (bande vide en haut).
-    if (IOS) return;
     const now = performance.now();
+    // iPhone : dans la visite, Safari affiche les écrans environ 2 % trop bas, sans que sa mise en page le
+    // reflète (le recalage ci-dessous n'y verrait rien). On remonte donc une fois chaque écran de 2,2 %.
+    // La page Télécharger n'utilise pas ce recalage : ses écrans sont bien placés sans correction.
+    if (IOS) {
+      if (now - last < 300) return;
+      last = now;
+      scene.traverse((o) => {
+        if (!(o instanceof CSS3DObject) || o.userData.iosLift) return;
+        o.userData.iosLift = true;
+        o.position.y += parseFloat(o.element.style.height) * o.scale.y * IOS_TOUR_LIFT;
+      });
+      return;
+    }
     if (runs > 3 && now - last < 300) return;
     last = now;
     runs++;
