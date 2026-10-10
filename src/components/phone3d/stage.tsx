@@ -280,8 +280,7 @@ export function addCssLayer(stage: Stage) {
 // interfaces de l'écart mesuré. Là où tout est déjà aligné, l'écart est nul et rien ne bouge.
 // Les anciennes versions de Safari (iPhone) affichaient ces interfaces environ 2 % trop bas ; on les
 // remontait alors de 2,2 %. Les versions récentes les placent correctement : la remontée laissait une
-// bande vide en bas de chaque écran (vidéo du 10 octobre 2026). L'iPhone suit donc maintenant le même
-// recalage que les autres navigateurs.
+// bande vide en bas de chaque écran (vidéo du 10 octobre 2026). Plus aucune correction sur iPhone.
 
 export function createScreenAligner() {
   const corr = { x: 0, y: 0 };
@@ -289,6 +288,9 @@ export function createScreenAligner() {
   let runs = 0;
   const v = new THREE.Vector3();
   return (scene: THREE.Scene, camera: THREE.Camera, css: CSS3DRenderer, canvas: HTMLCanvasElement) => {
+    // Pas sur iPhone : Safari y place déjà les écrans correctement, mais sa mise en page ne reflète pas
+    // leur position réelle ; le recalage les décalait à tort vers le bas (bande vide en haut).
+    if (IOS) return;
     const now = performance.now();
     if (runs > 3 && now - last < 300) return;
     last = now;
