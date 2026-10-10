@@ -7,7 +7,7 @@ import { createLaptop, LAPTOP_SCREEN_PX, LAPTOP_SPECS, type LaptopKind } from ".
 import { SPECS } from "../components/phone3d/geometry";
 import { PHONE_SCREEN_PX, PhoneScreen, phonePxScale, phoneScreenRadiusPx } from "../components/phone3d/Phone3D";
 import { Stage, type FrameState } from "../components/phone3d/engine";
-import { DEG, addStudio, createScreenAligner, createScreenAnchor, createScreenElement } from "../components/phone3d/stage";
+import { DEG, IOS_TOUR_LIFT, addStudio, createScreenAligner, createScreenAnchor, createScreenElement } from "../components/phone3d/stage";
 import { AppChat, SixScreen } from "../components/phone/Screens";
 import { DesktopScreen } from "../components/phone/DesktopScreen";
 import type { Model } from "../components/phone/RealPhone";
@@ -190,7 +190,7 @@ function addLayers(stage: Stage) {
   const css = stage.addCssLayer();
   const gl = stage.renderer;
   // Recale les écrans sur les appareils si le navigateur les affiche décalés (voir stage.tsx).
-  const align = createScreenAligner();
+  const align = createScreenAligner({ iosLift: IOS_TOUR_LIFT });
   stage.onFrame(({ scene, camera }) => {
     const covered = coveredAt(timeline.p);
     // Opacité (et non visibility) : les écrans posés sur les appareils règlent eux-mêmes leur

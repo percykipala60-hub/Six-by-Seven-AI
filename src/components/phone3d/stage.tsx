@@ -278,29 +278,29 @@ export function addCssLayer(stage: Stage) {
 // que sa fenêtre (bande en haut, bas de l'écran caché). De temps en temps, on compare donc la place
 // réelle d'un écran (getBoundingClientRect) à celle calculée par la 3D, et on décale tout le calque des
 // interfaces de l'écart mesuré. Là où tout est déjà aligné, l'écart est nul et rien ne bouge.
-// Les anciennes versions de Safari (iPhone) affichaient ces interfaces environ 2 % trop bas ; on les
-// remontait alors de 2,2 %. Les versions récentes les placent correctement : la remontée laissait une
-// bande vide en bas des écrans de la page Télécharger (vidéo du 10 octobre 2026). La visite de l'accueil,
-// elle, en a toujours besoin : la correction ne s'applique plus qu'à elle (voir createScreenAligner).
-const IOS_TOUR_LIFT = 0.022;
+// Sur iPhone (mesuré le 10 octobre 2026), Safari affiche les écrans de la visite de l'accueil environ
+// 2 % trop bas, sans que sa mise en page le reflète : ils sont remontés de 2,2 % (option `iosLift`, que
+// seule la visite active). Ceux de la page Télécharger (scène agrandie, voir overscanStyle) sont bien
+// placés avec le recalage ordinaire : une remontée y laissait une bande vide en bas.
+export const IOS_TOUR_LIFT = 0.022;
 
-export function createScreenAligner() {
+export function createScreenAligner({ iosLift = 0 }: { iosLift?: number } = {}) {
   const corr = { x: 0, y: 0 };
   let last = -Infinity;
   let runs = 0;
   const v = new THREE.Vector3();
   return (scene: THREE.Scene, camera: THREE.Camera, css: CSS3DRenderer, canvas: HTMLCanvasElement) => {
     const now = performance.now();
-    // iPhone : dans la visite, Safari affiche les écrans environ 2 % trop bas, sans que sa mise en page le
-    // reflète (le recalage ci-dessous n'y verrait rien). On remonte donc une fois chaque écran de 2,2 %.
-    // La page Télécharger n'utilise pas ce recalage : ses écrans sont bien placés sans correction.
-    if (IOS) {
+    // iPhone, visite de l'accueil : Safari y affiche les écrans environ 2 % trop bas, sans que sa mise en
+    // page le reflète (le recalage ci-dessous n'y verrait rien). On remonte donc une fois chaque écran.
+    // Ailleurs (page Télécharger), le recalage ordinaire suffit : ses écrans y sont bien placés.
+    if (IOS && iosLift) {
       if (now - last < 300) return;
       last = now;
       scene.traverse((o) => {
         if (!(o instanceof CSS3DObject) || o.userData.iosLift) return;
         o.userData.iosLift = true;
-        o.position.y += parseFloat(o.element.style.height) * o.scale.y * IOS_TOUR_LIFT;
+        o.position.y += parseFloat(o.element.style.height) * o.scale.y * iosLift;
       });
       return;
     }
