@@ -38,7 +38,7 @@ export function Launch() {
               </div>
               <h3>{copy.title}</h3>
               <p>{copy.text}</p>
-              <AppButton kind={kind} long variant="secondary" className={styles.optionBtn} />
+              <AppButton kind={kind} variant="secondary" className={styles.optionBtn} />
             </Reveal>
           ))}
         </div>

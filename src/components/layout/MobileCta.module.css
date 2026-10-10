@@ -10,7 +10,8 @@
     right: 12px;
     bottom: calc(12px + env(safe-area-inset-bottom, 0px));
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    /* Plus de place pour « Télécharger l'application », le plus long des deux libellés. */
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
     gap: 8px;
     padding: 8px;
     border-radius: 22px;
@@ -32,8 +33,21 @@
   }
 }
 
-.btn {
+/* Le libellé peut passer sur deux lignes plutôt que de déborder de l'écran (« .bar » en plus : l'emporte
+   sur le style commun des boutons, qui interdit le retour à la ligne). */
+.bar .btn {
   justify-content: center;
-  padding-inline: 12px;
-  font-size: 15px;
+  padding: 10px 12px;
+  min-height: 48px;
+  font-size: 14px;
+  line-height: 1.2;
+  white-space: normal;
+  text-align: center;
+}
+
+/* Petits téléphones : sans icônes, les deux libellés tiennent côte à côte. */
+@media (max-width: 400px) {
+  .bar .btn svg {
+    display: none;
+  }
 }

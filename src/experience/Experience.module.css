@@ -16,6 +16,24 @@
   isolation: isolate;
 }
 
+/* Sans 3D (appareil trop modeste, robots d'indexation) : pas de visite. La section se limite au haut
+   de page, dans le flux normal, et la suite du site vient juste après. */
+.section[data-flat] {
+  height: auto;
+}
+
+.section[data-flat] .stage {
+  position: relative;
+  height: auto;
+  overflow: visible;
+}
+
+.section[data-flat] .intro {
+  position: relative;
+  inset: auto;
+  padding-bottom: clamp(24px, 4vw, 48px);
+}
+
 /* Lueur douce au centre ; elle laisse voir les vagues du fond du site. */
 .backdrop {
   position: absolute;

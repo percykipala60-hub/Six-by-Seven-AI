@@ -96,8 +96,8 @@ export function Nav() {
             </Link>
           ))}
           <div className={styles.mobileCtas}>
-            <AppButton kind="web" onClick={close} />
-            {!onDownloadPage && <AppButton kind="download" long variant="secondary" onClick={close} />}
+            {!onDownloadPage && <AppButton kind="download" onClick={close} />}
+            <AppButton kind="web" variant="secondary" onClick={close} />
           </div>
         </div>
       </nav>

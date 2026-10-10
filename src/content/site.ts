@@ -23,16 +23,15 @@ export const app = {
   ] satisfies { id: PlatformId; name: string; system: string; url: string }[],
   downloadPage: "/telecharger",
   sectionId: "telecharger",
+  // Libellés des deux boutons d'action, les mêmes partout sur le site.
   download: {
-    short: "Télécharger",
-    long: "Télécharger l'application",
+    label: "Télécharger l'application",
     title: "L'application",
     text: "Installe Six sur ton téléphone depuis un simple lien. Elle s'ouvre même quand le réseau coupe.",
     platforms: "iPhone, Android, Mac et Windows",
   },
   web: {
-    short: "Six Web",
-    long: "Ouvrir Six Web",
+    label: "Aller vers Six",
     title: "La version web",
     text: "Utilise Six directement dans ton navigateur, sur téléphone comme sur ordinateur. Rien à installer.",
     platforms: "Tous les navigateurs",
@@ -216,7 +215,6 @@ export const downloadPage = {
   others: "Toutes les plateformes",
   otherLink: "Autres plateformes et version web",
   download: "Télécharger",
-  open: "Ouvrir",
   available: "Disponible maintenant",
   // Bouton principal en haut de la page : mène à la fiche de l'appareil du visiteur.
   main: "Télécharger",

@@ -41,7 +41,7 @@
 .label {
   font-size: 14px;
   font-weight: 600;
-  color: var(--brand-blue);
+  color: var(--acc); /* bleu lisible sur tous les fonds clairs (le bleu de la marque est trop pâle pour un petit texte) */
   margin-bottom: 16px;
 }
 

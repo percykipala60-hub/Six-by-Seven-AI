@@ -5,6 +5,8 @@ import { hero } from "../content/site";
 import { SixLogo } from "../components/brand/Logos";
 import { AppButton } from "../components/ui/AppButton";
 import { preloadStudioHdr } from "../components/phone3d/studioHdr";
+import { canRender3D } from "../components/phone3d/canRender3D";
+import { SafeBoundary } from "../components/ui/SafeBoundary";
 import { Words } from "../components/ui/Words";
 import type { LaptopId, PhoneId } from "./ExperienceScene";
 import { DesktopGuide, PhoneGuide } from "./Guides";
@@ -12,20 +14,34 @@ import { useLocation } from "react-router";
 import { GUIDE_STOP, SCAM_STOP, T, goToStop, layout, range, useStepScroll, useTimelineDriver, useTimelineEffect, window01 } from "./timeline";
 import styles from "./Experience.module.css";
 
-// La 3D (le plus gros fichier du site) commence à se télécharger dès l'ouverture de la page, en même
-// temps que le reste, au lieu d'attendre que la page soit affichée : les appareils apparaissent plus tôt.
-const sceneModule = import("./ExperienceScene");
-const ExperienceScene = lazy(() => sceneModule);
-preloadStudioHdr();
+// La 3D (le plus gros fichier du site) ne se télécharge que si l'appareil peut l'afficher sans peine
+// (voir canRender3D). Elle commence alors à se télécharger dès l'ouverture de la page, en même temps
+// que le reste, mais ne se construit qu'une fois la page affichée (voir plus bas).
+const CAN_3D = canRender3D();
+const sceneModule = CAN_3D ? import("./ExperienceScene") : null;
+const ExperienceScene = lazy(() => sceneModule!);
+if (CAN_3D) preloadStudioHdr();
 
-const hasWebGL = () => {
-  try {
-    const c = document.createElement("canvas");
-    return !!(c.getContext("webgl2") || c.getContext("webgl"));
-  } catch {
-    return false;
-  }
-};
+// Attend que la page soit affichée et que le navigateur souffle un peu : construire les appareils en 3D
+// occupe le processeur plusieurs secondes sur un téléphone moyen, le texte et les boutons passent avant.
+function useAfterFirstPaint(enabled: boolean) {
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    if (!enabled) return;
+    let idle = 0;
+    const raf = requestAnimationFrame(() => {
+      idle = window.requestIdleCallback
+        ? window.requestIdleCallback(() => setReady(true), { timeout: 1500 })
+        : window.setTimeout(() => setReady(true), 300);
+    });
+    return () => {
+      cancelAnimationFrame(raf);
+      if (window.cancelIdleCallback) window.cancelIdleCallback(idle);
+      else window.clearTimeout(idle);
+    };
+  }, [enabled]);
+  return ready;
+}
 
 // Appareils de la visite, tirés au hasard à chaque visite (forçables par ?phone=android&pc=mac).
 function pickDevices(): { phone: PhoneId; laptop: LaptopId } {
@@ -43,7 +59,8 @@ function pickDevices(): { phone: PhoneId; laptop: LaptopId } {
 export function Experience() {
   const section = useRef<HTMLElement>(null);
   const [devices] = useState(pickDevices);
-  const [webgl] = useState(hasWebGL);
+  const [webgl] = useState(CAN_3D);
+  const painted = useAfterFirstPaint(webgl);
   useTimelineDriver(section);
   // La visite est-elle à l'écran ? Sinon, la 3D se met en pause.
   const [onScreen, setOnScreen] = useState(true);
@@ -62,7 +79,8 @@ export function Experience() {
       far.disconnect();
     };
   }, []);
-  useStepScroll(section);
+  // Sans 3D, pas de visite : le défilement reste normal et la section se limite au haut de page.
+  useStepScroll(section, webgl);
   // Liens du menu « Comment ça marche » (#comment) et « Arnaques » (#securite) : la visite joue la
   // transition jusqu'à l'étape visée. Pas lors d'un rechargement : on reste à l'étape où l'on était.
   const { hash } = useLocation();
@@ -89,31 +107,37 @@ export function Experience() {
   ];
 
   return (
-    <section ref={section} className={styles.section} aria-label={experience.title} data-experience>
+    <section ref={section} className={styles.section} aria-label={experience.title} data-experience data-flat={webgl ? undefined : ""}>
       {/* « Comment ça marche » mène directement au guide sur téléphone. */}
       <div id={experience.anchor} className={styles.anchor} />
       <div id={experience.scamAnchor} className={styles.anchor} />
       <div className={styles.stage}>
         <div className={styles.backdrop} aria-hidden="true" />
-        {webgl && near && (
-          <Suspense fallback={null}>
-            <ExperienceScene phone={devices.phone} laptop={devices.laptop} active={onScreen} />
-          </Suspense>
+        {webgl && near && painted && (
+          <SafeBoundary fallback={null}>
+            <Suspense fallback={null}>
+              <ExperienceScene phone={devices.phone} laptop={devices.laptop} active={onScreen} />
+            </Suspense>
+          </SafeBoundary>
         )}
-        <Intro />
-        {captions.map((c) => (
-          <Caption key={c.title} {...c} />
-        ))}
-        <PhoneGuide />
-        <DesktopGuide os={devices.laptop} />
-        <Progress />
+        <Intro tour={webgl} />
+        {webgl && (
+          <>
+            {captions.map((c) => (
+              <Caption key={c.title} {...c} />
+            ))}
+            <PhoneGuide />
+            <DesktopGuide os={devices.laptop} />
+            <Progress />
+          </>
+        )}
       </div>
     </section>
   );
 }
 
 // Haut de page : logo, accroche, boutons et invitation à défiler, qui s'effacent dès qu'on avance.
-function Intro() {
+function Intro({ tour }: { tour: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const content = useRef<HTMLDivElement>(null);
   const cue = useRef<HTMLSpanElement>(null);
@@ -143,7 +167,8 @@ function Intro() {
   }, []);
   useTimelineEffect((p) => {
     const el = ref.current;
-    if (!el) return;
+    // Sans visite, le haut de page reste toujours affiché.
+    if (!el || !tour) return;
     const o = 1 - range(p, 0.25, 0.8);
     el.style.opacity = String(o);
     el.style.visibility = o > 0 ? "visible" : "hidden";
@@ -166,16 +191,18 @@ function Intro() {
         <Words delay={5}>{hero.lead}</Words>
       </p>
       <div className={styles.introActions}>
-        <AppButton kind="web" />
-        <AppButton kind="download" variant="secondary" />
+        <AppButton kind="download" />
+        <AppButton kind="web" variant="secondary" />
       </div>
       <p className={styles.introMeta}>{hero.meta}</p>
       </div>
-      <span ref={cue} className={styles.cue}>
-        <b>{experience.intro.cue}</b>
-        <span>{experience.intro.cueHint}</span>
-        <ChevronDown size={18} />
-      </span>
+      {tour && (
+        <span ref={cue} className={styles.cue}>
+          <b>{experience.intro.cue}</b>
+          <span>{experience.intro.cueHint}</span>
+          <ChevronDown size={18} />
+        </span>
+      )}
     </div>
   );
 }

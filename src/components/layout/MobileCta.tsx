@@ -4,7 +4,7 @@ import { app } from "../../content/site";
 import { AppButton } from "../ui/AppButton";
 import styles from "./MobileCta.module.css";
 
-// Sur téléphone, une fois le haut de l'accueil passé : « Six Web » et « Télécharger » restent sous le pouce.
+// Sur téléphone, une fois le haut de l'accueil passé : « Télécharger l'application » et « Aller vers Six » restent sous le pouce.
 // La barre s'efface quand la section de téléchargement ou le pied de page sont à l'écran.
 export function MobileCta() {
   const { pathname } = useLocation();
@@ -36,8 +36,8 @@ export function MobileCta() {
   const shown = past && !covered;
   return (
     <div className={styles.bar} data-shown={shown || undefined} aria-hidden={!shown} inert={!shown}>
-      <AppButton kind="web" className={styles.btn} />
-      <AppButton kind="download" variant="secondary" className={styles.btn} />
+      <AppButton kind="download" className={styles.btn} />
+      <AppButton kind="web" variant="secondary" className={styles.btn} />
     </div>
   );
 }

@@ -85,12 +85,12 @@ export function DownloadPage() {
           <div className={styles.cardActions}>
             {app.webUrl ? (
               <a className={styles.pillDark} href={app.webUrl} target="_blank" rel="noopener noreferrer">
-                {downloadPage.open}
+                {app.web.label}
                 <ArrowUpRight size={16} aria-hidden="true" />
               </a>
             ) : (
               <span className={styles.pillDark} aria-disabled="true">
-                {downloadPage.open}
+                {app.web.label}
                 <ArrowUpRight size={16} aria-hidden="true" />
               </span>
             )}

@@ -210,8 +210,10 @@ export const goToStop = (stop: number) => window.dispatchEvent(new CustomEvent("
 // amène à l'arrêt suivant ou précédent, avec une transition jouée automatiquement.
 // Au dernier arrêt, un geste vers le bas fait glisser la page jusqu'à la section suivante ;
 // au premier arrêt, un geste vers le haut laisse la page défiler normalement.
-export function useStepScroll(sectionRef: RefObject<HTMLElement | null>) {
+// `enabled` : faux quand la visite n'a pas lieu (appareil sans 3D) ; le défilement reste alors normal.
+export function useStepScroll(sectionRef: RefObject<HTMLElement | null>, enabled = true) {
   useEffect(() => {
+    if (!enabled) return;
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     let raf = 0;
     let busy = false;
@@ -421,5 +423,5 @@ export function useStepScroll(sectionRef: RefObject<HTMLElement | null>) {
       window.removeEventListener("keydown", onKey);
       window.removeEventListener("six:goto", onGoto);
     };
-  }, [sectionRef]);
+  }, [sectionRef, enabled]);
 }
