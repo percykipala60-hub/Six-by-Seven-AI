@@ -1,5 +1,5 @@
 // Pages légales. Version de départ : à faire relire avant la mise en ligne.
-// À ajouter dans les mentions légales dès que connus : forme juridique, siège, responsable de la publication.
+// À compléter dans les mentions légales lors de l'immatriculation : numéro RCCM et identification nationale.
 
 type Block = string | { list: string[] };
 export type LegalPage = {
@@ -299,25 +299,44 @@ export const legalPages: LegalPage[] = [
   {
     slug: "mentions-legales",
     title: "Mentions légales",
-    summary: "Les informations sur l'éditeur et l'hébergeur de ce site.",
+    summary: "Les informations relatives à l'éditeur et à l'hébergeur du présent site.",
     sections: [
       {
         title: "Éditeur",
         body: [
           {
-            list: ["Seven.AI", `Contact : ${EMAIL}`],
+            list: [
+              "Seven.AI, entreprise individuelle en cours d'immatriculation",
+              "Siège : Kinshasa, République démocratique du Congo",
+              `Contact : ${EMAIL}`,
+            ],
           },
         ],
       },
       {
+        title: "Responsable de la publication",
+        body: [`Seven.AI, joignable à l'adresse ${EMAIL}.`],
+      },
+      {
+        // À mettre à jour si le site change d'hébergeur.
         title: "Hébergement",
-        body: ["Ce site est hébergé par Render Services, Inc. (render.com), aux États-Unis."],
+        body: ["Le présent site est hébergé par Render Services, Inc., San Francisco (États-Unis), render.com."],
       },
       {
         title: "Propriété intellectuelle",
         body: [
-          "Les marques Six et Seven.AI, leurs logos et l'ensemble des contenus de ce site sont la propriété de Seven.AI. Toute reproduction sans autorisation est interdite.",
+          "Les marques Six et Seven.AI, leurs logos et l'ensemble des contenus du présent site sont la propriété de Seven.AI. Toute reproduction ou utilisation sans autorisation préalable est interdite.",
         ],
+      },
+      {
+        title: "Données personnelles et cookies",
+        body: [
+          "Le traitement des données personnelles est décrit dans la politique de confidentialité, et l'usage des cookies dans la politique cookies.",
+        ],
+      },
+      {
+        title: "Contact",
+        body: [`Pour toute question, ou pour signaler un contenu, vous pouvez écrire à ${EMAIL}.`],
       },
     ],
   },
