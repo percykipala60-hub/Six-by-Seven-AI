@@ -304,7 +304,10 @@ export function createScreenAligner({ iosLift = 0 }: { iosLift?: number } = {}) 
       });
       return;
     }
-    if (runs > 3 && now - last < 300) return;
+    // Chaque mesure oblige le navigateur à recalculer la mise en page au milieu d'une image. Sur iPhone,
+    // cela faisait saccader les animations : passé les premières mesures, une toutes les 2 s suffit
+    // (le décalage à corriger ne change pas quand l'appareil tourne).
+    if (runs > 3 && now - last < (IOS ? 2000 : 300)) return;
     last = now;
     runs++;
     // Repère : l'écran visible le plus grand.
