@@ -20,7 +20,8 @@ src/
   components/ui/        boutons, cadre de téléphone, apparition au défilement
   sections/             une section de l'accueil = un composant + son .module.css
   pages/                accueil, pages légales (/legal/:slug), page 404
-public/                 favicon, icônes d'application, image d'aperçu des liens (og-image.png), sitemap.xml, robots.txt
+public/                 favicon, icônes d'application, image d'aperçu des liens (og-image.png)
+public/.well-known/     ai-catalog.json : catalogue (vide) des outils pour assistants IA, lu par PageSpeed et les agents IA
 theme/chameleon.ts      couleurs du site qui changent avec le temps (ambiances, durées, intensité)
 hooks/usePageMeta.ts    titre, description et adresse canonique de chaque page
 ```
