@@ -4,7 +4,8 @@ import { useLocation } from "react-router";
 // Titre, description, adresse canonique et indexation propres à chaque page. Les valeurs d'index.html
 // (celles de l'accueil) sont gardées et remises en place quand on quitte la page.
 // Les aperçus des réseaux sociaux (og:…) restent ceux d'index.html : leurs robots ne lisent pas le JavaScript.
-const SITE = "https://six-by-sevenai.onrender.com";
+// L'adresse est celle où le site est ouvert : elle reste juste quel que soit l'hébergeur ou le nom de domaine.
+const SITE = typeof window !== "undefined" ? window.location.origin : "";
 const SUFFIX = "Six by Seven.AI";
 
 function meta(selector: string, create: () => HTMLElement) {

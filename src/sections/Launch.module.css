@@ -87,12 +87,6 @@
   align-self: flex-start;
 }
 
-.date {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--ink);
-}
-
 .follow {
   margin-top: clamp(48px, 6vw, 72px);
   text-align: center;

@@ -62,7 +62,7 @@ a.mainBtn:hover {
   background: var(--navy-700);
 }
 
-.release {
+.note {
   max-width: 24em;
   font-size: 13px;
   color: var(--mut);

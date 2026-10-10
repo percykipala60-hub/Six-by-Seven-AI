@@ -36,7 +36,7 @@ export function MobileCta() {
   const shown = past && !covered;
   return (
     <div className={styles.bar} data-shown={shown || undefined} aria-hidden={!shown} inert={!shown}>
-      <AppButton kind="download" long badge={false} className={styles.btn} />
+      <AppButton kind="download" long className={styles.btn} />
     </div>
   );
 }

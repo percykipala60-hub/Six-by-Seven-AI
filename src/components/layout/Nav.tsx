@@ -72,7 +72,7 @@ export function Nav() {
 
         <div className={styles.actions}>
           {!onDownloadPage && (
-            <AppButton kind="download" size="sm" variant="primary" className={styles.cta} badge={false} />
+            <AppButton kind="download" size="sm" variant="primary" className={styles.cta} />
           )}
           <button
             type="button"
@@ -95,7 +95,7 @@ export function Nav() {
             </Link>
           ))}
           <div className={styles.mobileCtas}>
-            {!onDownloadPage && <AppButton kind="download" long badge={false} onClick={close} />}
+            {!onDownloadPage && <AppButton kind="download" long onClick={close} />}
           </div>
         </div>
       </nav>

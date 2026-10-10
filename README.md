@@ -30,11 +30,22 @@ hooks/usePageMeta.ts    titre, description et adresse canonique de chaque page
 Le site est publié sur **https://six-by-sevenai.onrender.com** (site statique Render).
 Toute la configuration est dans `render.yaml` : à chaque `git push` sur `main`, Render reconstruit et publie le site.
 
-## Le jour du lancement
+## Déployer ailleurs que sur Render
 
-- Renseigner `webUrl` et `downloadUrl` dans `src/content/site.ts` : tous les boutons « Télécharger » et « Version web » pointeront dessus.
-- Compléter les passages entre crochets dans `src/content/legal.ts` et faire relire les textes.
-- En cas de nom de domaine, remplacer `six-by-sevenai.onrender.com` dans `index.html` (aperçu des liens partagés), `public/sitemap.xml`, `public/robots.txt` et `src/hooks/usePageMeta.ts`.
+Le site fonctionne tel quel chez Netlify, Vercel et Cloudflare Pages (fichiers `public/_redirects`, `public/_headers`
+et `vercel.json`) : commande de build `npm run build`, dossier publié `dist`.
+
+- L'adresse du site (aperçu des liens partagés, `sitemap.xml`, `robots.txt`) est trouvée toute seule chez ces
+  hébergeurs. Avec un nom de domaine à soi, définir la variable `SITE_URL` au moment du build
+  (ex. `SITE_URL=https://six.app`) : tout le reste suit.
+- Google Analytics (identifiant dans `src/content/site.ts`) fonctionne sur n'importe quelle adresse, sans rien changer.
+  On peut seulement mettre à jour l'adresse du flux dans Analytics (Administration > Flux de données).
+
+## Liens de l'application
+
+- Renseigner `webUrl` et l'`url` de chaque plateforme dans `src/content/site.ts` : les boutons « Télécharger » et
+  « Version web » pointeront dessus.
+- Compléter les mentions légales (forme juridique, siège, responsable de la publication) dans `src/content/legal.ts`.
 
 ## Outils de développement
 

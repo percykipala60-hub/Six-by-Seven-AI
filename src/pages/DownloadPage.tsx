@@ -39,7 +39,7 @@ export function DownloadPage() {
             <Download size={18} aria-hidden="true" />
             {detected ? `${downloadPage.mainFor} ${detected.name}` : downloadPage.main}
           </a>
-          <p className={styles.release}>{downloadPage.release}</p>
+          <p className={styles.note}>{downloadPage.platforms}</p>
         </div>
       </header>
 
@@ -55,7 +55,7 @@ export function DownloadPage() {
             <li key={p.id} id={p.id} className={styles.card}>
               <h3>{p.name}</h3>
               <p className={styles.system}>{p.system}</p>
-              <p className={styles.status}>{p.url ? downloadPage.available : app.release}</p>
+              {p.url && <p className={styles.status}>{downloadPage.available}</p>}
               <div className={styles.cardActions}>
                 {p.url ? (
                   <a className={styles.pillDark} href={p.url} rel="noopener noreferrer">
@@ -64,7 +64,7 @@ export function DownloadPage() {
                   </a>
                 ) : (
                   // Avant la sortie : le même bouton, non cliquable (la date est écrite juste au-dessus).
-                  <span className={styles.pillDark} aria-disabled="true" title={app.release}>
+                  <span className={styles.pillDark} aria-disabled="true">
                     <Download size={16} aria-hidden="true" />
                     {downloadPage.download}
                   </span>
@@ -80,7 +80,7 @@ export function DownloadPage() {
           <div>
             <h3>{app.web.title}</h3>
             <p className={styles.system}>{app.web.text}</p>
-            <p className={styles.status}>{app.webUrl ? downloadPage.available : app.release}</p>
+            {app.webUrl && <p className={styles.status}>{downloadPage.available}</p>}
           </div>
           <div className={styles.cardActions}>
             {app.webUrl ? (
@@ -89,7 +89,7 @@ export function DownloadPage() {
                 <ArrowUpRight size={16} aria-hidden="true" />
               </a>
             ) : (
-              <span className={styles.pillDark} aria-disabled="true" title={app.release}>
+              <span className={styles.pillDark} aria-disabled="true">
                 {downloadPage.open}
                 <ArrowUpRight size={16} aria-hidden="true" />
               </span>

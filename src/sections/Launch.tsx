@@ -38,8 +38,7 @@ export function Launch() {
               </div>
               <h3>{copy.title}</h3>
               <p>{copy.text}</p>
-              <p className={styles.date}>{launch.date}</p>
-              <AppButton kind={kind} long variant="secondary" badge={false} className={styles.optionBtn} />
+              <AppButton kind={kind} long variant="secondary" className={styles.optionBtn} />
             </Reveal>
           ))}
         </div>

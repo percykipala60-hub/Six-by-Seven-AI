@@ -8,8 +8,8 @@ export const brand = {
   tagline: "L'IA propose. Tu décides.",
 };
 
-// Liens de l'application. À remplir le jour du lancement :
-// tant qu'ils sont vides, les boutons mènent à la section « Télécharger » avec la mention « Bientôt disponible ».
+// Liens de l'application, à renseigner dès qu'ils existent. Tant qu'ils sont vides, les boutons
+// « Télécharger » mènent à la page Télécharger, et les boutons de chaque plateforme ne sont pas cliquables.
 export type PlatformId = "ios" | "android" | "mac" | "windows";
 
 export const app = {
@@ -23,8 +23,6 @@ export const app = {
   ] satisfies { id: PlatformId; name: string; system: string; url: string }[],
   downloadPage: "/telecharger",
   sectionId: "telecharger",
-  release: "Bientôt disponible",
-  releaseShort: "Bientôt",
   download: {
     short: "Télécharger",
     long: "Télécharger l'application",
@@ -62,7 +60,7 @@ export const nav = {
 export const hero = {
   title: "L'IA propose. Tu décides.",
   lead: "Un message auquel tu ne sais pas quoi répondre ? Colle-le dans Six. Il te propose trois réponses, tu prends celle qui te ressemble et tu l'envoies toi-même.",
-  meta: "Bientôt disponible sur iPhone, Android, Mac, Windows et dans le navigateur.",
+  meta: "Sur iPhone, Android, Mac, Windows et dans le navigateur.",
 };
 
 // Exemple de masquage : chaque segment sensible a sa version originale et sa version masquée.
@@ -156,10 +154,6 @@ export const faq = {
       q: "Sur quels appareils fonctionne Six ?",
       a: "Sur iPhone, Android, Mac et Windows, et dans n'importe quel navigateur avec la version web. Toutes les versions font la même chose.",
     },
-    {
-      q: "Quand sort Six ?",
-      a: "Très bientôt, sur iPhone, Android, Mac, Windows et en version web. Suis Seven.AI sur les réseaux pour être prévenu du lancement.",
-    },
   ],
 };
 
@@ -230,16 +224,15 @@ export const downloadPage = {
   // Bouton principal en haut de la page : mène à la fiche de l'appareil du visiteur.
   main: "Télécharger",
   mainFor: "Télécharger pour",
-  release: "Bientôt disponible sur iPhone, Android, Mac, Windows et dans le navigateur.",
+  platforms: "Sur iPhone, Android, Mac, Windows et dans le navigateur.",
   help: "Une question sur la façon dont Six utilise l'IA ?",
   helpLink: "Lire notre page dédiée",
 };
 
 export const launch = {
-  title: "Six arrive bientôt.",
+  title: "Télécharger Six.",
   text: "Choisis comment tu veux l'utiliser. Les deux versions font exactement la même chose.",
-  date: "Bientôt disponible",
-  follow: "Suis Seven.AI pour être prévenu le jour du lancement.",
+  follow: "Suis Seven.AI pour ne rien manquer.",
 };
 
 export const footer = {
@@ -275,7 +268,7 @@ export const footer = {
       title: "Seven.AI",
       links: [
         { label: "À propos", href: "/#seven-ai" },
-        { label: "Lancement de Six", href: "/#telecharger" },
+        { label: "Télécharger Six", href: "/#telecharger" },
         { label: "Mentions légales", href: "/legal/mentions-legales" },
       ],
     },
