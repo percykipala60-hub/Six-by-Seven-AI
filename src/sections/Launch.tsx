@@ -1,15 +1,14 @@
 import { Globe, Smartphone } from "lucide-react";
-import { app, beta, launch, socials } from "../content/site";
+import { app, launch, socials } from "../content/site";
 import { SocialIcon } from "../components/brand/SocialIcon";
 import { AppButton } from "../components/ui/AppButton";
-import { BetaButton } from "../components/ui/BetaButton";
 import { WaveField } from "../components/ui/WaveField";
 import { Reveal } from "../components/ui/Reveal";
 import { Words } from "../components/ui/Words";
 import styles from "./Launch.module.css";
 
 // Section de téléchargement, dans un grand panneau bleu nuit parcouru de vagues (façon PS4) :
-// la bêta, l'application ou la version web, puis les réseaux.
+// l'application ou la version web, puis les réseaux.
 export function Launch() {
   const linked = socials.filter((s) => s.href);
   const options = [
@@ -28,15 +27,6 @@ export function Launch() {
           <p>
             <Words delay={4}>{launch.text}</Words>
           </p>
-        </Reveal>
-
-        <Reveal className={styles.beta}>
-          <div>
-            <p className={styles.betaTag}>{beta.tag}</p>
-            <h3>{beta.title}</h3>
-            <p>{beta.text}</p>
-          </div>
-          <BetaButton />
         </Reveal>
 
         <div className={styles.options}>

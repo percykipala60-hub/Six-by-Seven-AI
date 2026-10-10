@@ -10,7 +10,7 @@
     right: 12px;
     bottom: calc(12px + env(safe-area-inset-bottom, 0px));
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr;
     gap: 8px;
     padding: 8px;
     border-radius: 22px;

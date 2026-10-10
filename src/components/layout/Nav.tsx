@@ -4,7 +4,6 @@ import { Menu, X } from "lucide-react";
 import { app, nav } from "../../content/site";
 import { SixLogo } from "../brand/Logos";
 import { AppButton } from "../ui/AppButton";
-import { BetaButton } from "../ui/BetaButton";
 import styles from "./Nav.module.css";
 
 // Barre de navigation : transparente en haut de l'accueil, puis voilée de blanc au défilement.
@@ -72,7 +71,6 @@ export function Nav() {
         </nav>
 
         <div className={styles.actions}>
-          <BetaButton size="sm" variant="secondary" long={false} className={`${styles.cta} ${styles.ctaWeb}`} />
           {!onDownloadPage && (
             <AppButton kind="download" size="sm" variant="primary" className={styles.cta} badge={false} />
           )}
@@ -97,8 +95,7 @@ export function Nav() {
             </Link>
           ))}
           <div className={styles.mobileCtas}>
-            <BetaButton onClick={close} />
-            {!onDownloadPage && <AppButton kind="download" long variant="secondary" badge={false} onClick={close} />}
+            {!onDownloadPage && <AppButton kind="download" long badge={false} onClick={close} />}
           </div>
         </div>
       </nav>

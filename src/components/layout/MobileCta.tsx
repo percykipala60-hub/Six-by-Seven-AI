@@ -2,10 +2,9 @@ import { useEffect, useState } from "react";
 import { useLocation } from "react-router";
 import { app } from "../../content/site";
 import { AppButton } from "../ui/AppButton";
-import { BetaButton } from "../ui/BetaButton";
 import styles from "./MobileCta.module.css";
 
-// Sur téléphone, une fois le haut de l'accueil passé : les deux actions restent sous le pouce.
+// Sur téléphone, une fois le haut de l'accueil passé : le bouton « Télécharger » reste sous le pouce.
 // La barre s'efface quand la section de téléchargement ou le pied de page sont à l'écran.
 export function MobileCta() {
   const { pathname } = useLocation();
@@ -37,8 +36,7 @@ export function MobileCta() {
   const shown = past && !covered;
   return (
     <div className={styles.bar} data-shown={shown || undefined} aria-hidden={!shown} inert={!shown}>
-      <BetaButton long={false} className={styles.btn} />
-      <AppButton kind="download" variant="secondary" badge={false} className={styles.btn} />
+      <AppButton kind="download" long badge={false} className={styles.btn} />
     </div>
   );
 }

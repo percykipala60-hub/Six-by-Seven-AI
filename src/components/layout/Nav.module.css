@@ -137,12 +137,6 @@
   }
 }
 
-@media (max-width: 760px) {
-  .ctaWeb {
-    display: none;
-  }
-}
-
 @media (max-width: 560px) {
   .cta {
     display: none;

@@ -12,20 +12,6 @@ export const brand = {
 // tant qu'ils sont vides, les boutons mènent à la section « Télécharger » avec la date de sortie.
 export type PlatformId = "ios" | "android" | "mac" | "windows";
 
-// Version bêta, ouverte avant la sortie officielle.
-// Colle ici l'adresse de la bêta : tous les boutons « Essayer la bêta » pointeront dessus.
-export const beta = {
-  url: "",
-  tag: "Bêta",
-  label: "Essayer la bêta web",
-  short: "Bêta web",
-  open: "Ouvrir la bêta web",
-  finalRelease: "Dans ton navigateur, rien à installer. La version finale sort le 15 octobre.",
-  title: "La bêta web est ouverte",
-  text: "Essaie Six dès maintenant dans ton navigateur, avant la sortie officielle. Certaines fonctions peuvent encore changer, et tes retours nous aident à les améliorer.",
-  pending: "Lien de la bêta bientôt disponible",
-};
-
 export const app = {
   webUrl: "", // adresse de la version web, ex. https://app.exemple.com
   // Liens de téléchargement par plateforme : vides tant que les versions ne sont pas publiées.
@@ -76,7 +62,7 @@ export const nav = {
 export const hero = {
   title: "L'IA propose. Tu décides.",
   lead: "Un message auquel tu ne sais pas quoi répondre ? Colle-le dans Six. Il te propose trois réponses, tu prends celle qui te ressemble et tu l'envoies toi-même.",
-  meta: "Bêta ouverte dès maintenant. Version finale le 15 octobre sur iPhone, Android, Mac et Windows.",
+  meta: "Disponible le 15 octobre sur iPhone, Android, Mac, Windows et dans le navigateur.",
 };
 
 // Exemple de masquage : chaque segment sensible a sa version originale et sa version masquée.
@@ -154,7 +140,7 @@ export const faq = {
     },
     {
       q: "Quand sort Six ?",
-      a: "La version finale sort le 15 octobre. La bêta web est déjà ouverte : tu peux l'essayer dès maintenant dans ton navigateur.",
+      a: "Six sort le 15 octobre, sur iPhone, Android, Mac, Windows et en version web.",
     },
   ],
 };
@@ -223,6 +209,10 @@ export const downloadPage = {
   download: "Télécharger",
   open: "Ouvrir",
   available: "Disponible maintenant",
+  // Bouton principal en haut de la page : mène à la fiche de l'appareil du visiteur.
+  main: "Télécharger",
+  mainFor: "Télécharger pour",
+  release: "Disponible le 15 octobre sur iPhone, Android, Mac, Windows et dans le navigateur.",
   help: "Une question sur la façon dont Six utilise l'IA ?",
   helpLink: "Lire notre page dédiée",
 };
@@ -241,7 +231,6 @@ export const footer = {
       links: [
         { label: "Télécharger", href: "/telecharger" },
         { label: "Version web", href: "/telecharger#web" },
-        { label: "Bêta web", href: "/telecharger#beta" },
         { label: "Comment ça marche", href: "/#comment" },
       ],
     },

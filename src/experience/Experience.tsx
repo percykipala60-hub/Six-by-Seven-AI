@@ -4,7 +4,6 @@ import { experience } from "../content/experience";
 import { hero } from "../content/site";
 import { SixLogo } from "../components/brand/Logos";
 import { AppButton } from "../components/ui/AppButton";
-import { BetaButton } from "../components/ui/BetaButton";
 import { preloadStudioHdr } from "../components/phone3d/studioHdr";
 import { Words } from "../components/ui/Words";
 import type { LaptopId, PhoneId } from "./ExperienceScene";
@@ -167,8 +166,7 @@ function Intro() {
         <Words delay={5}>{hero.lead}</Words>
       </p>
       <div className={styles.introActions}>
-        <BetaButton />
-        <AppButton kind="download" variant="secondary" badge={false} />
+        <AppButton kind="download" />
       </div>
       <p className={styles.introMeta}>{hero.meta}</p>
       </div>

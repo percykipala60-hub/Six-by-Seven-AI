@@ -79,8 +79,7 @@ a.mainBtn:hover {
   scroll-margin-top: 88px;
 }
 
-.cards h2,
-.beta h2 {
+.cards h2 {
   font-size: clamp(34px, 4.4vw, 56px);
 }
 
@@ -206,44 +205,6 @@ a.pillDark:hover {
   height: 56px;
   color: var(--navy-950);
   stroke-width: 1.2;
-}
-
-/* ---------- Bêta ---------- */
-.beta {
-  display: grid;
-  gap: 24px;
-  margin-top: clamp(56px, 8vw, 96px);
-  padding-top: clamp(40px, 6vw, 64px);
-  border-top: 1px solid var(--line-strong);
-  scroll-margin-top: 88px;
-}
-
-@media (min-width: 760px) {
-  .beta {
-    grid-template-columns: 1fr auto;
-    align-items: end;
-    gap: 48px;
-  }
-}
-
-.betaTag {
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--acc);
-  margin-bottom: 8px;
-}
-
-.beta p:not(.betaTag) {
-  margin-top: 12px;
-  max-width: 36em;
-  color: var(--ink-2);
-}
-
-.pending {
-  font-size: 14px;
-  color: var(--mut);
 }
 
 .help {

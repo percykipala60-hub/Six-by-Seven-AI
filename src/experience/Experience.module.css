@@ -669,7 +669,7 @@
     0 0 28px var(--bg);
 }
 
-/* Téléphone peu haut : le petit logo (déjà dans la barre du haut) et la ligne « Bêta ouverte… »
+/* Téléphone peu haut : le petit logo (déjà dans la barre du haut) et la ligne de la date de sortie
    laissent leur place au cercle d'appareils et à l'invitation à défiler. */
 @media (max-aspect-ratio: 9/10) and (max-height: 760px) {
   .intro {

@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { ArrowUpRight, Download, Globe } from "lucide-react";
 import { Link } from "react-router";
-import { app, beta, downloadPage, type PlatformId } from "../content/site";
+import { app, downloadPage, type PlatformId } from "../content/site";
 import { DeviceShowcase } from "../components/phone3d/DeviceShowcase";
 import { usePageMeta } from "../hooks/usePageMeta";
 import styles from "./DownloadPage.module.css";
@@ -23,8 +23,9 @@ export function DownloadPage() {
 
   usePageMeta({ title: downloadPage.title, description: downloadPage.intro });
 
-  const betaHref = beta.url || "#beta";
-  const betaTarget = beta.url ? { target: "_blank", rel: "noopener noreferrer" } : {};
+  // Bouton principal : le lien de l'appareil du visiteur s'il est publié, sinon sa fiche plus bas.
+  const detected = app.platforms.find((p) => p.id === detectedId);
+  const mainHref = detected?.url || `#${detected?.id ?? "plateformes"}`;
 
   return (
     <div className={styles.page}>
@@ -34,12 +35,11 @@ export function DownloadPage() {
           <p className={styles.intro}>{downloadPage.intro}</p>
         </div>
         <div className={styles.primary}>
-          {/* Action principale : la bêta, seule version disponible avant la sortie. */}
-          <a className={styles.mainBtn} href={betaHref} {...betaTarget}>
-            {beta.open}
-            <ArrowUpRight size={18} aria-hidden="true" />
+          <a className={styles.mainBtn} href={mainHref}>
+            <Download size={18} aria-hidden="true" />
+            {detected ? `${downloadPage.mainFor} ${detected.name}` : downloadPage.main}
           </a>
-          <p className={styles.release}>{beta.finalRelease}</p>
+          <p className={styles.release}>{downloadPage.release}</p>
         </div>
       </header>
 
@@ -96,22 +96,6 @@ export function DownloadPage() {
             )}
           </div>
         </div>
-      </section>
-
-      <section id="beta" className={`container ${styles.beta}`}>
-        <div>
-          <p className={styles.betaTag}>{beta.tag}</p>
-          <h2>{beta.title}</h2>
-          <p>{beta.text}</p>
-        </div>
-        {beta.url ? (
-          <a className={styles.mainBtn} href={beta.url} target="_blank" rel="noopener noreferrer">
-            {beta.label}
-            <ArrowUpRight size={18} aria-hidden="true" />
-          </a>
-        ) : (
-          <span className={styles.pending}>{beta.pending}</span>
-        )}
       </section>
 
       <p className={`container ${styles.help}`}>
