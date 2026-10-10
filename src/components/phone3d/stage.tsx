@@ -278,14 +278,11 @@ export function addCssLayer(stage: Stage) {
 // que sa fenêtre (bande en haut, bas de l'écran caché). De temps en temps, on compare donc la place
 // réelle d'un écran (getBoundingClientRect) à celle calculée par la 3D, et on décale tout le calque des
 // interfaces de l'écart mesuré. Là où tout est déjà aligné, l'écart est nul et rien ne bouge.
-// Sur iPhone, Safari affiche ces interfaces un peu décalées verticalement, d'une valeur qui change (de 0
-// à environ 2 % de la hauteur selon la page, le défilement et la barre d'adresse) sans que la mise en
-// page le reflète. Un décalage fixe laissait donc une bande vide tantôt en haut, tantôt en bas. À la
-// place, l'interface est un peu plus grande que la fenêtre et légèrement remontée : elle la couvre pour
-// tout décalage de -0,15 % à +2,35 % (les valeurs observées vont de 0 à 2,2 %). Le surplus reste caché
-// derrière le cadre de l'appareil (environ 12 px sur un téléphone) : on ne l'agrandit pas davantage.
-const IOS_SCREEN_LIFT = 0.011;
-const IOS_SCREEN_OVERSCAN = 1.025;
+// Les anciennes versions de Safari (iPhone) affichaient ces interfaces environ 2 % trop bas ; on les
+// remontait alors de 2,2 %. Les versions récentes les placent correctement : la remontée laissait une
+// bande vide en bas des écrans de la page Télécharger (vidéo du 10 octobre 2026). La visite de l'accueil,
+// elle, en a toujours besoin : la correction ne s'applique plus qu'à elle (voir createScreenAligner).
+const IOS_TOUR_LIFT = 0.022;
 
 export function createScreenAligner() {
   const corr = { x: 0, y: 0 };
@@ -294,9 +291,19 @@ export function createScreenAligner() {
   const v = new THREE.Vector3();
   return (scene: THREE.Scene, camera: THREE.Camera, css: CSS3DRenderer, canvas: HTMLCanvasElement) => {
     const now = performance.now();
-    // iPhone : le décalage de Safari ne se voit pas dans la mise en page, ce recalage n'y verrait rien.
-    // La marge prévue dans createScreenAnchor s'en charge.
-    if (IOS) return;
+    // iPhone : dans la visite, Safari affiche les écrans environ 2 % trop bas, sans que sa mise en page le
+    // reflète (le recalage ci-dessous n'y verrait rien). On remonte donc une fois chaque écran de 2,2 %.
+    // La page Télécharger n'utilise pas ce recalage : ses écrans sont bien placés sans correction.
+    if (IOS) {
+      if (now - last < 300) return;
+      last = now;
+      scene.traverse((o) => {
+        if (!(o instanceof CSS3DObject) || o.userData.iosLift) return;
+        o.userData.iosLift = true;
+        o.position.y += parseFloat(o.element.style.height) * o.scale.y * IOS_TOUR_LIFT;
+      });
+      return;
+    }
     if (runs > 3 && now - last < 300) return;
     last = now;
     runs++;
@@ -371,8 +378,7 @@ export function createScreenAnchor({ el, scale, position, radius = 0 }: { el: HT
   const holeMesh = new THREE.Mesh(hole, HOLE);
   a.add(holeMesh);
   const obj = new CSS3DObject(el);
-  obj.scale.setScalar(IOS ? scale * IOS_SCREEN_OVERSCAN : scale);
-  if (IOS) obj.position.y = parseFloat(el.style.height) * scale * IOS_SCREEN_LIFT;
+  obj.scale.setScalar(scale);
   a.add(obj);
   const tmp = { n: new THREE.Vector3(), p: new THREE.Vector3(), q: new THREE.Quaternion(), s: new THREE.Vector3(), v: new THREE.Vector3() };
 
