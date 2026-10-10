@@ -6,17 +6,17 @@
   translate: 0 40px;
   scale: 0.9;
   transition:
-    opacity 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) var(--delay),
-    translate 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) var(--delay),
-    scale 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) var(--delay);
+    opacity 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) var(--delay),
+    translate 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) var(--delay),
+    scale 0.55s cubic-bezier(0.2, 0.8, 0.2, 1) var(--delay);
 }
 
 .reveal > :nth-child(2):not(:has([data-word])) {
-  transition-delay: calc(var(--delay) + 120ms);
+  transition-delay: calc(var(--delay) + 80ms);
 }
 
 .reveal > :nth-child(n + 3):not(:has([data-word])) {
-  transition-delay: calc(var(--delay) + 240ms);
+  transition-delay: calc(var(--delay) + 160ms);
 }
 
 .visible > :not(:has([data-word])) {

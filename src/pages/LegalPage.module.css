@@ -131,3 +131,7 @@
   font-weight: 600;
   border-left-color: var(--acc);
 }
+
+.action {
+  margin-top: 32px;
+}

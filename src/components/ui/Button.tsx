@@ -1,4 +1,4 @@
-import type { AnchorHTMLAttributes } from "react";
+import type { AnchorHTMLAttributes, ButtonHTMLAttributes } from "react";
 import { Link } from "react-router";
 import styles from "./Button.module.css";
 
@@ -13,4 +13,16 @@ export function ButtonLink({ variant = "primary", size = "md", className, href, 
   const classes = [styles.btn, styles[variant], size === "sm" && styles.sm, className].filter(Boolean).join(" ");
   if (href.startsWith("/")) return <Link to={href} className={classes} {...rest} />;
   return <a href={href} className={classes} {...rest} />;
+}
+
+// Même apparence, pour une action sur la page (pas de navigation).
+export function Button({
+  variant = "primary",
+  size = "md",
+  className,
+  type = "button",
+  ...rest
+}: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "secondary"; size?: "md" | "sm" }) {
+  const classes = [styles.btn, styles[variant], size === "sm" && styles.sm, className].filter(Boolean).join(" ");
+  return <button type={type} className={classes} {...rest} />;
 }

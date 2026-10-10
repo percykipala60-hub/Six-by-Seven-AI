@@ -106,9 +106,20 @@
   text-decoration: none;
 }
 
-.legal a:hover {
+.legal a:hover,
+.manage:hover {
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+
+/* « Gérer les cookies » : un bouton (il ouvre le panneau), présenté comme les liens voisins. */
+.manage {
+  padding: 11px 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: var(--ink);
+  cursor: pointer;
 }
 
 .locale {

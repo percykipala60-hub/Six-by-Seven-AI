@@ -1,5 +1,6 @@
 import { Link } from "react-router";
-import { footer, socials, type SocialId } from "../../content/site";
+import { cookies, footer, socials, type SocialId } from "../../content/site";
+import { openConsentPanel } from "../../consent/consent";
 import { SixLogo } from "../brand/Logos";
 import { LanguagePicker } from "./LanguagePicker";
 import { APP_PATHS, SOCIAL_PATHS } from "../phone3d/brandLogos";
@@ -66,6 +67,11 @@ export function Footer() {
                 <Link to={l.href}>{l.label}</Link>
               </li>
             ))}
+            <li>
+              <button type="button" className={styles.manage} onClick={openConsentPanel}>
+                {cookies.manage}
+              </button>
+            </li>
           </ul>
           <div className={styles.follow}>
             <span>{footer.follow}</span>

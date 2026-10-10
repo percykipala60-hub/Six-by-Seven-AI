@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import * as THREE from "three";
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { SVGLoader } from "three/examples/jsm/loaders/SVGLoader.js";
@@ -156,19 +155,17 @@ export function carveAsync(key: string, build: Build) {
 }
 
 /**
- * Volume creusé pour l'affichage : en attendant le calcul, renvoie le volume plein (`fallback`),
- * puis la version percée dès qu'elle est prête.
+ * Volume creusé pour l'affichage : le maillage montre d'abord le volume plein, puis reçoit la version
+ * percée dès qu'elle est prête (`onReady` : demander une nouvelle image). Renvoie de quoi annuler.
  */
-export function useCarved(key: string, fallback: THREE.BufferGeometry, build: Build) {
-  const [geometry, setGeometry] = useState<THREE.BufferGeometry | null>(null);
-  useEffect(() => {
-    let alive = true;
-    carveAsync(key, build).then((g) => alive && setGeometry(g));
-    return () => {
-      alive = false;
-    };
-    // `build` est recréée à chaque rendu ; la clé suffit à identifier le volume.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key]);
-  return geometry ?? fallback;
+export function carveInto(mesh: THREE.Mesh, key: string, build: Build, onReady?: () => void) {
+  let alive = true;
+  carveAsync(key, build).then((g) => {
+    if (!alive) return;
+    mesh.geometry = g;
+    onReady?.();
+  });
+  return () => {
+    alive = false;
+  };
 }

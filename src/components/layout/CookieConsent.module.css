@@ -1,0 +1,225 @@
+/* Bandeau en bas de l'écran : une carte posée sur la page, qui ne la bloque pas. */
+.banner {
+  position: fixed;
+  z-index: 60;
+  left: 16px;
+  right: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  max-width: 560px;
+  padding: 20px;
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  box-shadow: 0 18px 50px -12px rgb(14 21 38 / 0.28);
+  animation: rise 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes rise {
+  from {
+    transform: translateY(16px);
+    opacity: 0;
+  }
+}
+
+.banner h2,
+.panel h2 {
+  font-size: 18px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+}
+
+.banner p {
+  margin-top: 8px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+.banner a,
+.intro a {
+  color: var(--ink);
+  text-underline-offset: 3px;
+}
+
+/* « Tout refuser » et « Tout accepter » ont la même taille et la même place : refuser est aussi simple
+   qu'accepter. */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.actions button {
+  flex: 1 1 auto;
+  min-height: 44px;
+  padding: 10px 18px;
+  border-radius: var(--radius-pill);
+  font: 600 14px/1 var(--font-body);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.ghost {
+  background: transparent;
+  border: 1px solid var(--navy-950);
+  color: var(--navy-950);
+}
+
+.ghost:hover {
+  background: var(--bg-soft);
+}
+
+.solid {
+  background: var(--navy-950);
+  border: 1px solid var(--navy-950);
+  color: #fff;
+}
+
+.solid:hover {
+  background: var(--navy-700);
+}
+
+/* ---------- Panneau « Personnaliser » ---------- */
+
+.panel {
+  width: min(560px, calc(100vw - 32px));
+  max-height: calc(100svh - 32px);
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 30px 80px -20px rgb(14 21 38 / 0.4);
+}
+
+.panel::backdrop {
+  background: rgb(9 15 27 / 0.45);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.close {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin: -8px -8px -8px 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+}
+
+.close:hover {
+  background: var(--bg-soft);
+}
+
+.intro {
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.list {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+}
+
+.list li {
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+}
+
+.list p {
+  margin-top: 4px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--mut);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.name {
+  font-weight: 600;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.always {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--acc);
+}
+
+/* Interrupteur : une case à cocher stylée, donc accessible au clavier et aux lecteurs d'écran. */
+.switch {
+  appearance: none;
+  flex: none;
+  position: relative;
+  width: 46px;
+  height: 28px;
+  margin: 0;
+  border-radius: var(--radius-pill);
+  background: var(--line-strong);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.switch::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(14 21 38 / 0.25);
+  transition: transform 0.2s;
+}
+
+.switch:checked {
+  background: var(--acc);
+}
+
+.switch:checked::after {
+  transform: translateX(18px);
+}
+
+@media (max-width: 480px) {
+  .banner {
+    left: 10px;
+    right: 10px;
+    bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+    padding: 16px;
+  }
+
+  .actions button {
+    flex: 1 1 calc(50% - 8px);
+    padding-inline: 12px;
+  }
+
+  /* Bandeau : « Tout refuser » et « Tout accepter » côte à côte, « Personnaliser » en dessous. */
+  .bannerActions .ghost {
+    flex-basis: 100%;
+    order: 3;
+  }
+
+  .panel .actions .solid {
+    flex-basis: 100%;
+  }
+}

@@ -1,20 +1,19 @@
-import { useEffect } from "react";
 import { Link, useParams } from "react-router";
 import { ArrowLeft } from "lucide-react";
 import { legalMeta, legalPages } from "../content/legal";
+import { notFound } from "../content/site";
+import { openConsentPanel } from "../consent/consent";
+import { Button } from "../components/ui/Button";
 import { NotFoundPage } from "./NotFoundPage";
+import { usePageMeta } from "../hooks/usePageMeta";
 import styles from "./LegalPage.module.css";
 
 export function LegalPage() {
   const { slug } = useParams();
   const page = legalPages.find((p) => p.slug === slug);
 
-  useEffect(() => {
-    if (page) document.title = `${page.title} · Six by Seven.AI`;
-    return () => {
-      document.title = "Six by Seven.AI";
-    };
-  }, [page]);
+  // Adresse inconnue : mêmes réglages que la page 404 qui s'affiche alors.
+  usePageMeta(page ? { title: page.title, description: page.summary } : { title: notFound.title, noindex: true });
 
   if (!page) return <NotFoundPage />;
 
@@ -47,6 +46,11 @@ export function LegalPage() {
             )}
           </section>
         ))}
+        {page.action === "cookies" && (
+          <Button className={styles.action} onClick={openConsentPanel}>
+            {legalMeta.manageCookies}
+          </Button>
+        )}
       </article>
 
       <aside className={styles.aside}>

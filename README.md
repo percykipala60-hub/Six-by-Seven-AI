@@ -20,7 +20,9 @@ src/
   components/ui/        boutons, cadre de téléphone, apparition au défilement
   sections/             une section de l'accueil = un composant + son .module.css
   pages/                accueil, pages légales (/legal/:slug), page 404
-public/                 favicon, icônes d'application, image d'aperçu des liens (og-image.png)
+public/                 favicon, icônes d'application, image d'aperçu des liens (og-image.png), sitemap.xml, robots.txt
+theme/chameleon.ts      couleurs du site qui changent avec le temps (ambiances, durées, intensité)
+hooks/usePageMeta.ts    titre, description et adresse canonique de chaque page
 ```
 
 ## Mise en ligne (Render)
@@ -32,7 +34,7 @@ Toute la configuration est dans `render.yaml` : à chaque `git push` sur `main`,
 
 - Renseigner `webUrl` et `downloadUrl` dans `src/content/site.ts` : tous les boutons « Télécharger » et « Version web » pointeront dessus.
 - Compléter les passages entre crochets dans `src/content/legal.ts` et faire relire les textes.
-- En cas de nom de domaine, remplacer `six-by-sevenai.onrender.com` dans `index.html` (aperçu des liens partagés).
+- En cas de nom de domaine, remplacer `six-by-sevenai.onrender.com` dans `index.html` (aperçu des liens partagés), `public/sitemap.xml`, `public/robots.txt` et `src/hooks/usePageMeta.ts`.
 
 ## Outils de développement
 

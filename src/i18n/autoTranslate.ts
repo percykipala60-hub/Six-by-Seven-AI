@@ -3,6 +3,8 @@
 // dans le cookie que lit Google Traduction (« googtrans ») et on recharge la page : le script de Google
 // traduit alors tout le texte affiché, y compris ce qui apparaît ensuite (étapes du guide, écrans…).
 
+import { grantConsent, hasConsent, onConsentChange } from "../consent/consent";
+
 export const SOURCE_LANGUAGE = "fr";
 
 const COOKIE = "googtrans";
@@ -23,6 +25,8 @@ export const isTranslated = () => currentLanguage() !== SOURCE_LANGUAGE;
 
 // Enregistre la langue choisie puis recharge la page dans cette langue.
 export function setLanguage(code: string) {
+  // Choisir une autre langue, c'est demander la traduction par Google : on l'enregistre comme accord.
+  if (code !== SOURCE_LANGUAGE && !hasConsent("translation")) grantConsent("translation");
   const host = window.location.hostname;
   // Le cookie peut avoir été posé pour le domaine exact ou pour le domaine parent : on nettoie les deux.
   const domains = ["", `; domain=${host}`, `; domain=.${host}`];
@@ -82,7 +86,17 @@ declare global {
 
 // Au démarrage : si une autre langue que le français est choisie, on charge Google Traduction.
 export function startAutoTranslate() {
-  if (typeof window === "undefined" || !isTranslated()) return;
+  if (typeof window === "undefined") return;
+  // Traduction refusée (ou plus d'accord enregistré) : retour au français.
+  onConsentChange(() => {
+    if (isTranslated() && !hasConsent("translation")) setLanguage(SOURCE_LANGUAGE);
+  });
+  if (!isTranslated()) return;
+  if (!hasConsent("translation")) {
+    // La page est déjà en français tant que le script de Google n'est pas chargé : on efface simplement le choix.
+    document.cookie = `${COOKIE}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+    return;
+  }
   document.documentElement.dataset.translated = currentLanguage();
   protectReactFromTranslation();
   protectBrandNames();

@@ -3,6 +3,7 @@ import { Outlet, useLocation } from "react-router";
 import { Nav } from "./Nav";
 import { Footer } from "./Footer";
 import { MobileCta } from "./MobileCta";
+import { CookieConsent } from "./CookieConsent";
 import { WaveField } from "../ui/WaveField";
 import { restoreScrollAfterLanguage } from "../../i18n/autoTranslate";
 
@@ -48,6 +49,7 @@ export function Layout() {
       </main>
       <Footer />
       <MobileCta />
+      <CookieConsent />
     </>
   );
 }

@@ -1,10 +1,10 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useRef } from "react";
 import * as THREE from "three";
-import { Canvas, useThree } from "@react-three/fiber";
 import { DevicePhone } from "../components/phone3d/DevicePhone";
-import { LaptopModel, type LaptopKind } from "../components/phone3d/LaptopModel";
-import { PhoneModel } from "../components/phone3d/PhoneModel";
-import { CssLayer, DEG, Studio, createScreenElement } from "../components/phone3d/stage";
+import { createLaptop, type LaptopKind } from "../components/phone3d/LaptopModel";
+import { createPhone } from "../components/phone3d/PhoneModel";
+import { Stage, type StageOptions } from "../components/phone3d/engine";
+import { DEG, addCssLayer, addStudio, createScreenElement } from "../components/phone3d/stage";
 import type { Finish, Model } from "../components/phone/RealPhone";
 
 // Page temporaire de contrôle visuel : les dos de téléphone, de trois quarts, dans chaque coloris.
@@ -40,31 +40,55 @@ export function StudioPage() {
   );
 }
 
-function LaptopStudio({ kind, x, y, dist, focus }: { kind: LaptopKind; x: number; y: number; dist: number; focus: [number, number] }) {
-  const el = useMemo(() => {
-    const div = createScreenElement(1000, 667);
-    div.style.background = "#1b3a6b";
-    return div;
+// Scène de contrôle : crée la scène dans l'élément renvoyé, pose l'éclairage, puis appelle `build`.
+// Sans calque d'interfaces, l'image est simplement dessinée à chaque image.
+function useStudioStage(opts: StageOptions & { css?: boolean; lookAt?: [number, number, number] }, build: (stage: Stage) => () => void) {
+  const host = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const stage = new Stage(host.current!, opts);
+    if (opts.lookAt) stage.camera.lookAt(...opts.lookAt);
+    let alive = true;
+    let cleanup: (() => void) | undefined;
+    addStudio(stage).then(() => {
+      if (!alive) return;
+      if (opts.css) addCssLayer(stage);
+      else stage.onFrame(({ scene, camera }) => stage.renderer.render(scene, camera), 1);
+      cleanup = build(stage);
+    });
+    return () => {
+      alive = false;
+      cleanup?.();
+      stage.dispose();
+    };
+    // Page de contrôle : la scène est créée une fois, d'après l'adresse.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+  return host;
+}
+
+function LaptopStudio({ kind, x, y, dist, focus }: { kind: LaptopKind; x: number; y: number; dist: number; focus: [number, number] }) {
   // ?cam=x,y,z&look=x,y,z : caméra libre, en coordonnées de l'ordinateur (cm), pour les gros plans.
   const params = new URLSearchParams(window.location.search);
   const cam = params.get("cam")?.split(",").map(Number) as [number, number, number] | undefined;
   const look = (params.get("look")?.split(",").map(Number) ?? [0, 0, 0]) as [number, number, number];
-  return (
-    <div style={{ position: "relative", height: "100vh", background: "#f2f3f5" }}>
-      <Canvas
-        camera={{ position: cam ?? [focus[0], 4 + focus[1], dist], fov: cam ? 35 : 30, near: 0.5, far: 400 }}
-        gl={{ antialias: true, toneMapping: THREE.NeutralToneMapping }}
-        onCreated={({ camera }) => cam && camera.lookAt(...look)}
-      >
-        <Studio />
-        <CssLayer />
-        <group rotation={cam ? [0, 0, 0] : [x * DEG, y * DEG, 0]} position={cam ? [0, 0, 0] : [0, -5, 0]}>
-          <LaptopModel kind={kind} screenEl={el} />
-        </group>
-      </Canvas>
-    </div>
+  const host = useStudioStage(
+    { camera: { position: cam ?? [focus[0], 4 + focus[1], dist], fov: cam ? 35 : 30, near: 0.5, far: 400 }, toneMapping: THREE.NeutralToneMapping, css: true, lookAt: cam ? look : undefined },
+    (stage) => {
+      const el = createScreenElement(1000, 667);
+      el.style.background = "#1b3a6b";
+      const g = new THREE.Group();
+      if (!cam) {
+        g.rotation.set(x * DEG, y * DEG, 0);
+        g.position.set(0, -5, 0);
+      }
+      const laptop = createLaptop({ kind, screenEl: el });
+      g.add(laptop.group);
+      stage.scene.add(g);
+      stage.onFrame(laptop.frame);
+      return laptop.dispose;
+    },
   );
+  return <div ref={host} style={{ position: "relative", height: "100vh", background: "#f2f3f5" }} />;
 }
 
 // ?phone=pro|ultra&cam=x,y,z&look=x,y,z : gros plan libre sur un téléphone (cm), pour contrôler les objectifs.
@@ -72,18 +96,12 @@ function PhoneStudio({ model, finish }: { model: Model; finish: Finish }) {
   const params = new URLSearchParams(window.location.search);
   const cam = (params.get("cam")?.split(",").map(Number) ?? [0, 0, -30]) as [number, number, number];
   const look = (params.get("look")?.split(",").map(Number) ?? [0, 0, 0]) as [number, number, number];
-  return (
-    <div style={{ position: "relative", height: "100vh", background: "#ffffff" }}>
-      <Canvas
-        camera={{ position: cam, fov: 30, near: 0.5, far: 400 }}
-        gl={{ antialias: true, toneMapping: THREE.NeutralToneMapping }}
-        onCreated={({ camera }) => camera.lookAt(...look)}
-      >
-        <Studio />
-        <PhoneModel model={model} finish={finish} />
-      </Canvas>
-    </div>
-  );
+  const host = useStudioStage({ camera: { position: cam, fov: 30, near: 0.5, far: 400 }, toneMapping: THREE.NeutralToneMapping, lookAt: look }, (stage) => {
+    const phone = createPhone({ model, finish });
+    stage.scene.add(phone.group);
+    return phone.dispose;
+  });
+  return <div ref={host} style={{ position: "relative", height: "100vh", background: "#ffffff" }} />;
 }
 
 // --- Photos produit ---------------------------------------------------------------------------
@@ -138,58 +156,51 @@ function wallpaper(w: number, h: number, opts: { radius: number; clock?: boolean
   return tex;
 }
 
-function Snap({ name }: { name: string }) {
-  const { gl } = useThree();
-  useEffect(() => {
-    const id = window.setTimeout(async () => {
-      const data = gl.domElement.toDataURL("image/webp", 0.92);
-      await fetch("http://127.0.0.1:8799", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name, data }) });
-      document.title = `capturé ${name}`;
-    }, 2500);
-    return () => window.clearTimeout(id);
-  }, [gl, name]);
-  return null;
-}
-
 function CaptureStudio({ name }: { name: string }) {
-  const el = useMemo(() => createScreenElement(1000, 667), []);
-  const textures = useMemo(
-    () => ({
-      pro: wallpaper(552, 1200, { radius: 80, clock: true, notch: "island" }),
-      ultra: wallpaper(552, 1200, { radius: 40, clock: true, notch: "hole" }),
-      laptop: wallpaper(1400, 920, { radius: 12 }),
-    }),
-    [],
-  );
   const phone = name === "iphone" || name === "android";
   const model: Model = name === "iphone" ? "pro" : "ultra";
   const finish: Finish = name === "iphone" ? "silver" : "violet";
-  return (
-    <div style={{ width: 900, height: 900, margin: "90px auto 0", background: "transparent" }}>
-      <Canvas
-        dpr={1}
-        camera={{ position: phone ? [0, 0, 70] : [0, 16, 118], fov: phone ? 16 : 26 }}
-        gl={{ antialias: true, alpha: true, preserveDrawingBuffer: true, toneMapping: THREE.NeutralToneMapping }}
-        onCreated={({ camera }) => camera.lookAt(0, phone ? 0 : 1.5, 0)}
-      >
-        <Studio />
-        {phone ? (
-          <>
-            {/* Dos à gauche (objectifs visibles), face à droite : comme les visuels des fabricants. */}
-            <group position={[-2.6, 0.4, -2]} rotation={[0.05, Math.PI + 0.32, 0.04]}>
-              <PhoneModel model={model} finish={finish} />
-            </group>
-            <group position={[2.4, -0.4, 1]} rotation={[0.02, -0.28, -0.02]}>
-              <PhoneModel model={model} finish={finish} wallpaper={textures[model]} />
-            </group>
-          </>
-        ) : (
-          <group rotation={[0.32, -0.5, 0]} position={[0, -4, 0]}>
-            <LaptopModel kind={name as LaptopKind} screenEl={el} wallpaper={textures.laptop} />
-          </group>
-        )}
-        <Snap name={name} />
-      </Canvas>
-    </div>
+  const host = useStudioStage(
+    {
+      dpr: 1,
+      camera: { position: phone ? [0, 0, 70] : [0, 16, 118], fov: phone ? 16 : 26, near: 0.1, far: 1000 },
+      renderer: { preserveDrawingBuffer: true },
+      toneMapping: THREE.NeutralToneMapping,
+      lookAt: [0, phone ? 0 : 1.5, 0],
+    },
+    (stage) => {
+      const place = (o: THREE.Object3D, position: [number, number, number], rotation: [number, number, number]) => {
+        const g = new THREE.Group();
+        g.position.set(...position);
+        g.rotation.set(...rotation);
+        g.add(o);
+        stage.scene.add(g);
+      };
+      const disposers: (() => void)[] = [];
+      if (phone) {
+        // Dos à gauche (objectifs visibles), face à droite : comme les visuels des fabricants.
+        const screen = model === "pro" ? wallpaper(552, 1200, { radius: 80, clock: true, notch: "island" }) : wallpaper(552, 1200, { radius: 40, clock: true, notch: "hole" });
+        const back = createPhone({ model, finish });
+        const front = createPhone({ model, finish, wallpaper: screen });
+        place(back.group, [-2.6, 0.4, -2], [0.05, Math.PI + 0.32, 0.04]);
+        place(front.group, [2.4, -0.4, 1], [0.02, -0.28, -0.02]);
+        disposers.push(back.dispose, front.dispose);
+      } else {
+        const laptop = createLaptop({ kind: name as LaptopKind, screenEl: createScreenElement(1000, 667), wallpaper: wallpaper(1400, 920, { radius: 12 }) });
+        place(laptop.group, [0, -4, 0], [0.32, -0.5, 0]);
+        disposers.push(laptop.dispose);
+      }
+      // Envoie l'image au petit serveur local de capture, une fois les appareils percés.
+      const id = window.setTimeout(async () => {
+        const data = stage.renderer.domElement.toDataURL("image/webp", 0.92);
+        await fetch("http://127.0.0.1:8799", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name, data }) });
+        document.title = `capturé ${name}`;
+      }, 2500);
+      return () => {
+        window.clearTimeout(id);
+        disposers.forEach((d) => d());
+      };
+    },
   );
+  return <div ref={host} style={{ width: 900, height: 900, margin: "90px auto 0", background: "transparent" }} />;
 }

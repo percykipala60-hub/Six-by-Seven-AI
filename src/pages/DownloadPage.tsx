@@ -1,8 +1,9 @@
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import { ArrowUpRight, Download, Globe } from "lucide-react";
 import { Link } from "react-router";
 import { app, beta, downloadPage, type PlatformId } from "../content/site";
 import { DeviceShowcase } from "../components/phone3d/DeviceShowcase";
+import { usePageMeta } from "../hooks/usePageMeta";
 import styles from "./DownloadPage.module.css";
 
 // Devine l'appareil du visiteur pour lui proposer directement sa version.
@@ -20,12 +21,7 @@ function detectPlatform(): PlatformId | null {
 export function DownloadPage() {
   const detectedId = useMemo(detectPlatform, []);
 
-  useEffect(() => {
-    document.title = `${downloadPage.title} · Six by Seven.AI`;
-    return () => {
-      document.title = "Six by Seven.AI";
-    };
-  }, []);
+  usePageMeta({ title: downloadPage.title, description: downloadPage.intro });
 
   const betaHref = beta.url || "#beta";
   const betaTarget = beta.url ? { target: "_blank", rel: "noopener noreferrer" } : {};

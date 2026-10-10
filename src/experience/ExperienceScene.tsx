@@ -1,14 +1,13 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import * as THREE from "three";
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { CSS3DRenderer } from "three/examples/jsm/renderers/CSS3DRenderer.js";
 import { scenes } from "../content/phoneScenes";
-import { PhoneModel } from "../components/phone3d/PhoneModel";
-import { LaptopModel, LAPTOP_SCREEN_PX, LAPTOP_SPECS, type LaptopKind } from "../components/phone3d/LaptopModel";
+import { createPhone } from "../components/phone3d/PhoneModel";
+import { createLaptop, LAPTOP_SCREEN_PX, LAPTOP_SPECS, type LaptopKind } from "../components/phone3d/LaptopModel";
 import { SPECS } from "../components/phone3d/geometry";
 import { PHONE_SCREEN_PX, PhoneScreen, phonePxScale, phoneScreenRadiusPx } from "../components/phone3d/Phone3D";
-import { DEG, ScreenAnchor, Studio, createScreenAligner, createScreenElement } from "../components/phone3d/stage";
+import { Stage, type FrameState } from "../components/phone3d/engine";
+import { DEG, addStudio, createScreenAligner, createScreenAnchor, createScreenElement } from "../components/phone3d/stage";
 import { AppChat, SixScreen } from "../components/phone/Screens";
 import { DesktopScreen } from "../components/phone/DesktopScreen";
 import type { Model } from "../components/phone/RealPhone";
@@ -61,51 +60,80 @@ export default function ExperienceScene({ phone, laptop, active = true }: { phon
     }),
     [],
   );
-  const groups = useRef<Partial<Record<DeviceId, THREE.Group>>>({});
   // Sur téléphone : image calculée seulement quand la visite avance, sans mouvements décoratifs.
   const [light] = useState(isTouchDevice);
-  const markers = useRef<Partial<Record<DeviceId, THREE.Object3D>>>({});
+  const host = useRef<HTMLDivElement>(null);
+  const [stage, setStage] = useState<Stage | null>(null);
+
+  useEffect(() => {
+    const stage = new Stage(host.current!, {
+      style: { position: "absolute", inset: "0", pointerEvents: "none" },
+      // Sur téléphone, une image n'est calculée que lorsque la visite avance (voir plus bas) :
+      // à l'arrêt, la carte graphique se repose et tout le reste de la page reste fluide.
+      frameloop: light ? "demand" : "always",
+      // Haute définition partout : sur téléphone, l'image n'étant calculée que pendant les transitions,
+      // la netteté ne coûte presque rien (la basse définition donnait des appareils pixelisés).
+      dpr: [1, 2],
+      camera: { position: [0, 14, 90], fov: 35, near: 1, far: 500 },
+      toneMapping: THREE.NeutralToneMapping,
+      adaptive: !light,
+    });
+    let alive = true;
+    const cleanups: (() => void)[] = [];
+    addStudio(stage).then(() => {
+      if (!alive) return;
+      addLayers(stage);
+      // Rendu à la demande : une nouvelle image à chaque mouvement de la ligne de temps.
+      if (light) {
+        const redraw = () => stage.invalidate();
+        timeline.listeners.add(redraw);
+        cleanups.push(() => timeline.listeners.delete(redraw));
+      }
+      const invalidate = () => stage.invalidate();
+      const groups: Partial<Record<DeviceId, THREE.Group>> = {};
+      const markers: Partial<Record<DeviceId, THREE.Object3D>> = {};
+      // Mise en scène avant les écrans : ils lisent la position des appareils une fois celle-ci à jour.
+      stage.onFrame(createDirector({ phone, laptop, groups, markers, still: light }));
+      for (const id of ORDER) {
+        const g = new THREE.Group();
+        if (isPhone(id)) {
+          const device = createPhone({ model: MODEL[id], finish: id === "ios" ? "silver" : "violet", onChange: invalidate });
+          const anchor = createScreenAnchor({ el: els[id], scale: phonePxScale(MODEL[id]), radius: phoneScreenRadiusPx(MODEL[id]), position: [0, 0, SPECS[MODEL[id]].d / 2 + 0.01] });
+          g.add(device.group, anchor.group, diveMarker(id, markers));
+          stage.onFrame(anchor.frame);
+          cleanups.push(device.dispose);
+        } else {
+          // Centre visuel de l'ordinateur ouvert ramené à l'origine du groupe.
+          const inner = new THREE.Group();
+          inner.position.set(0, -11, 4);
+          const device = createLaptop({ kind: id, screenEl: els[id], lidAngle: LID_ANGLE, onChange: invalidate });
+          inner.add(device.group, diveMarker(id, markers));
+          g.add(inner);
+          stage.onFrame(device.frame);
+          cleanups.push(device.dispose);
+        }
+        groups[id] = g;
+        stage.scene.add(g);
+      }
+      setStage(stage);
+    });
+    return () => {
+      alive = false;
+      cleanups.forEach((c) => c());
+      setStage(null);
+      stage.dispose();
+    };
+    // Scène créée une fois : les appareils de la visite sont tirés au sort au chargement de la page.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Visite hors de l'écran : plus aucune image calculée (elle continuait à tourner pendant qu'on lisait
+  // les sections du bas, ce qui ralentissait toute la page).
+  useEffect(() => stage?.setFrameloop(!active ? "never" : light ? "demand" : "always"), [stage, active, light]);
 
   return (
     <>
-      <Canvas
-        // Sur téléphone, une image n'est calculée que lorsque la visite avance (voir Invalidator) :
-        // à l'arrêt, la carte graphique se repose et tout le reste de la page reste fluide.
-        frameloop={!active ? "never" : light ? "demand" : "always"}
-        // Haute définition partout : sur téléphone, l'image n'étant calculée que pendant les transitions,
-        // la netteté ne coûte presque rien (la basse définition donnait des appareils pixelisés).
-        dpr={[1, 2]}
-        style={{ position: "absolute", inset: 0, pointerEvents: "none" }}
-        camera={{ position: [0, 14, 90], fov: 35, near: 1, far: 500 }}
-        gl={{ antialias: true, alpha: true, toneMapping: THREE.NeutralToneMapping, powerPreference: "high-performance" }}
-      >
-        <Studio />
-        <Layers />
-        {light && <Invalidator />}
-        <Director phone={phone} laptop={laptop} groups={groups} markers={markers} still={light} />
-        {ORDER.map((id) => (
-          <group key={id} ref={(g) => void (g ? (groups.current[id] = g) : delete groups.current[id])}>
-            {isPhone(id) ? (
-              <>
-                <PhoneModel model={MODEL[id]} finish={id === "ios" ? "silver" : "violet"} />
-                <ScreenAnchor
-                  el={els[id]}
-                  scale={phonePxScale(MODEL[id])}
-                  radius={phoneScreenRadiusPx(MODEL[id])}
-                  position={[0, 0, SPECS[MODEL[id]].d / 2 + 0.01]}
-                />
-                <DiveMarker id={id} markers={markers} />
-              </>
-            ) : (
-              // Centre visuel de l'ordinateur ouvert ramené à l'origine du groupe.
-              <group position={[0, -11, 4]}>
-                <LaptopModel kind={id} screenEl={els[id]} lidAngle={LID_ANGLE} />
-                <DiveMarker id={id} markers={markers} />
-              </group>
-            )}
-          </group>
-        ))}
-      </Canvas>
+      <div ref={host} style={{ display: "contents" }} />
 
       <ChosenPhoneScreen id={phone} el={els[phone]} />
       {createPortal(
@@ -134,46 +162,36 @@ function ChosenPhoneScreen({ id, el }: { id: PhoneId; el: HTMLDivElement }) {
 }
 
 // Point visé par la caméra quand elle entre dans l'écran, posé sur la dalle (normale vers l'extérieur).
-function DiveMarker({ id, markers }: { id: DeviceId; markers: RefObject<Partial<Record<DeviceId, THREE.Object3D>>> }) {
-  const ref = (o: THREE.Object3D | null) => void (o ? (markers.current[id] = o) : delete markers.current[id]);
+function diveMarker(id: DeviceId, markers: Partial<Record<DeviceId, THREE.Object3D>>) {
   const dive = DIVE_PX[id];
+  const marker = new THREE.Object3D();
+  markers[id] = marker;
   if (isPhone(id)) {
     const s = phonePxScale(MODEL[id]);
-    return <object3D ref={ref} position={[dive.x * s, -dive.y * s, SPECS[MODEL[id]].d / 2 + 0.01]} />;
+    marker.position.set(dive.x * s, -dive.y * s, SPECS[MODEL[id]].d / 2 + 0.01);
+    return marker;
   }
   const spec = LAPTOP_SPECS[id];
   const s = spec.disp.w / LAPTOP_SCREEN_PX[id].w;
   const tilt = (LID_ANGLE - 90) * DEG;
   // Même pivot que le capot dans LaptopModel : la charnière, à l'arrière de la base.
-  return (
-    <group position={[0, spec.h + 0.2, -spec.d / 2 + spec.hingeInset]} rotation={[-tilt, 0, 0]}>
-      <object3D ref={ref} position={[dive.x * s, spec.disp.bottom + spec.disp.h / 2 - dive.y * s, 0.03]} />
-    </group>
-  );
+  const hinge = new THREE.Group();
+  hinge.position.set(0, spec.h + 0.2, -spec.d / 2 + spec.hingeInset);
+  hinge.rotation.set(-tilt, 0, 0);
+  marker.position.set(dive.x * s, spec.disp.bottom + spec.disp.h / 2 - dive.y * s, 0.03);
+  hinge.add(marker);
+  return hinge;
 }
 
 // Image 3D puis interfaces (CSS 3D) dessinées ensemble à chaque image ; rien n'est dessiné
 // quand un guide recouvre toute la scène.
-function Layers() {
-  const { scene, camera, size, gl } = useThree();
-  const css = useMemo(() => {
-    const r = new CSS3DRenderer();
-    // Sous l'image 3D, visible à travers les fenêtres des écrans (voir CssLayer dans stage.tsx).
-    Object.assign(r.domElement.style, { position: "absolute", inset: "0", pointerEvents: "none", zIndex: "0" });
-    return r;
-  }, []);
-
-  useEffect(() => {
-    const canvas = gl.domElement;
-    Object.assign(canvas.style, { position: "relative", zIndex: "1" });
-    canvas.parentElement?.insertBefore(css.domElement, canvas);
-    return () => css.domElement.remove();
-  }, [gl, css]);
-  useEffect(() => css.setSize(size.width, size.height), [css, size]);
+function addLayers(stage: Stage) {
+  // Sous l'image 3D, visible à travers les fenêtres des écrans (voir addCssLayer dans stage.tsx).
+  const css = stage.addCssLayer();
+  const gl = stage.renderer;
   // Recale les écrans sur les appareils si le navigateur les affiche décalés (voir stage.tsx).
-  const align = useMemo(createScreenAligner, []);
-
-  useFrame(() => {
+  const align = createScreenAligner();
+  stage.onFrame(({ scene, camera }) => {
     const covered = coveredAt(timeline.p);
     // Opacité (et non visibility) : les écrans posés sur les appareils règlent eux-mêmes leur
     // visibility et resteraient visibles à travers le fond transparent du guide.
@@ -187,21 +205,6 @@ function Layers() {
     css.render(scene, camera);
     align(scene, camera, css, gl.domElement);
   }, 1);
-  return null;
-}
-
-// Demande une nouvelle image à chaque mouvement de la ligne de temps (mode « à la demande »).
-function Invalidator() {
-  const invalidate = useThree((s) => s.invalidate);
-  useEffect(() => {
-    const redraw = () => invalidate();
-    timeline.listeners.add(redraw);
-    invalidate();
-    return () => {
-      timeline.listeners.delete(redraw);
-    };
-  }, [invalidate]);
-  return null;
 }
 
 type DirectorProps = {
@@ -209,53 +212,40 @@ type DirectorProps = {
   still?: boolean;
   phone: PhoneId;
   laptop: LaptopId;
-  groups: RefObject<Partial<Record<DeviceId, THREE.Group>>>;
-  markers: RefObject<Partial<Record<DeviceId, THREE.Object3D>>>;
+  groups: Partial<Record<DeviceId, THREE.Group>>;
+  markers: Partial<Record<DeviceId, THREE.Object3D>>;
 };
 
 // Mise en scène : rotation du cercle, appareil qui s'avance, et trajet de la caméra, tout dérivé du défilement.
-function Director({ phone, laptop, groups, markers, still: calm = false }: DirectorProps) {
-  const { camera, size } = useThree();
-  const cam = camera as THREE.PerspectiveCamera;
-  const tmp = useMemo(
-    () => ({
-      a: { pos: new THREE.Vector3(), target: new THREE.Vector3() } as Shot,
-      b: { pos: new THREE.Vector3(), target: new THREE.Vector3() } as Shot,
-      v: new THREE.Vector3(),
-      q: new THREE.Quaternion(),
-      n: new THREE.Vector3(),
-    }),
-    [],
-  );
+function createDirector({ phone, laptop, groups, markers, still: calm = false }: DirectorProps) {
+  const tmp = {
+    a: { pos: new THREE.Vector3(), target: new THREE.Vector3() } as Shot,
+    b: { pos: new THREE.Vector3(), target: new THREE.Vector3() } as Shot,
+    v: new THREE.Vector3(),
+    q: new THREE.Quaternion(),
+    n: new THREE.Vector3(),
+  };
 
   // Angles du cercle qui amènent le téléphone, puis l'ordinateur, face à la caméra.
   const thetaPhone = -ANGLE[phone];
   const thetaLaptop = thetaPhone + shortest(-ANGLE[laptop] - thetaPhone);
 
-  const theta = useMemo(
-    () =>
-      keyframes([
-        [0, thetaPhone + Math.PI * 1.5],
-        [T.phoneFront[1], thetaPhone],
-        [T.phoneExit[0] + 0.7, thetaPhone],
-        [T.laptopFront[1], thetaLaptop],
-        [T.laptopExit[0] + 0.7, thetaLaptop],
-        [T.total, thetaLaptop - Math.PI],
-      ]),
-    [thetaPhone, thetaLaptop],
-  );
-  const focusPhone = useMemo(
-    () => keyframes([[T.phoneFront[0], 0], [T.phoneFront[1], 1], [T.phoneExit[0] + 0.7, 1], [T.phoneExit[1], 0]]),
-    [],
-  );
-  const focusLaptop = useMemo(
-    () => keyframes([[T.laptopFront[0], 0], [T.laptopFront[1], 1], [T.laptopExit[0] + 0.7, 1], [T.laptopExit[1], 0]]),
-    [],
-  );
+  const theta = keyframes([
+    // Le téléphone choisi est déjà face à la caméra au départ : la première transition ne fait que
+    // l'avancer, sans faire tourner le cercle (trop de mouvement à la fois, elle saccadait).
+    [0, thetaPhone],
+    [T.phoneFront[1], thetaPhone],
+    [T.phoneExit[0] + 0.7, thetaPhone],
+    [T.laptopFront[1], thetaLaptop],
+    [T.laptopExit[0] + 0.7, thetaLaptop],
+    [T.total, thetaLaptop - Math.PI],
+  ]);
+  const focusPhone = keyframes([[T.phoneFront[0], 0], [T.phoneFront[1], 1], [T.phoneExit[0] + 0.7, 1], [T.phoneExit[1], 0]]);
+  const focusLaptop = keyframes([[T.laptopFront[0], 0], [T.laptopFront[1], 1], [T.laptopExit[0] + 0.7, 1], [T.laptopExit[1], 0]]);
 
-  useFrame((state) => {
+  return ({ camera: cam, size, time }: FrameState) => {
     const p = timeline.p;
-    const t = state.clock.elapsedTime;
+    const t = time;
     const aspect = size.width / Math.max(size.height, 1);
     const portrait = aspect < 0.9;
     const R = portrait ? 19 : 26;
@@ -271,7 +261,7 @@ function Director({ phone, laptop, groups, markers, still: calm = false }: Direc
     );
 
     for (const id of ORDER) {
-      const g = groups.current[id];
+      const g = groups[id];
       if (!g) continue;
       const f = id === phone ? focusPhone(p) : id === laptop ? focusLaptop(p) : 0;
       const othersFocus = Math.max(focusPhone(p), focusLaptop(p)) * (f > 0 ? 0 : 1);
@@ -315,7 +305,7 @@ function Director({ phone, laptop, groups, markers, still: calm = false }: Direc
       out.pos.y += lift;
     };
     const hero = (id: DeviceId, out: Shot) => {
-      const g = groups.current[id]!;
+      const g = groups[id]!;
       const phoneish = isPhone(id);
       // Cadre : le téléphone occupe ~70 % de la hauteur, l'ordinateur la moitié de la largeur (un peu plus sur téléphone).
       // Sur téléphone, l'appareil tient entre la barre du haut du site et la légende du bas : il occupe
@@ -331,8 +321,8 @@ function Director({ phone, laptop, groups, markers, still: calm = false }: Direc
       out.pos.set(0, 0.16, 1).normalize().multiplyScalar(dist).add(out.target);
     };
     const dive = (id: DeviceId, out: Shot) => {
-      const m = markers.current[id]!;
-      const g = groups.current[id]!;
+      const m = markers[id]!;
+      const g = groups[id]!;
       m.getWorldPosition(out.target);
       m.getWorldQuaternion(tmp.q);
       tmp.n.set(0, 0, 1).applyQuaternion(tmp.q);
@@ -383,9 +373,7 @@ function Director({ phone, laptop, groups, markers, still: calm = false }: Direc
     cam.near = Math.min(Math.max(d * 0.25, 0.2), 10);
     cam.far = d + 160;
     cam.updateProjectionMatrix();
-  });
-
-  return null;
+  };
 }
 
 // Interpolation par paliers : valeur en fonction de p, adoucie entre deux paliers.

@@ -152,6 +152,9 @@ export function useTimelineDriver(sectionRef: RefObject<HTMLElement | null>) {
     ro.observe(document.body);
     window.addEventListener("resize", remeasure);
     if (isReturnVisit()) timeline.target = savedPosition() ?? 0;
+    // Visite hors de l'écran : la boucle s'arrête (elle tournait 60 fois par seconde pour rien pendant
+    // qu'on lisait le bas de la page). Les étapes ne changent que lorsque la visite est à l'écran.
+    let onScreen = true;
     const tick = (now: number) => {
       const dt = Math.min((now - last) / 1000, 0.1);
       last = now;
@@ -162,13 +165,22 @@ export function useTimelineDriver(sectionRef: RefObject<HTMLElement | null>) {
       const changed = Math.abs(next - timeline.p) > 1e-5;
       timeline.p = Math.abs(timeline.target - next) < 1e-4 ? timeline.target : next;
       if (changed) timeline.listeners.forEach((l) => l());
-      raf = requestAnimationFrame(tick);
+      raf = onScreen ? requestAnimationFrame(tick) : 0;
     };
+    const io = new IntersectionObserver(([e]) => {
+      onScreen = e.isIntersecting;
+      if (onScreen && !raf) {
+        last = performance.now();
+        raf = requestAnimationFrame(tick);
+      }
+    });
+    io.observe(el);
     timeline.p = timeline.target;
     timeline.listeners.forEach((l) => l());
     raf = requestAnimationFrame(tick);
     return () => {
       cancelAnimationFrame(raf);
+      io.disconnect();
       ro.disconnect();
       window.removeEventListener("resize", remeasure);
     };
@@ -239,8 +251,10 @@ export function useStepScroll(sectionRef: RefObject<HTMLElement | null>) {
       // Sur téléphone, tout est plus court : les longues transitions y donnent une impression de lenteur.
       const touch = isTouchDevice();
       if (reduced) return 0;
-      if (camera) return touch ? Math.min(1900, 900 + dist * 380) : Math.min(3400, 1500 + dist * 650);
-      return touch ? Math.min(900, 450 + dist * 260) : Math.min(1400, 650 + dist * 380);
+      // Première transition (de l'accueil au téléphone, dans un sens ou dans l'autre) : courte et directe.
+      if (hi <= STOPS[1] + 0.02) return touch ? 860 : 1210;
+      if (camera) return touch ? Math.min(1250, 600 + dist * 250) : Math.min(2200, 950 + dist * 420);
+      return touch ? Math.min(600, 300 + dist * 170) : Math.min(900, 420 + dist * 250);
     };
 
     const finish = () => {
@@ -261,7 +275,7 @@ export function useStepScroll(sectionRef: RefObject<HTMLElement | null>) {
         // Sortie : la page défile pour de vrai jusqu'à la section suivante (la visite garde sa dernière étape).
         const from = window.scrollY;
         const target = geom.top + geom.height;
-        const d = reduced ? 0 : isTouchDevice() ? 900 : 1100;
+        const d = reduced ? 0 : isTouchDevice() ? 600 : 700;
         const step = (now: number) => {
           const t = d ? Math.min(1, (now - start) / d) : 1;
           window.scrollTo({ top: from + (target - from) * easeInOutSine(t), behavior: "instant" });

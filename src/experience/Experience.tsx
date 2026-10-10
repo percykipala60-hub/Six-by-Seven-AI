@@ -5,6 +5,7 @@ import { hero } from "../content/site";
 import { SixLogo } from "../components/brand/Logos";
 import { AppButton } from "../components/ui/AppButton";
 import { BetaButton } from "../components/ui/BetaButton";
+import { preloadStudioHdr } from "../components/phone3d/studioHdr";
 import { Words } from "../components/ui/Words";
 import type { LaptopId, PhoneId } from "./ExperienceScene";
 import { DesktopGuide, PhoneGuide } from "./Guides";
@@ -16,6 +17,7 @@ import styles from "./Experience.module.css";
 // temps que le reste, au lieu d'attendre que la page soit affichée : les appareils apparaissent plus tôt.
 const sceneModule = import("./ExperienceScene");
 const ExperienceScene = lazy(() => sceneModule);
+preloadStudioHdr();
 
 const hasWebGL = () => {
   try {
@@ -46,12 +48,20 @@ export function Experience() {
   useTimelineDriver(section);
   // La visite est-elle à l'écran ? Sinon, la 3D se met en pause.
   const [onScreen, setOnScreen] = useState(true);
+  // Loin de l'écran (à plus d'un écran et demi) : la 3D est retirée de la page, ce qui libère sa mémoire
+  // (modèles, textures, contexte graphique). Elle revient avant qu'on ne remonte jusqu'à elle.
+  const [near, setNear] = useState(true);
   useEffect(() => {
     const el = section.current;
     if (!el) return;
     const io = new IntersectionObserver(([e]) => setOnScreen(e.isIntersecting));
+    const far = new IntersectionObserver(([e]) => setNear(e.isIntersecting), { rootMargin: "150% 0px" });
     io.observe(el);
-    return () => io.disconnect();
+    far.observe(el);
+    return () => {
+      io.disconnect();
+      far.disconnect();
+    };
   }, []);
   useStepScroll(section);
   // Liens du menu « Comment ça marche » (#comment) et « Arnaques » (#securite) : la visite joue la
@@ -86,7 +96,7 @@ export function Experience() {
       <div id={experience.scamAnchor} className={styles.anchor} />
       <div className={styles.stage}>
         <div className={styles.backdrop} aria-hidden="true" />
-        {webgl && (
+        {webgl && near && (
           <Suspense fallback={null}>
             <ExperienceScene phone={devices.phone} laptop={devices.laptop} active={onScreen} />
           </Suspense>

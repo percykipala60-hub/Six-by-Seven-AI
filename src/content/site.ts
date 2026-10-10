@@ -103,12 +103,12 @@ export const security = {
 export const privacy = {
   id: "confidentialite",
   title: "Tes conversations restent les tiennes.",
-  text: "Avant d'envoyer quoi que ce soit à l'IA, Six remplace les informations personnelles. Les vraies sont remises à leur place dans la réponse, sur notre serveur. Ensuite, la conversation est effacée.",
+  text: "Avant d'envoyer quoi que ce soit à l'IA, Six remplace les informations personnelles. Les vraies sont remises à leur place dans la réponse, sur notre serveur. Tes données servent à faire marcher Six et à ne rien perdre, jamais à autre chose.",
   points: [
-    { title: "Rien n'est conservé", text: "Seuls ton compte et ton quota d'utilisation sont enregistrés." },
+    { title: "Jamais vendues", text: "Tes données ne sont ni vendues ni utilisées pour entraîner l'IA. Elles servent à faire fonctionner ton compte." },
+    { title: "Sauvegardées pour ne rien perdre", text: "Ton compte et tes données sont sauvegardés, pour être restaurés en cas de panne." },
     { title: "Les captures restent sur ton téléphone", text: "Le texte est lu sur l'appareil. L'image n'est jamais envoyée." },
-    { title: "Sept types d'informations masquées", text: "Noms, prénoms, numéros, codes, comptes, adresses et pseudos." },
-    { title: "Tu as le dernier mot", text: "Le masquage n'est pas parfait. Si un nom passe, tu le masques toi-même avant l'envoi." },
+    { title: "Sept types d'informations masquées", text: "Noms, prénoms, numéros, codes, comptes, adresses et pseudos. Si un nom passe, tu le masques toi-même." },
   ],
 };
 
@@ -142,7 +142,7 @@ export const faq = {
     },
     {
       q: "Que deviennent mes données ?",
-      a: "Avant l'analyse, les noms, numéros, codes et adresses sont remplacés. La conversation est effacée une fois la réponse prête. Seuls ton compte et ton quota d'utilisation sont enregistrés.",
+      a: "Avant l'analyse, les noms, numéros, codes et adresses sont remplacés. Tes données sont enregistrées et sauvegardées pour faire fonctionner ton compte et ne rien perdre en cas de panne. Elles ne sont jamais vendues ni utilisées pour entraîner l'IA, et tu peux demander leur suppression à tout moment.",
     },
     {
       q: "Faut-il une bonne connexion ?",
@@ -157,6 +157,61 @@ export const faq = {
       a: "La version finale sort le 15 octobre. La bêta web est déjà ouverte : tu peux l'essayer dès maintenant dans ton navigateur.",
     },
   ],
+};
+
+// Mesure d'audience : identifiant de mesure Google Analytics 4 (« G-… »), visible dans Analytics sous
+// Administration > Flux de données > le flux du site. Vide : aucune mesure.
+export const analytics = {
+  gaMeasurementId: "G-8PXSQH45JG",
+};
+
+// Bandeau et panneau de consentement aux cookies.
+export const cookies = {
+  title: "Tes choix sur les cookies",
+  text: "Nous utilisons des cookies nécessaires au site. Avec ton accord, nous mesurons aussi l'audience et activons Google Traduction si tu changes de langue. Tu peux changer d'avis à tout moment, en bas de page.",
+  policy: "Politique cookies",
+  policyHref: "/legal/cookies",
+  refuseAll: "Tout refuser",
+  acceptAll: "Tout accepter",
+  customize: "Personnaliser",
+  save: "Enregistrer mes choix",
+  close: "Fermer",
+  panelTitle: "Gérer mes cookies",
+  panelIntro: "Choisis ce que tu autorises. Les cookies nécessaires ne peuvent pas être désactivés : sans eux, le site ne fonctionne pas correctement.",
+  alwaysOn: "Toujours actifs",
+  manage: "Gérer les cookies",
+  categories: [
+    {
+      id: "necessary",
+      title: "Nécessaires",
+      text: "Retenir tes choix de cookies, la langue du site et l'étape atteinte dans la visite animée. Rien n'est utilisé pour te suivre.",
+    },
+    {
+      id: "audience",
+      title: "Mesure d'audience",
+      text: "Compter les visites et les pages consultées avec Google Analytics, pour savoir ce qui est utile et améliorer le site. Aucune donnée n'est utilisée pour de la publicité.",
+    },
+    {
+      id: "translation",
+      title: "Traduction automatique",
+      text: "Quand tu choisis une autre langue que le français, la page est traduite par Google Traduction, qui peut alors déposer ses propres cookies. Sans ton accord, le site reste en français.",
+    },
+  ] as const,
+};
+
+// Page introuvable (404).
+export const notFound = {
+  code: "404",
+  title: "Cette page s'est perdue en route.",
+  text: "L'adresse est peut-être mal écrite, ou la page a changé de place. Voici où tu voulais sans doute aller.",
+  home: "Retour à l'accueil",
+  links: [
+    { label: "Comment ça marche", href: "/#comment" },
+    { label: "Télécharger Six", href: "/telecharger" },
+    { label: "Questions fréquentes", href: "/#questions" },
+    { label: "Politique de confidentialité", href: "/legal/politique-confidentialite" },
+  ],
+  contact: "Toujours perdu ? Écris-nous :",
 };
 
 // Page « Télécharger ».
@@ -222,6 +277,7 @@ export const footer = {
     { label: "Conditions d'utilisation", href: "/legal/conditions-utilisation" },
     { label: "Confidentialité", href: "/legal/politique-confidentialite" },
     { label: "Utilisation de l'IA", href: "/legal/utilisation-ia" },
+    { label: "Cookies", href: "/legal/cookies" },
     { label: "Mentions légales", href: "/legal/mentions-legales" },
   ],
   // Choix de la langue : le site est écrit en français, les autres langues sont traduites

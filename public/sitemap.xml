@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Plan du site pour les moteurs de recherche. À mettre à jour si une page est ajoutée,
+     et à changer d'adresse si le site passe sur un nom de domaine (comme dans index.html). -->
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>https://six-by-sevenai.onrender.com/</loc><lastmod>2026-10-10</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://six-by-sevenai.onrender.com/telecharger</loc><lastmod>2026-10-10</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://six-by-sevenai.onrender.com/legal/conditions-utilisation</loc><lastmod>2026-10-10</lastmod><changefreq>monthly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://six-by-sevenai.onrender.com/legal/politique-confidentialite</loc><lastmod>2026-10-10</lastmod><changefreq>monthly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://six-by-sevenai.onrender.com/legal/cookies</loc><lastmod>2026-10-10</lastmod><changefreq>monthly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://six-by-sevenai.onrender.com/legal/mentions-legales</loc><lastmod>2026-10-10</lastmod><changefreq>monthly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://six-by-sevenai.onrender.com/legal/utilisation-ia</loc><lastmod>2026-10-10</lastmod><changefreq>monthly</changefreq><priority>0.3</priority></url>
+</urlset>

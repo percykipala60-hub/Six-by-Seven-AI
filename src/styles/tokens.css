@@ -12,16 +12,18 @@
   --brand-white: #f2f5fa;
 
   /* Thème clair (pages de contenu) : un beige sable léger plutôt que du blanc pur.
-     Il réchauffe le site sans le charger et s'accorde avec le bleu nuit et le bleu de la marque. */
-  --bg: #f7f2ea;
-  --bg-soft: #efe6d8;
-  --surface: #fffcf7;
+     Il réchauffe le site sans le charger et s'accorde avec le bleu nuit et le bleu de la marque.
+     Ce sont les valeurs de départ : le thème caméléon (theme/chameleon.ts) fait ensuite évoluer
+     --bg, --bg-soft, --surface, --line et --line-strong au fil du temps. */
+  --bg: #f4ecde;
+  --bg-soft: #ebe3d6;
+  --surface: #faf7f2;
   --ink: #0e1526;
   --ink-2: #3f4456;
-  --mut: #6e6b66;
-  --line: #e5dccd;
-  --line-strong: #d4c7b2;
-  --acc: #2d5fe6;
+  --mut: #55524c;
+  --line: #e5ded1;
+  --line-strong: #d7d0c4;
+  --acc: #1a4eda; /* un peu plus foncé que le bleu de la marque : texte lisible sur tous les fonds du thème caméléon */
   --acc-ink: #ffffff;
   --acc-soft: #e8eeff;
   --mask: #ffd84d;

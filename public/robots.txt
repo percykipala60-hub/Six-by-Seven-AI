@@ -1,0 +1,6 @@
+# Tout le site peut être exploré. Le studio 3D n'existe qu'en développement.
+User-agent: *
+Allow: /
+Disallow: /studio
+
+Sitemap: https://six-by-sevenai.onrender.com/sitemap.xml

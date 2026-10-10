@@ -1,14 +1,14 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import * as THREE from "three";
-import { Canvas, useFrame } from "@react-three/fiber";
 import type { PlatformId } from "../../content/site";
 import { scenes } from "../../content/phoneScenes";
-import { PhoneModel } from "./PhoneModel";
-import { LaptopModel, LAPTOP_SCREEN_PX, type LaptopKind } from "./LaptopModel";
+import { createPhone } from "./PhoneModel";
+import { createLaptop, LAPTOP_SCREEN_PX, type LaptopKind } from "./LaptopModel";
 import { SPECS } from "./geometry";
 import { DEFAULT_POSE, PHONE_SCREEN_PX, PhoneScreen, phonePxScale, phoneScreenRadiusPx } from "./Phone3D";
-import { CssLayer, DEG, Rig, ScreenAnchor, Studio, createScreenElement, useDragInput, useInView, type Pose, overscanFov, overscanStyle } from "./stage";
+import { Stage, type FrameState } from "./engine";
+import { DEG, addCssLayer, addStudio, createRig, createScreenAnchor, createScreenElement, useDragInput, useInView, type Pose, overscanFov, overscanStyle } from "./stage";
 import { SixScreen } from "../phone/Screens";
 import { DesktopScreen } from "../phone/DesktopScreen";
 import { ScreenZoom } from "../ui/ScreenZoom";
@@ -69,6 +69,66 @@ export default function DeviceShowcase3D({ initial, label }: DeviceShowcaseProps
     setCycleKey((k) => k + 1);
   };
 
+  // Scène 3D : éclairage, puis les quatre appareils sur un support tournant commun.
+  // L'appareil montré au moment où la scène est prête apparaît directement, sans transition.
+  const indexRef = useRef(index);
+  indexRef.current = index;
+  const host = useRef<HTMLDivElement>(null);
+  const [scene, setScene] = useState<{ stage: Stage; slots: ReturnType<typeof createSlot>[] } | null>(null);
+  useEffect(() => {
+    const stage = new Stage(host.current!, {
+      style: overscanStyle as Partial<CSSStyleDeclaration>,
+      dpr: [1, 2],
+      // Plage de profondeur resserrée autour des appareils (au lieu de 0,1 à 2000) :
+      // les téléphones ont une précision de profondeur limitée, sinon les surfaces proches scintillent.
+      camera: { position: [0, 1.5, 46], fov: overscanFov(30), near: 24, far: 72 },
+      toneMapping: THREE.NeutralToneMapping,
+      adaptive: true,
+    });
+    let alive = true;
+    const cleanups: (() => void)[] = [];
+    addStudio(stage).then(() => {
+      if (!alive) return;
+      addCssLayer(stage);
+      // Flottement très léger : les ordinateurs restent stables, les reflets ne balaient plus l'écran.
+      const rig = createRig(input, { x: 0, y: 0, z: 0 }, { float: true, amplitude: 0.3 });
+      stage.onFrame(rig.frame);
+      const invalidate = () => stage.invalidate();
+      const slots = SHOWCASE_DEVICES.map((d, i) => {
+        const slot = createSlot(d.id, i === indexRef.current);
+        if (d.id === "ios" || d.id === "android") {
+          const model = d.id === "ios" ? "pro" : "ultra";
+          const phone = createPhone({ model, finish: d.id === "ios" ? "silver" : "violet", onChange: invalidate });
+          const anchor = createScreenAnchor({ el: els[d.id], scale: phonePxScale(model), radius: phoneScreenRadiusPx(model), position: [0, 0, SPECS[model].d / 2 + 0.01] });
+          slot.group.add(phone.group, anchor.group);
+          stage.onFrame(anchor.frame);
+          cleanups.push(phone.dispose);
+        } else {
+          const laptop = createLaptop({ kind: d.id as LaptopKind, screenEl: els[d.id], onChange: invalidate });
+          slot.group.add(laptop.group);
+          stage.onFrame(laptop.frame);
+          cleanups.push(laptop.dispose);
+        }
+        stage.onFrame(slot.frame);
+        rig.group.add(slot.group);
+        return slot;
+      });
+      stage.scene.add(rig.group);
+      setScene({ stage, slots });
+    });
+    return () => {
+      alive = false;
+      cleanups.forEach((c) => c());
+      setScene(null);
+      stage.dispose();
+    };
+    // La scène est créée une fois (les éléments des écrans et la position de départ ne changent pas).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => scene?.slots.forEach((s, i) => s.setActive(i === index)), [scene, index]);
+  useEffect(() => scene?.stage.setFrameloop(inView ? "always" : "never"), [scene, inView]);
+
   return (
     <div className={styles.wrap}>
       <div
@@ -77,38 +137,7 @@ export default function DeviceShowcase3D({ initial, label }: DeviceShowcaseProps
         role="img"
         aria-label={label ?? `Six sur ${SHOWCASE_DEVICES[index].name}`}
       >
-        <Canvas
-          frameloop={inView ? "always" : "never"}
-          dpr={[1, 2]}
-          // Plage de profondeur resserrée autour des appareils (au lieu de 0,1 à 2000) :
-          // les téléphones ont une précision de profondeur limitée, sinon les surfaces proches scintillent.
-          style={overscanStyle}
-          camera={{ position: [0, 1.5, 46], fov: overscanFov(30), near: 24, far: 72 }}
-          gl={{ antialias: true, alpha: true, toneMapping: THREE.NeutralToneMapping }}
-        >
-          <Studio />
-          <CssLayer />
-          {/* Flottement très léger : les ordinateurs restent stables, les reflets ne balaient plus l'écran. */}
-          <Rig input={input} pose={{ x: 0, y: 0, z: 0 }} float amplitude={0.3}>
-            {SHOWCASE_DEVICES.map((d, i) => (
-              <Slot key={d.id} id={d.id} active={i === index}>
-                {d.id === "ios" || d.id === "android" ? (
-                  <>
-                    <PhoneModel model={d.id === "ios" ? "pro" : "ultra"} finish={d.id === "ios" ? "silver" : "violet"} />
-                    <ScreenAnchor
-                      el={els[d.id]}
-                      scale={phonePxScale(d.id === "ios" ? "pro" : "ultra")}
-                      radius={phoneScreenRadiusPx(d.id === "ios" ? "pro" : "ultra")}
-                      position={[0, 0, SPECS[d.id === "ios" ? "pro" : "ultra"].d / 2 + 0.01]}
-                    />
-                  </>
-                ) : (
-                  <LaptopModel kind={d.id as LaptopKind} screenEl={els[d.id]} />
-                )}
-              </Slot>
-            ))}
-          </Rig>
-        </Canvas>
+        <div ref={host} style={{ display: "contents" }} />
         <div className={styles.shadow} aria-hidden="true" />
       </div>
 
@@ -167,27 +196,25 @@ export default function DeviceShowcase3D({ initial, label }: DeviceShowcaseProps
 }
 
 // Emplacement d'un appareil : entre en tournant et en grandissant, sort de la même façon.
-function Slot({ id, active, children }: { id: PlatformId; active: boolean; children: ReactNode }) {
-  const group = useRef<THREE.Group>(null);
-  const t = useRef(active ? 1 : 0);
-  const wait = useRef(0);
-  const wasActive = useRef(active);
+function createSlot(id: PlatformId, initiallyActive: boolean) {
+  const g = new THREE.Group();
+  let active = initiallyActive;
+  let t = active ? 1 : 0;
+  let wait = 0;
   const { pose, scale, x, y } = LAYOUT[id];
 
-  useEffect(() => {
+  const setActive = (next: boolean) => {
     // L'appareil suivant attend que le précédent soit presque parti : les deux ne se chevauchent pas.
-    if (active && !wasActive.current) wait.current = 0.32;
-    wasActive.current = active;
-  }, [active]);
+    if (next && !active) wait = 0.32;
+    active = next;
+  };
 
-  useFrame((_, delta) => {
-    const g = group.current;
-    if (!g) return;
-    if (active && wait.current > 0) wait.current -= delta;
-    const target = active && wait.current <= 0 ? 1 : 0;
+  const frame = ({ delta }: FrameState) => {
+    if (active && wait > 0) wait -= delta;
+    const target = active && wait <= 0 ? 1 : 0;
     // Sortie rapide, entrée plus posée.
-    t.current += (target - t.current) * Math.min(delta * (active ? 5 : 9), 1);
-    const e = t.current;
+    t += (target - t) * Math.min(delta * (active ? 5 : 9), 1);
+    const e = t;
     const s = scale * (0.55 + 0.45 * e);
     g.visible = e > 0.02;
     g.scale.setScalar(e < 0.02 ? 0.0001 : s);
@@ -195,7 +222,7 @@ function Slot({ id, active, children }: { id: PlatformId; active: boolean; child
     const spin = (1 - e) * (active ? -70 : 70);
     g.rotation.set(pose.x * DEG, (pose.y + spin) * DEG, pose.z * DEG);
     g.position.set(x * e, y * e + (1 - e) * -2, 0);
-  });
+  };
 
-  return <group ref={group}>{children}</group>;
+  return { group: g, frame, setActive };
 }

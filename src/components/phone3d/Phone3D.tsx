@@ -1,12 +1,12 @@
-import { useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import * as THREE from "three";
-import { Canvas } from "@react-three/fiber";
 import { Rotate3d } from "lucide-react";
 import type { Finish, Model } from "../phone/RealPhone";
-import { PhoneModel } from "./PhoneModel";
+import { createPhone } from "./PhoneModel";
 import { SPECS } from "./geometry";
-import { CssLayer, Rig, ScreenAnchor, Studio, createScreenElement, useDragInput, useInView, type Pose, overscanFov, overscanStyle } from "./stage";
+import { Stage } from "./engine";
+import { addCssLayer, addStudio, createRig, createScreenAnchor, createScreenElement, useDragInput, useInView, type Pose, overscanFov, overscanStyle } from "./stage";
 import controls from "../phone/RealPhone.module.css";
 import styles from "./Phone3D.module.css";
 
@@ -53,6 +53,53 @@ export default function Phone3D({
   const [currentFinish, setFinish] = useState<Finish>(finish);
   const active = useInView(wrapRef);
   const { input, grabbing, touched } = useDragInput(wrapRef, follow);
+  const host = useRef<HTMLDivElement>(null);
+  const [scene, setScene] = useState<{ stage: Stage; rig: THREE.Group } | null>(null);
+
+  // Scène 3D : éclairage, puis le téléphone sur son support tournant, avec l'interface sur l'écran.
+  useEffect(() => {
+    const stage = new Stage(host.current!, {
+      style: overscanStyle as Partial<CSSStyleDeclaration>,
+      dpr: [1, 2],
+      // Plage de profondeur resserrée autour du téléphone : évite le scintillement sur mobile.
+      camera: { position: [0, 0, 34], fov: overscanFov(30), near: 20, far: 50 },
+      toneMapping: THREE.NeutralToneMapping,
+      adaptive: true,
+    });
+    let alive = true;
+    addStudio(stage).then(() => {
+      if (!alive) return;
+      addCssLayer(stage);
+      const rig = createRig(input, pose, { float });
+      const anchor = createScreenAnchor({ el: screenEl, scale: phonePxScale(model), radius: phoneScreenRadiusPx(model), position: [0, 0, SPECS[model].d / 2 + 0.01] });
+      rig.group.add(anchor.group);
+      stage.scene.add(rig.group);
+      stage.onFrame(rig.frame);
+      stage.onFrame(anchor.frame);
+      setScene({ stage, rig: rig.group });
+    });
+    return () => {
+      alive = false;
+      setScene(null);
+      stage.dispose();
+    };
+    // La scène est créée une fois ; le coloris change plus bas, sans tout reconstruire.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Le téléphone, reconstruit quand on change de coloris.
+  useEffect(() => {
+    if (!scene) return;
+    const phone = createPhone({ model, finish: currentFinish, onChange: () => scene.stage.invalidate() });
+    scene.rig.add(phone.group);
+    scene.stage.invalidate();
+    return () => {
+      scene.rig.remove(phone.group);
+      phone.dispose();
+    };
+  }, [scene, model, currentFinish]);
+
+  useEffect(() => scene?.stage.setFrameloop(active ? "always" : "never"), [scene, active]);
 
   return (
     <div className={[styles.wrap, className].filter(Boolean).join(" ")}>
@@ -62,21 +109,7 @@ export default function Phone3D({
         role={label ? "img" : undefined}
         aria-label={label}
       >
-        <Canvas
-          frameloop={active ? "always" : "never"}
-          dpr={[1, 2]}
-          // Plage de profondeur resserrée autour du téléphone : évite le scintillement sur mobile.
-          style={overscanStyle}
-          camera={{ position: [0, 0, 34], fov: overscanFov(30), near: 20, far: 50 }}
-          gl={{ antialias: true, alpha: true, toneMapping: THREE.NeutralToneMapping }}
-        >
-          <Studio />
-          <CssLayer />
-          <Rig input={input} pose={pose} float={float}>
-            <PhoneModel model={model} finish={currentFinish} />
-            <ScreenAnchor el={screenEl} scale={phonePxScale(model)} radius={phoneScreenRadiusPx(model)} position={[0, 0, SPECS[model].d / 2 + 0.01]} />
-          </Rig>
-        </Canvas>
+        <div ref={host} style={{ display: "contents" }} />
         <div className={styles.shadow} aria-hidden="true" />
       </div>
       {createPortal(<PhoneScreen model={model}>{children}</PhoneScreen>, screenEl)}

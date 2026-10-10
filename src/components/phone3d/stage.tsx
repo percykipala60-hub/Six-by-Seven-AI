@@ -1,11 +1,10 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type RefObject } from "react";
 import * as THREE from "three";
 import { CSS3DObject, CSS3DRenderer } from "three/examples/jsm/renderers/CSS3DRenderer.js";
+import { EXRLoader } from "three/examples/jsm/loaders/EXRLoader.js";
 import { roundedRect } from "./geometry";
-import { useFrame, useThree } from "@react-three/fiber";
-import { Environment, Lightformer } from "@react-three/drei";
-// Photo de studio HDR (CC0, Poly Haven) : métal et verre reflètent une vraie pièce, pas des formes géométriques.
-import studioHdr from "@pmndrs/assets/hdri/studio.exr.js";
+import type { FrameState, Stage } from "./engine";
+import { studioHdr } from "./studioHdr";
 
 // Briques communes aux scènes 3D (téléphone seul, carrousel d'appareils).
 
@@ -33,23 +32,64 @@ export const shortest = (deg: number) => ((((deg + 180) % 360) + 360) % 360) - 1
 
 // Éclairage de studio photo : la photo HDR donne les reflets réalistes, les boîtes à lumière
 // ajoutent des reflets nets sur le métal, devant comme derrière l'appareil.
-export function Studio() {
-  return (
-    <>
-      <ambientLight intensity={0.35} />
-      <directionalLight position={[6, 10, 12]} intensity={1.2} />
-      <directionalLight position={[-6, 8, -12]} intensity={0.9} />
-      <Environment files={studioHdr} resolution={256} frames={1} environmentIntensity={0.9}>
-        <Lightformer form="rect" intensity={3} position={[0, 6, 10]} scale={[12, 2.5, 1]} />
-        <Lightformer form="rect" intensity={2.2} position={[-10, 0, 4]} rotation-y={Math.PI / 2.5} scale={[16, 3, 1]} />
-        <Lightformer form="rect" intensity={2.2} position={[10, 2, 2]} rotation-y={-Math.PI / 2.5} scale={[16, 2, 1]} />
-        <Lightformer form="rect" intensity={2.6} position={[0, 6, -10]} rotation-y={Math.PI} scale={[12, 2.5, 1]} />
-        <Lightformer form="rect" intensity={1.8} position={[-9, -2, -6]} rotation-y={Math.PI * 0.75} scale={[14, 3, 1]} />
-        <Lightformer form="rect" intensity={1.4} position={[0, -7, -4]} rotation-x={Math.PI / 3} scale={[14, 3, 1]} />
-        <Lightformer form="ring" color="#9db4ff" intensity={1.2} position={[6, 8, -10]} scale={4} />
-      </Environment>
-    </>
-  );
+// Les boîtes à lumière sont toutes tournées vers l'appareil, au centre (comme les Lightformer de drei,
+// qui ignoraient leur rotation : seule leur position compte).
+const LIGHTFORMERS: { position: [number, number, number]; scale: [number, number, number]; intensity: number; ring?: boolean; color?: string }[] = [
+  { position: [0, 6, 10], scale: [12, 2.5, 1], intensity: 3 },
+  { position: [-10, 0, 4], scale: [16, 3, 1], intensity: 2.2 },
+  { position: [10, 2, 2], scale: [16, 2, 1], intensity: 2.2 },
+  { position: [0, 6, -10], scale: [12, 2.5, 1], intensity: 2.6 },
+  { position: [-9, -2, -6], scale: [14, 3, 1], intensity: 1.8 },
+  { position: [0, -7, -4], scale: [14, 3, 1], intensity: 1.4 },
+  { position: [6, 8, -10], scale: [4, 4, 4], intensity: 1.2, ring: true, color: "#9db4ff" },
+];
+
+// Photo HDR décodée une seule fois, partagée par toutes les scènes.
+let studioTexture: Promise<THREE.DataTexture> | null = null;
+function loadStudioTexture() {
+  studioTexture ??= new EXRLoader().loadAsync(studioHdr).then((t) => {
+    t.mapping = THREE.EquirectangularReflectionMapping;
+    t.colorSpace = THREE.LinearSRGBColorSpace;
+    return t;
+  });
+  return studioTexture;
+}
+
+// Pose l'éclairage dans la scène ; la promesse se résout quand les reflets sont prêts (la scène n'est
+// montrée qu'à ce moment-là, comme avant).
+export async function addStudio(stage: Stage) {
+  const { scene, renderer } = stage;
+  scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+  const key = new THREE.DirectionalLight(0xffffff, 1.2);
+  key.position.set(6, 10, 12);
+  const back = new THREE.DirectionalLight(0xffffff, 0.9);
+  back.position.set(-6, 8, -12);
+  scene.add(key, back);
+
+  // Reflets : la photo HDR en fond d'une petite scène, avec les boîtes à lumière, photographiée une fois
+  // dans toutes les directions (cube de 256 px), puis utilisée comme environnement de la vraie scène.
+  const hdr = await loadStudioTexture();
+  const virtual = new THREE.Scene();
+  virtual.background = hdr;
+  for (const lf of LIGHTFORMERS) {
+    const material = new THREE.MeshBasicMaterial({ toneMapped: false, side: THREE.DoubleSide, color: lf.color ?? "white" });
+    material.color.multiplyScalar(lf.intensity);
+    const mesh = new THREE.Mesh(lf.ring ? new THREE.RingGeometry(0.25, 0.5, 64) : new THREE.PlaneGeometry(1, 1), material);
+    mesh.position.set(...lf.position);
+    mesh.scale.set(...lf.scale);
+    virtual.add(mesh);
+    mesh.lookAt(0, 0, 0);
+  }
+  const target = new THREE.WebGLCubeRenderTarget(256);
+  target.texture.type = THREE.HalfFloatType;
+  const cube = new THREE.CubeCamera(0.1, 1000, target);
+  virtual.add(cube);
+  const autoClear = renderer.autoClear;
+  renderer.autoClear = true;
+  cube.update(renderer, virtual);
+  renderer.autoClear = autoClear;
+  scene.environment = target.texture;
+  scene.environmentIntensity = 0.9;
 }
 
 // Glisser pour faire tourner, avec élan au lâcher. touch-action: pan-y laisse défiler la page au doigt.
@@ -157,32 +197,15 @@ export function useInView(ref: RefObject<HTMLElement | null>) {
 }
 
 // Fait tourner ses enfants : pose de repos + rotation du visiteur + léger flottement.
-export function Rig({
-  input,
-  pose,
-  float = true,
-  amplitude = 1,
-  children,
-}: {
-  input: RefObject<DragInput>;
-  pose: Pose;
-  float?: boolean;
-  /** Ampleur du flottement (1 = normal, plus petit = plus stable). */
-  amplitude?: number;
-  children: ReactNode;
-}) {
-  const group = useRef<THREE.Group>(null);
-  const look = useRef({ x: 0, y: 0 });
-  const reduced = useRef(false);
+// `amplitude` : ampleur du flottement (1 = normal, plus petit = plus stable).
+export function createRig(input: RefObject<DragInput>, pose: Pose, { float = true, amplitude = 1 } = {}) {
+  const g = new THREE.Group();
+  const look = { x: 0, y: 0 };
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  useEffect(() => {
-    reduced.current = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  }, []);
-
-  useFrame((state, delta) => {
-    const g = group.current;
+  const frame = ({ delta, time }: FrameState) => {
     const s = input.current;
-    if (!g || !s) return;
+    if (!s) return;
     const k = Math.min(delta * 60, 3);
     const now = performance.now();
 
@@ -199,23 +222,23 @@ export function Rig({
     }
 
     const settled = !s.dragging && now - s.lastRelease > RETURN_DELAY;
-    look.current.x += ((settled ? s.look.x : 0) - look.current.x) * 0.06 * k;
-    look.current.y += ((settled ? s.look.y : 0) - look.current.y) * 0.06 * k;
+    look.x += ((settled ? s.look.x : 0) - look.x) * 0.06 * k;
+    look.y += ((settled ? s.look.y : 0) - look.y) * 0.06 * k;
 
-    const t = state.clock.elapsedTime;
-    const moving = float && !reduced.current;
+    const t = time;
+    const moving = float && !reduced;
     const bob = moving ? Math.sin(t * 0.9) * amplitude : 0;
     const sway = moving && settled ? Math.sin(t * 0.6) * 2.5 * amplitude : 0;
 
     g.rotation.set(
-      (pose.x + s.rot.x + look.current.x + bob * 1.2) * DEG,
-      (pose.y + s.rot.y + look.current.y + sway) * DEG,
+      (pose.x + s.rot.x + look.x + bob * 1.2) * DEG,
+      (pose.y + s.rot.y + look.y + sway) * DEG,
       pose.z * DEG,
     );
     g.position.y = bob * 0.18;
-  });
+  };
 
-  return <group ref={group}>{children}</group>;
+  return { group: g, frame };
 }
 
 // Marge de dessin : la zone 3D déborde de 20 % de chaque côté de son emplacement, sans changer la mise en page.
@@ -234,36 +257,20 @@ export const overscanFov = (fov: number) => (2 * Math.atan(Math.tan((fov * Math.
 
 // Moteur CSS 3D de three.js : un seul par scène, il affiche toutes les interfaces posées sur des écrans.
 // Le calque des interfaces passe SOUS l'image 3D : chaque écran y est visible à travers une « fenêtre »
-// découpée dans l'image (voir ScreenAnchor). Ce qui se trouve devant l'écran (coque, capot, clavier)
+// découpée dans l'image (voir createScreenAnchor). Ce qui se trouve devant l'écran (coque, capot, clavier)
 // le cache donc naturellement, quel que soit l'angle. Si le navigateur affiche les interfaces décalées
 // (vu sur Safari, iPhone), createScreenAligner les remet en face de leur fenêtre.
-export function CssLayer() {
-  const { scene, camera, size, gl } = useThree();
-  const renderer = useMemo(() => {
-    const r = new CSS3DRenderer();
-    Object.assign(r.domElement.style, { position: "absolute", inset: "0", pointerEvents: "none" });
-    return r;
-  }, []);
-
-  useEffect(() => {
-    const canvas = gl.domElement;
-    Object.assign(canvas.style, { position: "relative", zIndex: "1" });
-    renderer.domElement.style.zIndex = "0";
-    canvas.parentElement?.insertBefore(renderer.domElement, canvas);
-    return () => renderer.domElement.remove();
-  }, [gl, renderer]);
-
-  useEffect(() => renderer.setSize(size.width, size.height), [renderer, size]);
-  const align = useMemo(createScreenAligner, []);
+export function addCssLayer(stage: Stage) {
+  const css = stage.addCssLayer();
+  const align = createScreenAligner();
   // Rendu en dernier (priorité 1), une fois toutes les animations de l'image appliquées : l'image 3D et
   // les interfaces sont dessinées avec exactement la même position. Sinon l'interface avait une image
   // de retard et ses coins tremblaient autour de la fenêtre pendant les mouvements.
-  useFrame(() => {
-    gl.render(scene, camera);
-    renderer.render(scene, camera);
-    align(scene, camera, renderer, gl.domElement);
+  stage.onFrame(({ scene, camera }) => {
+    stage.renderer.render(scene, camera);
+    css.render(scene, camera);
+    align(scene, camera, css, stage.renderer.domElement);
   }, 1);
-  return null;
 }
 
 // Recalage des interfaces sur l'image 3D. Sur certains téléphones (Safari, iPhone), le navigateur n'affiche
@@ -349,34 +356,23 @@ const HOLE = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: false, 
 // Accroche un élément DOM sur une surface de la scène. `scale` : taille d'un pixel CSS en unités 3D,
 // `radius` : arrondi des coins de l'écran, en pixels CSS.
 // L'élément est masqué dès que la surface ne fait plus face à la caméra (ou que l'appareil est caché).
-export function ScreenAnchor({ el, scale, position, radius = 0 }: { el: HTMLDivElement; scale: number; position: [number, number, number]; radius?: number }) {
+export function createScreenAnchor({ el, scale, position, radius = 0 }: { el: HTMLDivElement; scale: number; position: [number, number, number]; radius?: number }) {
   // Fenêtre découpée dans l'image 3D, un peu plus petite que l'interface pour ne jamais laisser voir de liseré.
-  const hole = useMemo(() => {
-    const w = (parseFloat(el.style.width) - 3) * scale;
-    const h = (parseFloat(el.style.height) - 3) * scale;
-    return new THREE.ShapeGeometry(roundedRect(w, h, Math.min(Math.max(radius - 1.5, 0) * scale, w / 2, h / 2)), 24);
-  }, [el, scale, radius]);
-  const { camera } = useThree();
-  const anchor = useRef<THREE.Group>(null);
-  const holeMesh = useRef<THREE.Mesh>(null);
-  const tmp = useMemo(() => ({ n: new THREE.Vector3(), p: new THREE.Vector3(), q: new THREE.Quaternion(), s: new THREE.Vector3(), v: new THREE.Vector3() }), []);
+  const w = (parseFloat(el.style.width) - 3) * scale;
+  const h = (parseFloat(el.style.height) - 3) * scale;
+  const hole = new THREE.ShapeGeometry(roundedRect(w, h, Math.min(Math.max(radius - 1.5, 0) * scale, w / 2, h / 2)), 24);
+  const a = new THREE.Group();
+  a.position.set(...position);
+  const holeMesh = new THREE.Mesh(hole, HOLE);
+  a.add(holeMesh);
+  const obj = new CSS3DObject(el);
+  obj.scale.setScalar(scale);
+  // iPhone : écran remonté pour compenser le décalage de Safari (la fenêtre, elle, ne bouge pas).
+  if (IOS) obj.position.y = parseFloat(el.style.height) * scale * IOS_SCREEN_LIFT;
+  a.add(obj);
+  const tmp = { n: new THREE.Vector3(), p: new THREE.Vector3(), q: new THREE.Quaternion(), s: new THREE.Vector3(), v: new THREE.Vector3() };
 
-  useEffect(() => {
-    const a = anchor.current;
-    if (!a) return;
-    const obj = new CSS3DObject(el);
-    obj.scale.setScalar(scale);
-    // iPhone : écran remonté pour compenser le décalage de Safari (la fenêtre, elle, ne bouge pas).
-    if (IOS) obj.position.y = parseFloat(el.style.height) * scale * IOS_SCREEN_LIFT;
-    a.add(obj);
-    return () => {
-      a.remove(obj);
-    };
-  }, [el, scale]);
-
-  useFrame(() => {
-    const a = anchor.current;
-    if (!a) return;
+  const frame = ({ camera }: FrameState) => {
     a.getWorldPosition(tmp.p);
     a.getWorldQuaternion(tmp.q);
     a.getWorldScale(tmp.s);
@@ -389,12 +385,8 @@ export function ScreenAnchor({ el, scale, position, radius = 0 }: { el: HTMLDivE
     const shown = facing && tmp.s.x > 0.02 && visibleChain;
     const vis = shown ? "visible" : "hidden";
     if (el.style.visibility !== vis) el.style.visibility = vis;
-    if (holeMesh.current) holeMesh.current.visible = shown;
-  });
+    holeMesh.visible = shown;
+  };
 
-  return (
-    <group ref={anchor} position={position}>
-      <mesh ref={holeMesh} geometry={hole} material={HOLE} />
-    </group>
-  );
+  return { group: a, frame };
 }

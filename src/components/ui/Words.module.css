@@ -9,8 +9,8 @@
 /* Le mot surgit de loin, minuscule, fonce vers sa place, la dépasse à peine et s'y colle.
    (Sans flou : animé sur des dizaines de mots à la fois, il faisait saccader.) */
 :global([data-words="on"]) .word {
-  animation: stick 0.75s cubic-bezier(0.18, 0.9, 0.24, 1) both;
-  animation-delay: calc(var(--i) * 45ms);
+  animation: stick 0.5s cubic-bezier(0.18, 0.9, 0.24, 1) both;
+  animation-delay: calc(var(--i) * 30ms);
 }
 
 @keyframes stick {

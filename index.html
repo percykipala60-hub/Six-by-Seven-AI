@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>Six by Seven.AI</title>
     <meta name="description" content="Colle une discussion. Six comprend la situation, repère les arnaques et te propose trois réponses dans ton ton. Tu choisis, tu ajustes, tu envoies." />
-    <meta name="theme-color" content="#F7F2EA" />
+    <meta name="theme-color" content="#F4ECDE" />
 
     <link rel="icon" href="/favicon.ico" sizes="48x48" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -27,9 +27,10 @@
     <meta property="og:locale" content="fr_FR" />
     <meta name="twitter:card" content="summary_large_image" />
 
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet" />
+    <!-- Polices hébergées sur le site (voir src/styles/fonts.css) : celles de l'alphabet latin, utilisées
+         dès le premier écran, sont demandées tout de suite, en même temps que la page. -->
+    <link rel="preload" href="/fonts/googlesans-v71-latin.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/manrope-v20-latin.woff2" as="font" type="font/woff2" crossorigin />
   </head>
   <body>
     <div id="root"></div>

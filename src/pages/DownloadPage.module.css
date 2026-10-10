@@ -1,6 +1,9 @@
 .page {
   padding-top: calc(72px + clamp(28px, 4vw, 48px));
   padding-bottom: var(--section-space);
+  /* La scène 3D déborde volontairement de son cadre (reflets) : on la coupe au bord de l'écran, sinon la
+     page défile de côté sur les petits téléphones. « clip » ne crée pas de zone de défilement. */
+  overflow-x: clip;
 }
 
 /* ---------- En-tête : titre à gauche, action principale à droite ---------- */

@@ -15,7 +15,27 @@ services:
         source: /*
         destination: /index.html
     headers:
+      # HTTPS : Render redirige déjà toute adresse http:// vers https:// et envoie lui-même l'en-tête HSTS
+      # (le navigateur n'essaie plus jamais http://) : rien à ajouter ici.
+      # Protections de base : pas d'affichage du site dans un cadre d'un autre site, pas de devinette sur
+      # le type des fichiers, et l'adresse complète des pages n'est pas transmise aux autres sites.
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /*
+        name: Permissions-Policy
+        value: camera=(), microphone=(), geolocation=()
       # Les fichiers de /assets ont un nom unique à chaque build : on peut les garder en cache longtemps.
       - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+      # Polices : leur nom contient leur version (v71, v20…), une nouvelle version aura un nouveau nom.
+      - path: /fonts/*
         name: Cache-Control
         value: public, max-age=31536000, immutable

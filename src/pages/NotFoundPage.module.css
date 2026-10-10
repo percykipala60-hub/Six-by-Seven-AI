@@ -1,0 +1,58 @@
+.page {
+  min-height: 80svh;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  text-align: center;
+  gap: 20px;
+  padding-top: calc(72px + 48px);
+  padding-bottom: 72px;
+}
+
+.code {
+  font-family: var(--font-display);
+  font-size: clamp(72px, 14vw, 120px);
+  line-height: 1;
+  letter-spacing: -0.04em;
+  color: var(--ink);
+}
+
+.page h1 {
+  font-size: clamp(30px, 5vw, 46px);
+  max-width: 18ch;
+}
+
+.text {
+  max-width: 46ch;
+  color: var(--ink-2);
+  margin-bottom: 8px;
+}
+
+.links {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.links a {
+  display: inline-block;
+  padding: 8px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
+  font-size: 15px;
+  text-decoration: none;
+}
+
+.links a:hover {
+  border-color: var(--ink);
+}
+
+.contact {
+  font-size: 15px;
+  color: var(--mut);
+}
