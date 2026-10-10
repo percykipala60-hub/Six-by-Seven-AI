@@ -86,6 +86,20 @@ export const security = {
   note: "Une alerte reste une aide. En cas de doute, appelle l'organisme concerné par son numéro officiel.",
 };
 
+// Toutes les relations, toutes les cultures : on ne répond pas de la même façon à chacun,
+// ni d'un pays à l'autre.
+export const relations = {
+  id: "relations",
+  title: "Chaque relation a ses codes.",
+  text: "On ne répond pas de la même façon à un parent, à un collègue ou à un inconnu. Et d'un pays à l'autre, une même phrase peut se comprendre autrement. Six tient compte de la relation et du contexte pour te proposer une réponse qui convient à la personne en face.",
+  points: [
+    { title: "Famille et amis", text: "Répondre avec tact à un proche, même quand le sujet est délicat." },
+    { title: "Travail", text: "Trouver le ton juste avec un collègue, un client ou un responsable." },
+    { title: "Tous les autres", text: "Un vendeur, un propriétaire, un message inattendu : chaque échange compte." },
+    { title: "D'une culture à l'autre", text: "Les usages changent selon les pays. Six t'aide à éviter les malentendus." },
+  ],
+};
+
 export const privacy = {
   id: "confidentialite",
   title: "Tes conversations restent les tiennes.",
@@ -129,6 +143,10 @@ export const faq = {
     {
       q: "Que deviennent mes données ?",
       a: "Avant l'analyse, les noms, numéros, codes et adresses sont remplacés. Tes données sont enregistrées et sauvegardées pour faire fonctionner ton compte et ne rien perdre en cas de panne. Elles ne sont jamais vendues ni utilisées pour entraîner l'IA, et tu peux demander leur suppression à tout moment.",
+    },
+    {
+      q: "Six marche-t-il pour toutes mes conversations ?",
+      a: "Oui : famille, amis, travail, commerces ou inconnus. Six tient compte de la relation et du contexte, car une même phrase ne se reçoit pas de la même façon partout, d'une personne, d'un pays ou d'une culture à l'autre.",
     },
     {
       q: "Faut-il une bonne connexion ?",

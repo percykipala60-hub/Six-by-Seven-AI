@@ -1,0 +1,4 @@
+/* Entre la visite animée et la section de téléchargement. */
+.section {
+  padding-block: var(--section-space) clamp(48px, 6vw, 88px);
+}
