@@ -1,6 +1,7 @@
 // Thème caméléon : le site ne garde jamais longtemps la même couleur. Il passe d'une ambiance à l'autre
-// en faisant le tour des couleurs (sable, violet, indigo, bleu étoilé, cyan, lagon, vert boréal, émeraude,
-// puis de nouveau sable). Pas de rouge ni de rose : on reste dans les bleus, verts et violets.
+// en faisant le tour des couleurs (sable, bleu étoilé, indigo, violet, cyan, lagon, vert boréal, émeraude,
+// puis de nouveau sable). Pas de rouge ni de rose : on reste dans les bleus, verts et violets. L'ordre compte :
+// le sable ne passe jamais directement au violet (le mélange des deux tirerait sur le rose).
 // Chaque nouvelle couleur traverse l'écran de gauche à droite comme une vague (front ondulé, crête de
 // lumière), sans dépendre de la souris, et les vagues changent de teinte à son passage. Une seule horloge pour tout le site : le fond, les vagues et
 // les couleurs de l'interface (barre de navigation, bordures…) restent toujours d'accord.
@@ -44,20 +45,20 @@ const VIVID: Mood[] = [
     lineStrong: hex("#c1b7a6"),
     light: [[45, 95, 230], [79, 179, 236], [107, 147, 255], [79, 179, 236], [14, 21, 38]],
     dark: [[77, 124, 254], [124, 200, 242], [143, 168, 255], [124, 200, 242]],
-    aurora: [[77, 124, 254], [255, 186, 110], [60, 200, 240]],
+    aurora: [[77, 124, 254], [130, 110, 255], [60, 200, 240]],
     star: [45, 95, 230],
   },
-  // Violet, vagues vertes et cyan, lueurs violette, cyan et menthe.
+  // Bleu étoilé, vagues indigo, lueurs bleues et violettes, étoiles blanches.
   {
-    name: "violet",
-    bg: hex("#d9c9f5"),
-    bgSoft: hex("#ccbde6"),
-    surface: hex("#f4f0fc"),
-    line: hex("#c3b5dc"),
-    lineStrong: hex("#aea1c4"),
-    light: [[20, 140, 100], [20, 150, 190], [100, 50, 200], [40, 180, 170], [26, 12, 46]],
-    dark: [[60, 230, 170], [70, 220, 255], [190, 130, 255], [90, 230, 200]],
-    aurora: [[150, 90, 255], [50, 210, 255], [70, 220, 170]],
+    name: "etoile",
+    bg: hex("#c3d1f5"),
+    bgSoft: hex("#b7c4e6"),
+    surface: hex("#eef2fc"),
+    line: hex("#b0bcdc"),
+    lineStrong: hex("#9ca7c4"),
+    light: [[40, 40, 160], [90, 70, 220], [30, 90, 210], [130, 100, 240], [10, 14, 50]],
+    dark: [[90, 120, 255], [170, 140, 255], [80, 180, 255], [200, 170, 255]],
+    aurora: [[60, 100, 255], [150, 100, 255], [60, 200, 255]],
     star: [255, 255, 255],
   },
   // Indigo, vagues cyan, lueurs indigo, cyan et violette.
@@ -73,17 +74,17 @@ const VIVID: Mood[] = [
     aurora: [[80, 80, 255], [40, 200, 255], [140, 90, 255]],
     star: [255, 255, 255],
   },
-  // Bleu étoilé, vagues indigo, lueurs bleues et violettes, étoiles blanches.
+  // Violet, vagues vertes et cyan, lueurs violette, cyan et menthe.
   {
-    name: "etoile",
-    bg: hex("#c3d1f5"),
-    bgSoft: hex("#b7c4e6"),
-    surface: hex("#eef2fc"),
-    line: hex("#b0bcdc"),
-    lineStrong: hex("#9ca7c4"),
-    light: [[40, 40, 160], [90, 70, 220], [30, 90, 210], [130, 100, 240], [10, 14, 50]],
-    dark: [[90, 120, 255], [170, 140, 255], [80, 180, 255], [200, 170, 255]],
-    aurora: [[60, 100, 255], [150, 100, 255], [60, 200, 255]],
+    name: "violet",
+    bg: hex("#d9c9f5"),
+    bgSoft: hex("#ccbde6"),
+    surface: hex("#f4f0fc"),
+    line: hex("#c3b5dc"),
+    lineStrong: hex("#aea1c4"),
+    light: [[20, 140, 100], [20, 150, 190], [100, 50, 200], [40, 180, 170], [26, 12, 46]],
+    dark: [[60, 230, 170], [70, 220, 255], [190, 130, 255], [90, 230, 200]],
+    aurora: [[150, 90, 255], [50, 210, 255], [70, 220, 170]],
     star: [255, 255, 255],
   },
   // Cyan, vagues indigo et violettes, lueurs cyan, bleue et menthe.
