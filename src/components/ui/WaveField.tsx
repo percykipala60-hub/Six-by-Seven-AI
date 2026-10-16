@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { chameleonAt, css, mix, rgba, type Rgb } from "../../theme/chameleon";
+import { isLiteDevice } from "../../lite";
 import styles from "./WaveField.module.css";
 
 // Fond animé dans l'esprit du thème de base de la PS4 : des rubans bleus faits de fines lignes
@@ -48,7 +49,9 @@ export function WaveField({ theme = "light", className, fixed = false }: Props) 
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    // Appareil modeste (voir lite.ts) : vagues dessinées une fois, immobiles, comme pour moins d'animations.
+    const lite = isLiteDevice();
+    const reduce = lite || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     // Écran tactile : moins de lignes et de points, une image sur deux.
     const touch = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
     // Téléphone : un ruban de moins et moins de lignes par ruban.
@@ -75,7 +78,9 @@ export function WaveField({ theme = "light", className, fixed = false }: Props) 
     const lift = { x: 0, y: 0, k: 0 };
 
     const resize = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, touch ? 1.25 : 2);
+      // Fond plein écran fait de lignes fines et de lueurs floues : au-delà de 1,5, la différence ne se voit
+      // pas, mais le nombre de pixels à peindre (écrans 4K, portables à 200 %) explose.
+      const dpr = Math.min(window.devicePixelRatio || 1, touch ? 1.25 : 1.5);
       w = canvas.clientWidth;
       h = canvas.clientHeight;
       canvas.width = Math.round(w * dpr);
@@ -267,12 +272,14 @@ export function WaveField({ theme = "light", className, fixed = false }: Props) 
     if (touch) window.addEventListener("scroll", onScroll, { passive: true });
     // 30 images par seconde suffisent à des rubans aussi lents (l'œil n'y voit aucune différence), quel que
     // soit l'écran (60, 120 ou 144 Hz). Sur ordinateur, pendant que le curseur soulève le voile et le temps
-    // qu'il retombe, on dessine à chaque image pour que la réaction reste parfaitement fluide.
+    // qu'il retombe, on passe à 60 images par seconde pour que la réaction reste fluide (pas plus : sur un
+    // écran à 144 Hz, la souris qui bouge faisait redessiner tout le fond 144 fois par seconde).
     const IDLE_MS = 1000 / 30;
+    const LIVE_MS = 1000 / 60;
     let lastDraw = -Infinity;
     let movedAt = -Infinity;
     const loop = (now: number) => {
-      const interval = !touch && now - movedAt < 1500 ? 0 : IDLE_MS;
+      const interval = !touch && now - movedAt < 1500 ? LIVE_MS : IDLE_MS;
       if (visible && now - lastDraw >= interval - 4 && (!touch || now > scrollingUntil)) {
         draw(now / 1000);
         lastDraw = now;
@@ -307,7 +314,8 @@ export function WaveField({ theme = "light", className, fixed = false }: Props) 
     });
     io.observe(canvas);
     resize();
-    const still = reduce ? window.setInterval(() => visible && draw(performance.now() / 1000), 500) : 0;
+    // Moins d'animations : les couleurs suivent encore le thème caméléon. Mode léger : couleurs fixes, rien à redessiner.
+    const still = reduce && !lite ? window.setInterval(() => visible && draw(performance.now() / 1000), 500) : 0;
     if (!reduce) {
       raf = requestAnimationFrame(loop);
       window.addEventListener("pointermove", onMove, { passive: true });

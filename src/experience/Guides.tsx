@@ -4,7 +4,6 @@ import { experience } from "../content/experience";
 import { howScreens, scenes } from "../content/phoneScenes";
 import { maskExample, security } from "../content/site";
 import { SixAppIcon } from "../components/brand/Logos";
-import { Words } from "../components/ui/Words";
 import { MessagingAppIcon } from "../components/brand/MessagingAppIcon";
 import { AppChat as AppChatScreen, SixScreen as SixScreenBase, StatusBar } from "../components/phone/Screens";
 import { PHONE_SCREEN_PX } from "../components/phone/screenSize";
@@ -87,14 +86,13 @@ const StepText = memo(function StepText({ i }: { i: number }) {
             key={s.title}
             className={styles.stepItem}
             data-state={k === i ? "on" : k < i ? "past" : "next"}
-            data-words={k === i ? "on" : "off"}
             aria-hidden={k !== i}
           >
             <h2>
-              <Words>{s.title}</Words>
+              {s.title}
             </h2>
             <p>
-              <Words delay={s.title.split(" ").length + 2}>{s.text}</Words>
+              {s.text}
             </p>
           </div>
         ))}

@@ -52,6 +52,21 @@ function siteFiles(): Plugin {
 
 export default defineConfig({
   plugins: [react(), siteFiles()],
+  build: {
+    rolldownOptions: {
+      output: {
+        // Sans ces groupes, React et les icônes, partagés par la page et la 3D, étaient rangés dans le même
+        // fichier que three.js : chaque visiteur téléchargeait et exécutait toute la 3D (près de 700 Ko) dès
+        // l'ouverture, même sur un téléphone qui ne l'affiche pas. La 3D ne se charge plus que si elle sert.
+        codeSplitting: {
+          groups: [
+            { name: "three", test: /node_modules[\\/](three|three-bvh-csg|three-mesh-bvh)[\\/]/ },
+            { name: "vendor", test: /node_modules[\\/](react|react-dom|react-router|scheduler|lucide-react)[\\/]/ },
+          ],
+        },
+      },
+    },
+  },
   // Port fourni par l'environnement (PORT) quand il existe, sinon 5173 par défaut.
   server: { port: Number(process.env.PORT) || 5173 },
 });

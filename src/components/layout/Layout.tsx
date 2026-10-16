@@ -6,6 +6,9 @@ import { MobileCta } from "./MobileCta";
 import { CookieConsent } from "./CookieConsent";
 import { WaveField } from "../ui/WaveField";
 import { restoreScrollAfterLanguage } from "../../i18n/autoTranslate";
+import { isLiteDevice } from "../../lite";
+
+const LITE = isLiteDevice();
 
 // Fait défiler jusqu'à l'ancre (/#comment) ou en haut de page à chaque navigation.
 // À l'ouverture de la page, on ne force pas le haut : après un changement de langue, on revient où
@@ -41,8 +44,11 @@ export function Layout() {
   return (
     <>
       <ScrollManager />
-      {/* Vagues bleues façon PS4 en fond de tout le site, sur toutes les pages. */}
-      <WaveField fixed />
+      {/* Vagues bleues façon PS4 en fond de tout le site, sur toutes les pages. Pas sur un appareil modeste
+          (voir lite.ts) : même immobile, ce fond collé à l'écran doit être recomposé avec la page à chaque
+          image du défilement, ce qui suffit à le rendre collant sur un petit téléphone. Le fond uni du site
+          (--bg) prend alors le relais. */}
+      {!LITE && <WaveField fixed />}
       <Nav />
       <main>
         <Outlet />

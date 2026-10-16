@@ -7,11 +7,10 @@ import { AppButton } from "../components/ui/AppButton";
 import { preloadStudioHdr } from "../components/phone3d/studioHdr";
 import { canRender3D } from "../components/phone3d/canRender3D";
 import { SafeBoundary } from "../components/ui/SafeBoundary";
-import { Words } from "../components/ui/Words";
 import type { LaptopId, PhoneId } from "./ExperienceScene";
 import { DesktopGuide, PhoneGuide } from "./Guides";
 import { useLocation } from "react-router";
-import { GUIDE_STOP, SCAM_STOP, T, goToStop, layout, range, useStepScroll, useTimelineDriver, useTimelineEffect, window01 } from "./timeline";
+import { GUIDE_STOP, SCAM_STOP, T, goToStop, isTouchDevice, layout, range, useStepScroll, useTimelineDriver, useTimelineEffect, window01 } from "./timeline";
 import styles from "./Experience.module.css";
 
 // La 3D (le plus gros fichier du site) ne se télécharge que si l'appareil peut l'afficher sans peine
@@ -61,11 +60,13 @@ export function Experience() {
   const [devices] = useState(pickDevices);
   const [webgl] = useState(CAN_3D);
   const painted = useAfterFirstPaint(webgl);
-  useTimelineDriver(section);
+  useTimelineDriver(section, webgl);
   // La visite est-elle à l'écran ? Sinon, la 3D se met en pause.
   const [onScreen, setOnScreen] = useState(true);
-  // Loin de l'écran (à plus d'un écran et demi) : la 3D est retirée de la page, ce qui libère sa mémoire
-  // (modèles, textures, contexte graphique). Elle revient avant qu'on ne remonte jusqu'à elle.
+  // Téléphone, loin de l'écran (à plus d'un écran et demi) : la 3D est retirée de la page, ce qui libère sa
+  // mémoire (modèles, textures, contexte graphique). Elle revient avant qu'on ne remonte jusqu'à elle.
+  // Ordinateur : elle reste en place, simplement en pause. La reconstruire à chaque retour (appareils,
+  // programmes de la carte graphique) gelait la page plus d'une seconde quand on remontait vers la visite.
   const [near, setNear] = useState(true);
   useEffect(() => {
     const el = section.current;
@@ -73,7 +74,7 @@ export function Experience() {
     const io = new IntersectionObserver(([e]) => setOnScreen(e.isIntersecting));
     const far = new IntersectionObserver(([e]) => setNear(e.isIntersecting), { rootMargin: "150% 0px" });
     io.observe(el);
-    far.observe(el);
+    if (isTouchDevice()) far.observe(el);
     return () => {
       io.disconnect();
       far.disconnect();
@@ -141,11 +142,6 @@ function Intro({ tour }: { tour: boolean }) {
   const ref = useRef<HTMLDivElement>(null);
   const content = useRef<HTMLDivElement>(null);
   const cue = useRef<HTMLSpanElement>(null);
-  const [ready, setReady] = useState(false);
-  useEffect(() => {
-    const id = requestAnimationFrame(() => setReady(true));
-    return () => cancelAnimationFrame(id);
-  }, []);
   // Hauteur occupée par le texte (sans le décalage du défilement) : la scène 3D place le cercle en dessous.
   useEffect(() => {
     const el = ref.current;
@@ -177,18 +173,18 @@ function Intro({ tour }: { tour: boolean }) {
     el.style.transform = `translateY(${-range(p, 0, 0.8) * 40}px) scale(${1 - range(p, 0.3, 0.8) * 0.04})`;
   });
   return (
-    <div ref={ref} className={styles.intro} data-words={ready ? "on" : "off"}>
+    <div ref={ref} className={styles.intro}>
       <div ref={content} className={styles.introContent}>
       <SixLogo size={26} />
       <h1>
-        {hero.title.split(/(?<=\.) /).map((line, k) => (
+        {hero.title.split(/(?<=\.) /).map((line) => (
           <span key={line}>
-            <Words delay={k * 2}>{line}</Words>
+            {line}
           </span>
         ))}
       </h1>
       <p>
-        <Words delay={5}>{hero.lead}</Words>
+        {hero.lead}
       </p>
       <div className={styles.introActions}>
         <AppButton kind="download" />
@@ -209,7 +205,7 @@ function Intro({ tour }: { tour: boolean }) {
 
 type CaptionProps = { from: number; to: number; title: string; text: string; place?: "side" | "top" };
 
-// Légende de la scène 3D : ses mots se collent un à un à l'arrivée, puis elle s'efface en s'éloignant.
+// Légende de la scène 3D : elle apparaît en fondu, puis s'efface en s'éloignant.
 function Caption({ from, to, title, text, place = "side" }: CaptionProps) {
   const ref = useRef<HTMLDivElement>(null);
   useTimelineEffect((p) => {
@@ -217,8 +213,6 @@ function Caption({ from, to, title, text, place = "side" }: CaptionProps) {
     if (!el) return;
     const o = window01(p, from, to, 0.22);
     const leaving = p > (from + to) / 2;
-    // Les mots se collent à l'arrivée ; au départ, la légende s'efface et s'éloigne.
-    el.dataset.words = o > 0.05 ? "on" : "off";
     el.style.opacity = String(leaving ? o : Math.min(1, o * 4));
     el.style.visibility = o > 0.001 ? "visible" : "hidden";
     el.style.transform = leaving ? `translateY(${(1 - o) * -24}px) scale(${0.96 + o * 0.04})` : "none";
@@ -226,10 +220,10 @@ function Caption({ from, to, title, text, place = "side" }: CaptionProps) {
   return (
     <div ref={ref} className={styles.caption} data-place={place}>
       <h2>
-        <Words>{title}</Words>
+        {title}
       </h2>
       <p>
-        <Words delay={title.split(" ").length + 2}>{text}</Words>
+        {text}
       </p>
     </div>
   );

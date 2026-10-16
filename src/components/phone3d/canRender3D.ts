@@ -2,13 +2,17 @@
 // une vraie carte graphique. Sans elle (rendu logiciel : vieux appareils, ordinateurs sans pilote, robots
 // d'indexation comme celui de Google), la page restait figée plusieurs secondes, parfois sans rien afficher.
 // « failIfMajorPerformanceCaveat » : le navigateur refuse alors de créer le contexte 3D, et on s'en passe.
+// Appareil modeste (peu de mémoire, processeur lent, voir lite.ts) : pas de 3D non plus, même si la carte
+// graphique l'accepte (elle peut faire fermer l'onglet faute de mémoire).
 // ?no3d dans l'adresse : force la version sans 3D (pour la vérifier).
+import { isLiteDevice } from "../../lite";
+
 let cached: boolean | null = null;
 
 export function canRender3D(): boolean {
   if (cached !== null) return cached;
   try {
-    if (new URLSearchParams(window.location.search).has("no3d")) return (cached = false);
+    if (isLiteDevice() || new URLSearchParams(window.location.search).has("no3d")) return (cached = false);
     const c = document.createElement("canvas");
     const opts = { failIfMajorPerformanceCaveat: true };
     const gl = (c.getContext("webgl2", opts) || c.getContext("webgl", opts)) as WebGLRenderingContext | null;

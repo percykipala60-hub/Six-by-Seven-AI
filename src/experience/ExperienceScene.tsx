@@ -6,7 +6,7 @@ import { createPhone } from "../components/phone3d/PhoneModel";
 import { createLaptop, LAPTOP_SCREEN_PX, LAPTOP_SPECS, type LaptopKind } from "../components/phone3d/LaptopModel";
 import { SPECS } from "../components/phone3d/geometry";
 import { PHONE_SCREEN_PX, PhoneScreen, phonePxScale, phoneScreenRadiusPx } from "../components/phone3d/Phone3D";
-import { Stage, type FrameState } from "../components/phone3d/engine";
+import { Stage, type FrameFn, type FrameState } from "../components/phone3d/engine";
 import { DEG, IOS_TOUR_LIFT, addStudio, createScreenAligner, createScreenAnchor, createScreenElement } from "../components/phone3d/stage";
 import { AppChat, SixScreen } from "../components/phone/Screens";
 import { DesktopScreen } from "../components/phone/DesktopScreen";
@@ -71,36 +71,45 @@ export default function ExperienceScene({ phone, laptop, active = true }: { phon
       // Sur téléphone, une image n'est calculée que lorsque la visite avance (voir plus bas) :
       // à l'arrêt, la carte graphique se repose et tout le reste de la page reste fluide.
       frameloop: light ? "demand" : "always",
-      // Haute définition partout : sur téléphone, l'image n'étant calculée que pendant les transitions,
-      // la netteté ne coûte presque rien (la basse définition donnait des appareils pixelisés).
-      dpr: [1, 2],
+      // Sur ordinateur, le balancement et le flottement des appareils (très lents) sont dessinés 30 fois
+      // par seconde ; les transitions de la visite, elles, à chaque rafraîchissement de l'écran.
+      idleFps: 30,
+      // Haute définition sur téléphone : l'image n'y étant calculée que pendant les transitions, la netteté
+      // ne coûte presque rien (la basse définition donnait des appareils pixelisés). Sur ordinateur, l'image
+      // est plein écran et lissée (antialias) : au-delà de 1,5, le surcoût pour la carte graphique est
+      // énorme (écrans 4K, portables à 200 %) pour une différence invisible.
+      dpr: light ? [1, 2] : [1, 1.5],
       camera: { position: [0, 14, 90], fov: 35, near: 1, far: 500 },
       toneMapping: THREE.NeutralToneMapping,
       adaptive: !light,
     });
     let alive = true;
     const cleanups: (() => void)[] = [];
-    addStudio(stage).then(() => {
+    // Rend la main au navigateur entre deux étapes de construction : clics et défilement restent pris en
+    // compte (tout construire d'un bloc gelait la page plus d'une seconde).
+    const breathe = () => new Promise<void>((r) => setTimeout(r, 0));
+    (async () => {
+      await addStudio(stage);
       if (!alive) return;
-      addLayers(stage);
-      // Rendu à la demande : une nouvelle image à chaque mouvement de la ligne de temps.
-      if (light) {
-        const redraw = () => stage.invalidate();
-        timeline.listeners.add(redraw);
-        cleanups.push(() => timeline.listeners.delete(redraw));
-      }
+      // Une nouvelle image à chaque mouvement de la ligne de temps : à la demande sur téléphone, à pleine
+      // cadence pendant les transitions sur ordinateur (voir idleFps).
+      const redraw = () => stage.invalidate();
+      timeline.listeners.add(redraw);
+      cleanups.push(() => timeline.listeners.delete(redraw));
       const invalidate = () => stage.invalidate();
       const groups: Partial<Record<DeviceId, THREE.Group>> = {};
       const markers: Partial<Record<DeviceId, THREE.Object3D>> = {};
-      // Mise en scène avant les écrans : ils lisent la position des appareils une fois celle-ci à jour.
-      stage.onFrame(createDirector({ phone, laptop, groups, markers, still: light }));
+      // Mises à jour de chaque image, branchées une fois tous les appareils construits.
+      const frames: FrameFn[] = [];
       for (const id of ORDER) {
+        await breathe();
+        if (!alive) return;
         const g = new THREE.Group();
         if (isPhone(id)) {
           const device = createPhone({ model: MODEL[id], finish: id === "ios" ? "silver" : "violet", onChange: invalidate });
           const anchor = createScreenAnchor({ el: els[id], scale: phonePxScale(MODEL[id]), radius: phoneScreenRadiusPx(MODEL[id]), position: [0, 0, SPECS[MODEL[id]].d / 2 + 0.01] });
           g.add(device.group, anchor.group, diveMarker(id, markers));
-          stage.onFrame(anchor.frame);
+          frames.push(anchor.frame);
           cleanups.push(device.dispose);
         } else {
           // Centre visuel de l'ordinateur ouvert ramené à l'origine du groupe.
@@ -109,14 +118,25 @@ export default function ExperienceScene({ phone, laptop, active = true }: { phon
           const device = createLaptop({ kind: id, screenEl: els[id], lidAngle: LID_ANGLE, onChange: invalidate });
           inner.add(device.group, diveMarker(id, markers));
           g.add(inner);
-          stage.onFrame(device.frame);
+          frames.push(device.frame);
           cleanups.push(device.dispose);
         }
         groups[id] = g;
         stage.scene.add(g);
       }
+      // Programmes de la carte graphique préparés en arrière-plan (quand le navigateur le permet) :
+      // la première image les compilait tous d'un coup et gelait la page encore une seconde.
+      await breathe();
+      if (!alive) return;
+      await stage.renderer.compileAsync(stage.scene, stage.camera).catch(() => {});
+      if (!alive) return;
+      // Mise en scène avant les écrans : ils lisent la position des appareils une fois celle-ci à jour.
+      stage.onFrame(createDirector({ phone, laptop, groups, markers, still: light }));
+      frames.forEach((f) => stage.onFrame(f));
+      // Dessin seulement maintenant : la scène apparaît complète, comme avant.
+      addLayers(stage);
       setStage(stage);
-    });
+    })();
     return () => {
       alive = false;
       cleanups.forEach((c) => c());

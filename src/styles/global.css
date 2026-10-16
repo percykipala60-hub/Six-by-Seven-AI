@@ -23,6 +23,16 @@ body {
   font-feature-settings: "lnum" 1;
 }
 
+/* Sections hors de l'écran : le navigateur ne calcule ni leurs styles ni leur mise en page. Chaque
+   changement de couleur du thème caméléon recalculait toute la page (23 à 26 ms mesurées sur PC, de
+   quoi faire saccader) ; il ne touche plus que ce qui est à l'écran (environ 4,5 ms). La taille de
+   remplacement est celle mémorisée au dernier affichage de la section (900 px avant le premier). */
+main > section,
+footer {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 900px;
+}
+
 /* Titres en Google Sans, graisse fine et approche serrée, comme sur antigravity.google. */
 h1,
 h2 {

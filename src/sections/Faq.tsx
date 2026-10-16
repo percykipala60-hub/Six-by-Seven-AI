@@ -1,7 +1,5 @@
 import { Plus } from "lucide-react";
 import { faq } from "../content/site";
-import { Reveal } from "../components/ui/Reveal";
-import { Words } from "../components/ui/Words";
 import styles from "./Faq.module.css";
 
 // Questions fréquentes : chaque réponse se déplie sur place, sans script (élément <details>).
@@ -9,15 +7,15 @@ export function Faq() {
   return (
     <section id={faq.id} className={styles.section} aria-labelledby="faq-title">
       <div className={`container ${styles.grid}`}>
-        <Reveal className={styles.head}>
+        <div className={styles.head}>
           <h2 id="faq-title">
-            <Words>{faq.title}</Words>
+            {faq.title}
           </h2>
           <p>
-            <Words delay={3}>{faq.intro}</Words>
+            {faq.intro}
           </p>
-        </Reveal>
-        <Reveal delay={80} className={styles.list}>
+        </div>
+        <div className={styles.list}>
           {faq.items.map((item) => (
             <details key={item.q} className={styles.item}>
               <summary>
@@ -27,7 +25,7 @@ export function Faq() {
               <p>{item.a}</p>
             </details>
           ))}
-        </Reveal>
+        </div>
       </div>
     </section>
   );

@@ -138,13 +138,14 @@ const subscribe = (l: Listener) => {
 };
 
 // Fait suivre `timeline.p` à la position de la visite, image par image, et prévient les animations.
-export function useTimelineDriver(sectionRef: RefObject<HTMLElement | null>) {
+// `enabled` : faux sans visite (appareil sans 3D) ; aucune boucle d'images ne tourne alors.
+export function useTimelineDriver(sectionRef: RefObject<HTMLElement | null>, enabled = true) {
   useEffect(() => {
     let raf = 0;
     let last = performance.now();
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     const el = sectionRef.current;
-    if (!el) return;
+    if (!el || !enabled) return;
     measure(el);
     const remeasure = () => measure(el);
     const ro = new ResizeObserver(remeasure);
@@ -184,7 +185,7 @@ export function useTimelineDriver(sectionRef: RefObject<HTMLElement | null>) {
       ro.disconnect();
       window.removeEventListener("resize", remeasure);
     };
-  }, [sectionRef]);
+  }, [sectionRef, enabled]);
 }
 
 // Valeur dérivée de la ligne de temps (nombre, booléen ou texte) : le composant ne se redessine

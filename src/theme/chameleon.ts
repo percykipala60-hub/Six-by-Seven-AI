@@ -10,6 +10,8 @@
 // principal et de 5 pour le texte gris (--mut), dans toutes les ambiances. Les vagues prennent à chaque
 // fois une teinte qui contraste avec le fond (bleu sur sable, cyan sur indigo, violet sur vert boréal…).
 
+import { isLiteDevice } from "../lite";
+
 export type Rgb = [number, number, number];
 
 export type Mood = {
@@ -175,7 +177,8 @@ if (typeof document !== "undefined") {
 }
 // ?chameleon=10 : tout va dix fois plus vite, pour voir les passages sans attendre.
 const SPEED = (typeof location !== "undefined" && Number(new URLSearchParams(location.search).get("chameleon"))) || 1;
-const elapsed = () => (((hiddenAt >= 0 ? hiddenAt : performance.now()) - hiddenTotal) / 1000) * SPEED;
+// Mode léger (appareil modeste, voir lite.ts) : l'horloge reste à zéro, le site garde la première ambiance.
+const elapsed = () => (isLiteDevice() ? 0 : (((hiddenAt >= 0 ? hiddenAt : performance.now()) - hiddenTotal) / 1000) * SPEED);
 
 export type ChameleonState = {
   from: Mood;
@@ -197,7 +200,7 @@ export function chameleonAt(): ChameleonState {
 }
 
 // Couleurs de l'interface : la vague ne peut pas être dessinée sur chaque élément de la page, ils
-// prennent donc la couleur moyenne du passage. Mises à jour quatre fois par seconde seulement, et
+// prennent donc la couleur moyenne du passage. Mises à jour une fois par seconde seulement, et
 // uniquement pendant un passage : changer ces variables oblige le navigateur à recalculer les styles.
 export function startChameleonTheme() {
   const root = document.documentElement;
@@ -227,6 +230,11 @@ export function startChameleonTheme() {
     }
   };
   apply();
-  const id = window.setInterval(apply, 250);
+  // Mode léger : couleurs posées une fois pour toutes (chaque changement recalcule toute la page).
+  if (isLiteDevice()) return () => {};
+  // Une fois par seconde : chaque mise à jour recalcule les styles de toute la page (environ 11 ms mesurées
+  // sur un PC récent avec la visite 3D, deux fois plus sur un portable modeste). Quatre fois par seconde,
+  // cela faisait de petites saccades régulières ; à cette lenteur de passage, l'écart reste invisible.
+  const id = window.setInterval(apply, 1000);
   return () => window.clearInterval(id);
 }

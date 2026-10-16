@@ -31,6 +31,9 @@ export type StageOptions = {
   frameloop?: Frameloop;
   /** Définition adaptative (voir Stage.adapt) : seulement pour une scène dessinée en continu. */
   adaptive?: boolean;
+  /** Boucle continue : cadence des images que rien n'a demandées (mouvements décoratifs lents). Les images
+   *  demandées par invalidate() (transitions) restent dessinées à chaque rafraîchissement de l'écran. */
+  idleFps?: number;
 };
 
 export class Stage {
@@ -54,6 +57,8 @@ export class Stage {
   private disposed = false;
   private adaptive: Adaptive | null = null;
   private inFrame = false;
+  private idleMs = 0;
+  private lastRun = 0;
   private readonly state: FrameState;
 
   constructor(parent: HTMLElement, opts: StageOptions) {
@@ -81,7 +86,8 @@ export class Stage {
     this.dprRange = Array.isArray(d) ? d : [d, d];
     this.renderer.setPixelRatio(this.screenDpr());
     this.frameloop = opts.frameloop ?? "always";
-    if (opts.adaptive) this.adaptive = new Adaptive(this);
+    this.idleMs = opts.idleFps ? 1000 / opts.idleFps : 0;
+    if (opts.adaptive) this.adaptive = new Adaptive(this, this.dprRange[1]);
 
     this.state = { time: 0, delta: 0, size: this.size, camera: this.camera, scene: this.scene };
     this.ro = new ResizeObserver(() => this.resize());
@@ -154,6 +160,14 @@ export class Stage {
   private loop = (now: number) => {
     this.raf = 0;
     if (this.disposed || this.frameloop === "never") return;
+    const requested = this.frames > 0;
+    // Rien de demandé et image précédente trop récente : on attend la suivante sans rien calculer.
+    // (Sur un écran à 144 Hz, la scène était redessinée 144 fois par seconde pour un léger flottement.)
+    if (this.frameloop === "always" && this.idleMs && !requested && now - this.lastRun < this.idleMs - 2) {
+      this.raf = requestAnimationFrame(this.loop);
+      return;
+    }
+    this.lastRun = now;
     const s = this.state;
     s.time = (now - this.start) / 1000;
     s.delta = this.last ? Math.min((now - this.last) / 1000, 0.25) : 1 / 60;
@@ -161,7 +175,10 @@ export class Stage {
     this.inFrame = true;
     for (const sub of this.subs) sub.fn(s);
     this.inFrame = false;
-    this.adaptive?.sample(now);
+    // La définition adaptative ne mesure que les images à pleine cadence (sinon le ralenti volontaire
+    // passerait pour un appareil qui n'arrive plus à suivre).
+    if (requested || !this.idleMs) this.adaptive?.sample(now);
+    else this.adaptive?.reset();
     this.frames = Math.max(0, this.frames - 1);
     if (this.frameloop === "always" || this.frames > 0) this.raf = requestAnimationFrame(this.loop);
   };
@@ -205,9 +222,15 @@ class Adaptive {
   private stopped = false;
   private readonly max: number;
 
-  constructor(private stage: Stage) {
-    this.max = Math.min(window.devicePixelRatio || 1, 2);
+  // `cap` : définition maximale demandée par la scène (elle ne remonte jamais au-delà).
+  constructor(private stage: Stage, cap = 2) {
+    this.max = Math.min(window.devicePixelRatio || 1, cap);
     if (this.max <= 1) this.stopped = true;
+  }
+
+  /** Interrompt la mesure en cours (images espacées volontairement). */
+  reset() {
+    this.frames = [];
   }
 
   sample(now: number) {

@@ -1,6 +1,4 @@
 import { relations } from "../content/site";
-import { Reveal } from "../components/ui/Reveal";
-import { Words } from "../components/ui/Words";
 import shared from "./Privacy.module.css";
 import styles from "./Relations.module.css";
 
@@ -9,23 +7,23 @@ export function Relations() {
   return (
     <section id={relations.id} className={styles.section} aria-labelledby="relations-title">
       <div className="container">
-        <Reveal className={shared.intro}>
+        <div className={shared.intro}>
           <h2 id="relations-title">
-            <Words>{relations.title}</Words>
+            {relations.title}
           </h2>
           <p>
-            <Words delay={5}>{relations.text}</Words>
+            {relations.text}
           </p>
-        </Reveal>
+        </div>
 
         <dl className={shared.points}>
-          {relations.points.map((p, i) => (
-            <Reveal key={p.title} delay={i * 80} className={shared.point}>
+          {relations.points.map((p) => (
+            <div key={p.title} className={shared.point}>
               <dt>
-                <Words>{p.title}</Words>
+                {p.title}
               </dt>
               <dd>{p.text}</dd>
-            </Reveal>
+            </div>
           ))}
         </dl>
       </div>
