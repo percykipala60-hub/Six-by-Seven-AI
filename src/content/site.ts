@@ -17,7 +17,7 @@ export const app = {
   // Liens de téléchargement par plateforme : vides tant que les versions ne sont pas publiées.
   platforms: [
     { id: "ios", name: "iPhone", system: "iOS", url: "" },
-    { id: "android", name: "Android", system: "Téléphones Android", url: "" },
+    { id: "android", name: "Android", system: "Téléphones Android", url: "/Six-test.apk" },
     { id: "mac", name: "Mac", system: "macOS", url: "" },
     { id: "windows", name: "Windows", system: "PC Windows", url: "" },
   ] satisfies { id: PlatformId; name: string; system: string; url: string }[],
