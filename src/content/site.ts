@@ -13,7 +13,7 @@ export const brand = {
 export type PlatformId = "ios" | "android" | "mac" | "windows";
 
 export const app = {
-  webUrl: "", // adresse de la version web, ex. https://app.exemple.com
+  webUrl: "https://six-by-sevenai.onrender.com/", // version web de Six, déployée sur Render
   // Liens de téléchargement par plateforme : vides tant que les versions ne sont pas publiées.
   platforms: [
     { id: "ios", name: "iPhone", system: "iOS", url: "" },
