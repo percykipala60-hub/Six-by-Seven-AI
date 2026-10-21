@@ -13,7 +13,7 @@ export const brand = {
 export type PlatformId = "ios" | "android" | "mac" | "windows";
 
 export const app = {
-  webUrl: "https://six-by-sevenai.onrender.com/", // version web de Six, déployée sur Render
+  webUrl: "https://effulgent-jelly-177a12.netlify.app/", // version web de Six, déployée sur Netlify
   // Liens de téléchargement par plateforme : vides tant que les versions ne sont pas publiées.
   platforms: [
     { id: "ios", name: "iPhone", system: "iOS", url: "" },
