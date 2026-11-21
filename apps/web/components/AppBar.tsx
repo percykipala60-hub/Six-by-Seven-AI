@@ -160,13 +160,13 @@ export function AppBar({
       <header className="appbar">
         <button
           ref={opener}
-          className="appbar-btn"
+          className="appbar-btn appbar-menu"
           aria-label="Ouvrir le menu"
           aria-expanded={open}
           aria-controls="six-menu"
           onClick={() => setOpen(true)}
         >
-          <Icon name="menu" />
+          <Icon name="menu" size={22} stroke={2.2} />
         </button>
         <span className="appbar-title">{titre ?? 'Six'}</span>
         <Avatar />

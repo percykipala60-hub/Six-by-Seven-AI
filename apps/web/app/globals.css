@@ -5055,3 +5055,16 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* Bouton du menu : deux traits nets dans un rond de la taille de l'avatar, pour équilibrer la barre. */
+.appbar-menu {
+  width: 40px;
+  height: 40px;
+  margin-left: 2px;
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  color: var(--ink);
+}
+.appbar-menu:hover,
+.appbar-menu:active {
+  background: color-mix(in srgb, var(--ink) 13%, transparent);
+}
