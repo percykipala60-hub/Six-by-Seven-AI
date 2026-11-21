@@ -37,7 +37,8 @@ try {
   await page.goto(BASE + '/');
   const debut = Date.now();
   await page.locator('input[type=file][accept="image/*"]').setInputFiles(image);
-  await page.waitForSelector('.envoi .convo', { timeout: 60000 });
+  await page.waitForSelector('.envoi .envoi-tete', { timeout: 60000 });
+  await page.locator('.envoi .envoi-tete').click(); // le texte envoyé est replié par défaut
   const secondes = ((Date.now() - debut) / 1000).toFixed(1);
   const lu = await page.locator('.envoi .convo').innerText();
   console.log(`Lu en ${secondes} s :\n${lu}\n`);

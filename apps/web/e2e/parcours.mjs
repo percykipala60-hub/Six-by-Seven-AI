@@ -54,8 +54,8 @@ try {
   }); // elles s'écrivent une par une
   r.verifier('Trois réponses proposées dans le fil', (await page.locator('.reply').count()) === 3);
   r.verifier(
-    'Tout sur le même écran (conversation envoyée toujours visible)',
-    (await page.locator('.envoi .convo').count()) === 1,
+    'Tout sur le même écran (texte envoyé disponible, replié sur une ligne)',
+    (await page.locator('.envoi .envoi-tete').count()) === 1,
   );
 
   // Une précision écrite dans la barre de saisie réécrit les réponses sur place

@@ -89,8 +89,8 @@ function demoChat(question: string): string {
       q,
     );
   if (identite)
-    return "Je suis Seven AI, l'assistant intégré de Six 😊 Six est l'app de la startup Seven.AI : tu y colles une conversation, elle est analysée (noms masqués, arnaques détectées, vrai sens expliqué) et Six te propose trois réponses. Il y a aussi des jeux : Kin Rush, Le jeu du ton juste et Coupe l'arnaque. (Mode démonstration : aucune IA connectée, ajoute une clé dans .env pour une vraie discussion.)";
-  return "Mode démonstration : aucune IA n'est connectée, donc je ne peux pas vraiment discuter pour l'instant. Je suis Seven AI, l'assistant intégré de Six. Ajoute une clé API dans le fichier .env du serveur (Claude ou OpenAI) et je pourrai répondre à toutes tes questions.";
+    return "Je suis Seven AI, l'assistant intégré de Six 😊 Six est l'app de la startup Seven.AI : tu y colles une conversation, elle est analysée (noms masqués, arnaques détectées, vrai sens expliqué) et Six te propose trois réponses. Il y a aussi des jeux : Kin Rush, Le jeu du ton juste et Coupe l'arnaque. Pour l'instant, je réponds avec des exemples : mon IA n'est pas encore branchée sur ce serveur.";
+  return "Je suis Seven AI, l'assistant intégré de Six. Mon IA n'est pas encore branchée sur ce serveur : je ne peux pas encore vraiment discuter, mais ça arrive bientôt.";
 }
 
 /* ---------- Faux modèle de démonstration (aucune clé) ---------- */
@@ -98,8 +98,7 @@ function demoChat(question: string): string {
 function demoAnalysis(conversation: string, scam: Analysis['arnaque']): Analysis {
   const pressed = /\b(urgent|avant \d+ ?h|vite|tout de suite|sinon|immédiat)/i.test(conversation);
   return {
-    resume:
-      "Démonstration : aucune IA n'est connectée, ce résumé est générique. Ajoute une clé dans .env pour une vraie analyse.",
+    resume: "Résumé d'exemple : l'IA de Six n'est pas encore branchée sur ce serveur.",
     intention: pressed ? 'Obtenir quelque chose rapidement' : 'Échanger des nouvelles',
     ton_detecte: pressed ? 'Pressé' : 'Neutre',
     tension: pressed ? 62 : 0,

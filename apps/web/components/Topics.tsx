@@ -118,7 +118,7 @@ export function Topics() {
           placeholder="Ex : camarade de classe, on ne s'est pas parlé depuis un mois"
         />
       </div>
-      {demo && <p className="demo">Mode démonstration : sujets génériques, sans IA.</p>}
+      {demo && <p className="demo">Sujets d’exemple : l’IA de Six n’est pas encore branchée.</p>}
       {error && (
         <p className="err" role="alert">
           {error}

@@ -1457,7 +1457,7 @@ export function Flow() {
                 <div className="six-corps">
                   {demo && (
                     <p className="demo">
-                      Mode démonstration : aucune IA connectée, réponses génériques.
+                      Réponses d’exemple : l’IA de Six n’est pas encore branchée.
                     </p>
                   )}
                   {busy && (

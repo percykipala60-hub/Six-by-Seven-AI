@@ -5342,3 +5342,63 @@ body {
 .autres:disabled {
   opacity: 0.5;
 }
+
+/* ---------- Fil sans couleurs vives ni encadrés ----------
+   Avis discrets en texte gris, aucune couleur d'alerte sauf le rouge du risque d'arnaque (en texte seulement).
+   Les trois propositions sont à plat, séparées par un trait fin ; la proposition choisie est marquée par un
+   trait vertical à gauche. */
+.demo {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+.nuances,
+.question {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+}
+.safe,
+.faits .fait-sur,
+.envoi-tete > svg {
+  color: var(--muted);
+}
+.bubbles,
+.bubbles[data-canal] {
+  gap: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+}
+.bubbles .pick + .pick {
+  border-top: 1px solid var(--verre-trait);
+}
+.bubbles .reply,
+.bubbles[data-canal] .reply {
+  width: 100%;
+  margin: 0;
+  padding: 12px 0 12px 14px;
+  border: 0;
+  border-left: 2px solid transparent;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--ink);
+  text-align: left;
+}
+.bubbles .reply[aria-pressed='true'],
+.bubbles[data-canal] .reply[aria-pressed='true'] {
+  border-left-color: var(--ink);
+  box-shadow: none;
+}
+.bubbles .acts,
+.bubbles[data-canal] .acts {
+  align-self: flex-start;
+  padding: 0 0 12px 14px;
+}
