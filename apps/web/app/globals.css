@@ -5056,15 +5056,172 @@ body {
   white-space: nowrap;
 }
 
-/* Bouton du menu : deux traits nets dans un rond de la taille de l'avatar, pour équilibrer la barre. */
+/* Bouton du menu : deux traits égaux, sans fond. */
 .appbar-menu {
-  width: 40px;
-  height: 40px;
-  margin-left: 2px;
+  color: var(--ink);
+}
+
+/* ---------- Conversation : choix et boutons sobres ----------
+   Plus de dégradés de couleur : un choix retenu devient plein dans la couleur du texte (noir en clair,
+   blanc en sombre), les boutons secondaires restent discrets. La couleur du thème garde les liens et la vague. */
+.chip[aria-pressed='true'],
+.chip.on {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--bg);
+}
+.reply b {
+  color: var(--muted);
+  font-weight: 600;
+}
+.reply[aria-pressed='true'] {
+  border-color: color-mix(in srgb, var(--ink) 55%, transparent);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ink) 55%, transparent);
+}
+.act {
+  border-radius: 99px;
+  padding: 0 16px;
+  background: var(--ink);
+  color: var(--bg);
+  font-weight: 600;
+}
+.act.doux {
   background: color-mix(in srgb, var(--ink) 8%, transparent);
   color: var(--ink);
 }
-.appbar-menu:hover,
-.appbar-menu:active {
-  background: color-mix(in srgb, var(--ink) 13%, transparent);
+.attach-item svg {
+  color: color-mix(in srgb, var(--ink) 75%, transparent);
+}
+
+/* Barre du haut : assez opaque pour que le texte qui défile dessous ne gêne pas la lecture. */
+.appbar {
+  background: color-mix(in srgb, var(--bg) 86%, transparent);
+  backdrop-filter: blur(20px) saturate(1.2);
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
+}
+
+/* ---------- Fil de conversation : bloc de réponse ordonné ----------
+   1. Le texte envoyé, replié sur une ligne (on le déplie pour le vérifier).
+   2. Ce que Six a compris : le résumé, puis une petite fiche (intention, ton, tension, arnaque).
+   3. Les réponses proposées, puis les réglages pour les ajuster. */
+.envoi {
+  width: 100%;
+  align-self: stretch;
+  gap: 8px;
+  padding: 4px;
+  border: 1px solid var(--verre-trait);
+  border-radius: 16px;
+  background: var(--verre);
+}
+.envoi-tete {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.envoi-tete > svg {
+  flex: none;
+  color: var(--ok);
+}
+.envoi-txt {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+.envoi-bilan {
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+.envoi-voir {
+  flex: none;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.envoi > :not(.envoi-tete) {
+  margin: 0 8px;
+}
+.envoi > :last-child:not(.envoi-tete) {
+  margin-bottom: 8px;
+}
+.link-inline {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+/* Petite fiche sous le résumé : libellé à gauche, valeur à droite, traits fins. */
+.faits {
+  display: flex;
+  flex-direction: column;
+  margin: 2px 0 0;
+  border-top: 1px solid var(--verre-trait);
+}
+.faits > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--verre-trait);
+}
+.faits dt {
+  flex: none;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.faits dd {
+  margin: 0;
+  color: var(--ink);
+  font-size: 0.9rem;
+  text-align: right;
+}
+.faits .fait-sur {
+  color: var(--ok);
+}
+.faits .fait-risque {
+  color: var(--bad);
+  font-weight: 600;
+}
+
+/* Alerte arnaque : bloc rouge sobre */
+.alert {
+  border-color: color-mix(in srgb, var(--bad) 55%, transparent);
+  background: color-mix(in srgb, var(--bad) 10%, var(--verre));
+}
+
+/* Réglages des réponses : titre, puis rangées de choix qui défilent à l'horizontale */
+.reglages-fil {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 6px;
+  padding-top: 14px;
+  border-top: 1px solid var(--verre-trait);
+}
+.reglages-fil > .lbl {
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+.alert .row.wrap {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
 }

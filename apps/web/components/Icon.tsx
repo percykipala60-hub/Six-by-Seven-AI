@@ -24,7 +24,7 @@ const PATHS = {
   up: 'M12 19V5M5 12l7-7 7 7',
   down: 'M12 5v14M19 12l-7 7-7-7',
   chevron: 'M9 6l6 6-6 6',
-  menu: 'M4 9h16M4 15h10',
+  menu: 'M4 9h16M4 15h16',
   x: 'M6 6l12 12M18 6L6 18',
   pause: 'M8 5v14M16 5v14',
   play: 'M7 4l14 8-14 8z',

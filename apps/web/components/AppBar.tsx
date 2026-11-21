@@ -166,7 +166,7 @@ export function AppBar({
           aria-controls="six-menu"
           onClick={() => setOpen(true)}
         >
-          <Icon name="menu" size={22} stroke={2.2} />
+          <Icon name="menu" size={24} stroke={2.2} />
         </button>
         <span className="appbar-title">{titre ?? 'Six'}</span>
         <Avatar />

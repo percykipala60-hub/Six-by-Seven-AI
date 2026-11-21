@@ -1256,14 +1256,6 @@ function CompteVue() {
               </button>
             </form>
           )}
-
-          <p className="auth-guest-note">
-            <Icon name="lock" size={16} />
-            <span>
-              Tu peux aussi continuer en invité. Tes données restent sur ce téléphone jusqu’à la
-              création d’un compte.
-            </span>
-          </p>
         </div>
       )}
     </>

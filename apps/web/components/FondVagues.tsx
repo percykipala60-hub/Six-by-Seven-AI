@@ -16,8 +16,6 @@ const VOILES = [
 ];
 // Au plus une soixantaine d'images par seconde, même sur les écrans plus rapides.
 const IMAGE_MS = 15;
-// La vague se fige pendant qu'on fait défiler (défilement et flous restent fluides), puis reprend.
-const REPOS_DEFILEMENT_MS = 180;
 
 /** Couleur d'une variable CSS du thème, en « r, g, b » (le navigateur la calcule, quel que soit son format). */
 function rgb(nom: string): string {
@@ -56,9 +54,8 @@ export function FondVagues() {
     let hauteur = 0;
     let image = 0;
     let derniere = 0;
-    // Horloge propre, qui ne tourne que pendant le dessin : après un défilement, la vague reprend où elle était.
+    // Horloge propre, bornée à chaque image : après une mise en veille de l'onglet, la vague reprend sans sauter.
     let horloge = 0;
-    let defileA = -Infinity;
     let teinte = lireTeinte();
 
     // Dessinée en pixels d'écran (la vague est douce) : bien moins de travail à chaque image. La toile garde la
@@ -138,7 +135,6 @@ export function FondVagues() {
       const ecoule = temps - derniere;
       if (ecoule < IMAGE_MS) return;
       derniere = temps;
-      if (temps - defileA < REPOS_DEFILEMENT_MS) return;
       horloge += Math.min(ecoule, 50);
       dessiner(horloge);
     };
@@ -149,9 +145,6 @@ export function FondVagues() {
 
     const surRedimension = () => {
       if (redimensionner()) dessiner(horloge);
-    };
-    const surDefilement = () => {
-      defileA = performance.now();
     };
     // Thème, couleur ou mode système changés : nouvelle teinte, redessinée tout de suite.
     const surTheme = () => {
@@ -166,15 +159,11 @@ export function FondVagues() {
     const modeSysteme = window.matchMedia('(prefers-color-scheme: dark)');
     modeSysteme.addEventListener('change', surTheme);
     window.addEventListener('resize', surRedimension);
-    document.addEventListener('scroll', surDefilement, { capture: true, passive: true });
-    document.addEventListener('touchmove', surDefilement, { passive: true });
     return () => {
       cancelAnimationFrame(image);
       observateur.disconnect();
       modeSysteme.removeEventListener('change', surTheme);
       window.removeEventListener('resize', surRedimension);
-      document.removeEventListener('scroll', surDefilement, { capture: true });
-      document.removeEventListener('touchmove', surDefilement);
     };
   }, []);
 

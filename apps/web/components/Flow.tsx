@@ -41,7 +41,7 @@ import {
   lireConversations,
   type ConversationGardee,
 } from '@/lib/conversations';
-import { Ecrit, Jauge } from './Anime';
+import { Ecrit } from './Anime';
 import { AppBar } from './AppBar';
 import { AppsRow } from './Dock';
 import { Icon } from './Icon';
@@ -385,6 +385,10 @@ interface Contexte {
   contact: string;
 }
 
+/** Tension de la conversation (0 à 100) dite en un mot. */
+const niveauTension = (t: number) =>
+  t < 25 ? 'Calme' : t < 50 ? 'Légère' : t < 75 ? 'Tendue' : 'Très tendue';
+
 const interlocuteur = (people: string[], me: string) =>
   people.find((p) => p !== me && p.toLowerCase() !== 'moi' && !isGenericSpeaker(p)) ?? '';
 
@@ -467,6 +471,7 @@ export function Flow() {
     if (addWord) wordInput.current?.focus();
   }, [addWord]);
   const [restoreNames, setRestoreNames] = useState(true);
+  const [apercuOuvert, setApercuOuvert] = useState(false); // texte envoyé (masqué) déplié
   const [memoOn, setMemoOn] = useState(false); // mémoire de Six active (lue après le rendu : localStorage)
   const [noteMemo, setNoteMemo] = useState(''); // ce que l'utilisateur sait de son interlocuteur
   const [suivi, setSuivi] = useState<{ qui: string; quoi: string; canal: Canal | '' } | null>(null);
@@ -1132,7 +1137,6 @@ export function Flow() {
   const objectifs = analysis
     ? Array.from(new Set([...analysis.objectifs, ...(arnaque ? [PRUDENT] : [])]))
     : [];
-  const lettre = 'ABC'[selected];
   // Le message de Six le plus récent reçoit data-dernier : le fil y descend quand il change.
   const dernierBloc = finalText
     ? 'fin'
@@ -1166,7 +1170,7 @@ export function Flow() {
     >
       <AppBar page="accueil" onNouvelle={reset} />
       <div className="home-body">
-        {!fil && empty && (
+        {!fil && !ocrBusy && (
           <div className="hello">
             <Logo label="" />
             <h1>{hello.prenom ? `${hello.mot}, ${hello.prenom}` : hello.mot}</h1>
@@ -1177,100 +1181,121 @@ export function Flow() {
         {actif && (
           <div className="fil">
             <section className="envoi" aria-labelledby="part-titre">
-              <div className="row sp wrap">
-                <h2 className="lbl" id="part-titre">
-                  Voici ce qui part
-                </h2>
-                <div className="summary" aria-label="Éléments masqués">
-                  {bilan.size ? (
-                    [...bilan.values()].map(([un, plusieurs, n]) => (
-                      <span className="pill" key={un}>
-                        <Icon name="check" size={14} stroke={2.6} /> {n} {n > 1 ? plusieurs : un}
-                      </span>
-                    ))
-                  ) : (
-                    <span className="pill neutre">Rien à masquer trouvé</span>
-                  )}
-                </div>
-              </div>
-              <Convo text={outgoing} />
-              {note && <p className="muted small">{note}</p>}
-              <div className="envoi-acts">
-                <button
-                  className="link"
-                  aria-expanded={addWord}
-                  onClick={() => setAddWord((v) => !v)}
-                  disabled={occupe}
-                >
-                  <Icon name="shield" size={16} /> Masquer un autre mot
-                </button>
-                {plusieursPersonnes && (
-                  <button
-                    className="link"
-                    aria-expanded={quiOuvert}
-                    onClick={() => setQuiOuvert((v) => !v)}
-                    disabled={occupe}
-                  >
-                    <Icon name="user" size={16} /> {me ? `Tu es ${me}` : "Tu n'as pas écrit"}
-                  </button>
-                )}
-              </div>
-              {addWord && (
-                <form
-                  className="row"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const n = newName.trim();
-                    if (!n) return;
-                    const next = names.includes(n) ? names : [...names, n];
-                    setNames(next);
-                    setNewName('');
-                    setAddWord(false);
-                    relancer({ names: next }); // le nouveau mot est masqué, puis Six relit la conversation
-                  }}
-                >
-                  <label className="sr" htmlFor="nm">
-                    Mot à masquer
-                  </label>
-                  <input
-                    ref={wordInput}
-                    id="nm"
-                    type="text"
-                    value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
-                    placeholder="Un nom, un lieu, un détail…"
-                  />
-                  <button className="btn ghost small" type="submit">
-                    Masquer
-                  </button>
-                </form>
-              )}
-              {quiOuvert && plusieursPersonnes && (
-                <div className="stack">
-                  <div className="seg" role="group" aria-label="Qui es-tu dans la conversation ?">
-                    {[...people, ''].map((p) => (
+              <button
+                type="button"
+                className="envoi-tete"
+                aria-expanded={apercuOuvert}
+                onClick={() => setApercuOuvert((v) => !v)}
+              >
+                <Icon name="lock" size={18} stroke={1.9} />
+                <span className="envoi-txt">
+                  <span id="part-titre">Texte envoyé, masqué</span>
+                  <span className="envoi-bilan">
+                    {bilan.size
+                      ? [...bilan.values()]
+                          .map(([un, plusieurs, n]) => `${n} ${n > 1 ? plusieurs : un}`)
+                          .join(' · ')
+                      : 'Rien à masquer trouvé'}
+                  </span>
+                </span>
+                <span className="envoi-voir">{apercuOuvert ? 'Masquer' : 'Voir'}</span>
+              </button>
+              {apercuOuvert && (
+                <>
+                  <Convo text={outgoing} />
+                  {note && <p className="muted small">{note}</p>}
+                  <div className="envoi-acts">
+                    <button
+                      className="link"
+                      aria-expanded={addWord}
+                      onClick={() => setAddWord((v) => !v)}
+                      disabled={occupe}
+                    >
+                      <Icon name="shield" size={16} /> Masquer un autre mot
+                    </button>
+                    {plusieursPersonnes && (
                       <button
-                        key={p || 'personne'}
-                        aria-pressed={me === p}
-                        onClick={() => {
-                          setMe(p);
-                          setMeGuessed(false);
-                          setQuiOuvert(false);
-                          if (p !== me) relancer({ me: p });
-                        }}
+                        className="link"
+                        aria-expanded={quiOuvert}
+                        onClick={() => setQuiOuvert((v) => !v)}
+                        disabled={occupe}
                       >
-                        {p || "Je n'ai pas écrit"}
+                        <Icon name="user" size={16} /> {me ? `Tu es ${me}` : "Tu n'as pas écrit"}
                       </button>
-                    ))}
+                    )}
                   </div>
-                  <p className="muted small">
-                    Ce nom reste sur ton téléphone : l&apos;IA voit seulement « Moi ».
-                  </p>
-                </div>
+                  {addWord && (
+                    <form
+                      className="row"
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const n = newName.trim();
+                        if (!n) return;
+                        const next = names.includes(n) ? names : [...names, n];
+                        setNames(next);
+                        setNewName('');
+                        setAddWord(false);
+                        relancer({ names: next }); // le nouveau mot est masqué, puis Six relit la conversation
+                      }}
+                    >
+                      <label className="sr" htmlFor="nm">
+                        Mot à masquer
+                      </label>
+                      <input
+                        ref={wordInput}
+                        id="nm"
+                        type="text"
+                        value={newName}
+                        onChange={(e) => setNewName(e.target.value)}
+                        placeholder="Un nom, un lieu, un détail…"
+                      />
+                      <button className="btn ghost small" type="submit">
+                        Masquer
+                      </button>
+                    </form>
+                  )}
+                  {quiOuvert && plusieursPersonnes && (
+                    <div className="stack">
+                      <div
+                        className="seg"
+                        role="group"
+                        aria-label="Qui es-tu dans la conversation ?"
+                      >
+                        {[...people, ''].map((p) => (
+                          <button
+                            key={p || 'personne'}
+                            aria-pressed={me === p}
+                            onClick={() => {
+                              setMe(p);
+                              setMeGuessed(false);
+                              setQuiOuvert(false);
+                              if (p !== me) relancer({ me: p });
+                            }}
+                          >
+                            {p || "Je n'ai pas écrit"}
+                          </button>
+                        ))}
+                      </div>
+                      <p className="muted small">
+                        Ce nom reste sur ton téléphone : l&apos;IA voit seulement « Moi ».
+                      </p>
+                    </div>
+                  )}
+                </>
               )}
               {meGuessed && me && !quiOuvert && (
                 <p className="muted small">
-                  Six pense que tu es {me}. Sinon, touche « Tu es {me} ».
+                  Six pense que tu es {me}.{' '}
+                  <button
+                    type="button"
+                    className="link-inline"
+                    onClick={() => {
+                      setApercuOuvert(true);
+                      setQuiOuvert(true);
+                    }}
+                  >
+                    Changer
+                  </button>
                 </p>
               )}
             </section>
@@ -1295,7 +1320,6 @@ export function Flow() {
                     </button>
                   </>
                 )}
-                {(analysing || analysis) && <Jauge valeur={analysis ? analysis.tension : null} />}
                 {analysis && arnaque && (
                   <div className="alert stack" role="alert">
                     <div className="row">
@@ -1310,13 +1334,6 @@ export function Flow() {
                         <li key={r}>{r}</li>
                       ))}
                     </ul>
-                    <div className="row sp">
-                      <span>Niveau de risque</span>
-                      <b className="err">{analysis.arnaque.score} %</b>
-                    </div>
-                    <div className="meter">
-                      <i style={{ width: `${analysis.arnaque.score}%` }} />
-                    </div>
                     <p className="small">
                       Ne donne jamais de code PIN, de mot de passe ni d&apos;argent à quelqu&apos;un
                       qui te le demande par message.
@@ -1354,25 +1371,37 @@ export function Flow() {
                         onFin={() => setResumeFini(true)}
                       />
                     </p>
-                    {resumeFini && (analysis.intention || analysis.ton_detecte) && (
-                      <div className="tags">
+                    {resumeFini && (
+                      <dl className="faits">
                         {analysis.intention && (
-                          <span className="tag">
-                            <b>Intention</b> <Masque text={analysis.intention} />
-                          </span>
+                          <div>
+                            <dt>Intention</dt>
+                            <dd>
+                              <Masque text={analysis.intention} />
+                            </dd>
+                          </div>
                         )}
                         {analysis.ton_detecte && (
-                          <span className="tag">
-                            <b>Ton</b> <Masque text={analysis.ton_detecte} />
-                          </span>
+                          <div>
+                            <dt>Ton</dt>
+                            <dd>
+                              <Masque text={analysis.ton_detecte} />
+                            </dd>
+                          </div>
                         )}
-                      </div>
-                    )}
-                    {resumeFini && !arnaque && (
-                      <p className="safe">
-                        <Icon name="shield" size={18} /> Aucune arnaque détectée (risque{' '}
-                        {analysis.arnaque.score} %)
-                      </p>
+                        <div>
+                          <dt>Tension</dt>
+                          <dd>{niveauTension(analysis.tension)}</dd>
+                        </div>
+                        <div>
+                          <dt>Arnaque</dt>
+                          <dd className={arnaque ? 'fait-risque' : 'fait-sur'}>
+                            {arnaque
+                              ? `Risque élevé (${analysis.arnaque.score} %)`
+                              : `Aucun signe (${analysis.arnaque.score} %)`}
+                          </dd>
+                        </div>
+                      </dl>
                     )}
                     {resumeFini && <Nuances items={analysis.nuances ?? []} />}
                     {resumeFini && analysis.question && (
@@ -1434,7 +1463,7 @@ export function Flow() {
                   )}
                   {replies.length > 0 && (
                     <>
-                      <h2 className="lbl">Trois réponses pour toi</h2>
+                      <h2 className="lbl">Réponses proposées</h2>
                       <div
                         className={`stack bubbles${busy ? ' busy' : ''}`}
                         data-canal={canal || undefined}
@@ -1462,7 +1491,7 @@ export function Flow() {
                               {selected === i && !edition && tape > i && (
                                 <div className="acts">
                                   <button className="act" disabled={busy} onClick={() => finish(r)}>
-                                    <Icon name="copy" size={16} /> Copier la réponse {lettre}
+                                    <Icon name="copy" size={16} /> Copier
                                   </button>
                                   <button
                                     className="act doux"
@@ -1554,6 +1583,7 @@ export function Flow() {
                   {((replies.length > 0 && tape >= replies.length) ||
                     (Boolean(error) && replies.length === 0 && !busy)) && (
                     <div className="reglages-fil">
+                      <h2 className="lbl">Ajuster les réponses</h2>
                       {objectifs.length > 0 && (
                         <>
                           <span className="lbl" id="obj">
