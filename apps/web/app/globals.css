@@ -5402,3 +5402,65 @@ body {
   align-self: flex-start;
   padding: 0 0 12px 14px;
 }
+
+/* Fond « Uni » : ni dessin ni halo, la couleur du thème seule. */
+:root[data-fond='uni'] body {
+  background: var(--bg);
+}
+:root[data-fond='uni'] .fond-vagues {
+  display: none;
+}
+
+/* Aperçus des fonds (Réglages > Thème) */
+.modes.fonds {
+  grid-template-columns: repeat(4, 1fr);
+}
+.fond-apercu {
+  width: 54px;
+  height: 92px;
+  padding: 0;
+  background-color: var(--bg);
+}
+.apercu-vagues.fond-apercu {
+  background:
+    radial-gradient(
+      120% 60% at 50% 120%,
+      transparent 58%,
+      color-mix(in srgb, var(--brand) 55%, transparent) 60%,
+      transparent 62%
+    ),
+    radial-gradient(
+      120% 60% at 50% 110%,
+      transparent 58%,
+      color-mix(in srgb, var(--brand) 35%, transparent) 60%,
+      transparent 63%
+    ),
+    var(--bg);
+}
+.apercu-aurore.fond-apercu {
+  background:
+    radial-gradient(
+      60% 45% at 25% 25%,
+      color-mix(in srgb, var(--brand) 55%, transparent),
+      transparent
+    ),
+    radial-gradient(
+      60% 45% at 80% 75%,
+      color-mix(in srgb, var(--accent-a) 60%, transparent),
+      transparent
+    ),
+    var(--bg);
+}
+.apercu-points.fond-apercu {
+  background:
+    radial-gradient(
+        circle,
+        color-mix(in srgb, var(--brand) 70%, transparent) 1.2px,
+        transparent 1.6px
+      )
+      0 0 / 14px 16px,
+    var(--bg);
+}
+.apercu-uni.fond-apercu {
+  background: var(--bg);
+}

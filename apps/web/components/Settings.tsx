@@ -15,6 +15,7 @@ import {
 import { effacerConversations, lireConversations } from '@/lib/conversations';
 import { applyThemeIcon, hasNativeThemeIconError } from '@/lib/theme-icon';
 import { lireAccent } from '@/lib/theme-ids';
+import { FONDS, fondValide, type FondId } from './Fond';
 import themeColors from '@/lib/theme-colors.json';
 import type { UserStyle } from '@/lib/types';
 import {
@@ -1280,6 +1281,7 @@ export function Settings() {
   const [theme, setTheme] = useState<Theme>('auto');
   const [accent, setAccent] = useState('bleu');
   const [police, setPolice] = useState('systeme');
+  const [fond, setFond] = useState<FondId>('vagues');
   const [style, setStyle] = useState<UserStyle>(DEFAULT_STYLE);
   const [expr, setExpr] = useState('');
   const [themeIconError, setThemeIconError] = useState(false);
@@ -1291,6 +1293,7 @@ export function Settings() {
     const t = read('six-theme');
     setTheme(t === 'light' || t === 'dark' ? t : 'auto');
     setAccent(lireAccent());
+    setFond(fondValide(read('six-fond')));
     setThemeIconError(hasNativeThemeIconError());
     const f = read('six-font');
     setPolice(POLICES.some((p) => p.id === f) ? (f as string) : 'systeme');
@@ -1358,6 +1361,18 @@ export function Settings() {
     void applyThemeIcon(); // toute l'app change : barre du téléphone, favicon et icône native
   }
 
+  function applyFond(f: FondId) {
+    setFond(f);
+    const root = document.documentElement;
+    if (f === 'vagues') {
+      delete root.dataset.fond;
+      write('six-fond', null);
+    } else {
+      root.dataset.fond = f;
+      write('six-fond', f);
+    }
+  }
+
   function applyPolice(p: string) {
     setPolice(p);
     const root = document.documentElement;
@@ -1399,6 +1414,26 @@ export function Settings() {
                     <span className="mode-nom">{MODES[m]}</span>
                     <span className="mode-coche" aria-hidden="true">
                       {theme === m && <Icon name="check" size={13} stroke={3} />}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </Groupe>
+            <Groupe titre="Fond">
+              <div className="modes fonds" role="radiogroup" aria-label="Fond">
+                {FONDS.map((f) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    role="radio"
+                    aria-checked={fond === f.id}
+                    className="mode"
+                    onClick={() => applyFond(f.id)}
+                  >
+                    <span className={`mode-ecran fond-apercu apercu-${f.id}`} aria-hidden="true" />
+                    <span className="mode-nom">{f.label}</span>
+                    <span className="mode-coche" aria-hidden="true">
+                      {fond === f.id && <Icon name="check" size={13} stroke={3} />}
                     </span>
                   </button>
                 ))}
@@ -1574,7 +1609,7 @@ export function Settings() {
       id: 'theme',
       icon: 'palette',
       label: 'Thème',
-      sous: `${couleur}, ${MODES[theme].toLowerCase()}`,
+      sous: `${couleur}, ${MODES[theme].toLowerCase()}, fond ${FONDS.find((f) => f.id === fond)?.label.toLowerCase()}`,
       cles: 'couleur clair sombre apparence ambiance',
     },
     {
