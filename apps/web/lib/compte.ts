@@ -1,8 +1,9 @@
 /**
  * Compte de l'utilisateur. Par défaut : invité, tout reste sur le téléphone.
  * Connecté : par un code reçu par e-mail (Supabase).
- * Le compte garde le prénom et synchronise la mémoire de Six entre appareils (table `memoires`).
- * Jamais de conversation : elles ne sont ni gardées sur le téléphone ni envoyées au compte.
+ * Le compte garde le prénom. La mémoire de Six reste sur le téléphone ; elle n'est copiée sur le compte (table
+ * `memoires`) que si la personne l'autorise elle-même (syncAutorisee), et elle peut retirer cette autorisation.
+ * Jamais de conversation sur le compte : celles que la mémoire garde restent sur le téléphone.
  * L'interface (avatar, menu, écran Compte) lit `lireCompte()`, synchrone, et s'abonne avec `ecouterCompte()`.
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -14,6 +15,7 @@ export { CONNEXION_DISPONIBLE };
 const KEY = 'six-compte'; // { prenom }
 const SESSION = 'six-session'; // { id, identifiant } : copie locale de la session, pour un affichage immédiat
 const EVT = 'six-compte';
+const SYNC = 'six-memoire-sync'; // '1' : la personne a autorisé la copie de sa mémoire sur son compte
 
 export type Compte =
   | { statut: 'invite'; prenom: string }
@@ -64,7 +66,8 @@ export function ecrirePrenom(prenom: string): void {
 
 /** S'abonne aux changements de compte (autre écran, autre onglet). */
 export function ecouterCompte(f: () => void): () => void {
-  const onStorage = (e: StorageEvent) => (e.key === KEY || e.key === SESSION) && f();
+  const onStorage = (e: StorageEvent) =>
+    (e.key === KEY || e.key === SESSION || e.key === SYNC) && f();
   window.addEventListener(EVT, f);
   window.addEventListener('storage', onStorage);
   return () => {
@@ -370,6 +373,38 @@ export async function oublierMemoireDuCompte(): Promise<string | null> {
 
 /* ---------- Synchronisation de la mémoire ---------- */
 
+/** Vrai seulement si la personne a autorisé la copie de sa mémoire sur son compte (désactivé par défaut). */
+export function syncAutorisee(): boolean {
+  try {
+    return localStorage.getItem(SYNC) === '1';
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Donne ou retire l'autorisation. Donnée : la mémoire du téléphone et celle du compte sont fusionnées.
+ * Retirée : la copie du compte est effacée, la mémoire du téléphone reste intacte.
+ */
+export async function autoriserSync(on: boolean): Promise<string | null> {
+  try {
+    if (on) localStorage.setItem(SYNC, '1');
+    else localStorage.removeItem(SYNC);
+  } catch {
+    return "Six n'a pas pu enregistrer ton choix sur ce téléphone.";
+  }
+  annoncer();
+  const sb = await supabase();
+  const id = lireJson(SESSION).id;
+  if (!sb || typeof id !== 'string') return null;
+  if (on) {
+    await synchroniser(sb, id);
+    return null;
+  }
+  const { error } = await sb.from('memoires').delete().eq('user_id', id);
+  return error ? "La copie sur ton compte n'a pas pu être effacée. Réessaie." : null;
+}
+
 let demarre = false;
 let minuterie: ReturnType<typeof setTimeout> | undefined;
 
@@ -386,6 +421,7 @@ async function envoyerMemoire(sb: SupabaseClient, userId: string) {
 }
 
 async function synchroniser(sb: SupabaseClient, userId: string) {
+  if (!syncAutorisee()) return; // sans autorisation, rien ne part vers le compte
   if (!memoireActive()) {
     await envoyerMemoire(sb, userId);
     return;
@@ -402,7 +438,8 @@ async function synchroniser(sb: SupabaseClient, userId: string) {
 
 /**
  * À appeler une fois au chargement de l'app (components/CompteSync.tsx) : suit la session, recopie le prénom,
- * fusionne la mémoire à la connexion puis renvoie chaque changement au compte (regroupés sur 1,5 s).
+ * et, si la personne l'a autorisé, fusionne la mémoire à la connexion puis renvoie chaque changement au compte
+ * (regroupés sur 1,5 s).
  */
 export async function demarrerCompte(): Promise<void> {
   if (demarre) return;
@@ -442,7 +479,7 @@ export async function demarrerCompte(): Promise<void> {
 
   window.addEventListener('six-memoire', () => {
     const id = lireJson(SESSION).id;
-    if (typeof id !== 'string') return;
+    if (typeof id !== 'string' || !syncAutorisee()) return;
     clearTimeout(minuterie);
     minuterie = setTimeout(() => void envoyerMemoire(sb, id), 1500);
   });

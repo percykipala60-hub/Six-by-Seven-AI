@@ -3,7 +3,7 @@ Add-Type -AssemblyName System.Drawing
 
 $root = Split-Path -Parent $PSScriptRoot
 $palette = Get-Content (Join-Path $root 'lib\theme-colors.json') -Raw | ConvertFrom-Json
-$themes = @($palette.accents) + @($palette.networks)
+$themes = @($palette.accents) + @($palette.ambiances)
 $glyphe = [System.Drawing.Bitmap]::FromFile((Join-Path $root 'public\six-glyphe.png'))
 $trait = [System.Drawing.Bitmap]::FromFile((Join-Path $root 'public\six-trait.png'))
 $size = 1024

@@ -60,7 +60,7 @@
 }
 /* Thèmes complets : toute l'app change (fonds, cartes, textes, traits, icône).
    Contrastes vérifiés (WCAG) : texte ≥ 7, texte secondaire et repère ≥ 4,5, boutons ≥ 4,5, icône ≥ 3.
-   Thèmes réseaux retenus par la matrice design (docs/Matrice_design_Six.xlsx) : couleurs seulement, aucun logo.
+   Ambiances retenues par la matrice design (docs/Matrice_design_Six.xlsx) : des couleurs, sans aucun logo ni nom de marque.
    Couleurs de Six : bleu (défaut), ambre, gris, rose, violet, jaune, vert, néon (noir, bleu-cyan, toujours sombre). */
 :root[data-accent='ambre'] {
   --bg: #faf6ef;
@@ -90,7 +90,7 @@
   --icon-ink: #f4f5f7;
   --icon-accent: #aab2c5;
 }
-:root[data-accent='whatsapp'] {
+:root[data-accent='jade'] {
   --bg: #efeae2;
   --card: #ffffff;
   --panel2: #f0f2f5;
@@ -105,7 +105,7 @@
   --icon-ink: #ffffff;
   --icon-accent: #25d366;
 }
-:root[data-accent='facebook'] {
+:root[data-accent='azur'] {
   --bg: #f0f2f5;
   --card: #ffffff;
   --panel2: #e4e6eb;
@@ -119,7 +119,7 @@
   --icon-ink: #ffffff;
   --icon-accent: #cfe1ff;
 }
-:root[data-accent='sms'] {
+:root[data-accent='saphir'] {
   --bg: #f3f6fc;
   --card: #ffffff;
   --panel2: #e3eaf6;
@@ -133,7 +133,7 @@
   --icon-ink: #ffffff;
   --icon-accent: #a8c7fa;
 }
-:root[data-accent='linkedin'] {
+:root[data-accent='cobalt'] {
   --bg: #f4f2ee;
   --card: #ffffff;
   --panel2: #edf3f8;
@@ -147,7 +147,7 @@
   --icon-ink: #ffffff;
   --icon-accent: #9dcbf7;
 }
-:root[data-accent='telegram'] {
+:root[data-accent='ciel'] {
   --bg: #edf2f6;
   --card: #ffffff;
   --panel2: #e6ebef;
@@ -161,7 +161,7 @@
   --icon-ink: #ffffff;
   --icon-accent: #c8ecff;
 }
-:root[data-accent='instagram'] {
+:root[data-accent='aurore'] {
   --bg: #fafafa;
   --card: #ffffff;
   --panel2: #efefef;
@@ -183,7 +183,7 @@
     #4f5bd5 100%
   );
 }
-:root[data-accent='tiktok'] {
+:root[data-accent='minuit'] {
   --bg: #f8f8f8;
   --card: #ffffff;
   --panel2: #f1f1f2;
@@ -198,7 +198,7 @@
   --icon-accent: #25f4ee;
   --icon-ring: var(--line);
 }
-:root[data-accent='google'] {
+:root[data-accent='nacre'] {
   --bg: #f8f9fa;
   --card: #ffffff;
   --panel2: #f1f3f4;
@@ -213,7 +213,7 @@
   --icon-accent: #ea4335;
   --icon-ring: var(--line);
 }
-:root[data-accent='claude'] {
+:root[data-accent='terre'] {
   --bg: #faf9f5;
   --card: #ffffff;
   --panel2: #f0eee6;
@@ -227,7 +227,7 @@
   --icon-ink: #ffffff;
   --icon-accent: #141413;
 }
-:root[data-accent='kimi'] {
+:root[data-accent='abysse'] {
   --bg: #f4f5f7;
   --card: #ffffff;
   --panel2: #eceef1;
@@ -241,7 +241,7 @@
   --icon-ink: #ffffff;
   --icon-accent: #00f6ff;
 }
-:root[data-accent='pinterest'] {
+:root[data-accent='cerise'] {
   --bg: #ffffff;
   --card: #ffffff;
   --panel2: #efefef;
@@ -365,7 +365,7 @@
     --line: #30343a;
     --brand: #aab2c5;
   }
-  :root:not([data-theme='light'])[data-accent='whatsapp'] {
+  :root:not([data-theme='light'])[data-accent='jade'] {
     --bg: #0b141a;
     --card: #111b21;
     --panel2: #202c33;
@@ -375,7 +375,7 @@
     --brand: #25d366;
     --ok: #35e0c2;
   }
-  :root:not([data-theme='light'])[data-accent='facebook'] {
+  :root:not([data-theme='light'])[data-accent='azur'] {
     --bg: #18191a;
     --card: #242526;
     --panel2: #3a3b3c;
@@ -384,7 +384,7 @@
     --line: #3e4042;
     --brand: #7ab4ff;
   }
-  :root:not([data-theme='light'])[data-accent='sms'] {
+  :root:not([data-theme='light'])[data-accent='saphir'] {
     --bg: #131314;
     --card: #1e1f20;
     --panel2: #282a2c;
@@ -393,7 +393,7 @@
     --line: #444746;
     --brand: #a8c7fa;
   }
-  :root:not([data-theme='light'])[data-accent='linkedin'] {
+  :root:not([data-theme='light'])[data-accent='cobalt'] {
     --bg: #000000;
     --card: #1b1f23;
     --panel2: #283039;
@@ -402,7 +402,7 @@
     --line: #38434f;
     --brand: #71b7fb;
   }
-  :root:not([data-theme='light'])[data-accent='telegram'] {
+  :root:not([data-theme='light'])[data-accent='ciel'] {
     --bg: #0e1621;
     --card: #17212b;
     --panel2: #242f3d;
@@ -411,7 +411,7 @@
     --line: #2b3949;
     --brand: #26a5e4;
   }
-  :root:not([data-theme='light'])[data-accent='instagram'] {
+  :root:not([data-theme='light'])[data-accent='aurore'] {
     --bg: #000000;
     --card: #121212;
     --panel2: #262626;
@@ -420,7 +420,7 @@
     --line: #363636;
     --brand: #f56fa6;
   }
-  :root:not([data-theme='light'])[data-accent='tiktok'] {
+  :root:not([data-theme='light'])[data-accent='minuit'] {
     --bg: #000000;
     --card: #121212;
     --panel2: #1f1f1f;
@@ -429,7 +429,7 @@
     --line: #2f2f2f;
     --brand: #25f4ee;
   }
-  :root:not([data-theme='light'])[data-accent='google'] {
+  :root:not([data-theme='light'])[data-accent='nacre'] {
     --bg: #202124;
     --card: #292a2d;
     --panel2: #3c4043;
@@ -438,7 +438,7 @@
     --line: #5f6368;
     --brand: #8ab4f8;
   }
-  :root:not([data-theme='light'])[data-accent='claude'] {
+  :root:not([data-theme='light'])[data-accent='terre'] {
     --bg: #1f1e1d;
     --card: #262624;
     --panel2: #30302e;
@@ -447,7 +447,7 @@
     --line: #3d3d3a;
     --brand: #e08a6d;
   }
-  :root:not([data-theme='light'])[data-accent='kimi'] {
+  :root:not([data-theme='light'])[data-accent='abysse'] {
     --bg: #121212;
     --card: #1c1d1f;
     --panel2: #26282b;
@@ -456,7 +456,7 @@
     --line: #2e3134;
     --brand: #00a1ff;
   }
-  :root:not([data-theme='light'])[data-accent='pinterest'] {
+  :root:not([data-theme='light'])[data-accent='cerise'] {
     --bg: #111111;
     --card: #1e1e1e;
     --panel2: #2b2b2b;
@@ -529,7 +529,7 @@
   --line: #30343a;
   --brand: #aab2c5;
 }
-:root[data-theme='dark'][data-accent='whatsapp'] {
+:root[data-theme='dark'][data-accent='jade'] {
   --bg: #0b141a;
   --card: #111b21;
   --panel2: #202c33;
@@ -539,7 +539,7 @@
   --brand: #25d366;
   --ok: #35e0c2;
 }
-:root[data-theme='dark'][data-accent='facebook'] {
+:root[data-theme='dark'][data-accent='azur'] {
   --bg: #18191a;
   --card: #242526;
   --panel2: #3a3b3c;
@@ -548,7 +548,7 @@
   --line: #3e4042;
   --brand: #7ab4ff;
 }
-:root[data-theme='dark'][data-accent='sms'] {
+:root[data-theme='dark'][data-accent='saphir'] {
   --bg: #131314;
   --card: #1e1f20;
   --panel2: #282a2c;
@@ -557,7 +557,7 @@
   --line: #444746;
   --brand: #a8c7fa;
 }
-:root[data-theme='dark'][data-accent='linkedin'] {
+:root[data-theme='dark'][data-accent='cobalt'] {
   --bg: #000000;
   --card: #1b1f23;
   --panel2: #283039;
@@ -566,7 +566,7 @@
   --line: #38434f;
   --brand: #71b7fb;
 }
-:root[data-theme='dark'][data-accent='telegram'] {
+:root[data-theme='dark'][data-accent='ciel'] {
   --bg: #0e1621;
   --card: #17212b;
   --panel2: #242f3d;
@@ -575,7 +575,7 @@
   --line: #2b3949;
   --brand: #26a5e4;
 }
-:root[data-theme='dark'][data-accent='instagram'] {
+:root[data-theme='dark'][data-accent='aurore'] {
   --bg: #000000;
   --card: #121212;
   --panel2: #262626;
@@ -584,7 +584,7 @@
   --line: #363636;
   --brand: #f56fa6;
 }
-:root[data-theme='dark'][data-accent='tiktok'] {
+:root[data-theme='dark'][data-accent='minuit'] {
   --bg: #000000;
   --card: #121212;
   --panel2: #1f1f1f;
@@ -593,7 +593,7 @@
   --line: #2f2f2f;
   --brand: #25f4ee;
 }
-:root[data-theme='dark'][data-accent='google'] {
+:root[data-theme='dark'][data-accent='nacre'] {
   --bg: #202124;
   --card: #292a2d;
   --panel2: #3c4043;
@@ -602,7 +602,7 @@
   --line: #5f6368;
   --brand: #8ab4f8;
 }
-:root[data-theme='dark'][data-accent='claude'] {
+:root[data-theme='dark'][data-accent='terre'] {
   --bg: #1f1e1d;
   --card: #262624;
   --panel2: #30302e;
@@ -611,7 +611,7 @@
   --line: #3d3d3a;
   --brand: #e08a6d;
 }
-:root[data-theme='dark'][data-accent='kimi'] {
+:root[data-theme='dark'][data-accent='abysse'] {
   --bg: #121212;
   --card: #1c1d1f;
   --panel2: #26282b;
@@ -620,7 +620,7 @@
   --line: #2e3134;
   --brand: #00a1ff;
 }
-:root[data-theme='dark'][data-accent='pinterest'] {
+:root[data-theme='dark'][data-accent='cerise'] {
   --bg: #111111;
   --card: #1e1e1e;
   --panel2: #2b2b2b;
@@ -943,7 +943,7 @@ button,
 }
 .btn.danger {
   background: var(--bad);
-  color: #fff;
+  color: var(--card); /* lisible en clair (rouge foncé) comme en sombre (rouge clair) */
 }
 .btn.small {
   min-height: 44px;
@@ -2362,7 +2362,7 @@ label.example {
   font-size: 0.92rem;
 }
 
-/* ---------- Six 3 : accueil façon messagerie IA (Claude Mobile, Gemini), menu latéral, réglages groupés ---------- */
+/* ---------- Six 3 : accueil en fil de discussion, menu latéral, réglages groupés ---------- */
 
 /* Barre du haut : menu, titre, profil */
 .appbar {
@@ -3701,7 +3701,7 @@ a.avatar::after {
   color: var(--brand);
 }
 
-/* Carte d'authentification centrée, comme chez Claude / Gemini / Snap. */
+/* Carte d'authentification centrée. */
 .auth-card {
   display: flex;
   flex-direction: column;
@@ -3748,7 +3748,7 @@ a.avatar::after {
   background: color-mix(in srgb, var(--ink) 82%, var(--brand));
   border-color: transparent;
 }
-/* Inscription en étapes numérotées, comme dans Snap. */
+/* Inscription en étapes numérotées. */
 .auth-steps .auth-step {
   display: flex;
   gap: 12px;
@@ -3775,7 +3775,7 @@ a.avatar::after {
   gap: 6px;
   min-width: 0;
 }
-/* Code à 6 chiffres en cases, comme dans Snap / Claude. */
+/* Code à 6 chiffres en cases. */
 .otp-boxes {
   display: flex;
   gap: 8px;
@@ -4217,4 +4217,188 @@ a.avatar::after {
 .seven-msg .seven-pdf:active {
   color: var(--ink);
   opacity: 1;
+}
+
+/* ---------- Six 4 : fond vivant, barres en verre, fenêtre de confirmation ---------- */
+
+/* Fond : la couleur du thème éclaire doucement le haut de l'écran, et la vague passe derrière le contenu. */
+body {
+  min-height: 100dvh;
+  background:
+    radial-gradient(
+        130% 70% at 90% -10%,
+        color-mix(in srgb, var(--accent-b) 34%, var(--bg)) 0%,
+        color-mix(in srgb, var(--accent-b) 12%, var(--bg)) 38%,
+        var(--bg) 66%
+      )
+      fixed,
+    var(--bg);
+}
+.fond-vagues {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: -1;
+  height: 100vh;
+  overflow: hidden;
+  pointer-events: none;
+}
+@supports (height: 100lvh) {
+  .fond-vagues {
+    height: 100lvh; /* grande hauteur d'écran : la barre d'adresse ne la fait pas varier */
+  }
+}
+.fond-vagues canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Barres en verre : on devine la vague à travers. */
+.appbar {
+  background: color-mix(in srgb, var(--bg) 62%, transparent);
+  backdrop-filter: blur(18px) saturate(1.3);
+  -webkit-backdrop-filter: blur(18px) saturate(1.3);
+}
+.home-foot {
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in srgb, var(--bg) 70%, transparent) 30px
+  );
+}
+.saisie {
+  background: color-mix(in srgb, var(--card) 74%, transparent);
+  border-color: color-mix(in srgb, var(--line) 80%, transparent);
+  backdrop-filter: blur(22px) saturate(1.4);
+  -webkit-backdrop-filter: blur(22px) saturate(1.4);
+  box-shadow:
+    var(--sh-2),
+    inset 0 1px 0 rgb(255 255 255 / 0.1);
+}
+.drawer {
+  background: color-mix(in srgb, var(--card) 86%, transparent);
+  backdrop-filter: blur(24px) saturate(1.3);
+  -webkit-backdrop-filter: blur(24px) saturate(1.3);
+}
+
+/* Cartes et listes : presque pleines, avec un trait de lumière en haut. */
+.card,
+.group-list,
+.profile-card {
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+  box-shadow:
+    var(--sh-1),
+    inset 0 1px 0 rgb(255 255 255 / 0.05);
+}
+
+/* Fenêtre de confirmation (effacer, se déconnecter) */
+.confirm-voile {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: end center;
+  padding: 16px calc(16px + env(safe-area-inset-right, 0px))
+    calc(16px + env(safe-area-inset-bottom, 0px)) calc(16px + env(safe-area-inset-left, 0px));
+  background: rgb(5 8 15 / 0.5);
+  animation: confirm-fondu 0.18s ease both;
+}
+@media (min-width: 560px) {
+  .confirm-voile {
+    place-items: center;
+  }
+}
+.confirm {
+  width: min(100%, 400px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 22px 20px 16px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: 0 24px 60px rgb(0 0 0 / 0.35);
+  animation: confirm-monte 0.24s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+.confirm h2 {
+  font-size: 1.12rem;
+}
+.confirm p {
+  color: var(--muted);
+  font-size: 0.93rem;
+}
+.confirm-acts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 8px;
+}
+@keyframes confirm-fondu {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes confirm-monte {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.98);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .confirm-voile,
+  .confirm {
+    animation: none;
+  }
+}
+
+/* Barre de saisie : fine, sur une ligne, boutons discrets ; le bouton d'envoi ne prend la couleur
+   du thème que lorsqu'il y a quelque chose à envoyer. */
+.saisie {
+  align-items: flex-end;
+  gap: 2px;
+  padding: 4px;
+  border-radius: 22px;
+}
+.saisie textarea {
+  min-height: 40px;
+  padding: 9px 6px;
+  font-size: 0.98rem;
+}
+.saisie textarea::placeholder {
+  color: var(--muted);
+  opacity: 0.85;
+}
+.saisie-btn {
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  color: var(--muted);
+}
+.saisie-btn:hover,
+.saisie-btn.on {
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+  color: var(--ink);
+}
+.saisie .send {
+  width: 40px;
+  height: 40px;
+  border-radius: 14px;
+  background: var(--brand);
+  color: var(--bg);
+  box-shadow: none;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+.saisie .send:disabled {
+  background: transparent;
+  color: color-mix(in srgb, var(--muted) 70%, transparent);
+}
+.privacy-line {
+  font-size: 0.72rem;
+  opacity: 0.85;
+}
+.privacy-line svg {
+  color: var(--muted);
 }

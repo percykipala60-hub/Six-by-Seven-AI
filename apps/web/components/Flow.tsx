@@ -481,40 +481,19 @@ export function Flow() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [gardees, setGardees] = useState<ConversationGardee[]>([]); // conversations terminées gardées (mémoire active)
-  const [clip, setClip] = useState(''); // texte du presse-papiers proposé au collage (logique OTP)
-  const lireClipRef = useRef<() => Promise<void>>(async () => {});
-
   // Conversations gardées : lues au démarrage et à chaque changement de mémoire (activation, effacement).
   useEffect(() => {
-    const lire = () => setGardees(memoireActive() ? lireConversations() : []);
+    const lire = () => {
+      const on = memoireActive();
+      setMemoOn(on);
+      setGardees(on ? lireConversations() : []);
+    };
     lire();
     window.addEventListener('six-memoire', lire);
     return () => window.removeEventListener('six-memoire', lire);
   }, []);
 
-  // Suggestion de collage : le presse-papiers est relu à l'ouverture, au retour sur l'app et au focus
-  // du champ — comme la suggestion OTP, le contenu copié ailleurs (WhatsApp…) est proposé à tapoter.
-  useEffect(() => {
-    const lireClip = async () => {
-      try {
-        const t = (await navigator.clipboard.readText()).trim();
-        setClip(t.length >= 2 ? t : '');
-      } catch {
-        setClip(''); // presse-papiers illisible (permissions) : pas de suggestion
-      }
-    };
-    lireClipRef.current = lireClip;
-    void lireClip();
-    const surRetour = () => {
-      if (document.visibilityState === 'visible') void lireClip();
-    };
-    window.addEventListener('focus', surRetour);
-    document.addEventListener('visibilitychange', surRetour);
-    return () => {
-      window.removeEventListener('focus', surRetour);
-      document.removeEventListener('visibilitychange', surRetour);
-    };
-  }, []);
+  // Le presse-papiers n'est lu que lorsque la personne touche « Coller » : jamais en arrière-plan.
 
   const actif = Boolean(conv); // une conversation est dans le fil
   const saisie = actif ? message : raw;
@@ -964,12 +943,14 @@ export function Flow() {
     if (memoOn) retenirChoix(reply); // des nombres seulement (mots, emoji, tu/vous), jamais le texte
     // Mémoire active : la conversation terminée (texte déjà masqué + réponse) est gardée sur ce
     // téléphone, jusqu'à ce que la personne l'efface. Rien ne part vers le compte.
-    if (memoOn && conv.trim()) {
+    // L'extrait vient du texte masqué (noms et numéros remplacés), jamais de la conversation d'origine.
+    const masque = ctx.current?.outgoing ?? outgoing;
+    if (memoOn && masque.trim()) {
       garderConversation({
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         quand: Date.now(),
         canal: canal ? (EXPORTS[canal]?.label ?? canal) : '',
-        extrait: conv.trim().split('\n').filter(Boolean).slice(-2).join(' ').slice(0, 140),
+        extrait: masque.trim().split('\n').filter(Boolean).slice(-2).join(' ').slice(0, 140),
         reponse: out,
       });
       setGardees(lireConversations());
@@ -1800,11 +1781,17 @@ export function Flow() {
                   onClick={() => rouvrirConversation(g)}
                 >
                   <span className="conv-gardee-titre">
-                    {g.extrait
-                      ? g.extrait.length > 64
-                        ? `${g.extrait.slice(0, 64)}…`
-                        : g.extrait
-                      : 'Conversation'}
+                    {g.extrait ? (
+                      <Masque
+                        text={
+                          g.extrait.length > 64
+                            ? `${g.extrait.slice(0, 64).replace(/\[[^\]]*$/, '')}…`
+                            : g.extrait
+                        }
+                      />
+                    ) : (
+                      'Conversation'
+                    )}
                   </span>
                   <span className="muted small">
                     {g.canal ? `${g.canal} · ` : ''}
@@ -1879,28 +1866,6 @@ export function Flow() {
             )}
           </div>
         )}
-        {!actif && !ocrBusy && clip && clip !== raw.trim() && (
-          <button
-            type="button"
-            className="clip-suggest"
-            onClick={() => {
-              setRaw(clip);
-              setClip('');
-              champ.current?.focus();
-            }}
-          >
-            <Icon name="clip" size={16} />
-            <span className="grow">
-              Coller : «
-              {(() => {
-                const ligne = (clip.split('\n').find((l) => l.trim()) ?? '').trim();
-                return ligne.length > 72 ? `${ligne.slice(0, 72)}…` : ligne;
-              })()}
-              »
-            </span>
-            <span aria-hidden="true">›</span>
-          </button>
-        )}
         <div className={`saisie${dragging ? ' over' : ''}`}>
           {!actif && (
             <button
@@ -1926,12 +1891,7 @@ export function Flow() {
             value={saisie}
             onChange={(e) => (actif ? setMessage(e.target.value) : setRaw(e.target.value))}
             onPaste={onPasteZone}
-            onFocus={() => void lireClipRef.current()}
-            placeholder={
-              actif
-                ? 'Précise ce que tu veux (ex. : je ne peux pas samedi)…'
-                : 'Colle le message ou la conversation…'
-            }
+            placeholder={actif ? 'Précise ce que tu veux…' : 'Colle une conversation…'}
           />
           <button
             className="send"
@@ -1955,7 +1915,8 @@ export function Flow() {
           onChange={(e) => addShots(e.target.files)}
         />
         <p className="privacy-line">
-          <Icon name="lock" size={13} /> Masqué sur ton téléphone, rien n&apos;est gardé
+          <Icon name="lock" size={13} /> Masqué sur ton téléphone
+          {memoOn ? ', gardé ici seulement' : ", rien n'est gardé"}
           {!actif && raw.length > 0 && <span>({raw.length} caractères)</span>}
         </p>
       </div>

@@ -3,108 +3,188 @@
     {
       "id": "bleu",
       "label": "Bleu",
-      "icon": { "background": "#090f1b", "ink": "#f2f5fa", "accent": "#4d7cfe" }
+      "icon": {
+        "background": "#090f1b",
+        "ink": "#f2f5fa",
+        "accent": "#4d7cfe"
+      }
     },
     {
       "id": "rouge",
       "label": "Rouge",
-      "icon": { "background": "#300b12", "ink": "#fff5f5", "accent": "#ff4d5e" }
+      "icon": {
+        "background": "#300b12",
+        "ink": "#fff5f5",
+        "accent": "#ff4d5e"
+      }
     },
     {
       "id": "rose",
       "label": "Rose",
-      "icon": { "background": "#2a0f1d", "ink": "#fff5f9", "accent": "#ff6fae" }
+      "icon": {
+        "background": "#2a0f1d",
+        "ink": "#fff5f9",
+        "accent": "#ff6fae"
+      }
     },
     {
       "id": "violet",
       "label": "Violet",
-      "icon": { "background": "#1c1033", "ink": "#f5f0ff", "accent": "#a78bfa" }
+      "icon": {
+        "background": "#1c1033",
+        "ink": "#f5f0ff",
+        "accent": "#a78bfa"
+      }
     },
     {
       "id": "neon",
       "label": "Néon",
-      "icon": { "background": "#000000", "ink": "#e8fbff", "accent": "#00e5ff" },
+      "icon": {
+        "background": "#000000",
+        "ink": "#e8fbff",
+        "accent": "#00e5ff"
+      },
       "ring": true
     },
     {
       "id": "jaune",
       "label": "Jaune",
-      "icon": { "background": "#1f1a00", "ink": "#fffbe6", "accent": "#ffd60a" }
+      "icon": {
+        "background": "#1f1a00",
+        "ink": "#fffbe6",
+        "accent": "#ffd60a"
+      }
     },
     {
       "id": "vert",
       "label": "Vert",
-      "icon": { "background": "#0b2a1f", "ink": "#f0fbf6", "accent": "#34d399" }
+      "icon": {
+        "background": "#0b2a1f",
+        "ink": "#f0fbf6",
+        "accent": "#34d399"
+      }
     },
     {
       "id": "ambre",
       "label": "Ambre",
-      "icon": { "background": "#2b1e0b", "ink": "#fdf7ec", "accent": "#f0b95a" }
+      "icon": {
+        "background": "#2b1e0b",
+        "ink": "#fdf7ec",
+        "accent": "#f0b95a"
+      }
     },
     {
       "id": "gris",
       "label": "Gris",
-      "icon": { "background": "#23262e", "ink": "#f4f5f7", "accent": "#aab2c5" }
+      "icon": {
+        "background": "#23262e",
+        "ink": "#f4f5f7",
+        "accent": "#aab2c5"
+      }
     }
   ],
-  "networks": [
+  "ambiances": [
     {
-      "id": "facebook",
-      "label": "Facebook",
-      "icon": { "background": "#0866ff", "ink": "#ffffff", "accent": "#cfe1ff" }
+      "id": "azur",
+      "label": "Azur",
+      "icon": {
+        "background": "#0866ff",
+        "ink": "#ffffff",
+        "accent": "#cfe1ff"
+      }
     },
     {
-      "id": "sms",
-      "label": "SMS",
-      "icon": { "background": "#0b57d0", "ink": "#ffffff", "accent": "#a8c7fa" }
+      "id": "saphir",
+      "label": "Saphir",
+      "icon": {
+        "background": "#0b57d0",
+        "ink": "#ffffff",
+        "accent": "#a8c7fa"
+      }
     },
     {
-      "id": "whatsapp",
-      "label": "WhatsApp",
-      "icon": { "background": "#075e54", "ink": "#ffffff", "accent": "#25d366" }
+      "id": "jade",
+      "label": "Jade",
+      "icon": {
+        "background": "#075e54",
+        "ink": "#ffffff",
+        "accent": "#25d366"
+      }
     },
     {
-      "id": "linkedin",
-      "label": "LinkedIn",
-      "icon": { "background": "#0a66c2", "ink": "#ffffff", "accent": "#9dcbf7" }
+      "id": "cobalt",
+      "label": "Cobalt",
+      "icon": {
+        "background": "#0a66c2",
+        "ink": "#ffffff",
+        "accent": "#9dcbf7"
+      }
     },
     {
-      "id": "telegram",
-      "label": "Telegram",
-      "icon": { "background": "#007ab8", "ink": "#ffffff", "accent": "#c8ecff" }
+      "id": "ciel",
+      "label": "Ciel",
+      "icon": {
+        "background": "#007ab8",
+        "ink": "#ffffff",
+        "accent": "#c8ecff"
+      }
     },
     {
-      "id": "instagram",
-      "label": "Instagram",
-      "icon": { "background": "#d62976", "ink": "#ffffff", "accent": "#ffe08a" },
+      "id": "aurore",
+      "label": "Aurore",
+      "icon": {
+        "background": "#d62976",
+        "ink": "#ffffff",
+        "accent": "#ffe08a"
+      },
       "gradient": ["#feda75", "#fa7e1e", "#d62976", "#962fbf", "#4f5bd5"]
     },
     {
-      "id": "tiktok",
-      "label": "TikTok",
-      "icon": { "background": "#000000", "ink": "#ffffff", "accent": "#25f4ee" },
+      "id": "minuit",
+      "label": "Minuit",
+      "icon": {
+        "background": "#000000",
+        "ink": "#ffffff",
+        "accent": "#25f4ee"
+      },
       "ring": true
     },
     {
-      "id": "google",
-      "label": "Google",
-      "icon": { "background": "#ffffff", "ink": "#4285f4", "accent": "#ea4335" },
+      "id": "nacre",
+      "label": "Nacre",
+      "icon": {
+        "background": "#ffffff",
+        "ink": "#4285f4",
+        "accent": "#ea4335"
+      },
       "ring": true
     },
     {
-      "id": "claude",
-      "label": "Claude",
-      "icon": { "background": "#d97757", "ink": "#ffffff", "accent": "#141413" }
+      "id": "terre",
+      "label": "Terre cuite",
+      "icon": {
+        "background": "#d97757",
+        "ink": "#ffffff",
+        "accent": "#141413"
+      }
     },
     {
-      "id": "kimi",
-      "label": "Kimi",
-      "icon": { "background": "#002f5b", "ink": "#ffffff", "accent": "#00f6ff" }
+      "id": "abysse",
+      "label": "Abysse",
+      "icon": {
+        "background": "#002f5b",
+        "ink": "#ffffff",
+        "accent": "#00f6ff"
+      }
     },
     {
-      "id": "pinterest",
-      "label": "Pinterest",
-      "icon": { "background": "#e60023", "ink": "#ffffff", "accent": "#ffe1e5" }
+      "id": "cerise",
+      "label": "Cerise",
+      "icon": {
+        "background": "#e60023",
+        "ink": "#ffffff",
+        "accent": "#ffe1e5"
+      }
     }
   ]
 }

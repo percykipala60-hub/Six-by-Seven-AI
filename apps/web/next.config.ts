@@ -32,7 +32,8 @@ const config = {
           },
           {
             key: 'Permissions-Policy',
-            value: 'camera=(), microphone=(), geolocation=(), payment=()',
+            // Micro autorisé pour Six lui-même (messages vocaux et dictée de Seven AI), jamais pour un site intégré.
+            value: 'camera=(), microphone=(self), geolocation=(), payment=()',
           },
         ],
       },

@@ -90,7 +90,7 @@ function demoChat(question: string): string {
     );
   if (identite)
     return "Je suis Seven AI, l'assistant intégré de Six 😊 Six est l'app de la startup Seven.AI : tu y colles une conversation, elle est analysée (noms masqués, arnaques détectées, vrai sens expliqué) et Six te propose trois réponses. Il y a aussi des jeux : Kin Rush, Le jeu du ton juste et Coupe l'arnaque. (Mode démonstration : aucune IA connectée, ajoute une clé dans .env pour une vraie discussion.)";
-  return "Mode démonstration : aucune IA n'est connectée, donc je ne peux pas vraiment discuter pour l'instant. Je suis Seven AI, l'assistant intégré de Six. Ajoute une clé API dans le fichier .env du serveur (Claude ou OpenAI) et je pourrai répondre à toutes tes questions, comme ChatGPT ou Claude.";
+  return "Mode démonstration : aucune IA n'est connectée, donc je ne peux pas vraiment discuter pour l'instant. Je suis Seven AI, l'assistant intégré de Six. Ajoute une clé API dans le fichier .env du serveur (Claude ou OpenAI) et je pourrai répondre à toutes tes questions.";
 }
 
 /* ---------- Faux modèle de démonstration (aucune clé) ---------- */

@@ -14,6 +14,7 @@ import {
 } from '@/lib/memoire';
 import { effacerConversations, lireConversations } from '@/lib/conversations';
 import { applyThemeIcon, hasNativeThemeIconError } from '@/lib/theme-icon';
+import { lireAccent } from '@/lib/theme-ids';
 import themeColors from '@/lib/theme-colors.json';
 import type { UserStyle } from '@/lib/types';
 import {
@@ -31,8 +32,10 @@ import {
   inscrire,
   lireCompte,
   lireIdentifiant,
+  autoriserSync,
   oublierMemoireDuCompte,
   reinitialiserMotDePasse,
+  syncAutorisee,
   renvoyerConfirmation,
   verifierCode,
   type Compte,
@@ -40,6 +43,7 @@ import {
   type Identifiant,
 } from '@/lib/compte';
 import { AppBar } from './AppBar';
+import { useConfirmer } from './Confirmer';
 import { AppIcon } from './AppIcon';
 import { Icon, type IconName } from './Icon';
 import { InterAppNotifications, InterAppOnboarding } from './InterAppNotifications';
@@ -55,11 +59,10 @@ type Tuile = {
   ring?: boolean;
 };
 const ACCENTS: Tuile[] = themeColors.accents;
-const RESEAUX: Tuile[] = themeColors.networks;
+const AMBIANCES: Tuile[] = themeColors.ambiances;
 
-/** Tuile de thème : le logo officiel de la marque pour les réseaux/IA, ou le logo Six recoloré pour les accents. */
+/** Tuile de thème : le logo Six aux couleurs que le thème lui donne. */
 function Tile({ t, on, onPick }: { t: Tuile; on: boolean; onPick: () => void }) {
-  const isNetwork = RESEAUX.some((r) => r.id === t.id);
   const vars = {
     '--icon-bg': t.icon.background,
     '--icon-ink': t.icon.ink,
@@ -71,14 +74,10 @@ function Tile({ t, on, onPick }: { t: Tuile; on: boolean; onPick: () => void }) 
   } as CSSProperties;
   return (
     <button className="tile" data-id={t.id} aria-pressed={on} onClick={onPick}>
-      {isNetwork ? (
-        <AppIcon id={t.id} size={38} className="tile-brand-icon" />
-      ) : (
-        <span className="logo six-logo" style={vars} aria-hidden="true">
-          <i className="six-logo-glyphe" />
-          <i className="six-logo-trait" />
-        </span>
-      )}
+      <span className="logo six-logo" style={vars} aria-hidden="true">
+        <i className="six-logo-glyphe" />
+        <i className="six-logo-trait" />
+      </span>
       {t.label}
     </button>
   );
@@ -131,6 +130,7 @@ function write(key: string, value: string | null) {
 
 /** Mémoire de Six : ce qu'il a appris, ce que tu lui as dit de tes contacts, tes suivis, et tes conversations gardées. Visible, modifiable, effaçable. */
 function MemoireSix() {
+  const [demande, demander] = useConfirmer();
   const [on, setOn] = useState(false);
   const [m, setM] = useState<Memoire>({ choix: [], contacts: [], suivis: [] });
   const [nbConv, setNbConv] = useState(0);
@@ -166,9 +166,21 @@ function MemoireSix() {
           type="checkbox"
           className="sw"
           checked={on}
-          onChange={(e) => activerMemoire(e.target.checked)}
+          onChange={(e) => {
+            if (e.target.checked) activerMemoire(true);
+            else
+              demander({
+                titre: 'Couper la mémoire ?',
+                texte:
+                  "Six oubliera ce qu'il a appris, tes notes sur tes contacts et tes conversations gardées sur ce téléphone. On ne peut pas revenir en arrière.",
+                action: 'Couper et tout effacer',
+                danger: true,
+                onConfirmer: () => activerMemoire(false),
+              });
+          }}
         />
       </label>
+      {demande}
       {on && (
         <>
           <div className="card stack">
@@ -229,16 +241,36 @@ function MemoireSix() {
             {nbConv > 0 && (
               <button
                 className="btn ghost"
-                onClick={() => {
-                  effacerConversations();
-                  window.dispatchEvent(new Event('six-memoire'));
-                }}
+                onClick={() =>
+                  demander({
+                    titre: 'Effacer les conversations gardées ?',
+                    texte: `${nbConv} conversation${nbConv > 1 ? 's' : ''} et leurs réponses seront effacées de ce téléphone. On ne peut pas revenir en arrière.`,
+                    action: 'Effacer',
+                    danger: true,
+                    onConfirmer: () => {
+                      effacerConversations();
+                      window.dispatchEvent(new Event('six-memoire'));
+                    },
+                  })
+                }
               >
                 <Icon name="trash" /> Effacer les conversations gardées
               </button>
             )}
           </div>
-          <button className="btn ghost" onClick={effacerMemoire}>
+          <button
+            className="btn ghost"
+            onClick={() =>
+              demander({
+                titre: 'Effacer la mémoire de Six ?',
+                texte:
+                  'Six oubliera tes habitudes, tes notes sur tes contacts et tes suivis. La mémoire reste activée et recommencera à apprendre.',
+                action: 'Effacer',
+                danger: true,
+                onConfirmer: effacerMemoire,
+              })
+            }
+          >
             <Icon name="trash" /> Effacer la mémoire de Six
           </button>
         </>
@@ -325,7 +357,7 @@ function AppleLogo({ size = 20 }: { size?: number }) {
   );
 }
 
-/** Saisie d'un code à 6 chiffres en cases individuelles, comme dans Snap ou Claude. */
+/** Saisie d'un code à 6 chiffres en cases individuelles. */
 function CodeOtp({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const refs = useRef<Array<HTMLInputElement | null>>([]);
   const chars = Array.from({ length: 6 }, (_, i) => value[i] ?? '');
@@ -395,6 +427,8 @@ function evaluerForceMdp(pwd: string): { niveau: 'weak' | 'medium' | 'strong'; t
 
 /** Compte : invité par défaut ; connexion / inscription par e-mail ou code qui synchronise la mémoire de Six. */
 function CompteVue() {
+  const [demande, demander] = useConfirmer();
+  const [sync, setSync] = useState(false);
   const [c, setC] = useState<Compte>({ statut: 'invite', prenom: '' });
   const [prenom, setPrenom] = useState('');
   const [mode, setMode] = useState<ModeAuth>('connexion');
@@ -430,6 +464,7 @@ function CompteVue() {
     const lire = () => {
       const x = lireCompte();
       setC(x);
+      setSync(syncAutorisee());
       setPrenom(x.prenom);
       const m = lireMemoire();
       setStatsMemoire({
@@ -626,11 +661,51 @@ function CompteVue() {
 
       {c.statut === 'connecte' ? (
         <div className="group-list pad">
-          <b>Mémoire synchronisée</b>
-          <p className="muted small">
-            Tes habitudes résumées, tes notes sur tes contacts et tes suivis sont synchronisés en
-            toute sécurité avec ton compte. Jamais tes conversations.
-          </p>
+          {demande}
+          <label
+            className="toggle"
+            htmlFor="memoire-sync"
+            aria-label="Copier ma mémoire sur mon compte"
+          >
+            <span className="grow">
+              <b>Copier ma mémoire sur mon compte</b>
+              <span className="muted small">
+                {sync
+                  ? 'Tes habitudes, tes notes sur tes contacts et tes suivis te suivent sur tes autres appareils. Jamais tes conversations.'
+                  : 'Désactivé : ta mémoire reste sur ce téléphone. Active-le pour la retrouver sur tes autres appareils.'}
+              </span>
+            </span>
+            <input
+              id="memoire-sync"
+              type="checkbox"
+              className="sw"
+              checked={sync}
+              disabled={busy}
+              onChange={async (e) => {
+                const on = e.target.checked;
+                if (on) {
+                  setBusy(true);
+                  const err = await autoriserSync(true);
+                  setBusy(false);
+                  setErreur(err ?? '');
+                  setInfo(err ? '' : 'Ta mémoire est maintenant copiée sur ton compte.');
+                  return;
+                }
+                demander({
+                  titre: 'Arrêter la copie sur ton compte ?',
+                  texte:
+                    'La copie de ta mémoire gardée sur ton compte sera effacée. Celle de ce téléphone ne change pas.',
+                  action: 'Arrêter et effacer la copie',
+                  danger: true,
+                  onConfirmer: async () => {
+                    const err = await autoriserSync(false);
+                    setErreur(err ?? '');
+                    setInfo(err ? '' : 'La copie sur ton compte a été effacée.');
+                  },
+                });
+              }}
+            />
+          </label>
 
           <div className="profile-stats-grid">
             <div className="profile-stat-tile">
@@ -731,25 +806,38 @@ function CompteVue() {
           <button
             className="btn ghost"
             disabled={busy}
-            onClick={async () => {
-              setBusy(true);
-              const err = await oublierMemoireDuCompte();
-              setBusy(false);
-              setErreur(err ?? '');
-              setInfo(err ? '' : 'Mémoire effacée du compte et de ce téléphone.');
-            }}
+            onClick={() =>
+              demander({
+                titre: 'Effacer la mémoire partout ?',
+                texte:
+                  'Ta mémoire sera effacée de ton compte et de ce téléphone : habitudes, notes sur tes contacts et suivis. On ne peut pas revenir en arrière.',
+                action: 'Tout effacer',
+                danger: true,
+                onConfirmer: async () => {
+                  const err = await oublierMemoireDuCompte();
+                  setErreur(err ?? '');
+                  setInfo(err ? '' : 'Mémoire effacée du compte et de ce téléphone.');
+                },
+              })
+            }
           >
             <Icon name="trash" /> Effacer la mémoire partout
           </button>
           <button
             className="btn ghost"
             disabled={busy}
-            onClick={async () => {
-              setBusy(true);
-              await deconnecter();
-              setBusy(false);
-              setInfo('');
-            }}
+            onClick={() =>
+              demander({
+                titre: 'Se déconnecter ?',
+                texte:
+                  'Ta mémoire reste sur ce téléphone. Tu pourras te reconnecter à tout moment avec ton adresse e-mail.',
+                action: 'Se déconnecter',
+                onConfirmer: async () => {
+                  await deconnecter();
+                  setInfo('');
+                },
+              })
+            }
           >
             Se déconnecter
           </button>
@@ -788,7 +876,7 @@ function CompteVue() {
                     : 'Connecte-toi pour retrouver ta mémoire et tes suivis sur tous tes appareils.'}
             </p>
           </div>
-          {/* Connexion en un geste, comme dans Claude et Gemini : le reste (e-mail, code) ne change pas. */}
+          {/* Connexion en un geste : le reste (e-mail, code) ne change pas. */}
           {(mode === 'connexion' || mode === 'inscription') && (
             <>
               <div className="auth-socials">
@@ -964,7 +1052,7 @@ function CompteVue() {
             </form>
           )}
 
-          {/* 2. Mode CRÉATION DE COMPTE (Sign up) — étapes numérotées, comme dans Snap. */}
+          {/* 2. Mode CRÉATION DE COMPTE (Sign up) — étapes numérotées. */}
           {mode === 'inscription' && (
             <form onSubmit={handleInscription} className="stack auth-steps" style={{ gap: 14 }}>
               <div className="auth-step">
@@ -1262,6 +1350,7 @@ function CompteVue() {
 }
 
 export function Settings() {
+  const [demande, demander] = useConfirmer();
   const dedans = useRef(false); // vrai quand la sous-page a été ouverte depuis la liste : Retour revient en arrière
   // Sous-page courante (« ?v=theme » etc.) lue depuis l'URL dans un effet, sans useSearchParams :
   // plus de re-render de secours côté client (source intermittente d'hydratation #418).
@@ -1287,7 +1376,7 @@ export function Settings() {
   useEffect(() => {
     const t = read('six-theme');
     setTheme(t === 'light' || t === 'dark' ? t : 'auto');
-    setAccent(read('six-accent') ?? 'bleu');
+    setAccent(lireAccent());
     setThemeIconError(hasNativeThemeIconError());
     const f = read('six-font');
     setPolice(POLICES.some((p) => p.id === f) ? (f as string) : 'systeme');
@@ -1412,19 +1501,17 @@ export function Settings() {
               ))}
             </div>
             <h2 className="group-title" id="apps">
-              Inspirées de tes apps
+              Ambiances
             </h2>
             <div className="tiles scroll-x" role="group" aria-labelledby="apps">
-              {RESEAUX.map((a) => (
+              {AMBIANCES.map((a) => (
                 <Tile key={a.id} t={a} on={accent === a.id} onPick={() => applyAccent(a.id)} />
               ))}
             </div>
             <p className="muted small">
-              Le thème change toute l&apos;app : fonds, textes, boutons et icône. Couleurs inspirées
-              des apps que tu utilises, rendues lisibles : Six n&apos;est affilié à aucune
-              d&apos;elles. Ces réglages restent sur ton téléphone. L&apos;icône native suit le
-              thème sur Android et iOS ; les icônes de raccourcis web installées restent celles du
-              manifeste.
+              Le thème change toute l&apos;app : fonds, textes, boutons et icône. Ces réglages
+              restent sur ton téléphone. L&apos;icône native suit le thème sur Android et iOS ; les
+              icônes de raccourcis web installées restent celles du manifeste.
             </p>
             {themeIconError && (
               <p className="muted small" role="alert">
@@ -1555,13 +1642,23 @@ export function Settings() {
             </div>
             <button
               className="btn ghost"
-              onClick={() => {
-                clearStyle();
-                setStyle(DEFAULT_STYLE);
-              }}
+              onClick={() =>
+                demander({
+                  titre: 'Effacer ton style ?',
+                  texte:
+                    'Ton registre, ta longueur préférée et tes expressions reviendront aux réglages de départ.',
+                  action: 'Effacer',
+                  danger: true,
+                  onConfirmer: () => {
+                    clearStyle();
+                    setStyle(DEFAULT_STYLE);
+                  },
+                })
+              }
             >
               <Icon name="trash" /> Effacer mon style
             </button>
+            {demande}
           </>
         )}
         {vue === 'memoire' && <MemoireSix />}
@@ -1571,7 +1668,7 @@ export function Settings() {
     );
   }
 
-  const couleur = [...ACCENTS, ...RESEAUX].find((a) => a.id === accent)?.label ?? 'Bleu';
+  const couleur = [...ACCENTS, ...AMBIANCES].find((a) => a.id === accent)?.label ?? 'Bleu';
   const registre =
     style.decontracte >= 66 ? 'Décontracté' : style.decontracte <= 33 ? 'Formel' : 'Équilibré';
   return (

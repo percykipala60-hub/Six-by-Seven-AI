@@ -18,6 +18,7 @@ export interface ConversationGardee {
   canal: string; // où partait la réponse (étiquette du réseau), pour se souvenir du contexte
   extrait: string; // fin du texte envoyé (déjà masqué), pour reconnaître la conversation
   reponse: string; // la réponse de Six, prête à recopier
+  masque?: true; // extrait tiré du texte masqué (les anciennes versions gardaient le texte d'origine)
 }
 
 const KEY = 'six-conversations';
@@ -42,10 +43,14 @@ export function lireConversations(): ConversationGardee[] {
     if (!brut) return [];
     const liste = JSON.parse(brut) as unknown;
     if (!Array.isArray(liste)) return [];
-    return liste
-      .filter(valide)
-      .sort((a, b) => b.quand - a.quand)
-      .slice(0, MAX);
+    return (
+      liste
+        .filter(valide)
+        // Anciennes versions : l'extrait venait du texte d'origine, avec les vrais noms. On ne le montre plus.
+        .map((c) => (c.masque ? c : { ...c, extrait: '' }))
+        .sort((a, b) => b.quand - a.quand)
+        .slice(0, MAX)
+    );
   } catch {
     return [];
   }
@@ -54,7 +59,8 @@ export function lireConversations(): ConversationGardee[] {
 /** Ajoute une conversation terminée en tête de liste. */
 export function garderConversation(c: ConversationGardee): void {
   try {
-    localStorage.setItem(KEY, JSON.stringify([c, ...lireConversations()].slice(0, MAX)));
+    const nouvelle: ConversationGardee = { ...c, masque: true };
+    localStorage.setItem(KEY, JSON.stringify([nouvelle, ...lireConversations()].slice(0, MAX)));
   } catch {
     /* stockage plein ou bloqué : Six marche, sans garder la conversation */
   }

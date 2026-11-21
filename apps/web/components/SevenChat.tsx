@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppBar } from './AppBar';
+import { useConfirmer } from './Confirmer';
 import { Icon } from './Icon';
 import { memoireActive } from '@/lib/memoire';
 import { detecterOrdre } from '@/lib/seven-ordres';
@@ -126,13 +127,14 @@ function dicterTexte(): Promise<string> {
 /**
  * La page Seven AI : la conversation avec l'assistant intégré de Six, comme une page dédiée
  * de l'app (même modèle que « Quoi dire ? » ou « Espace jeu »). On discute avec Seven AI
- * comme avec ChatGPT ou Claude ; elle connaît parfaitement son identité et celle de Six.
+ * comme avec un assistant généraliste ; elle connaît parfaitement son identité et celle de Six.
  * L'historique reste sur l'appareil (localStorage). Trois entrées en plus du texte :
  * import de documents (texte/PDF), messages vocaux (transcription), et ordres de pilotage
  * (« ouvre les réglages ») que Six exécute directement.
  */
 export function SevenChatPage() {
   const router = useRouter();
+  const [demande, demander] = useConfirmer();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [saisie, setSaisie] = useState('');
   const [occupe, setOccupe] = useState(false);
@@ -363,6 +365,7 @@ export function SevenChatPage() {
   return (
     <main className="screen seven-screen">
       <AppBar page="seven-ai" titre="Seven AI" />
+      {demande}
       <div className="seven-fil" aria-live="polite">
         {messages.length === 0 && !occupe && (
           <div className="seven-vide">
@@ -444,14 +447,22 @@ export function SevenChatPage() {
             className="seven-effacer"
             aria-label="Effacer la conversation avec Seven AI"
             title="Effacer la conversation"
-            onClick={() => {
-              try {
-                localStorage.removeItem(CLE_SEVEN);
-              } catch {
-                /* stockage bloqué : rien à effacer */
-              }
-              setMessages([]);
-            }}
+            onClick={() =>
+              demander({
+                titre: 'Effacer la conversation ?',
+                texte: 'Tous les messages échangés avec Seven AI seront effacés de ce téléphone.',
+                action: 'Effacer',
+                danger: true,
+                onConfirmer: () => {
+                  try {
+                    localStorage.removeItem(CLE_SEVEN);
+                  } catch {
+                    /* stockage bloqué : rien à effacer */
+                  }
+                  setMessages([]);
+                },
+              })
+            }
           >
             <Icon name="trash" size={18} />
           </button>

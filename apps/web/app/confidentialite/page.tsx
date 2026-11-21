@@ -22,7 +22,8 @@ const sections = [
   {
     title: 'Données conservées sur ton appareil',
     text: [
-      'La mémoire facultative de Six (préférences résumées, notes de contact et suivis que tu ajoutes) reste dans le stockage de l’application si tu n’es pas connecté. Elle peut être conservée jusqu’à 90 jours et se gère dans Réglages > Mémoire.',
+      'La mémoire de Six (préférences résumées, notes de contact et suivis que tu ajoutes) reste dans le stockage de l’application, sur ton téléphone. Ce que Six apprend est oublié après 90 jours. Elle se gère et se coupe dans Réglages > Mémoire.',
+      'Tant que la mémoire est activée, tes conversations terminées avec Six (un court extrait masqué et la réponse choisie) et ta discussion avec Seven AI restent aussi sur ce téléphone, jusqu’à ce que tu les effaces. Elles ne sont jamais envoyées à ton compte.',
       'Sur Android, si tu actives l’accès système et choisis des applications, Six reçoit les aperçus de notification que ces apps publient et garde au maximum les 25 plus récents dans le stockage privé de l’appareil. Les réglages Android ou de l’app source peuvent masquer leur contenu. Rien n’est envoyé à l’IA à la réception ni à l’importation : il faut ensuite lancer l’analyse dans Six. Tu peux effacer ces aperçus dans Réglages ou retirer l’autorisation Android.',
       'Sur iPhone, iOS ne permet pas à Six de lire les notifications des autres apps. Tu peux choisir « Partager » puis « Six » dans une app compatible pour préparer du texte ou un lien localement. Six ne lance aucune analyse avant que tu la demandes.',
     ],
@@ -30,21 +31,20 @@ const sections = [
   {
     title: 'Compte et synchronisation',
     text: [
-      'Si tu crées un compte, Six traite ton adresse e-mail ou ton numéro pour l’authentification, ainsi que ton prénom et la mémoire que tu choisis de synchroniser. Ces données sont hébergées par Supabase dans la région configurée à Paris (Union européenne), avec des règles d’accès par compte. Les notes de contact peuvent contenir des renseignements sur d’autres personnes.',
-      'Tu peux effacer la mémoire synchronisée et supprimer ton compte depuis Réglages > Compte, lorsque l’option est disponible, ou écrire à sevenai.dc@gmail.com.',
+      'Si tu crées un compte, Six traite ton adresse e-mail pour l’authentification, ainsi que ton prénom. Ta mémoire n’est copiée sur ton compte que si tu l’autorises toi-même (Réglages > Compte) ; tu peux retirer cette autorisation à tout moment, la copie est alors effacée. Ces données sont hébergées par Supabase dans la région configurée à Paris (Union européenne), avec des règles d’accès par compte. Les notes de contact peuvent contenir des renseignements sur d’autres personnes.',
+      'Tu peux effacer la mémoire copiée sur ton compte depuis Réglages > Compte. Pour supprimer ton compte, écris à sevenai.dc@gmail.com.',
     ],
   },
   {
-    title: 'Prestataires et paiements',
+    title: 'Prestataires',
     text: [
       'Le site et les fonctions de compte dépendent de fournisseurs techniques d’hébergement, d’IA et de base de données. Ils traitent les données nécessaires pour fournir leurs services et peuvent appliquer leurs propres durées de conservation. Six ne contrôle pas les politiques indépendantes de ces fournisseurs.',
-      'Si une offre payante est proposée, les informations et le prix sont présentés avant validation. Le paiement est traité par CinetPay; Six reçoit les informations nécessaires au suivi de la transaction, et ne reçoit pas les secrets de paiement saisis chez le prestataire.',
     ],
   },
   {
     title: 'Tes choix et tes droits',
     text: [
-      'Tu peux arrêter une analyse, désactiver la mémoire, supprimer tes notes, effacer les notifications locales et demander l’accès ou la suppression des données de ton compte en écrivant à sevenai.dc@gmail.com. Indique l’adresse e-mail ou le numéro associé au compte pour que nous puissions traiter la demande.',
+      'Tu peux arrêter une analyse, désactiver la mémoire, supprimer tes notes, effacer les notifications locales et demander l’accès ou la suppression des données de ton compte en écrivant à sevenai.dc@gmail.com. Indique l’adresse e-mail associée au compte pour que nous puissions traiter la demande.',
       'Pour protéger tes informations, évite de coller un contenu que tu ne veux pas transmettre à un fournisseur d’IA. Le masquage aide, mais ne garantit pas l’anonymisation.',
     ],
   },
@@ -52,7 +52,7 @@ const sections = [
     title: 'Sécurité, changements et contact',
     text: [
       'Les échanges entre l’application et les services en ligne utilisent HTTPS. Aucun dispositif ne peut garantir une sécurité absolue. Nous mettrons cette page à jour lorsque nos pratiques changent de façon importante.',
-      'Responsable du service : Seven.AI, projet PBL5, Groupe 7, ULC-Icam, Kinshasa. Contact : sevenai.dc@gmail.com. Dernière mise à jour : 20 octobre 2026.',
+      'Responsable du service : Seven.AI, projet PBL5, Groupe 7, ULC-Icam, Kinshasa. Contact : sevenai.dc@gmail.com. Dernière mise à jour : 21 novembre 2026.',
     ],
   },
 ];

@@ -1,5 +1,5 @@
 /**
- * Mémoire de Six, sur le téléphone (localStorage) ; copiée sur le compte quand on est connecté (lib/compte.ts). Aucune conversation n'y entre.
+ * Mémoire de Six, sur le téléphone (localStorage) ; copiée sur le compte seulement si la personne l'autorise (lib/compte.ts). Aucune conversation n'y entre.
  *
  * - Habitudes : pour chaque réponse choisie, des nombres seulement (mots, emoji oui/non, tu/vous).
  *   Six en tire une consigne (« d'habitude : réponses courtes, tutoiement ») pour écrire comme toi.

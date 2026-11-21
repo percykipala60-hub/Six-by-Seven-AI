@@ -1,4 +1,5 @@
 import { Capacitor, registerPlugin } from '@capacitor/core';
+import { nomIconeNative } from './theme-ids';
 
 /**
  * Fait suivre le thème à ce que l'app peut changer hors de la page : la couleur de la barre du téléphone
@@ -52,7 +53,7 @@ export async function applyThemeIcon(): Promise<void> {
     c.width = c.height = SIZE;
     const ctx = c.getContext('2d');
     if (!ctx) throw new Error('Canvas indisponible');
-    // Fond uni, ou dégradé (Instagram) : on reprend ses couleurs, du coin bas gauche au coin haut droit (45°).
+    // Fond uni, ou dégradé (ambiance Aurore) : on reprend ses couleurs, du coin bas gauche au coin haut droit (45°).
     const stops = v('--icon-grad').match(/#[0-9a-f]{6}/gi);
     if (stops && stops.length > 1) {
       const g = ctx.createLinearGradient(0, SIZE, SIZE, 0);
@@ -75,7 +76,7 @@ export async function applyThemeIcon(): Promise<void> {
 
   if (Capacitor.getPlatform() !== 'web') {
     try {
-      await NativeTheme.setLauncherIcon({ accent });
+      await NativeTheme.setLauncherIcon({ accent: nomIconeNative(accent) });
       nativeIconError = false;
     } catch (error) {
       nativeIconError = true;

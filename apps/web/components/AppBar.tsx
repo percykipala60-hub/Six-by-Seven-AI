@@ -24,7 +24,7 @@ type Page =
   | 'ton-juste'
   | 'coupe-arnaque';
 
-/** Bouton rond du profil : initiale (ou silhouette) et pastille d'état, comme Claude Mobile et Gemini. */
+/** Bouton rond du profil : initiale (ou silhouette) et pastille d'état. */
 export function Avatar({ size = 36 }: { size?: number }) {
   const [c, setC] = useState<Compte>({ statut: 'invite', prenom: '' });
   useEffect(() => {

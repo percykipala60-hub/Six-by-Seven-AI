@@ -1,12 +1,13 @@
 {
-  "name": "SixSeven",
-  "short_name": "SixSeven",
-  "description": "A progressive web app built with Next.js – sleek UI, dark-mode, glass-morphism, and AI-powered notifications.",
+  "name": "Six",
+  "short_name": "Six",
+  "description": "Colle une conversation : Six la comprend et te propose trois réponses. Tu choisis, tu envoies.",
+  "lang": "fr",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#0e0e0e",
-  "theme_color": "#1e1e1e",
+  "background_color": "#12151c",
+  "theme_color": "#12151c",
   "orientation": "portrait-primary",
   "icons": [
     {
