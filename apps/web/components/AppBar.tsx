@@ -150,7 +150,8 @@ export function AppBar({
       aria-current={id === page ? 'page' : undefined}
       onClick={() => setOpen(false)}
     >
-      {icon} {label}
+      {icon}
+      <span>{label}</span>
     </Link>
   );
 
@@ -218,15 +219,9 @@ export function AppBar({
         )}
         <nav aria-label="Navigation principale" className="drawer-nav">
           {item('/', 'accueil', <Icon name="home" />, 'Accueil')}
-          {item('/sujets', 'sujets', <Icon name="bulb" />, 'Quoi dire ?')}
-          {item(
-            '/seven-ai',
-            'seven-ai',
-            // eslint-disable-next-line @next/next/no-img-element -- petite icône SVG inline, next/image n'apporte rien
-            <img src="/seven-ai-mark-bleu.svg" alt="" className="drawer-seven-logo" />,
-            'Seven AI',
-          )}
-          {item('/espace-jeu', 'espace-jeu', <Icon name="moto" />, 'Espace jeu')}
+          {item('/sujets', 'sujets', <Icon name="quoiDire" />, 'Quoi dire ?')}
+          {item('/seven-ai', 'seven-ai', <Icon name="sparkles" />, 'Seven AI')}
+          {item('/espace-jeu', 'espace-jeu', <Icon name="jeu" />, 'Espace jeu')}
           {item('/reglages', 'reglages', <Icon name="sliders" />, 'Réglages')}
           {item('/confidentialite', 'confidentialite', <Icon name="lock" />, 'Confidentialité')}
         </nav>

@@ -80,10 +80,41 @@ export function initiale(c: Compte): string {
   return c.prenom ? c.prenom.charAt(0).toLocaleUpperCase('fr-FR') : '';
 }
 
+/** Moment de la journée, selon l'heure du téléphone. */
+export type Moment = 'matin' | 'apres-midi' | 'soir' | 'nuit';
+
+export function moment(d = new Date()): Moment {
+  const h = d.getHours();
+  if (h >= 5 && h < 12) return 'matin';
+  if (h >= 12 && h < 18) return 'apres-midi';
+  if (h >= 18 && h < 23) return 'soir';
+  return 'nuit';
+}
+
+const ACCUEIL: Record<Moment, { mot: string; phrase: string }> = {
+  matin: { mot: 'Bonjour', phrase: 'Par quel message commence-t-on aujourd’hui ?' },
+  'apres-midi': {
+    mot: 'Bon après-midi',
+    phrase: 'Un message attend ta réponse ? Six t’aide à trouver les mots.',
+  },
+  soir: {
+    mot: 'Bonsoir',
+    phrase: 'Une conversation à reprendre ? Colle-la, Six s’occupe du reste.',
+  },
+  nuit: {
+    mot: 'Bonne nuit',
+    phrase: 'Rien ne presse : prépare ta réponse maintenant, envoie-la quand tu veux.',
+  },
+};
+
 /** Salutation selon l'heure du téléphone. */
 export function salutation(d = new Date()): string {
-  const h = d.getHours();
-  return h >= 5 && h < 12 ? 'Bonjour' : h >= 12 && h < 18 ? 'Bon après-midi' : 'Bonsoir';
+  return ACCUEIL[moment(d)].mot;
+}
+
+/** Phrase d'accueil qui accompagne la salutation, selon le moment de la journée. */
+export function phraseAccueil(d = new Date()): string {
+  return ACCUEIL[moment(d)].phrase;
 }
 
 /* ---------- Connexion par code ---------- */

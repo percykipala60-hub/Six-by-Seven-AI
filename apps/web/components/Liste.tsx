@@ -5,12 +5,10 @@ import type { ReactNode } from 'react';
 import { Icon, type IconName } from './Icon';
 
 /**
- * Listes groupées des Réglages, à la manière d'un téléphone : un titre de groupe, des rangées séparées par un
- * trait fin qui commence après l'icône, et une note sous le groupe.
+ * Listes des Réglages : une liste à plat, sans encadré. Chaque rangée a une icône au trait, un titre et une
+ * courte ligne grise dessous ; le toucher et la rangée ouverte prennent un fond léger aux coins arrondis.
+ * Les groupes sont séparés par un trait fin.
  */
-
-/** Couleur de la petite tuile d'icône d'une rangée. */
-export type Teinte = 'bleu' | 'gris' | 'orange' | 'violet' | 'rouge' | 'vert' | 'indigo' | 'rose';
 
 export function Groupe({
   titre,
@@ -30,55 +28,57 @@ export function Groupe({
   );
 }
 
-function Tuile({ icon, teinte }: { icon: IconName; teinte: Teinte }) {
-  return (
-    <span className="lg-ico" data-teinte={teinte} aria-hidden="true">
-      <Icon name={icon} size={17} stroke={2.2} />
-    </span>
-  );
+/** Trait fin entre deux groupes. */
+export function Separateur() {
+  return <hr className="lg-sep" />;
 }
 
 function Corps({
   icon,
-  teinte,
   label,
   sous,
-  valeur,
-  fleche = true,
+  danger,
+  apres,
 }: {
   icon?: IconName;
-  teinte?: Teinte;
   label: ReactNode;
   sous?: ReactNode;
-  valeur?: ReactNode;
-  fleche?: boolean;
+  danger?: boolean;
+  apres?: ReactNode;
 }) {
   return (
     <>
-      {icon && <Tuile icon={icon} teinte={teinte ?? 'gris'} />}
+      {icon && (
+        <span className={`lg-ico${danger ? ' danger' : ''}`} aria-hidden="true">
+          <Icon name={icon} size={22} stroke={1.75} />
+        </span>
+      )}
       <span className="lg-txt">
-        <span className="lg-label">{label}</span>
-        {sous && <span className="lg-sous">{sous}</span>}
+        <span className={`lg-label${danger ? ' danger' : ''}`}>{label}</span>
+        {sous !== undefined && sous !== '' && <span className="lg-sous">{sous}</span>}
       </span>
-      {valeur !== undefined && <span className="lg-val">{valeur}</span>}
-      {fleche && <Icon name="chevron" size={16} className="lg-fleche" />}
+      {apres}
     </>
   );
 }
 
 type Base = {
   icon?: IconName;
-  teinte?: Teinte;
   label: ReactNode;
+  /** Courte ligne grise sous le titre (valeur actuelle, explication). */
   sous?: ReactNode;
-  valeur?: ReactNode;
 };
 
 /** Rangée qui ouvre une sous-page ou fait une action. */
-export function Ligne({ onClick, ...b }: Base & { onClick: () => void }) {
+export function Ligne({
+  onClick,
+  danger,
+  disabled,
+  ...b
+}: Base & { onClick: () => void; danger?: boolean; disabled?: boolean }) {
   return (
-    <button type="button" className="lg-ligne" onClick={onClick}>
-      <Corps {...b} />
+    <button type="button" className="lg-ligne" onClick={onClick} disabled={disabled}>
+      <Corps {...b} danger={danger} />
     </button>
   );
 }
@@ -98,14 +98,23 @@ export function LigneLien({ href, externe, ...b }: Base & { href: string; extern
   );
 }
 
-/** Rangée avec un interrupteur. */
+/** Rangée d'information, sans action. */
+export function LigneInfo({ valeur, ...b }: Base & { valeur?: ReactNode }) {
+  return (
+    <div className="lg-ligne lg-statique">
+      <Corps {...b} apres={valeur !== undefined && <span className="lg-val">{valeur}</span>} />
+    </div>
+  );
+}
+
+/** Rangée avec un interrupteur à droite. */
 export function LigneInterrupteur({
   id,
   checked,
   onChange,
   disabled,
   ...b
-}: Omit<Base, 'valeur'> & {
+}: Base & {
   id: string;
   checked: boolean;
   onChange: (on: boolean) => void;
@@ -113,76 +122,66 @@ export function LigneInterrupteur({
 }) {
   return (
     <label className="lg-ligne" htmlFor={id}>
-      <Corps {...b} fleche={false} />
-      <input
-        id={id}
-        type="checkbox"
-        role="switch"
-        className="lg-sw"
-        checked={checked}
-        disabled={disabled}
-        onChange={(e) => onChange(e.target.checked)}
+      <Corps
+        {...b}
+        apres={
+          <input
+            id={id}
+            type="checkbox"
+            role="switch"
+            className="lg-sw"
+            checked={checked}
+            disabled={disabled}
+            onChange={(e) => onChange(e.target.checked)}
+          />
+        }
       />
     </label>
   );
 }
 
-/** Rangée de choix unique : une coche marque l'option retenue. */
+/** Un choix parmi plusieurs, avec un bouton rond à gauche. */
 export function LigneChoix({
   choisi,
   onClick,
-  ...b
-}: Omit<Base, 'valeur'> & { choisi: boolean; onClick: () => void }) {
+  label,
+  sous,
+}: Omit<Base, 'icon'> & { choisi: boolean; onClick: () => void }) {
   return (
     <button type="button" className="lg-ligne" role="radio" aria-checked={choisi} onClick={onClick}>
-      <Corps {...b} fleche={false} />
-      <Icon name="check" size={18} stroke={2.6} className="lg-coche" />
+      <span className="lg-radio" aria-hidden="true">
+        <i />
+      </span>
+      <Corps label={label} sous={sous} />
     </button>
   );
 }
 
-/** Action en texte, seule dans sa rangée (rouge si on ne peut pas la rattraper). */
-export function LigneAction({
-  label,
+/** Petit bouton de texte au bout d'une rangée (« Retirer », « Oublier »). */
+export function BoutonTexte({
+  children,
   onClick,
-  danger,
-  disabled,
+  label,
 }: {
-  label: string;
+  children: ReactNode;
   onClick: () => void;
-  danger?: boolean;
-  disabled?: boolean;
+  label?: string;
 }) {
   return (
-    <button
-      type="button"
-      className={`lg-ligne lg-action${danger ? ' danger' : ''}`}
-      onClick={onClick}
-      disabled={disabled}
-    >
-      {label}
+    <button type="button" className="lg-texte" onClick={onClick} aria-label={label}>
+      {children}
     </button>
   );
 }
 
-/** En-tête d'une sous-page : retour à gauche, titre au centre. */
-export function EnteteSousPage({
-  titre,
-  retour,
-  onRetour,
-}: {
-  titre: string;
-  retour: string;
-  onRetour: () => void;
-}) {
+/** En-tête d'une sous-page : bouton retour rond, puis le titre. */
+export function EnteteSousPage({ titre, onRetour }: { titre: string; onRetour: () => void }) {
   return (
     <header className="lg-entete">
-      <button type="button" className="lg-retour" onClick={onRetour}>
-        <Icon name="back" size={20} stroke={2.4} />
-        <span>{retour}</span>
+      <button type="button" className="lg-retour" onClick={onRetour} aria-label="Retour">
+        <Icon name="back" size={20} stroke={2} />
       </button>
-      <h1>{titre}</h1>
-      <span aria-hidden="true" />
+      {titre && <h1>{titre}</h1>}
     </header>
   );
 }

@@ -45,14 +45,16 @@ import {
 import { AppBar } from './AppBar';
 import { useConfirmer } from './Confirmer';
 import { AppIcon } from './AppIcon';
-import { Icon } from './Icon';
+import { Icon, type IconName } from './Icon';
 import { InterAppNotifications, InterAppOnboarding } from './InterAppNotifications';
 import { Logo } from './Logo';
 import {
   EnteteSousPage,
   Groupe,
   Ligne,
-  LigneAction,
+  BoutonTexte,
+  LigneInfo,
+  Separateur,
   LigneChoix,
   LigneInterrupteur,
   LigneLien,
@@ -146,8 +148,7 @@ function MemoireSix() {
       >
         <LigneInterrupteur
           id="memory-enabled"
-          icon="bulb"
-          teinte="violet"
+          icon="memoire"
           label="Mémoire de Six"
           checked={on}
           onChange={(oui) => {
@@ -198,20 +199,17 @@ function MemoireSix() {
           >
             {m.contacts.length ? (
               m.contacts.map((c) => (
-                <div className="lg-ligne lg-statique" key={c.nom}>
-                  <span className="lg-txt">
-                    <span className="lg-label">{c.nom}</span>
-                    <span className="lg-sous">{c.note}</span>
-                  </span>
-                  <button
-                    type="button"
-                    className="lg-mini"
-                    aria-label={`Oublier ${c.nom}`}
-                    onClick={() => ecrireNote(c.nom, '')}
-                  >
-                    <Icon name="trash" size={16} />
-                  </button>
-                </div>
+                <LigneInfo
+                  key={c.nom}
+                  icon="user"
+                  label={c.nom}
+                  sous={c.note}
+                  valeur={
+                    <BoutonTexte label={`Oublier ${c.nom}`} onClick={() => ecrireNote(c.nom, '')}>
+                      Oublier
+                    </BoutonTexte>
+                  }
+                />
               ))
             ) : (
               <div className="lg-bloc muted small">Aucun contact noté.</div>
@@ -221,22 +219,12 @@ function MemoireSix() {
             titre="Sur ce téléphone"
             pied="Tes conversations terminées restent ici tant que tu les gardes. Tu peux aussi les effacer une par une depuis l’accueil."
           >
-            <div className="lg-ligne lg-statique">
-              <span className="lg-txt">
-                <span className="lg-label">Conversations gardées</span>
-              </span>
-              <span className="lg-val">{nbConv}</span>
-            </div>
-            <div className="lg-ligne lg-statique">
-              <span className="lg-txt">
-                <span className="lg-label">Suivis en attente</span>
-              </span>
-              <span className="lg-val">{m.suivis.length}</span>
-            </div>
+            <LigneInfo icon="chat" label="Conversations gardées" valeur={nbConv} />
+            <LigneInfo icon="bell" label="Suivis en attente" valeur={m.suivis.length} />
           </Groupe>
           <Groupe>
             {nbConv > 0 && (
-              <LigneAction
+              <Ligne
                 danger
                 label="Effacer les conversations gardées"
                 onClick={() =>
@@ -253,7 +241,7 @@ function MemoireSix() {
                 }
               />
             )}
-            <LigneAction
+            <Ligne
               danger
               label="Effacer la mémoire de Six"
               onClick={() =>
@@ -626,7 +614,6 @@ function CompteVue() {
             <LigneInterrupteur
               id="memoire-sync"
               icon="refresh"
-              teinte="bleu"
               label="Copier ma mémoire sur mon compte"
               checked={sync}
               disabled={busy}
@@ -653,24 +640,9 @@ function CompteVue() {
                 });
               }}
             />
-            <div className="lg-ligne lg-statique">
-              <span className="lg-txt">
-                <span className="lg-label">Habitudes apprises</span>
-              </span>
-              <span className="lg-val">{statsMemoire.habitudes}</span>
-            </div>
-            <div className="lg-ligne lg-statique">
-              <span className="lg-txt">
-                <span className="lg-label">Contacts notés</span>
-              </span>
-              <span className="lg-val">{statsMemoire.contacts}</span>
-            </div>
-            <div className="lg-ligne lg-statique">
-              <span className="lg-txt">
-                <span className="lg-label">Rappels</span>
-              </span>
-              <span className="lg-val">{statsMemoire.suivis}</span>
-            </div>
+            <LigneInfo icon="memoire" label="Habitudes apprises" valeur={statsMemoire.habitudes} />
+            <LigneInfo icon="user" label="Contacts notés" valeur={statsMemoire.contacts} />
+            <LigneInfo icon="bell" label="Rappels" valeur={statsMemoire.suivis} />
           </Groupe>
 
           {info && (
@@ -689,9 +661,8 @@ function CompteVue() {
           <Groupe titre="Sécurité">
             <Ligne
               icon="key"
-              teinte="gris"
               label="Changer le mot de passe"
-              valeur={showPwdChange ? 'Ouvert' : undefined}
+
               onClick={() => setShowPwdChange((ouvert) => !ouvert)}
             />
             {showPwdChange && (
@@ -753,7 +724,7 @@ function CompteVue() {
           </Groupe>
 
           <Groupe>
-            <LigneAction
+            <Ligne
               danger
               disabled={busy}
               label="Effacer la mémoire partout"
@@ -772,8 +743,9 @@ function CompteVue() {
                 })
               }
             />
-            <LigneAction
+            <Ligne
               danger
+              icon="logout"
               disabled={busy}
               label="Se déconnecter"
               onClick={() =>
@@ -1321,6 +1293,7 @@ export function Settings() {
   const [themeIconError, setThemeIconError] = useState(false);
   const [memOn, setMemOn] = useState(false);
   const [compte, setCompte] = useState<Compte>({ statut: 'invite', prenom: '' });
+  const [recherche, setRecherche] = useState('');
 
   useEffect(() => {
     const t = read('six-theme');
@@ -1408,7 +1381,7 @@ export function Settings() {
   if (vue) {
     return (
       <main className="screen sub lg-page">
-        <EnteteSousPage titre={TITRES[vue]} retour="Réglages" onRetour={retour} />
+        <EnteteSousPage titre={TITRES[vue]} onRetour={retour} />
         {vue === 'theme' && (
           <>
             <div className="apercu" aria-label="Aperçu du thème">
@@ -1517,24 +1490,23 @@ export function Settings() {
             </Groupe>
             <Groupe titre="Tes expressions" pied="Jusqu’à 5 expressions que tu utilises souvent.">
               {style.expressions.map((x) => (
-                <div className="lg-ligne lg-statique" key={x}>
-                  <span className="lg-txt">
-                    <span className="lg-label">« {x} »</span>
-                  </span>
-                  <button
-                    type="button"
-                    className="lg-mini"
-                    aria-label={`Retirer ${x}`}
-                    onClick={() =>
-                      updateStyle({
-                        ...style,
-                        expressions: style.expressions.filter((e) => e !== x),
-                      })
-                    }
-                  >
-                    <Icon name="x" size={16} />
-                  </button>
-                </div>
+                <LigneInfo
+                  key={x}
+                  label={`« ${x} »`}
+                  valeur={
+                    <BoutonTexte
+                      label={`Retirer ${x}`}
+                      onClick={() =>
+                        updateStyle({
+                          ...style,
+                          expressions: style.expressions.filter((e) => e !== x),
+                        })
+                      }
+                    >
+                      Retirer
+                    </BoutonTexte>
+                  }
+                />
               ))}
               {style.expressions.length < 5 && (
                 <form
@@ -1565,7 +1537,7 @@ export function Settings() {
               )}
             </Groupe>
             <Groupe>
-              <LigneAction
+              <Ligne
                 danger
                 label="Effacer mon style"
                 onClick={() =>
@@ -1596,90 +1568,155 @@ export function Settings() {
   const couleur = [...ACCENTS, ...AMBIANCES].find((a) => a.id === accent)?.label ?? 'Bleu';
   const registre =
     style.decontracte >= 66 ? 'Décontracté' : style.decontracte <= 33 ? 'Formel' : 'Équilibré';
+  // Entrées de la liste, avec des mots-clés pour la recherche.
+  const entrees: {
+    id: string;
+    icon: IconName;
+    label: string;
+    sous?: string;
+    cles: string;
+    href?: string;
+    externe?: boolean;
+  }[] = [
+    {
+      id: 'theme',
+      icon: 'palette',
+      label: 'Thème',
+      sous: `${couleur}, ${MODES[theme].toLowerCase()}`,
+      cles: 'couleur clair sombre apparence ambiance',
+    },
+    {
+      id: 'police',
+      icon: 'type',
+      label: 'Police',
+      sous: POLICES.find((p) => p.id === police)?.label,
+      cles: 'texte écriture caractères',
+    },
+    {
+      id: 'style',
+      icon: 'pencil',
+      label: 'Mon style d’écriture',
+      sous: `${registre}, expressions, emojis`,
+      cles: 'registre longueur emoji expressions ton',
+    },
+    {
+      id: 'memoire',
+      icon: 'memoire',
+      label: 'Mémoire',
+      sous: memOn ? 'Activée, gardée sur ce téléphone' : 'Désactivée',
+      cles: 'contacts conversations gardées habitudes effacer',
+    },
+    {
+      id: 'notifications',
+      icon: 'bell',
+      label: 'Notifications des apps',
+      sous: 'Messages reçus dans tes apps (Android)',
+      cles: 'notification android alertes',
+    },
+    {
+      id: 'confidentialite',
+      icon: 'lock',
+      label: 'Confidentialité',
+      sous: 'Ce que Six traite et comment l’effacer',
+      cles: 'données vie privée politique',
+      href: '/confidentialite',
+    },
+    {
+      id: 'conditions',
+      icon: 'balance',
+      label: 'Conditions et mentions légales',
+      sous: 'Règles d’utilisation, éditeur, hébergement',
+      cles: 'cgu conditions mentions légales éditeur hébergeur',
+      href: '/conditions',
+    },
+  ];
+  const normaliser = (t: string) => t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const q = normaliser(recherche.trim());
+  const correspond = (e: (typeof entrees)[number]) =>
+    !q || normaliser(`${e.label} ${e.sous ?? ''} ${e.cles}`).includes(q);
   return (
     <>
       <AppBar page="reglages" titre="" />
       <main className="screen settings lg-page">
         <h1 className="lg-grand-titre">Réglages</h1>
-        <button type="button" className="lg-profil" onClick={() => ouvrir('compte')}>
-          <span className="avatar lg-avatar" aria-hidden="true">
-            {initiale(compte) || <Icon name="user" size={26} />}
-          </span>
-          <span className="lg-txt">
-            <span className="lg-profil-nom">{compte.prenom || 'Invité'}</span>
-            <span className="lg-sous">
-              {compte.statut === 'connecte'
-                ? compte.identifiant
-                : 'Se connecter, prénom, mémoire sur le compte'}
-            </span>
-          </span>
-          <Icon name="chevron" size={16} className="lg-fleche" />
-        </button>
+        <div className="lg-recherche">
+          <Icon name="search" size={16} />
+          <input
+            type="search"
+            value={recherche}
+            onChange={(e) => setRecherche(e.target.value)}
+            placeholder="Rechercher un réglage"
+            aria-label="Rechercher un réglage"
+          />
+        </div>
 
-        <Groupe titre="Personnalisation">
-          <Ligne
-            icon="palette"
-            teinte="bleu"
-            label="Thème"
-            valeur={`${couleur}, ${MODES[theme].toLowerCase()}`}
-            onClick={() => ouvrir('theme')}
-          />
-          <Ligne
-            icon="type"
-            teinte="gris"
-            label="Police"
-            valeur={POLICES.find((p) => p.id === police)?.court}
-            onClick={() => ouvrir('police')}
-          />
-          <Ligne
-            icon="pencil"
-            teinte="orange"
-            label="Mon style d’écriture"
-            valeur={registre}
-            onClick={() => ouvrir('style')}
-          />
-        </Groupe>
+        {!q && (
+          <>
+            <button type="button" className="lg-ligne lg-profil" onClick={() => ouvrir('compte')}>
+              <span className="avatar lg-avatar" aria-hidden="true">
+                {initiale(compte) || <Icon name="user" size={28} stroke={1.75} />}
+              </span>
+              <span className="lg-txt">
+                <span className="lg-profil-nom">{compte.prenom || 'Invité'}</span>
+                <span className="lg-sous">
+                  {compte.statut === 'connecte'
+                    ? compte.identifiant
+                    : 'Se connecter ou créer un compte'}
+                </span>
+              </span>
+            </button>
+            <Separateur />
+          </>
+        )}
 
-        <Groupe titre="Six">
-          <Ligne
-            icon="bulb"
-            teinte="violet"
-            label="Mémoire"
-            valeur={memOn ? 'Activée' : 'Désactivée'}
-            onClick={() => ouvrir('memoire')}
-          />
-          <Ligne
-            icon="bell"
-            teinte="rouge"
-            label="Notifications des apps"
-            valeur="Android"
-            onClick={() => ouvrir('notifications')}
-          />
-        </Groupe>
+        <div className="lg-liste">
+          {entrees
+            .filter(correspond)
+            .map((e) =>
+              e.href ? (
+                <LigneLien
+                  key={e.id}
+                  href={e.href}
+                  externe={e.externe}
+                  icon={e.icon}
+                  label={e.label}
+                  sous={e.sous}
+                />
+              ) : (
+                <Ligne
+                  key={e.id}
+                  icon={e.icon}
+                  label={e.label}
+                  sous={e.sous}
+                  onClick={() => ouvrir(e.id as Vue)}
+                />
+              ),
+            )}
+        </div>
+        {q && !entrees.some(correspond) && <p className="lg-pied">Aucun réglage ne correspond.</p>}
 
-        <Groupe titre="Confidentialité et aide">
-          <LigneLien href="/confidentialite" icon="lock" teinte="vert" label="Confidentialité" />
-          <LigneLien
-            href="/conditions"
-            icon="file"
-            teinte="gris"
-            label="Conditions d’utilisation"
-          />
-          <LigneLien href="/mentions" icon="file" teinte="gris" label="Mentions légales" />
-          <LigneLien
-            href="https://effulgent-jelly-177a12.netlify.app"
-            externe
-            icon="globe"
-            teinte="indigo"
-            label="Version web de Six"
-          />
-        </Groupe>
+        {!q && compte.statut === 'connecte' && (
+          <>
+            <Separateur />
+            <Ligne
+              icon="logout"
+              danger
+              label="Se déconnecter"
+              onClick={() =>
+                demander({
+                  titre: 'Se déconnecter ?',
+                  texte:
+                    'Ta mémoire reste sur ce téléphone. Tu pourras te reconnecter à tout moment avec ton adresse e-mail.',
+                  action: 'Se déconnecter',
+                  onConfirmer: () => deconnecter(),
+                })
+              }
+            />
+            {demande}
+          </>
+        )}
 
-        <footer className="lg-signature">
-          <Logo small label="" />
-          <span>Six par Seven.AI</span>
-          <span className="muted small">Version de démonstration</span>
-        </footer>
+        <footer className="lg-signature">Six par Seven.AI · version de démonstration</footer>
       </main>
     </>
   );

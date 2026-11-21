@@ -25,7 +25,7 @@ import {
 import { MAX_IMAGES, OcrError, prechaufferLecteur, readScreenshots } from '@/lib/ocr';
 import { ZipError, readChatFromZip } from '@/lib/zip';
 import { loadStyle } from '@/lib/style';
-import { ecouterCompte, lireCompte, salutation } from '@/lib/compte';
+import { ecouterCompte, lireCompte, phraseAccueil, salutation } from '@/lib/compte';
 import {
   NOTE_MAX,
   ajouterSuivi,
@@ -280,6 +280,9 @@ function Nuances({ items }: { items: Nuance[] }) {
   );
 }
 
+/** Texte masqué en clair, pour un titre : « [PERSONNE 1] » devient « Personne 1 ». */
+const enClair = (text: string) => text.replace(/\[[A-ZÉÈ]+ \d+\]/g, (r) => lisible(r));
+
 /** Texte masqué où les repères (« [TÉL 1] ») deviennent des pastilles lisibles (« Tél 1 »). */
 function Masque({ text }: { text: string }) {
   return (
@@ -401,11 +404,18 @@ export function Flow() {
   const [shots, setShots] = useState<File[]>([]); // captures en cours de lecture (elles restent sur le téléphone)
   const [dragging, setDragging] = useState(false);
   const [attach, setAttach] = useState(false); // feuille d'import (« + » de la barre de saisie)
-  const [hello, setHello] = useState({ mot: 'Bonjour', prenom: '' }); // salutation lue après le rendu (heure, prénom)
+  // Salutation lue après le rendu (heure, prénom), remise à jour chaque minute : elle suit le moment de la journée.
+  const [hello, setHello] = useState({ mot: 'Bonjour', phrase: '', prenom: '' });
   useEffect(() => {
-    const lire = () => setHello({ mot: salutation(), prenom: lireCompte().prenom });
+    const lire = () =>
+      setHello({ mot: salutation(), phrase: phraseAccueil(), prenom: lireCompte().prenom });
     lire();
-    return ecouterCompte(lire);
+    const minute = window.setInterval(lire, 60_000);
+    const arreter = ecouterCompte(lire);
+    return () => {
+      window.clearInterval(minute);
+      arreter();
+    };
   }, []);
   const [backHint, setBackHint] = useState(false);
   const [canal, setCanal] = useState<Canal | ''>(''); // réseau où partira la réponse ("" = forme de la conversation)
@@ -1160,9 +1170,7 @@ export function Flow() {
           <div className="hello">
             <Logo label="" />
             <h1>{hello.prenom ? `${hello.mot}, ${hello.prenom}` : hello.mot}</h1>
-            <p className="muted">
-              Colle le message qui te bloque. Six t&apos;aide à trouver le ton juste.
-            </p>
+            <p className="muted">{hello.phrase}</p>
           </div>
         )}
 
@@ -1766,54 +1774,44 @@ export function Flow() {
           </p>
         )}
         {!fil && !ocrBusy && gardees.length > 0 && (
-          <section className="card stack conv-gardees" aria-label="Conversations gardées">
-            <div className="row sp">
-              <h2 className="lbl">
-                <Icon name="chat" size={14} /> Conversations gardées
-              </h2>
-              <span className="muted small">{gardees.length}</span>
+          <section className="lg gardees" aria-label="Conversations gardées">
+            <h2 className="lg-titre">Conversations gardées</h2>
+            <div className="lg-liste">
+              {gardees.map((g) => (
+                <div className="lg-ligne lg-statique gardee" key={g.id}>
+                  <button
+                    type="button"
+                    className="gardee-ouvrir"
+                    onClick={() => rouvrirConversation(g)}
+                  >
+                    <span className="lg-ico" aria-hidden="true">
+                      <Icon name="chat" size={22} stroke={1.75} />
+                    </span>
+                    <span className="lg-txt">
+                      <span className="lg-label gardee-titre">
+                        {g.extrait ? enClair(g.extrait) : 'Conversation'}
+                      </span>
+                      <span className="lg-sous">
+                        {g.canal ? `${g.canal} · ` : ''}
+                        {new Date(g.quand).toLocaleDateString('fr-FR', {
+                          day: 'numeric',
+                          month: 'long',
+                        })}
+                      </span>
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className="lg-texte"
+                    aria-label="Effacer cette conversation gardée"
+                    onClick={() => supprimerGardee(g.id)}
+                  >
+                    Effacer
+                  </button>
+                </div>
+              ))}
             </div>
-            {gardees.map((g) => (
-              <div className="row sp" key={g.id}>
-                <button
-                  type="button"
-                  className="conv-gardee grow"
-                  onClick={() => rouvrirConversation(g)}
-                >
-                  <span className="conv-gardee-titre">
-                    {g.extrait ? (
-                      <Masque
-                        text={
-                          g.extrait.length > 64
-                            ? `${g.extrait.slice(0, 64).replace(/\[[^\]]*$/, '')}…`
-                            : g.extrait
-                        }
-                      />
-                    ) : (
-                      'Conversation'
-                    )}
-                  </span>
-                  <span className="muted small">
-                    {g.canal ? `${g.canal} · ` : ''}
-                    {new Date(g.quand).toLocaleDateString('fr-FR', {
-                      day: 'numeric',
-                      month: 'short',
-                    })}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  className="btn ghost small"
-                  aria-label="Supprimer cette conversation gardée"
-                  onClick={() => supprimerGardee(g.id)}
-                >
-                  <Icon name="trash" size={16} />
-                </button>
-              </div>
-            ))}
-            <p className="muted small">
-              Gardées sur ce téléphone par la mémoire de Six, tant que tu les conserves.
-            </p>
+            <p className="lg-pied">Gardées sur ce téléphone tant que tu les conserves.</p>
           </section>
         )}
       </div>

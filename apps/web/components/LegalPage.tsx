@@ -10,7 +10,7 @@ export interface LegalSection {
 }
 
 /**
- * Page juridique (Confidentialité, Conditions, Mentions) mise en page comme un document : titre, date de mise à
+ * Page juridique (Confidentialité, Conditions et mentions légales) mise en page comme un document : titre, date de mise à
  * jour, sections numérotées séparées par un trait fin, texte en pleine couleur pour rester bien lisible.
  */
 export function LegalPage({
@@ -30,7 +30,6 @@ export function LegalPage({
       <main className="screen sub doc">
         <EnteteSousPage
           titre=""
-          retour="Retour"
           onRetour={() => (window.history.length > 1 ? router.back() : router.push('/reglages'))}
         />
         <header className="doc-tete">
@@ -50,8 +49,7 @@ export function LegalPage({
         ))}
         <nav className="doc-liens" aria-label="Autres documents">
           <Link href="/confidentialite">Politique de confidentialité</Link>
-          <Link href="/conditions">Conditions d’utilisation</Link>
-          <Link href="/mentions">Mentions légales</Link>
+          <Link href="/conditions">Conditions et mentions légales</Link>
         </nav>
       </main>
     </div>

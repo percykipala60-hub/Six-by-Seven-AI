@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { lireIdentifiant } from '@/lib/compte';
+import { lireIdentifiant, salutation } from '@/lib/compte';
 import { fusionner } from '@/lib/memoire';
 
 describe('lireIdentifiant', () => {
@@ -98,5 +98,19 @@ describe('fusionner (mémoire du téléphone + mémoire du compte)', () => {
       contacts: [],
       suivis: [],
     });
+  });
+});
+
+describe('salutation', () => {
+  const a = (h: number) => salutation(new Date(2026, 10, 21, h, 30));
+  it("suit le moment de la journée sur l'heure du téléphone", () => {
+    expect(a(4)).toBe('Bonne nuit');
+    expect(a(5)).toBe('Bonjour');
+    expect(a(11)).toBe('Bonjour');
+    expect(a(12)).toBe('Bon après-midi');
+    expect(a(17)).toBe('Bon après-midi');
+    expect(a(18)).toBe('Bonsoir');
+    expect(a(22)).toBe('Bonsoir');
+    expect(a(23)).toBe('Bonne nuit');
   });
 });
