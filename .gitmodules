@@ -1,0 +1,3 @@
+[submodule "web/Six-by-Seven-AI"]
+	path = web/Six-by-Seven-AI
+	url = https://github.com/percykipala60-hub/Six-by-Seven-AI.git

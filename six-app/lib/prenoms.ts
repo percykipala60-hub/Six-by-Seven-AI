@@ -1,0 +1,24 @@
+// Prénoms courants (RDC, Afrique francophone, France). Liste de départ, à enrichir par l'équipe.
+// Ceux-ci sont reconnus même écrits en minuscules (« salut patrick »).
+export const PRENOMS = [
+  "aaron", "abel", "abigaelle", "adam", "adele", "adèle", "adrien", "agnes", "agnès", "alain", "albert", "alex", "alexandre", "alice", "aline",
+  "amandine", "amina", "anaelle", "anaëlle", "andre", "andré", "anne", "annie", "antoine", "arnold", "arsene", "arsène", "aurelie", "aurélie",
+  "beatrice", "béatrice", "benedicte", "bénédicte", "benjamin", "bernard", "blaise", "bruno", "camille", "carine", "caroline",
+  "cedric", "cédric", "celestin", "célestin", "chantal", "charles", "christelle", "christian", "christine", "claude", "clement", "clément",
+  "corneille", "daniel", "david", "debora", "deborah", "déborah", "delphine", "denis", "didier", "dieudonne", "dieudonné", "dorcas", "eddy", "elie", "élie",
+  "elisabeth", "élisabeth", "elodie", "élodie", "emile", "émile", "emmanuel", "eric", "éric", "esther", "eunice", "eve", "ève", "fabrice", "fanny",
+  "felix", "félix", "fiston", "florence", "francine", "francis", "francois", "françois", "franck", "gaston", "gedeon", "gédéon", "georges", "gerard",
+  "gérard", "gilbert", "glodi", "guy", "hans", "helene", "hélène", "henri", "herve", "hervé", "honore", "honoré", "ibrahim", "isaac", "isabelle",
+  "jacques", "jean", "jeanne", "jeremie", "jérémie", "joel", "joël", "jonathan", "jordan", "joseph", "josue", "josué", "judith", "jules", "julie",
+  "julien", "justin", "kevin", "laetitia", "laurent", "lea", "léa", "leon", "léon", "lucie", "luc", "lydia", "madeleine", "marc", "marcel", "marie",
+  "marthe", "martin", "mathieu", "matthieu", "michel", "mireille", "moise", "moïse", "monique", "nadine", "nathalie", "nathan", "nicolas", "noella",
+  "noëlla", "olivier", "pascal", "patrick", "paul", "pauline", "philippe", "plamedi", "rachel", "raphael", "raphaël", "rebecca", "richard", "robert",
+  "ruth", "samuel", "sandra", "sarah", "serge", "simon", "sophie", "stephane", "stéphane", "steve", "sylvie", "thomas", "valentin",
+  "veronique", "véronique", "vincent", "yannick", "yves", "zacharie",
+];
+
+// Prénoms qui sont aussi des mots courants (« grâce à toi », « une pierre ») : reconnus seulement avec une majuscule.
+export const PRENOMS_AMBIGUS = [
+  "Amani", "Ange", "Baraka", "Bienvenu", "Bonheur", "Claire", "Bijou", "Destin", "Divine", "Espoir", "Exaucé", "Fidèle", "Fortune", "Gloire", "Grâce", "Héritier", "Joie",
+  "Merveille", "Patience", "Pierre", "Prince", "Princesse", "Rose", "Trésor", "Victoire",
+];

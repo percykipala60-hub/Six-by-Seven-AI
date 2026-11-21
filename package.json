@@ -1,0 +1,55 @@
+{
+  "name": "six",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Six — l'IA propose, l'humain décide. Applications mobiles natives par 7 AI.",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22.13.0",
+    "pnpm": ">=10.28.0"
+  },
+  "scripts": {
+    "dev": "pnpm --filter @six/shared build && pnpm --parallel --filter @six/api --filter @six/web dev",
+    "build": "pnpm -r build",
+    "start": "pnpm --parallel --filter @six/api --filter @six/web start",
+    "lint": "eslint . --max-warnings=0",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test",
+    "test:e2e": "pnpm --filter @six/web test:e2e && pnpm --filter @six/web test:e2e:jeux",
+    "check": "pnpm lint && pnpm format:check && pnpm typecheck && pnpm --filter @six/shared build && pnpm test",
+    "prepare": "husky",
+    "essai-ia": "pnpm --filter @six/api essai-ia",
+    "banc": "pnpm --filter @six/api banc",
+    "verifier": "node scripts/verifier-demarrage.mjs",
+    "build:ton-juste": "npm --prefix jeu-du-ton-juste/client run build:six"
+  },
+  "devDependencies": {
+    "@capacitor/android": "8.5.3",
+    "@capacitor/cli": "8.5.3",
+    "@capacitor/ios": "8.5.3",
+    "@eslint/js": "10.0.1",
+    "@next/eslint-plugin-next": "16.3.8",
+    "@types/node": "22.20.4",
+    "eslint": "10.11.0",
+    "eslint-plugin-jsx-a11y": "6.10.2",
+    "eslint-plugin-react-hooks": "7.1.1",
+    "globals": "17.13.0",
+    "husky": "9.1.7",
+    "lint-staged": "16.4.0",
+    "prettier": "3.9.9",
+    "typescript": "6.0.3",
+    "typescript-eslint": "8.71.0"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,js,mjs,cjs}": [
+      "eslint --max-warnings=0 --no-warn-ignored --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml,css}": [
+      "prettier --write"
+    ]
+  }
+}

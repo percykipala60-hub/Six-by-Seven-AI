@@ -1,0 +1,9 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+  - 'kin-rush-app'
+
+onlyBuiltDependencies:
+  - esbuild
+  - sharp
+  - unrs-resolver

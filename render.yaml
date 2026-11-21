@@ -1,0 +1,20 @@
+# Configuration Render (Blueprint) : application Six (Next.js) du dépôt SixSeven.
+# Render la lit automatiquement à la création du service (« New → Blueprint »).
+# Le site vitrine (dépôt Six-by-Seven-AI) reste séparé : six-by-sevenai.onrender.com.
+services:
+  - type: web
+    name: six-app
+    runtime: node
+    plan: free
+    buildCommand: pnpm install --frozen-lockfile && pnpm --filter @six/web build
+    startCommand: cd apps/web && pnpm exec next start -p ${PORT:-3000}
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: '22'
+      # Clés d'IA (à renseigner dans le tableau de bord Render → Environment) :
+      # - ANTHROPIC_API_KEY : réponses de Seven AI et analyses de Six
+      # - OPENAI_API_KEY    : transcription des messages vocaux de Seven AI
+      # - TRUST_PROXY=1     : Render est un relais de confiance pour la limite de débit
+      - key: TRUST_PROXY
+        value: '1'

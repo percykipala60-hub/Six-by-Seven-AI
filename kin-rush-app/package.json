@@ -1,0 +1,9 @@
+{
+  "name": "kin-rush-app",
+  "private": true,
+  "version": "1.1.0",
+  "description": "Kin Rush : jeu de course kinshasa (HTML autonome) avec défis malins (100 devinettes difficiles + 50 énigmes).",
+  "scripts": {
+    "test": "node --test tests/quiz.test.mjs"
+  }
+}

@@ -1,0 +1,1087 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-10T08:02:10.701Z",
+  "title": "Design System: Six",
+  "extensions": {
+    "colorMeta": {
+      "brand": {
+        "role": "primary",
+        "displayName": "Bleu Seven.AI",
+        "canonical": "#1f3864",
+        "oklch": "oklch(34.5% 0.083 260.9)",
+        "tonalRamp": [
+          "#00052d",
+          "#0b234d",
+          "#27416e",
+          "#466191",
+          "#6683b5",
+          "#87a6da",
+          "#abcaff",
+          "#e6efff"
+        ]
+      },
+      "accent-a": {
+        "role": "primary",
+        "displayName": "Bleu Seven.AI (départ du dégradé)",
+        "canonical": "#1f3864",
+        "oklch": "oklch(34.5% 0.083 260.9)",
+        "tonalRamp": [
+          "#00052d",
+          "#0b234d",
+          "#27416e",
+          "#466191",
+          "#6683b5",
+          "#87a6da",
+          "#abcaff",
+          "#e6efff"
+        ]
+      },
+      "accent-b": {
+        "role": "primary",
+        "displayName": "Bleu de l'élan",
+        "canonical": "#3a67b8",
+        "oklch": "oklch(52.4% 0.137 261.1)",
+        "tonalRamp": [
+          "#00003b",
+          "#001c61",
+          "#113c89",
+          "#315eae",
+          "#5280d4",
+          "#73a4fb",
+          "#accaff",
+          "#e6efff"
+        ]
+      },
+      "on-accent": {
+        "role": "primary",
+        "displayName": "Texte sur accent",
+        "canonical": "#ffffff",
+        "oklch": "oklch(100.0% 0.000 89.9)",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ]
+      },
+      "icon-bg": {
+        "role": "secondary",
+        "displayName": "Fond du logo",
+        "canonical": "#090f1b",
+        "oklch": "oklch(16.9% 0.027 263.4)",
+        "tonalRamp": [
+          "#060b17",
+          "#1e2532",
+          "#3b4251",
+          "#596171",
+          "#7a8393",
+          "#9ca5b7",
+          "#c0cadb",
+          "#e7efff"
+        ]
+      },
+      "icon-ink": {
+        "role": "secondary",
+        "displayName": "« 6 » du logo",
+        "canonical": "#f2f5fa",
+        "oklch": "oklch(96.9% 0.007 260.7)",
+        "tonalRamp": [
+          "#090b0e",
+          "#232529",
+          "#404246",
+          "#5f6166",
+          "#808287",
+          "#a2a5aa",
+          "#c6c9ce",
+          "#eceff4"
+        ]
+      },
+      "icon-accent": {
+        "role": "secondary",
+        "displayName": "Trait du logo",
+        "canonical": "#4d7cfe",
+        "oklch": "oklch(62.3% 0.200 265.8)",
+        "tonalRamp": [
+          "#010039",
+          "#06007b",
+          "#112baa",
+          "#2a52d1",
+          "#4977f8",
+          "#7ba1fe",
+          "#b1c9fe",
+          "#e7effe"
+        ]
+      },
+      "bg": {
+        "role": "neutral",
+        "displayName": "Fond de page",
+        "canonical": "#f5f6fa",
+        "oklch": "oklch(97.4% 0.005 275.0)",
+        "tonalRamp": [
+          "#0a0b0d",
+          "#242528",
+          "#414245",
+          "#606164",
+          "#818286",
+          "#a4a5a8",
+          "#c8c9cd",
+          "#edeef2"
+        ]
+      },
+      "card": {
+        "role": "neutral",
+        "displayName": "Carte",
+        "canonical": "#ffffff",
+        "oklch": "oklch(100.0% 0.000 89.9)",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ]
+      },
+      "panel2": {
+        "role": "neutral",
+        "displayName": "Panneau en creux",
+        "canonical": "#eceff6",
+        "oklch": "oklch(95.2% 0.010 267.4)",
+        "tonalRamp": [
+          "#090b0f",
+          "#23252a",
+          "#404247",
+          "#5f6167",
+          "#808288",
+          "#a2a5ab",
+          "#c6c9d0",
+          "#ebeef5"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Encre",
+        "canonical": "#1b1f2a",
+        "oklch": "oklch(24.0% 0.022 269.1)",
+        "tonalRamp": [
+          "#080b14",
+          "#212530",
+          "#3d424e",
+          "#5c616e",
+          "#7d8290",
+          "#9fa5b3",
+          "#c3c9d8",
+          "#e8eefe"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Texte secondaire",
+        "canonical": "#5b6475",
+        "oklch": "oklch(50.2% 0.029 263.2)",
+        "tonalRamp": [
+          "#050b17",
+          "#1e2534",
+          "#3a4252",
+          "#596172",
+          "#798394",
+          "#9ba5b8",
+          "#bfcadd",
+          "#e6efff"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Trait",
+        "canonical": "#dde1ea",
+        "oklch": "oklch(90.9% 0.013 266.7)",
+        "tonalRamp": [
+          "#090b11",
+          "#22252c",
+          "#3f4249",
+          "#5e6169",
+          "#7f828a",
+          "#a1a5ad",
+          "#c5c9d2",
+          "#eaeef8"
+        ]
+      },
+      "ok": {
+        "role": "tertiary",
+        "displayName": "Vert confidentialité",
+        "canonical": "#17795e",
+        "oklch": "oklch(51.5% 0.096 169.1)",
+        "tonalRamp": [
+          "#001008",
+          "#002d20",
+          "#004f3b",
+          "#097258",
+          "#3b9578",
+          "#61b99b",
+          "#86debe",
+          "#bfffe6"
+        ]
+      },
+      "warn": {
+        "role": "tertiary",
+        "displayName": "Ambre prudence",
+        "canonical": "#9a5b00",
+        "oklch": "oklch(53.1% 0.119 65.1)",
+        "tonalRamp": [
+          "#190500",
+          "#391d00",
+          "#613600",
+          "#8b5200",
+          "#b27227",
+          "#d8954e",
+          "#ffb972",
+          "#ffebd8"
+        ]
+      },
+      "bad": {
+        "role": "tertiary",
+        "displayName": "Rouge alerte",
+        "canonical": "#b3261e",
+        "oklch": "oklch(50.1% 0.178 28.7)",
+        "tonalRamp": [
+          "#220000",
+          "#4e0000",
+          "#810001",
+          "#b0221b",
+          "#d84c3f",
+          "#ff7464",
+          "#ffb3a8",
+          "#ffe9e5"
+        ]
+      },
+      "brand-dark": {
+        "role": "primary",
+        "displayName": "Bleu Seven.AI (sombre)",
+        "canonical": "#7fa2ea",
+        "oklch": "oklch(71.5% 0.113 263.9)",
+        "tonalRamp": [
+          "#000039",
+          "#071e5b",
+          "#223e7d",
+          "#405ea1",
+          "#5f81c6",
+          "#81a4ec",
+          "#afc9ff",
+          "#e7effe"
+        ]
+      },
+      "accent-a-dark": {
+        "role": "primary",
+        "displayName": "Bleu Seven.AI (départ du dégradé) (sombre)",
+        "canonical": "#2a52a0",
+        "oklch": "oklch(45.4% 0.135 262.1)",
+        "tonalRamp": [
+          "#00003b",
+          "#001a65",
+          "#163c88",
+          "#355ead",
+          "#5580d2",
+          "#76a4f9",
+          "#adcafe",
+          "#e6effe"
+        ]
+      },
+      "accent-b-dark": {
+        "role": "primary",
+        "displayName": "Bleu de l'élan (sombre)",
+        "canonical": "#4a78d0",
+        "oklch": "oklch(58.3% 0.145 262.1)",
+        "tonalRamp": [
+          "#00003b",
+          "#001966",
+          "#113b8d",
+          "#315db2",
+          "#517fd8",
+          "#72a3ff",
+          "#adcafe",
+          "#e6effe"
+        ]
+      },
+      "bg-dark": {
+        "role": "neutral",
+        "displayName": "Fond de page (sombre)",
+        "canonical": "#12151c",
+        "oklch": "oklch(19.6% 0.015 266.8)",
+        "tonalRamp": [
+          "#080b12",
+          "#22252d",
+          "#3e424a",
+          "#5d616a",
+          "#7e828c",
+          "#a1a5af",
+          "#c5c9d3",
+          "#eaeef9"
+        ]
+      },
+      "card-dark": {
+        "role": "neutral",
+        "displayName": "Carte (sombre)",
+        "canonical": "#1c212b",
+        "oklch": "oklch(24.7% 0.020 264.1)",
+        "tonalRamp": [
+          "#070b14",
+          "#20252f",
+          "#3c424d",
+          "#5b616d",
+          "#7c828f",
+          "#9fa5b2",
+          "#c2c9d7",
+          "#e8effd"
+        ]
+      },
+      "panel2-dark": {
+        "role": "neutral",
+        "displayName": "Panneau en creux (sombre)",
+        "canonical": "#252b38",
+        "oklch": "oklch(28.9% 0.025 265.5)",
+        "tonalRamp": [
+          "#060b16",
+          "#1f2532",
+          "#3b4250",
+          "#5a6170",
+          "#7b8292",
+          "#9da5b6",
+          "#c1c9da",
+          "#e7efff"
+        ]
+      },
+      "ink-dark": {
+        "role": "neutral",
+        "displayName": "Encre (sombre)",
+        "canonical": "#eef0f5",
+        "oklch": "oklch(95.5% 0.007 268.5)",
+        "tonalRamp": [
+          "#0a0b0e",
+          "#242529",
+          "#404246",
+          "#5f6165",
+          "#808287",
+          "#a3a5aa",
+          "#c7c9ce",
+          "#eceef3"
+        ]
+      },
+      "muted-dark": {
+        "role": "neutral",
+        "displayName": "Texte secondaire (sombre)",
+        "canonical": "#a3abbb",
+        "oklch": "oklch(74.0% 0.025 264.4)",
+        "tonalRamp": [
+          "#060b16",
+          "#1f2531",
+          "#3b4250",
+          "#5a6170",
+          "#7b8292",
+          "#9da5b5",
+          "#c1c9da",
+          "#e7effe"
+        ]
+      },
+      "line-dark": {
+        "role": "neutral",
+        "displayName": "Trait (sombre)",
+        "canonical": "#2c3341",
+        "oklch": "oklch(32.1% 0.027 264.1)",
+        "tonalRamp": [
+          "#060b16",
+          "#1e2532",
+          "#3b4251",
+          "#596171",
+          "#7a8393",
+          "#9da5b6",
+          "#c0c9db",
+          "#e7effe"
+        ]
+      },
+      "ok-dark": {
+        "role": "tertiary",
+        "displayName": "Vert confidentialité (sombre)",
+        "canonical": "#35e0c2",
+        "oklch": "oklch(81.6% 0.140 177.5)",
+        "tonalRamp": [
+          "#00100b",
+          "#002d25",
+          "#004e42",
+          "#037261",
+          "#009882",
+          "#08bfa4",
+          "#3fe7c8",
+          "#bcffee"
+        ]
+      },
+      "warn-dark": {
+        "role": "tertiary",
+        "displayName": "Ambre prudence (sombre)",
+        "canonical": "#ffb547",
+        "oklch": "oklch(82.4% 0.149 73.3)",
+        "tonalRamp": [
+          "#160700",
+          "#361f00",
+          "#5b3a00",
+          "#845600",
+          "#b07402",
+          "#dc9416",
+          "#feba5a",
+          "#ffebd3"
+        ]
+      },
+      "bad-dark": {
+        "role": "tertiary",
+        "displayName": "Rouge alerte (sombre)",
+        "canonical": "#ff8a80",
+        "oklch": "oklch(75.9% 0.144 26.1)",
+        "tonalRamp": [
+          "#230000",
+          "#4e0003",
+          "#7d0e13",
+          "#a33733",
+          "#ca5b53",
+          "#f27e75",
+          "#feb3ab",
+          "#fee9e6"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Salutation",
+        "purpose": "Salutation de l'accueil, une seule par écran."
+      },
+      "headline": {
+        "displayName": "Titre d'écran",
+        "purpose": "Titres du parcours ; 1.35rem pour h2, 1.25rem en sous-page de Réglages."
+      },
+      "title": {
+        "displayName": "Titre de barre",
+        "purpose": "Titre de la barre du haut, tronqué."
+      },
+      "body": {
+        "displayName": "Texte",
+        "purpose": "Texte courant ; 0.97rem dans les rangées et les réponses."
+      },
+      "body-sm": {
+        "displayName": "Texte secondaire",
+        "purpose": "Sous-titres, valeurs ; 0.82rem pour les notes."
+      },
+      "label": {
+        "displayName": "Titre de groupe",
+        "purpose": "Titres de groupe de Réglages, casse de phrase, --muted."
+      },
+      "caption": {
+        "displayName": "Légende",
+        "purpose": "Ligne de confidentialité sous la saisie."
+      }
+    },
+    "fonts": [
+      {
+        "id": "telephone",
+        "value": "\"Segoe UI\", system-ui, -apple-system, \"Helvetica Neue\", Arial, sans-serif",
+        "purpose": "Défaut : police du système, aucun téléchargement."
+      },
+      {
+        "id": "times",
+        "value": "\"Times New Roman\", Times, Tinos, \"Liberation Serif\", \"Noto Serif\", serif"
+      },
+      {
+        "id": "georgia",
+        "value": "Georgia, Gelasio, \"Noto Serif\", serif"
+      },
+      {
+        "id": "calibri",
+        "value": "Calibri, Carlito, \"Segoe UI\", Roboto, system-ui, sans-serif"
+      }
+    ],
+    "themes": {
+      "count": 19,
+      "source": "app/globals.css ([data-accent], [data-theme], prefers-color-scheme)",
+      "contrast": "texte ≥ 7, texte secondaire et repère ≥ 4,5, boutons ≥ 4,5, icône ≥ 3 (WCAG)",
+      "list": [
+        {
+          "id": "bleu",
+          "group": "Couleurs de Six",
+          "modes": "clair, sombre, auto",
+          "light": {
+            "brand": "#1f3864",
+            "accentA": "#1f3864",
+            "accentB": "#3a67b8",
+            "bg": "#f5f6fa",
+            "iconBg": "#090f1b",
+            "iconAccent": "#4d7cfe"
+          },
+          "dark": {
+            "brand": "#7fa2ea",
+            "accentA": "#2a52a0",
+            "accentB": "#4a78d0",
+            "bg": "#12151c",
+            "card": "#1c212b"
+          }
+        },
+        {
+          "id": "ambre",
+          "group": "Couleurs de Six",
+          "modes": "clair, sombre, auto",
+          "light": {
+            "brand": "#9a5b00",
+            "accentA": "#9a5b00",
+            "accentB": "#996c1c",
+            "bg": "#faf6ef",
+            "iconBg": "#2b1e0b",
+            "iconAccent": "#f0b95a"
+          },
+          "dark": {
+            "brand": "#f0b95a",
+            "bg": "#17130d",
+            "card": "#221c14"
+          }
+        },
+        {
+          "id": "gris",
+          "group": "Couleurs de Six",
+          "modes": "clair, sombre, auto",
+          "light": {
+            "brand": "#4a5266",
+            "accentA": "#4a5266",
+            "accentB": "#6b748a",
+            "bg": "#f3f4f6",
+            "iconBg": "#23262e",
+            "iconAccent": "#aab2c5"
+          },
+          "dark": {
+            "brand": "#aab2c5",
+            "bg": "#121316",
+            "card": "#1c1e22"
+          }
+        },
+        {
+          "id": "whatsapp",
+          "group": "Inspirés des apps",
+          "modes": "clair, sombre, auto",
+          "light": {
+            "brand": "#0b6a5f",
+            "accentA": "#075e54",
+            "accentB": "#118376",
+            "bg": "#efeae2",
+            "iconBg": "#075e54",
+            "iconAccent": "#25d366"
+          },
+          "dark": {
+            "brand": "#25d366",
+            "bg": "#0b141a",
+            "card": "#111b21"
+          }
+        },
+        {
+          "id": "facebook",
+          "group": "Inspirés des apps",
+          "modes": "clair, sombre, auto",
+          "light": {
+            "brand": "#0645c2",
+            "accentA": "#0645c2",
+            "accentB": "#0866ff",
+            "bg": "#f0f2f5",
+            "iconBg": "#0866ff",
+            "iconAccent": "#cfe1ff"
+          },
+          "dark": {
+            "brand": "#7ab4ff",
+            "bg": "#18191a",
+            "card": "#242526"
+          }
+        },
+        {
+          "id": "sms",
+          "group": "Inspirés des apps",
+          "modes": "clair, sombre, auto",
+          "light": {
+            "brand": "#0b57d0",
+            "accentA": "#0b57d0",
+            "accentB": "#1770e6",
+            "bg": "#f3f6fc",
+            "iconBg": "#0b57d0",
+            "iconAccent": "#a8c7fa"
+          },
+          "dark": {
+            "brand": "#a8c7fa",
+            "bg": "#131314",
+            "card": "#1e1f20"
+          }
+        },
+        {
+          "id": "linkedin",
+          "group": "Inspirés des apps",
+          "modes": "clair, sombre, auto",
+          "light": {
+            "brand": "#0a66c2",
+            "accentA": "#004182",
+            "accentB": "#0a66c2",
+            "bg": "#f4f2ee",
+            "iconBg": "#0a66c2",
+            "iconAccent": "#9dcbf7"
+          },
+          "dark": {
+            "brand": "#71b7fb",
+            "bg": "#000000",
+            "card": "#1b1f23"
+          }
+        },
+        {
+          "id": "telegram",
+          "group": "Inspirés des apps",
+          "modes": "clair, sombre, auto",
+          "light": {
+            "brand": "#00618f",
+            "accentA": "#005f92",
+            "accentB": "#007ab8",
+            "bg": "#edf2f6",
+            "iconBg": "#007ab8",
+            "iconAccent": "#c8ecff"
+          },
+          "dark": {
+            "brand": "#26a5e4",
+            "bg": "#0e1621",
+            "card": "#17212b"
+          }
+        },
+        {
+          "id": "instagram",
+          "group": "Inspirés des apps",
+          "modes": "clair, sombre, auto",
+          "light": {
+            "brand": "#b02a74",
+            "accentA": "#962fbf",
+            "accentB": "#d62976",
+            "bg": "#fafafa",
+            "iconBg": "#d62976",
+            "iconAccent": "#ffe08a",
+            "iconGrad": "linear-gradient(45deg, #feda75 0%, #fa7e1e 12%, #d62976 40%, #962fbf 72%, #4f5bd5 100%)"
+          },
+          "dark": {
+            "brand": "#f56fa6",
+            "bg": "#000000",
+            "card": "#121212"
+          }
+        },
+        {
+          "id": "tiktok",
+          "group": "Inspirés des apps",
+          "modes": "clair, sombre, auto",
+          "light": {
+            "brand": "#c8002a",
+            "accentA": "#b80027",
+            "accentB": "#e9012e",
+            "bg": "#f8f8f8",
+            "iconBg": "#000000",
+            "iconAccent": "#25f4ee",
+            "iconRing": "var(--line)"
+          },
+          "dark": {
+            "brand": "#25f4ee",
+            "bg": "#000000",
+            "card": "#121212"
+          }
+        },
+        {
+          "id": "google",
+          "group": "Inspirés des apps",
+          "modes": "clair, sombre, auto",
+          "light": {
+            "brand": "#1967d2",
+            "accentA": "#1558b0",
+            "accentB": "#1967d2",
+            "bg": "#f8f9fa",
+            "iconBg": "#ffffff",
+            "iconAccent": "#ea4335",
+            "iconRing": "var(--line)"
+          },
+          "dark": {
+            "brand": "#8ab4f8",
+            "bg": "#202124",
+            "card": "#292a2d"
+          }
+        },
+        {
+          "id": "claude",
+          "group": "Inspirés des apps",
+          "modes": "clair, sombre, auto",
+          "light": {
+            "brand": "#a94f2c",
+            "accentA": "#8f3f1f",
+            "accentB": "#b4532f",
+            "bg": "#faf9f5",
+            "iconBg": "#d97757",
+            "iconAccent": "#141413"
+          },
+          "dark": {
+            "brand": "#e08a6d",
+            "bg": "#1f1e1d",
+            "card": "#262624"
+          }
+        },
+        {
+          "id": "kimi",
+          "group": "Inspirés des apps",
+          "modes": "clair, sombre, auto",
+          "light": {
+            "brand": "#0062cc",
+            "accentA": "#002f5b",
+            "accentB": "#006ee0",
+            "bg": "#f4f5f7",
+            "iconBg": "#002f5b",
+            "iconAccent": "#00f6ff"
+          },
+          "dark": {
+            "brand": "#00a1ff",
+            "bg": "#121212",
+            "card": "#1c1d1f"
+          }
+        },
+        {
+          "id": "pinterest",
+          "group": "Inspirés des apps",
+          "modes": "clair, sombre, auto",
+          "light": {
+            "brand": "#cc001f",
+            "accentA": "#ad081b",
+            "accentB": "#e60023",
+            "bg": "#ffffff",
+            "iconBg": "#e60023",
+            "iconAccent": "#ffe1e5"
+          },
+          "dark": {
+            "brand": "#ff5a6e",
+            "bg": "#111111",
+            "card": "#1e1e1e"
+          }
+        },
+        {
+          "id": "rose",
+          "group": "Couleurs de Six",
+          "modes": "clair, sombre, auto",
+          "light": {
+            "brand": "#be185d",
+            "accentA": "#9d174d",
+            "accentB": "#be185d",
+            "bg": "#fdf4f8",
+            "iconBg": "#2a0f1d",
+            "iconAccent": "#ff6fae"
+          },
+          "dark": {
+            "brand": "#f472b6",
+            "bg": "#1a1015",
+            "card": "#24161e"
+          }
+        },
+        {
+          "id": "violet",
+          "group": "Couleurs de Six",
+          "modes": "clair, sombre, auto",
+          "light": {
+            "brand": "#6d28d9",
+            "accentA": "#5b21b6",
+            "accentB": "#7c3aed",
+            "bg": "#f7f5fd",
+            "iconBg": "#1c1033",
+            "iconAccent": "#a78bfa"
+          },
+          "dark": {
+            "brand": "#b79cff",
+            "bg": "#14111d",
+            "card": "#1d1929"
+          }
+        },
+        {
+          "id": "jaune",
+          "group": "Couleurs de Six",
+          "modes": "clair, sombre, auto",
+          "light": {
+            "brand": "#7a5d00",
+            "accentA": "#ffc300",
+            "accentB": "#ffd60a",
+            "bg": "#fffbea",
+            "iconBg": "#1f1a00",
+            "iconAccent": "#ffd60a",
+            "onAccent": "#1f1a00"
+          },
+          "dark": {
+            "brand": "#ffd60a",
+            "bg": "#15130a",
+            "card": "#1f1c10"
+          }
+        },
+        {
+          "id": "vert",
+          "group": "Couleurs de Six",
+          "modes": "clair, sombre, auto",
+          "light": {
+            "brand": "#127055",
+            "accentA": "#0f6b4f",
+            "accentB": "#12805e",
+            "bg": "#f2faf6",
+            "iconBg": "#0b2a1f",
+            "iconAccent": "#34d399"
+          },
+          "dark": {
+            "brand": "#4ade80",
+            "bg": "#0d1712",
+            "card": "#14211b"
+          }
+        },
+        {
+          "id": "neon",
+          "group": "Couleurs de Six",
+          "modes": "toujours sombre",
+          "light": {
+            "brand": "#00e5ff",
+            "accentA": "#1e90ff",
+            "accentB": "#00e5ff",
+            "bg": "#000000",
+            "iconBg": "#000000",
+            "iconAccent": "#00e5ff",
+            "onAccent": "#00121a",
+            "iconRing": "var(--line)"
+          },
+          "dark": {
+            "brand": "#00e5ff",
+            "bg": "#000000",
+            "card": "#0a0f14"
+          }
+        }
+      ]
+    },
+    "shadows": [
+      {
+        "name": "sh-1",
+        "value": "0 1px 2px rgb(16 24 40 / 0.06)",
+        "dark": "0 1px 2px rgb(0 0 0 / 0.35)",
+        "purpose": "Surfaces posées : cartes, carte de profil, icônes d'apps."
+      },
+      {
+        "name": "sh-2",
+        "value": "0 8px 24px rgb(16 24 40 / 0.10)",
+        "dark": "0 10px 28px rgb(0 0 0 / 0.45)",
+        "purpose": "Surfaces flottantes : pilule de saisie, feuille d'import, bouton principal, envoi."
+      },
+      {
+        "name": "drawer",
+        "value": "8px 0 32px rgb(0 0 0 / 0.18)",
+        "purpose": "Menu latéral, au-dessus d'un voile rgb(0 0 0 / 0.42)."
+      },
+      {
+        "name": "logo-halo",
+        "value": "0 10px 30px color-mix(in srgb, var(--accent-b) 30%, transparent)",
+        "purpose": "Logo de l'accueil uniquement."
+      },
+      {
+        "name": "selected-ring",
+        "value": "0 0 0 1px var(--accent-b)",
+        "purpose": "Élément choisi (2px pour une réponse)."
+      },
+      {
+        "name": "focus-ring",
+        "value": "outline: 3px solid var(--brand); outline-offset: 2px",
+        "purpose": "Focus clavier partout."
+      },
+      {
+        "name": "neon-glow",
+        "value": "0 0 14px color-mix(in srgb, #00e5ff 55%, transparent), 0 0 2px #00e5ff",
+        "purpose": "Thème Néon : bouton principal et puce active."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-enter",
+        "value": "cubic-bezier(0.2, 0.8, 0.2, 1)",
+        "purpose": "Tout ce qui entre : menu, feuille, salutation, rotation du « + »."
+      },
+      {
+        "name": "drawer-slide",
+        "value": "transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1)",
+        "purpose": "Menu latéral depuis la gauche ; voile en fondu 0.2s ease."
+      },
+      {
+        "name": "plus-rotate",
+        "value": "transform 0.2s cubic-bezier(0.2, 0.8, 0.2, 1); rotate(45deg)",
+        "purpose": "Le « + » devient × et ouvre la feuille d'import."
+      },
+      {
+        "name": "sheet-rise",
+        "value": "0.18s cubic-bezier(0.2, 0.8, 0.2, 1); translateY(8px) et opacité 0 vers l'état final",
+        "purpose": "Feuille d'import."
+      },
+      {
+        "name": "greeting-enter",
+        "value": "0.6s cubic-bezier(0.2, 0.8, 0.2, 1); translateY(10px) scale(0.98) et opacité 0 vers l'état final",
+        "purpose": "Salutation de l'accueil."
+      },
+      {
+        "name": "press",
+        "value": "0.12s ease; scale(0.96 à 0.99)",
+        "purpose": "Retour d'appui des boutons, puces, cartes et tuiles."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "prefers-reduced-motion: reduce",
+        "purpose": "Coupe transitions, animations d'entrée, réductions à l'appui et le halo du logo du parcours."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "column-max",
+        "value": "480px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Bouton principal",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Action principale d'un écran, en dégradé d'action.",
+      "html": "<button class=\"ds-btn-primary\">Copier la réponse</button>",
+      "css": ".ds-btn-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:12px 16px;border-radius:14px;border:1px solid transparent;font:inherit;font-weight:700;cursor:pointer;background:linear-gradient(135deg,var(--accent-a,#1f3864),var(--accent-b,#3a67b8));color:var(--on-accent,#fff);box-shadow:var(--sh-2,0 8px 24px rgb(16 24 40 / .10)),inset 0 1px 0 rgb(255 255 255 / .18);transition:transform .12s ease,box-shadow .15s ease}.ds-btn-primary:focus-visible{outline:3px solid var(--brand,#1f3864);outline-offset:2px}.ds-btn-primary:active{transform:translateY(1px) scale(.99)}.ds-btn-primary:disabled{opacity:.55;cursor:not-allowed}"
+    },
+    {
+      "name": "Bouton secondaire",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Action secondaire, transparente avec filet.",
+      "html": "<button class=\"ds-btn-ghost\">Recommencer</button>",
+      "css": ".ds-btn-ghost{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:12px 16px;border-radius:14px;border:1px solid var(--line,#dde1ea);background:transparent;color:var(--ink,#1b1f2a);font:inherit;font-weight:600;cursor:pointer;transition:transform .12s ease}.ds-btn-ghost:focus-visible{outline:3px solid var(--brand,#1f3864);outline-offset:2px}.ds-btn-ghost:active{transform:translateY(1px) scale(.99)}"
+    },
+    {
+      "name": "Barre du haut",
+      "kind": "nav",
+      "refersTo": "button-round",
+      "description": "Menu rond, titre, avatar à initiale avec pastille d'état.",
+      "html": "<header class=\"ds-appbar\"><button class=\"ds-round\" aria-label=\"Ouvrir le menu\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M4 7h16M4 12h16M4 17h10\"/></svg></button><span class=\"ds-appbar-title\">Six</span><a class=\"ds-avatar\" href=\"#\" aria-label=\"Profil d'Awa : invitée\">A<span class=\"ds-dot\"></span></a></header>",
+      "css": ".ds-appbar{display:flex;align-items:center;gap:4px;min-height:56px;padding:6px 8px;background:color-mix(in srgb,var(--bg,#f5f6fa) 94%,transparent)}.ds-round{width:44px;height:44px;flex:none;display:grid;place-items:center;border:0;border-radius:50%;background:none;color:var(--ink,#1b1f2a);cursor:pointer}.ds-round:active{background:var(--panel2,#eceff6)}.ds-round:focus-visible,.ds-avatar:focus-visible{outline:3px solid var(--brand,#1f3864);outline-offset:2px}.ds-appbar-title{flex:1;padding-left:2px;font-weight:700;font-size:1.1rem;letter-spacing:-.01em;color:var(--ink,#1b1f2a)}.ds-avatar{position:relative;flex:none;width:36px;height:36px;margin:0 4px;display:grid;place-items:center;border-radius:50%;background:linear-gradient(135deg,var(--accent-a,#1f3864),var(--accent-b,#3a67b8));color:var(--on-accent,#fff);font-weight:700;font-size:.95rem;text-decoration:none}.ds-dot{position:absolute;right:-1px;bottom:-1px;width:11px;height:11px;border-radius:50%;background:var(--muted,#5b6475);box-shadow:0 0 0 2px var(--bg,#f5f6fa)}"
+    },
+    {
+      "name": "Pilule de saisie",
+      "kind": "input",
+      "refersTo": "saisie",
+      "description": "Composant signature : « + », champ qui grandit, envoi rond.",
+      "html": "<div class=\"ds-saisie\"><button class=\"ds-plus\" aria-label=\"Importer\" aria-expanded=\"false\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"><path d=\"M12 5v14M5 12h14\"/></svg></button><textarea rows=\"1\" aria-label=\"Nouvelle conversation\" placeholder=\"Colle le message ou la conversation…\"></textarea><button class=\"ds-send\" aria-label=\"Continuer\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 19V5M5 12l7-7 7 7\"/></svg></button></div>",
+      "css": ".ds-saisie{display:flex;align-items:flex-end;gap:6px;padding:6px;border:1px solid var(--line,#dde1ea);border-radius:26px;background:var(--card,#fff);box-shadow:var(--sh-2,0 8px 24px rgb(16 24 40 / .10));transition:border-color .15s ease,box-shadow .15s ease}.ds-saisie:focus-within{border-color:var(--brand,#1f3864);box-shadow:var(--sh-2,0 8px 24px rgb(16 24 40 / .10)),0 0 0 3px color-mix(in srgb,var(--brand,#1f3864) 18%,transparent)}.ds-saisie textarea{flex:1;min-width:0;min-height:44px;max-height:180px;padding:11px 4px;border:0;background:transparent;resize:none;font:inherit;font-size:1rem;line-height:1.4;color:var(--ink,#1b1f2a);outline:none}.ds-saisie textarea::placeholder{color:var(--muted,#5b6475);opacity:1}.ds-plus{flex:none;width:44px;height:44px;display:grid;place-items:center;border:0;border-radius:50%;background:var(--panel2,#eceff6);color:var(--ink,#1b1f2a);cursor:pointer}.ds-plus svg{transition:transform .2s cubic-bezier(.2,.8,.2,1)}.ds-plus[aria-expanded=true] svg{transform:rotate(45deg)}.ds-send{flex:none;width:44px;height:44px;display:grid;place-items:center;border:0;border-radius:50%;cursor:pointer;background:linear-gradient(135deg,var(--accent-a,#1f3864),var(--accent-b,#3a67b8));color:var(--on-accent,#fff);box-shadow:var(--sh-2,0 8px 24px rgb(16 24 40 / .10))}.ds-send:disabled{background:var(--panel2,#eceff6);color:var(--muted,#5b6475);box-shadow:none;cursor:not-allowed}.ds-plus:focus-visible,.ds-send:focus-visible{outline:3px solid var(--brand,#1f3864);outline-offset:2px}"
+    },
+    {
+      "name": "Puce de choix",
+      "kind": "chip",
+      "refersTo": "chip",
+      "description": "Choix de ton ou d'objectif ; active en dégradé d'action.",
+      "html": "<div class=\"ds-chips\"><button class=\"ds-chip\" aria-pressed=\"true\">Poli</button><button class=\"ds-chip\" aria-pressed=\"false\">Direct</button></div>",
+      "css": ".ds-chips{display:flex;gap:8px}.ds-chip{min-height:44px;padding:8px 14px;border-radius:99px;border:1px solid var(--line,#dde1ea);background:var(--card,#fff);color:var(--ink,#1b1f2a);font:inherit;font-weight:600;font-size:.9rem;cursor:pointer;transition:transform .12s ease,background .15s ease}.ds-chip:active{transform:scale(.96)}.ds-chip[aria-pressed=true]{background:linear-gradient(135deg,var(--accent-a,#1f3864),var(--accent-b,#3a67b8));border-color:transparent;color:var(--on-accent,#fff)}.ds-chip:focus-visible{outline:3px solid var(--brand,#1f3864);outline-offset:2px}"
+    },
+    {
+      "name": "Rangée d'exemples",
+      "kind": "card",
+      "refersTo": "suggest-card",
+      "description": "Cartes d'exemples défilantes : élément coupé, fondu de 32 px, marge de fin de 40 px.",
+      "html": "<div class=\"ds-suggest\"><button class=\"ds-sc\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M12 3 2 20h20L12 3zM12 10v4M12 17h.01\"/></svg><span>Mon patron menace de me renvoyer</span></button><button class=\"ds-sc\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M4 5h16v11H8l-4 4z\"/></svg><span>« Tu as disparu ! » : un reproche ?</span></button><button class=\"ds-sc\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M12 3 4 6v6c0 5 3.5 8 8 9 4.5-1 8-4 8-9V6z\"/></svg><span>« Vous avez gagné » : arnaque ?</span></button></div>",
+      "css": ".ds-suggest{display:flex;gap:10px;overflow-x:auto;padding:2px 40px 4px 16px;scrollbar-width:none;scroll-snap-type:x proximity;-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 32px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 32px),transparent)}.ds-sc{flex:none;width:150px;min-height:92px;display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:12px 14px;border:1px solid var(--line,#dde1ea);border-radius:18px;background:var(--card,#fff);color:var(--ink,#1b1f2a);font:inherit;font-size:.88rem;font-weight:600;line-height:1.3;text-align:left;cursor:pointer;scroll-snap-align:start;transition:transform .12s ease}.ds-sc svg{color:var(--brand,#1f3864)}.ds-sc:active{transform:scale(.98)}.ds-sc:focus-visible{outline:3px solid var(--brand,#1f3864);outline-offset:2px}"
+    },
+    {
+      "name": "Liste groupée",
+      "kind": "custom",
+      "refersTo": "set-row",
+      "description": "Groupe de Réglages : titre en casse de phrase, rangées de 56 px.",
+      "html": "<section><h2 class=\"ds-gt\">Apparence</h2><div class=\"ds-gl\"><a class=\"ds-row\" href=\"#\"><span class=\"ds-ico\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"4\"/><path d=\"M12 2v2M12 20v2M2 12h2M20 12h2\"/></svg></span><span class=\"ds-grow\">Thème et couleurs</span><span class=\"ds-val\">Bleu, auto</span><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"m9 6 6 6-6 6\"/></svg></a><a class=\"ds-row\" href=\"#\"><span class=\"ds-ico\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M5 6h14M12 6v13\"/></svg></span><span class=\"ds-grow\">Police</span><span class=\"ds-val\">Téléphone</span><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"m9 6 6 6-6 6\"/></svg></a></div></section>",
+      "css": ".ds-gt{margin:0 0 8px 6px;color:var(--muted,#5b6475);font-size:.85rem;font-weight:600;letter-spacing:0}.ds-gl{display:flex;flex-direction:column;border:1px solid var(--line,#dde1ea);border-radius:18px;background:var(--card,#fff);overflow:hidden}.ds-row{display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 14px;color:var(--ink,#1b1f2a);font-size:.97rem;text-decoration:none}.ds-row+.ds-row{border-top:1px solid var(--line,#dde1ea)}.ds-row:active{background:var(--panel2,#eceff6)}.ds-row:focus-visible{outline:3px solid var(--brand,#1f3864);outline-offset:-3px}.ds-row>svg{color:var(--muted,#5b6475);flex:none}.ds-ico{flex:none;width:32px;height:32px;display:grid;place-items:center;border-radius:9px;background:color-mix(in srgb,var(--brand,#1f3864) 12%,var(--card,#fff));color:var(--brand,#1f3864)}.ds-grow{flex:1}.ds-val{color:var(--muted,#5b6475);font-size:.88rem}"
+    },
+    {
+      "name": "Élément du menu latéral",
+      "kind": "nav",
+      "refersTo": "drawer-item",
+      "description": "Rangée de 48 px ; page courante en --brand sur --brand à 12 %.",
+      "html": "<nav class=\"ds-drawer\" aria-label=\"Navigation principale\"><a class=\"ds-di\" href=\"#\" aria-current=\"page\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M3 11 12 4l9 7v9H3z\"/></svg>Accueil</a><a class=\"ds-di\" href=\"#\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M4 6h10M18 6h2M4 18h4M12 18h8\"/><circle cx=\"16\" cy=\"6\" r=\"2\"/><circle cx=\"10\" cy=\"18\" r=\"2\"/></svg>Réglages</a></nav>",
+      "css": ".ds-drawer{display:flex;flex-direction:column;gap:2px;width:280px;padding:12px;background:var(--card,#fff);border-right:1px solid var(--line,#dde1ea)}.ds-di{display:flex;align-items:center;gap:12px;min-height:48px;padding:0 12px;border-radius:12px;color:var(--ink,#1b1f2a);font-weight:600;text-decoration:none}.ds-di svg{color:var(--muted,#5b6475)}.ds-di[aria-current=page]{background:color-mix(in srgb,var(--brand,#1f3864) 12%,transparent);color:var(--brand,#1f3864)}.ds-di[aria-current=page] svg{color:var(--brand,#1f3864)}.ds-di:focus-visible{outline:3px solid var(--brand,#1f3864);outline-offset:2px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "La conversation qui attend",
+    "overview": "Six est une messagerie qui ne parle jamais à ta place. L'accueil ressemble à une app d'IA conversationnelle (Claude Mobile, Gemini) : une salutation au centre, la saisie au pouce en bas, rien d'autre à lire avant d'agir. Le reste de l'app suit la même retenue : une action principale par écran, des listes groupées comme dans les réglages d'un téléphone, des cibles de 44 px au minimum.\n\nLe monde visuel n'a pas de couleur fixe. Tout passe par une douzaine de variables CSS (`--bg`, `--card`, `--panel2`, `--ink`, `--muted`, `--line`, `--brand`, `--accent-a`, `--accent-b`, `--on-accent`, `--icon-*`), et 19 thèmes complets les redéfinissent : bleu Seven.AI par défaut, sept autres couleurs de Six (ambre, gris, rose, violet, jaune, vert, néon) et onze couleurs inspirées des apps (WhatsApp, Facebook, SMS, LinkedIn, Telegram, Instagram, TikTok, Google, Claude, Kimi, Pinterest). Chaque thème existe en clair et en sombre, sauf Néon, toujours sombre. Un thème change toute l'app, logo compris. La seule constante est la forme : surfaces douces, coins arrondis, ombres légères, dégradé accent-a → accent-b réservé aux actions.\n\nLes valeurs de la frontmatter sont celles du thème par défaut (bleu) ; les clés `-dark` sont celles du mode sombre par défaut. Les autres thèmes sont listés dans le sidecar `.impeccable/design.json` et définis dans `app/globals.css`, qui fait foi.",
+    "keyCharacteristics": [
+      "Jetons sémantiques uniquement : aucun composant ne code une couleur en dur, sauf la lueur du thème Néon et les bulles par réseau.",
+      "Clair, sombre ou auto (système), choisi dans Réglages ; police choisie (Téléphone, Times, Georgia, Calibri) appliquée à toute l'app via `--font`.",
+      "Dégradé à 135° de accent-a vers accent-b sur les actions principales, l'envoi, l'avatar et les puces actives.",
+      "Logo « 6 » recoloré par masque, seul objet de marque à l'écran.",
+      "Mobile d'abord : colonne de 480 px maximum, barres collées en haut et en bas, zones sûres respectées."
+    ],
+    "rules": [
+      {
+        "name": "The Full Theme Rule",
+        "body": "Un thème redéfinit tous les rôles : fond, cartes, textes, traits, icône, barre système et icône d'onglet. Un nouveau composant ne lit que les variables ; s'il a besoin d'une couleur absente, c'est un nouveau rôle à définir dans les 19 thèmes, pas une valeur en dur.",
+        "section": "colors"
+      },
+      {
+        "name": "The Contrast Floor Rule",
+        "body": "Dans chaque thème et chaque mode : texte ≥ 7:1, texte secondaire et repères ≥ 4,5:1, boutons ≥ 4,5:1, icône ≥ 3:1. Le texte d'exemple des champs utilise `--muted` à pleine opacité pour rester à 4,5:1.",
+        "section": "colors"
+      },
+      {
+        "name": "The Colors-Only Rule",
+        "body": "Les thèmes inspirés des apps empruntent des couleurs, jamais un logo. Les vraies icônes d'apps n'apparaissent que pour ouvrir l'app correspondante (barre du bas de l'accueil).",
+        "section": "colors"
+      },
+      {
+        "name": "The Action Gradient Rule",
+        "body": "Le dégradé accent-a → accent-b (135°) marque ce qu'on peut faire : action principale, envoi, avatar, puce active, numéros d'étapes. Il ne sert jamais de fond décoratif.",
+        "section": "colors"
+      },
+      {
+        "name": "The Sentence-Case Label Rule",
+        "body": "Sur les surfaces nouvelles, les titres de section sont en casse de phrase, en `--muted`, 0.85rem, 600, sans interlettrage. Pas de petites capitales espacées au-dessus d'un titre.",
+        "section": "typography"
+      },
+      {
+        "name": "The Short-Line Rule",
+        "body": "Les sous-titres centrés restent sous 30ch ; le public est peu à l'aise à l'écrit, les phrases sont courtes.",
+        "section": "typography"
+      },
+      {
+        "name": "The Thumb Rule",
+        "body": "Saisir, importer et envoyer se font en bas de l'écran ; ce qui se lit est en haut ou au centre.",
+        "section": "layout"
+      },
+      {
+        "name": "The Peeking Row Rule",
+        "body": "Une rangée qui défile horizontalement montre un élément coupé au bord droit, se fond sur 32 px à droite (masque en dégradé) et garde une marge de fin d'au moins la largeur du fondu (40 px) pour que le dernier élément sorte entièrement en fin de défilement. Les cartes d'exemples ont une largeur calculée pour en montrer 2,3.",
+        "section": "layout"
+      },
+      {
+        "name": "The Two Shadows Rule",
+        "body": "Hors menu et halo du logo, une surface est posée (`--sh-1`) ou flottante (`--sh-2`). Pas d'ombre dure décalée, pas de troisième niveau.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** lire chaque couleur dans une variable de thème et vérifier un nouveau composant dans au moins un thème clair, un thème sombre et Néon.",
+      "**Do** tenir les seuils de contraste : texte ≥ 7:1, texte secondaire et repères ≥ 4,5:1, boutons ≥ 4,5:1, icône ≥ 3:1.",
+      "**Do** donner 44 px au moins à toute cible tactile, en étendant la zone si le visuel est plus petit (avatar de 36 px).",
+      "**Do** utiliser des boutons ronds de 44 px dans les barres du haut.",
+      "**Do** faire déborder une rangée défilante d'un élément coupé, avec un fondu de 32 px à droite et une marge de fin d'au moins 40 px.",
+      "**Do** titrer les groupes en casse de phrase (0.85rem, 600, `--muted`).",
+      "**Do** couper toute transition et animation sous `prefers-reduced-motion: reduce`."
+    ],
+    "donts": [
+      "**Don't** mettre une bordure gauche colorée sur une carte, une rangée ou une alerte ; la sélection se marque en anneau accent-b.",
+      "**Don't** ajouter de surtitre en capitales espacées sur une surface nouvelle.",
+      "**Don't** utiliser de bouton carré dans une barre du haut.",
+      "**Don't** laisser une rangée défilante finir pile au bord sans élément coupé ni fondu.",
+      "**Don't** coder une couleur en dur dans un composant ; seuls la lueur de Néon et les bulles par réseau en ont.",
+      "**Don't** reprendre le logo d'un réseau dans un thème ; seulement ses couleurs.",
+      "**Don't** ajouter une barre d'onglets ; la navigation passe par le menu latéral."
+    ]
+  }
+}

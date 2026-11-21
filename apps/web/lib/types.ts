@@ -1,0 +1,98 @@
+export const MAX_CHARS = 2000;
+
+export const TONS = ['amical', 'professionnel', 'ferme', 'court', 'chaleureux'] as const;
+export type Ton = (typeof TONS)[number];
+
+export const LONGUEURS = ['courte', 'moyenne', 'detaillee'] as const;
+export type Longueur = (typeof LONGUEURS)[number];
+
+/** Réseau où la réponse sera envoyée : il change la forme (longueur, emojis, formules), pas le ton demandé. */
+export const CANAUX = [
+  'whatsapp',
+  'sms',
+  'messenger',
+  'facebook',
+  'instagram',
+  'tiktok',
+  'telegram',
+  'linkedin',
+  'email',
+  'x',
+] as const;
+export type Canal = (typeof CANAUX)[number];
+
+export interface Arnaque {
+  score: number; // 0 à 100
+  raisons: string[];
+}
+
+/** Passage à ne pas prendre au premier degré (humour, formule de politesse, code culturel, emoji…). */
+export interface Nuance {
+  expression: string; // citation courte de la conversation
+  premier_degre: string; // ce qu'on comprendrait au pied de la lettre
+  sens_probable: string; // ce que la personne veut sans doute dire
+}
+
+export interface Analysis {
+  resume: string;
+  intention: string;
+  ton_detecte: string;
+  tension: number; // 0 à 100
+  arnaque: Arnaque;
+  objectifs: string[];
+  question: string | null;
+  nuances: Nuance[];
+  demo: boolean; // vrai quand le faux modèle de démonstration a répondu
+}
+
+export interface RepliesResult {
+  reponses: [string, string, string];
+  demo: boolean;
+}
+
+export interface AdjustResult {
+  reponse: string;
+  demo: boolean;
+}
+
+/** Style d'écriture réglé par l'utilisateur, gardé sur son téléphone et envoyé seulement comme consigne. */
+export interface UserStyle {
+  decontracte: number; // 0 = très formel, 100 = très décontracté
+  detaille: number; // 0 = très court, 100 = très détaillé
+  emojis: boolean;
+  expressions: string[];
+}
+
+export const SITUATIONS = [
+  'Briser la glace',
+  'Reprendre contact',
+  'Relancer',
+  'Souhaiter',
+  'Professionnel',
+] as const;
+export type Situation = (typeof SITUATIONS)[number];
+
+export interface TopicsResult {
+  sujets: string[];
+  demo: boolean;
+}
+
+export interface RepliesInput {
+  conversation: string;
+  objectif: string;
+  ton: Ton;
+  longueur: Longueur;
+  precision?: string;
+  style?: UserStyle;
+  canal?: Canal;
+}
+
+export interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export interface ChatResult {
+  reponse: string;
+  demo: boolean;
+}

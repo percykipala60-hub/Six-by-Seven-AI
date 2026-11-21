@@ -1,0 +1,191 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Times-Roman /Encoding /WinAnsiEncoding >>
+endobj
+2 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Times-Bold /Encoding /WinAnsiEncoding >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Times-Italic /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Length 5291 >>
+stream
+0.302 0.486 0.996 rg 56 771.89 18 18 re f
+BT /F1 9 Tf 0.1 0.12 0.16 rg 82 777.89 Td (Six \227 7 AI) Tj ET
+BT /F3 8 Tf 0.45 0.48 0.53 rg 421.28 777.89 Td (D\351cisions \340 prendre \227 direction) Tj ET
+0.85 0.87 0.9 RG 0.8 w 56 765.89 m 539.28 765.89 l S
+BT /F1 20 Tf 0.06 0.09 0.18 rg 56.00 709.89 Td (Six \227 D\351cisions \340 prendre avant le lancement) Tj ET
+0.302 0.486 0.996 rg 56 705.89 60 2.5 re f
+BT /F3 9 Tf 0.42 0.45 0.5 rg 56.00 686.19 Td (Pr\351sent\351 par le programmeur \227 5 octobre 2026. Tout ce qui suit est un choix d'argent et d'organisation, pas un) Tj ET
+BT /F3 9 Tf 0.42 0.45 0.5 rg 56.00 674.49 Td (choix technique : l'application est construite et test\351e. Il reste 8 jours avant l'\351ch\351ance du 13 octobre.) Tj ET
+BT /F1 14 Tf 0.302 0.486 0.996 rg 56.00 634.29 Td (Le projet en deux phrases) Tj ET
+0.302 0.486 0.996 rg 56 627.2899999999998 26 2 re f
+BT /F3 10 Tf 0.12 0.14 0.18 rg 56.00 609.29 Td (Six est une application qui aide quelqu'un \340 r\351pondre \340 un message \(WhatsApp, SMS, e-mail\) :) Tj ET
+BT /F3 10 Tf 0.12 0.14 0.18 rg 56.00 596.29 Td (l'application propose jusqu'\340 trois r\351ponses pr\352tes, et la personne garde toujours la main \227 elle) Tj ET
+BT /F3 10 Tf 0.12 0.14 0.18 rg 56.00 583.29 Td (choisit, corrige et envoie elle-m\352me. Les conversations priv\351es ne sont jamais stock\351es.) Tj ET
+BT /F3 10 Tf 0.12 0.14 0.18 rg 56.00 564.29 Td (Ce qui est d\351j\340 fait : l'application fonctionne de bout en bout et est test\351e automatiquement. Il ne) Tj ET
+BT /F3 10 Tf 0.12 0.14 0.18 rg 56.00 551.29 Td (manque que des d\351cisions d'argent et d'organisation \227 c'est le sujet de cette page.) Tj ET
+BT /F1 14 Tf 0.302 0.486 0.996 rg 56.00 515.09 Td (Les 4 d\351cisions, en fran\347ais simple) Tj ET
+0.302 0.486 0.996 rg 56 508.0899999999998 26 2 re f
+BT /F1 11.5 Tf 0.302 0.486 0.996 rg 56.00 480.14 Td (D\351cision 1 \227 Combien on peut d\351penser chaque mois pour l'IA) Tj ET
+0.302 0.486 0.996 rg 56 473.1399999999998 26 2 re f
+0.302 0.486 0.996 rg 58 460.1399999999998 3 3 re f
+BT /F3 10 Tf 0.12 0.14 0.18 rg 70.00 455.14 Td (Le sujet : chaque r\351ponse de l'IA co\373te un peu d'argent \(quelques centi\350mes de dollar\). Sans limite) Tj ET
+BT /F3 10 Tf 0.12 0.14 0.18 rg 70.00 442.14 Td (fix\351e, la facture peut monter sans contr\364le.) Tj ET
+0.302 0.486 0.996 rg 58 434.1399999999998 3 3 re f
+BT /F3 10 Tf 0.12 0.14 0.18 rg 70.00 429.14 Td (Ce qu'on demande : fixer une limite mensuelle \(recommand\351 : 50 $\) et donner un moyen de paiement.) Tj ET
+BT /F3 10 Tf 0.12 0.14 0.18 rg 70.00 416.14 Td (Ordre de grandeur : 30 \340 60 $/mois pour environ 3 000 conversations par mois.) Tj ET
+BT /F1 11.5 Tf 0.302 0.486 0.996 rg 56.00 393.19 Td (D\351cision 2 \227 Le moteur local \(Ollama\) : garder ou reporter) Tj ET
+0.302 0.486 0.996 rg 56 386.1899999999998 26 2 re f
+0.302 0.486 0.996 rg 58 373.1899999999998 3 3 re f
+BT /F3 10 Tf 0.12 0.14 0.18 rg 70.00 368.19 Td (Le sujet : une option \253 IA 100 % locale \273 existe, mais elle demande un gros ordinateur allum\351 jour) Tj ET
+BT /F3 10 Tf 0.12 0.14 0.18 rg 70.00 355.19 Td (et nuit.) Tj ET
+0.302 0.486 0.996 rg 58 347.1899999999998 3 3 re f
+BT /F3 10 Tf 0.12 0.14 0.18 rg 70.00 342.19 Td (Ce qu'on demande : dire si une telle machine est disponible. Si non, on lance avec l'IA en ligne, et) Tj ET
+BT /F3 10 Tf 0.12 0.14 0.18 rg 70.00 329.19 Td (l'option locale passera dans la version suivante \(1.1\).) Tj ET
+BT /F1 11.5 Tf 0.302 0.486 0.996 rg 56.00 306.24 Td (D\351cision 3 \227 L'h\351bergement du site et de l'API \(~10 $/mois\)) Tj ET
+0.302 0.486 0.996 rg 56 299.23999999999984 26 2 re f
+0.302 0.486 0.996 rg 58 286.23999999999984 3 3 re f
+BT /F3 10 Tf 0.12 0.14 0.18 rg 70.00 281.24 Td (Le sujet : les offres gratuites utilis\351es pour tester interdisent un usage commercial, donc on ne) Tj ET
+BT /F3 10 Tf 0.12 0.14 0.18 rg 70.00 268.24 Td (peut pas lancer publiquement dessus.) Tj ET
+0.302 0.486 0.996 rg 58 260.23999999999984 3 3 re f
+BT /F3 10 Tf 0.12 0.14 0.18 rg 70.00 255.24 Td (Ce qu'on demande : valider environ 10 $/mois pour que le service soit en ligne en permanence, et le) Tj ET
+BT /F3 10 Tf 0.12 0.14 0.18 rg 70.00 242.24 Td (moyen de paiement. Sans \347a, pas de lancement.) Tj ET
+BT /F1 11.5 Tf 0.302 0.486 0.996 rg 56.00 219.29 Td (D\351cision 4 \227 Les t\351l\351phones de test et le lecteur lingala \(250\226450 $ une fois\)) Tj ET
+0.302 0.486 0.996 rg 56 212.28999999999985 26 2 re f
+0.302 0.486 0.996 rg 58 199.28999999999985 3 3 re f
+BT /F3 10 Tf 0.12 0.14 0.18 rg 70.00 194.29 Td (Le sujet : l'application vise trois publics \(iPhone, petits t\351l\351phones Android, locuteurs de) Tj ET
+BT /F3 10 Tf 0.12 0.14 0.18 rg 70.00 181.29 Td (lingala\) \227 elle doit \352tre v\351rifi\351e sur chacun.) Tj ET
+0.302 0.486 0.996 rg 58 173.28999999999985 3 3 re f
+BT /F3 10 Tf 0.12 0.14 0.18 rg 70.00 168.29 Td (Ce qu'on demande : fournir ou financer 2 t\351l\351phones \(~250\226450 $ une seule fois\) et d\351signer une) Tj ET
+BT /F3 10 Tf 0.12 0.14 0.18 rg 70.00 155.29 Td (personne qui lit le lingala pour v\351rifier les textes affich\351s aux utilisateurs.) Tj ET
+BT /F1 14 Tf 0.302 0.486 0.996 rg 56.00 129.09 Td (Co\373t total pour lancer \(8 jours restants\)) Tj ET
+0.302 0.486 0.996 rg 56 122.08999999999986 26 2 re f
+endstream
+endobj
+5 0 obj
+<< /Length 6610 >>
+stream
+0.302 0.486 0.996 rg 56 771.89 18 18 re f
+BT /F1 9 Tf 0.1 0.12 0.16 rg 82 777.89 Td (Six \227 7 AI) Tj ET
+BT /F3 8 Tf 0.45 0.48 0.53 rg 421.28 777.89 Td (D\351cisions \340 prendre \227 direction) Tj ET
+0.85 0.87 0.9 RG 0.8 w 56 765.89 m 539.28 765.89 l S
+BT /F2 8 Tf 0.5 0.53 0.58 rg 257.64 46 Td ( page 2 ) Tj ET
+0.039 0.059 0.11 rg 56 718.19 483.28 25.70 re f
+BT /F1 9 Tf 1 1 1 rg 62.00 728.89 Td (Poste) Tj ET
+BT /F1 9 Tf 1 1 1 rg 200.08 728.89 Td (Chaque mois) Tj ET
+BT /F1 9 Tf 1 1 1 rg 286.38 728.89 Td (Une seule fois) Tj ET
+BT /F1 9 Tf 1 1 1 rg 372.68 728.89 Td (Notes) Tj ET
+0.975 rg 56 694.49 483.28 23.70 re f
+BT /F1 9 Tf 0.12 0.14 0.18 rg 62.00 703.19 Td (IA en ligne \(Claude Haiku\)) Tj ET
+BT /F3 9 Tf 0.12 0.14 0.18 rg 200.08 703.19 Td (30\22660 $) Tj ET
+BT /F3 9 Tf 0.12 0.14 0.18 rg 286.38 703.19 Td (\227) Tj ET
+BT /F3 9 Tf 0.12 0.14 0.18 rg 372.68 703.19 Td (0 $ si 100 % local \(d\351cision 2\)) Tj ET
+0.955 rg 56 659.09 483.28 35.40 re f
+BT /F1 9 Tf 0.12 0.14 0.18 rg 62.00 679.49 Td (H\351bergement) Tj ET
+BT /F3 9 Tf 0.12 0.14 0.18 rg 200.08 679.49 Td (7\22612 $) Tj ET
+BT /F3 9 Tf 0.12 0.14 0.18 rg 286.38 679.49 Td (\227) Tj ET
+BT /F3 9 Tf 0.12 0.14 0.18 rg 372.68 679.49 Td (Le service reste allum\351 en) Tj ET
+BT /F3 9 Tf 0.12 0.14 0.18 rg 372.68 667.79 Td (permanence) Tj ET
+0.975 rg 56 635.39 483.28 23.70 re f
+BT /F1 9 Tf 0.12 0.14 0.18 rg 62.00 644.09 Td (T\351l\351phones de test) Tj ET
+BT /F3 9 Tf 0.12 0.14 0.18 rg 200.08 644.09 Td (\227) Tj ET
+BT /F3 9 Tf 0.12 0.14 0.18 rg 286.38 644.09 Td (250\226450 $) Tj ET
+BT /F3 9 Tf 0.12 0.14 0.18 rg 372.68 644.09 Td (iPhone d'occasion + Android simple) Tj ET
+0.955 rg 56 611.69 483.28 23.70 re f
+BT /F1 9 Tf 0.12 0.14 0.18 rg 62.00 620.39 Td (Relecteur lingala) Tj ET
+BT /F3 9 Tf 0.12 0.14 0.18 rg 200.08 620.39 Td (0\22630 $) Tj ET
+BT /F3 9 Tf 0.12 0.14 0.18 rg 286.38 620.39 Td (\227) Tj ET
+BT /F3 9 Tf 0.12 0.14 0.18 rg 372.68 620.39 Td (B\351n\351vole ou d\351dommagement) Tj ET
+0.975 rg 56 587.99 483.28 23.70 re f
+BT /F1 9 Tf 0.12 0.14 0.18 rg 62.00 596.69 Td (TOTAL) Tj ET
+BT /F3 9 Tf 0.12 0.14 0.18 rg 200.08 596.69 Td (~40\226100 $/mois) Tj ET
+BT /F3 9 Tf 0.12 0.14 0.18 rg 286.38 596.69 Td (250\226450 $) Tj ET
+BT /F3 9 Tf 0.12 0.14 0.18 rg 372.68 596.69 Td (Plafond IA \340 fixer \(d\351cision 1\)) Tj ET
+0.78 0.8 0.84 RG 0.8 w 56 587.99 m 539.28 587.99 l S
+56.00 743.89 m 56.00 587.99 l S
+194.08 743.89 m 194.08 587.99 l S
+280.38 743.89 m 280.38 587.99 l S
+366.68 743.89 m 366.68 587.99 l S
+539.28 743.89 m 539.28 587.99 l S
+BT /F1 14 Tf 0.302 0.486 0.996 rg 56.00 548.99 Td (Ce qui se passe si une d\351cision tarde) Tj ET
+0.302 0.486 0.996 rg 56 541.9899999999999 26 2 re f
+0.039 0.059 0.11 rg 56 511.29 483.28 25.70 re f
+BT /F1 9 Tf 1 1 1 rg 62.00 521.99 Td (Si\205) Tj ET
+BT /F1 9 Tf 1 1 1 rg 233.49 521.99 Td (Alors\205) Tj ET
+0.975 rg 56 475.89 483.28 35.40 re f
+BT /F1 9 Tf 0.12 0.14 0.18 rg 62.00 496.29 Td (D\351cision 3 \(h\351bergement\) tarde) Tj ET
+BT /F3 9 Tf 0.12 0.14 0.18 rg 233.49 496.29 Td (Le lancement public du 13 octobre est impossible \227 c'est le seul point) Tj ET
+BT /F3 9 Tf 0.12 0.14 0.18 rg 233.49 484.59 Td (bloquant) Tj ET
+0.955 rg 56 440.49 483.28 35.40 re f
+BT /F1 9 Tf 0.12 0.14 0.18 rg 62.00 460.89 Td (D\351cision 1 \(budget IA\) tarde) Tj ET
+BT /F3 9 Tf 0.12 0.14 0.18 rg 233.49 460.89 Td (Impossible d'activer l'IA en ligne en production \227 le reste peut) Tj ET
+BT /F3 9 Tf 0.12 0.14 0.18 rg 233.49 449.19 Td (partir) Tj ET
+0.975 rg 56 416.79 483.28 23.70 re f
+BT /F1 9 Tf 0.12 0.14 0.18 rg 62.00 425.49 Td (D\351cision 2 \(machine\) tarde) Tj ET
+BT /F3 9 Tf 0.12 0.14 0.18 rg 233.49 425.49 Td (On lance sur l'IA en ligne ; l'option locale glisse en 1.1 sans retard) Tj ET
+0.955 rg 56 381.39 483.28 35.40 re f
+BT /F1 9 Tf 0.12 0.14 0.18 rg 62.00 401.79 Td (D\351cision 4 \(t\351l\351phones\) tarde) Tj ET
+BT /F3 9 Tf 0.12 0.14 0.18 rg 233.49 401.79 Td (Le lancement a lieu, mais les tests r\351els se feront apr\350s coup \(risque) Tj ET
+BT /F3 9 Tf 0.12 0.14 0.18 rg 233.49 390.09 Td (qualit\351\)) Tj ET
+0.78 0.8 0.84 RG 0.8 w 56 381.39 m 539.28 381.39 l S
+56.00 536.99 m 56.00 381.39 l S
+227.49 536.99 m 227.49 381.39 l S
+539.28 536.99 m 539.28 381.39 l S
+BT /F1 14 Tf 0.302 0.486 0.996 rg 56.00 343.19 Td (Ce que je demande ce mardi) Tj ET
+0.302 0.486 0.996 rg 56 336.1899999999999 26 2 re f
+0.302 0.486 0.996 rg 58 323.1899999999999 3 3 re f
+BT /F3 10 Tf 0.12 0.14 0.18 rg 70.00 318.19 Td (Un oui/non sur chaque d\351cision \(5 minutes de vote suffit\).) Tj ET
+0.302 0.486 0.996 rg 58 310.1899999999999 3 3 re f
+BT /F3 10 Tf 0.75 0.2 0.15 rg 70.00 305.19 Td (Un porteur de carte \(ou une carte pr\351pay\351e\) pour les deux budgets r\351currents.) Tj ET
+0.302 0.486 0.996 rg 58 297.1899999999999 3 3 re f
+BT /F3 10 Tf 0.12 0.14 0.18 rg 70.00 292.19 Td (Le nom de qui ach\350te/pr\352te les t\351l\351phones et du relecteur lingala.) Tj ET
+BT /F1 14 Tf 0.302 0.486 0.996 rg 56.00 265.99 Td (Pourquoi je peux vous le garantir) Tj ET
+0.302 0.486 0.996 rg 56 258.9899999999999 26 2 re f
+0.302 0.486 0.996 rg 58 245.9899999999999 3 3 re f
+BT /F3 10 Tf 0.12 0.14 0.18 rg 70.00 240.99 Td (Toute la partie logicielle de la 1.0 est \351crite, test\351e et relue : le parcours complet, la) Tj ET
+BT /F3 10 Tf 0.12 0.14 0.18 rg 70.00 227.99 Td (protection contre les arnaques, le masquage des noms et num\351ros avant l'envoi au serveur.) Tj ET
+0.302 0.486 0.996 rg 58 219.9899999999999 3 3 re f
+BT /F3 10 Tf 0.12 0.14 0.18 rg 70.00 214.99 Td (Chaque d\351cision peut \352tre test\351e \340 petit budget avant engagement \(le banc d'essai mesure le co\373t) Tj ET
+BT /F3 10 Tf 0.12 0.14 0.18 rg 70.00 201.99 Td (IA r\351el\).) Tj ET
+0.302 0.486 0.996 rg 58 193.9899999999999 3 3 re f
+BT /F3 10 Tf 0.12 0.14 0.18 rg 70.00 188.99 Td (Une fonctionnalit\351 non termin\351e le 13 octobre ne part pas : c'est d\351j\340 \351crit dans les r\350gles du) Tj ET
+BT /F3 10 Tf 0.12 0.14 0.18 rg 70.00 175.99 Td (projet.) Tj ET
+BT /F1 14 Tf 0.302 0.486 0.996 rg 56.00 149.79 Td (Conclusion) Tj ET
+0.302 0.486 0.996 rg 56 142.7899999999999 26 2 re f
+BT /F3 10 Tf 0.12 0.14 0.18 rg 56.00 124.79 Td (Le logiciel est pr\352t. Les quatre d\351cisions ci-dessus sont des choix d'argent et d'organisation :) Tj ET
+BT /F3 10 Tf 0.12 0.14 0.18 rg 56.00 111.79 Td (elles se prennent en une r\351union de 30 minutes. Avec le feu vert, la mise en ligne est possible dans) Tj ET
+BT /F3 10 Tf 0.12 0.14 0.18 rg 56.00 98.79 Td (les 8 jours.) Tj ET
+BT /F1 10 Tf 0.302 0.486 0.996 rg 100.58 79.79 Td (\253 L'IA propose, l'humain d\351cide. \273 \227 c'est vrai pour l'application, et c'est vrai ici.) Tj ET
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 8 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 2 0 R /F2 1 0 R /F3 1 0 R /F4 3 0 R >> >> /Contents 4 0 R >>
+endobj
+7 0 obj
+<< /Type /Page /Parent 8 0 R /MediaBox [0 0 595.28 841.89] /Resources << /Font << /F1 2 0 R /F2 1 0 R /F3 1 0 R /F4 3 0 R >> >> /Contents 5 0 R >>
+endobj
+8 0 obj
+<< /Type /Pages /Count 2 /Kids [6 0 R 7 0 R] >>
+endobj
+9 0 obj
+<< /Type /Catalog /Pages 8 0 R >>
+endobj
+xref
+0 10
+0000000000 65535 f 
+0000000009 00000 n 
+0000000108 00000 n 
+0000000206 00000 n 
+0000000306 00000 n 
+0000005649 00000 n 
+0000012307 00000 n 
+0000012469 00000 n 
+0000012631 00000 n 
+0000012694 00000 n 
+trailer
+<< /Size 10 /Root 9 0 R >>
+startxref
+12743
+%%EOF
