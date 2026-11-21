@@ -480,7 +480,9 @@ export function Flow() {
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [objectif, setObjectif] = useState('');
   const [consignes, setConsignes] = useState<string[]>([]); // ce que l'utilisateur a précisé dans la barre de saisie
-  const [options, setOptions] = useState(false); // longueur, réseau, vrais noms
+  // Réglage ouvert sous les réponses : objectif, ton ou autres options (longueur, réseau, vrais noms).
+  const [options, setOptions] = useState<'' | 'objectif' | 'ton' | 'plus'>('');
+  const basculer = (p: 'objectif' | 'ton' | 'plus') => setOptions((o) => (o === p ? '' : p));
   const [replies, setReplies] = useState<string[]>([]);
   const [selected, setSelected] = useState(0);
   // Écriture lettre par lettre : le résumé, puis les réponses une par une (A, puis B, puis C).
@@ -663,7 +665,7 @@ export function Flow() {
     setEdition(false);
     setText('');
     setHistory([]);
-    setOptions(false);
+    setOptions('');
     setMessage('');
   }
 
@@ -1583,73 +1585,87 @@ export function Flow() {
                   {((replies.length > 0 && tape >= replies.length) ||
                     (Boolean(error) && replies.length === 0 && !busy)) && (
                     <div className="reglages-fil">
-                      <h2 className="lbl">Ajuster les réponses</h2>
-                      {objectifs.length > 0 && (
-                        <>
-                          <span className="lbl" id="obj">
-                            Objectif
-                          </span>
-                          <div
-                            className="chips one objectif-chips"
-                            role="group"
-                            aria-labelledby="obj"
-                          >
-                            {objectifs.map((g) => (
-                              <button
-                                className="chip"
-                                key={g}
-                                aria-pressed={objectif === g}
-                                disabled={busy}
-                                onClick={() => changeObjectif(g)}
-                              >
-                                <Masque text={g} />
-                              </button>
-                            ))}
-                          </div>
-                        </>
-                      )}
-                      <span className="lbl" id="ton">
-                        Ton
-                      </span>
-                      <div className="chips one" role="group" aria-labelledby="ton">
-                        {TONS.map((t) => (
+                      {/* Trois boutons ; chacun ouvre ses choix sur place, un seul à la fois. */}
+                      <div
+                        className="reglages-boutons"
+                        role="group"
+                        aria-label="Ajuster les réponses"
+                      >
+                        {objectifs.length > 0 && (
                           <button
-                            className="chip"
-                            key={t.id}
-                            aria-pressed={ton === t.id}
-                            disabled={busy}
-                            onClick={() => changeTon(t.id)}
+                            type="button"
+                            className="reglage"
+                            aria-expanded={options === 'objectif'}
+                            onClick={() => basculer('objectif')}
                           >
-                            {t.label}
+                            <span className="reglage-nom">Objectif</span>
+                            <span className="reglage-val">
+                              {objectif ? enClair(objectif) : 'Au choix'}
+                            </span>
                           </button>
-                        ))}
-                      </div>
-                      <div className="row wrap">
+                        )}
                         <button
-                          className="btn ghost small"
-                          onClick={() => generate()}
-                          disabled={busy}
+                          type="button"
+                          className="reglage"
+                          aria-expanded={options === 'ton'}
+                          onClick={() => basculer('ton')}
                         >
-                          <Icon name="refresh" size={18} />{' '}
-                          {replies.length > 0
-                            ? 'Trois autres réponses'
-                            : 'Réessayer avec ces réglages'}
-                        </button>
-                        <button
-                          className="link"
-                          aria-expanded={options}
-                          onClick={() => setOptions((v) => !v)}
-                        >
-                          <Icon name="sliders" size={16} />{' '}
-                          {options ? "Moins d'options" : "Plus d'options"}
-                        </button>
-                      </div>
-                      {options && (
-                        <div className="card stack">
-                          <span className="lbl" id="lg">
-                            Longueur
+                          <span className="reglage-nom">Ton</span>
+                          <span className="reglage-val">
+                            {TONS.find((t) => t.id === ton)?.label}
                           </span>
-                          <div className="chips" role="group" aria-labelledby="lg">
+                        </button>
+                        <button
+                          type="button"
+                          className="reglage"
+                          aria-expanded={options === 'plus'}
+                          onClick={() => basculer('plus')}
+                        >
+                          <span className="reglage-nom">Options</span>
+                          <span className="reglage-val">
+                            {LONGUEURS.find((l) => l.id === longueur)?.label}
+                          </span>
+                        </button>
+                      </div>
+                      {options === 'objectif' && (
+                        <div className="chips" role="group" aria-label="Objectif">
+                          {objectifs.map((g) => (
+                            <button
+                              className="chip"
+                              key={g}
+                              aria-pressed={objectif === g}
+                              disabled={busy}
+                              onClick={() => {
+                                changeObjectif(g);
+                                setOptions('');
+                              }}
+                            >
+                              <Masque text={g} />
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {options === 'ton' && (
+                        <div className="chips" role="group" aria-label="Ton">
+                          {TONS.map((t) => (
+                            <button
+                              className="chip"
+                              key={t.id}
+                              aria-pressed={ton === t.id}
+                              disabled={busy}
+                              onClick={() => {
+                                changeTon(t.id);
+                                setOptions('');
+                              }}
+                            >
+                              {t.label}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                      {options === 'plus' && (
+                        <div className="stack">
+                          <div className="chips" role="group" aria-label="Longueur">
                             {LONGUEURS.map((l) => (
                               <button
                                 className="chip"
@@ -1680,26 +1696,38 @@ export function Flow() {
                             <option value="">Autre (forme de la conversation)</option>
                           </select>
                           <label
-                            className="toggle"
+                            className="lg-ligne reglage-noms"
                             htmlFor="restore-names"
                             aria-label="Remettre les vrais noms dans la réponse copiée"
                           >
-                            <span className="grow">
-                              <b>Remettre les vrais noms</b>
-                              <span className="muted small">
-                                dans la réponse copiée, sur ton téléphone
+                            <span className="lg-txt">
+                              <span className="lg-label">Remettre les vrais noms</span>
+                              <span className="lg-sous">
+                                Dans la réponse copiée, sur ton téléphone
                               </span>
                             </span>
                             <input
                               id="restore-names"
                               type="checkbox"
-                              className="sw"
+                              role="switch"
+                              className="lg-sw"
                               checked={restoreNames}
                               onChange={(e) => setRestoreNames(e.target.checked)}
                             />
                           </label>
                         </div>
                       )}
+                      <button
+                        type="button"
+                        className="autres"
+                        onClick={() => generate()}
+                        disabled={busy}
+                      >
+                        <Icon name="refresh" size={16} />
+                        {replies.length > 0
+                          ? 'Trois autres réponses'
+                          : 'Réessayer avec ces réglages'}
+                      </button>
                     </div>
                   )}
                 </div>
