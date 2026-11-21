@@ -39,6 +39,10 @@ const PATHS = {
   mail: 'M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2zM22 6l-10 7L2 6',
   sparkles:
     'M12 3l1.8 4.6L18.5 9l-4.7 1.4L12 15l-1.8-4.6L5.5 9l4.7-1.4zM19 15l.9 2.3 2.1.7-2.1.7L19 21l-.9-2.3-2.1-.7 2.1-.7zM5 16l.7 1.8 1.7.6-1.7.6L5 21l-.7-1.8-1.7-.6 1.7-.6z',
+  palette:
+    'M12 3a9 9 0 1 0 0 18c1 0 1.5-.7 1.5-1.5 0-.4-.2-.8-.4-1.1-.3-.3-.4-.6-.4-1 0-.8.7-1.5 1.5-1.5H16a5 5 0 0 0 5-5c0-4.4-4-7.9-9-7.9zM7.5 12.5v.01M9.5 8v.01M14.5 8v.01M17 11.5v.01',
+  globe:
+    'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM3 12h18M12 3c2.5 2.7 3.7 5.7 3.7 9s-1.2 6.3-3.7 9c-2.5-2.7-3.7-5.7-3.7-9S9.5 5.7 12 3z',
 } as const;
 
 export type IconName = keyof typeof PATHS;
@@ -47,13 +51,16 @@ export function Icon({
   name,
   size = 20,
   stroke = 2,
+  className,
 }: {
   name: IconName;
   size?: number;
   stroke?: number;
+  className?: string;
 }) {
   return (
     <svg
+      className={className}
       width={size}
       height={size}
       viewBox="0 0 24 24"

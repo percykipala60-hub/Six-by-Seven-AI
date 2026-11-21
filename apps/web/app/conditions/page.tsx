@@ -5,42 +5,43 @@ export const metadata = { title: "Conditions d'utilisation — Six" };
 export default function Page() {
   return (
     <LegalPage
-      titre="Conditions d'utilisation"
-      intro="Dernière mise à jour : 20 octobre 2026. Six est un service de Seven.AI (projet PBL5, Groupe 7, ULC-Icam, Kinshasa). En créant un compte ou en utilisant Six, tu acceptes ces conditions."
+      titre="Conditions d’utilisation"
+      miseAJour="21 novembre 2026"
+      intro="Les présentes conditions régissent l’utilisation de Six, service édité par Seven.AI. En utilisant Six ou en créant un compte, vous les acceptez."
       sections={[
         {
-          titre: 'Ce que fait Six',
+          titre: 'Objet du service',
           texte: [
-            "Six analyse le texte que tu choisis et peut proposer des explications, des réponses ou des jeux. Six n'envoie pas de message à ta place : tu décides quoi copier, modifier et envoyer.",
-            'Les réponses sont générées automatiquement, peuvent être incomplètes ou erronées et ne remplacent pas ton jugement. Vérifie les faits et le destinataire avant d’agir.',
+            'Six analyse le texte que vous lui soumettez et propose des explications, des réponses et des contenus ludiques. Six n’envoie jamais de message à votre place : vous décidez de ce que vous copiez, modifiez et envoyez.',
+            'Les réponses sont produites automatiquement. Elles peuvent être incomplètes ou inexactes et ne remplacent pas votre jugement. Vérifiez les faits et le destinataire avant d’agir.',
           ],
         },
         {
-          titre: "Ce que tu t'engages à faire",
+          titre: 'Engagements de l’utilisateur',
           texte: [
-            'Tu es responsable des textes et images que tu soumets et tu dois avoir le droit de les utiliser.',
-            "N'utilise pas Six pour harceler, menacer, tromper, usurper l'identité d'une personne ou enfreindre les droits d'autrui.",
-            'Ne tente pas de contourner les quotas, de perturber le service ou d’accéder aux comptes et systèmes d’autrui.',
+            'Vous êtes responsable des textes et images que vous soumettez et devez disposer du droit de les utiliser.',
+            'Il est interdit d’utiliser Six pour harceler, menacer, tromper, usurper l’identité d’une personne ou porter atteinte aux droits d’autrui.',
+            'Il est interdit de chercher à contourner les limites d’utilisation, à perturber le service ou à accéder aux comptes et systèmes d’autrui.',
           ],
         },
         {
           titre: 'Limites du service',
           texte: [
-            "Le détecteur d'arnaques et l'estimation de tension sont indicatifs. Une absence d'alerte ne signifie pas qu'un lien, un paiement ou un message est sûr. En cas de doute, vérifie auprès de l'organisme concerné par un canal officiel.",
-            'Le service peut connaître des interruptions, évoluer ou appliquer des limites d’usage. Nous ne garantissons pas une disponibilité permanente ni un résultat particulier.',
+            'La détection d’arnaques et l’estimation de la tension sont fournies à titre indicatif. L’absence d’alerte ne garantit pas qu’un lien, un paiement ou un message soit sûr. En cas de doute, contactez l’organisme concerné par un canal officiel.',
+            'Le service peut être interrompu, modifié ou soumis à des limites d’utilisation. Seven.AI ne garantit ni une disponibilité permanente ni un résultat particulier.',
           ],
         },
         {
-          titre: 'Données',
+          titre: 'Données personnelles',
           texte: [
-            'Les traitements, fournisseurs, durées et moyens de suppression sont décrits dans la page Confidentialité. Les fournisseurs externes appliquent leurs propres conditions et règles de conservation.',
+            'Le traitement de vos données est décrit dans la Politique de confidentialité, qui fait partie des présentes conditions.',
           ],
         },
         {
-          titre: 'Contact et droit applicable',
+          titre: 'Droit applicable et contact',
           texte: [
-            'Contact : sevenai.dc@gmail.com.',
-            'Pour toute question : sevenai.dc@gmail.com. Ces conditions sont régies par le droit applicable en République démocratique du Congo, sous réserve des droits obligatoires dont tu bénéficies.',
+            'Les présentes conditions sont régies par le droit de la République démocratique du Congo, sous réserve des dispositions impératives dont vous bénéficiez.',
+            'Pour toute question : sevenai.dc@gmail.com.',
           ],
         },
       ]}

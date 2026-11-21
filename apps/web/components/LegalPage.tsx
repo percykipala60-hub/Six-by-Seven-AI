@@ -1,43 +1,58 @@
+'use client';
+
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { AppBar } from './AppBar';
-import { Icon } from './Icon';
+import { EnteteSousPage } from './Liste';
 
 export interface LegalSection {
   titre: string;
   texte: string[];
 }
 
-/** Page légale (Conditions, Mentions) : titre, introduction et sections. */
+/**
+ * Page juridique (Confidentialité, Conditions, Mentions) mise en page comme un document : titre, date de mise à
+ * jour, sections numérotées séparées par un trait fin, texte en pleine couleur pour rester bien lisible.
+ */
 export function LegalPage({
   titre,
+  miseAJour,
   intro,
   sections,
 }: {
   titre: string;
-  intro: string;
+  miseAJour: string;
+  intro?: string;
   sections: LegalSection[];
 }) {
+  const router = useRouter();
   return (
     <div className="app">
-      <AppBar page="confidentialite" titre={titre} />
-      <main className="screen">
-        <Link href="/confidentialite" className="link">
-          <Icon name="back" size={16} /> Confidentialité
-        </Link>
-        <h1>{titre}</h1>
-        <p className="muted">{intro}</p>
-        <div className="stack">
-          {sections.map((s) => (
-            <section className="card" key={s.titre}>
-              <h2 style={{ fontSize: '1.05rem', marginBottom: 6 }}>{s.titre}</h2>
-              {s.texte.map((t) => (
-                <p className="muted small" style={{ marginTop: 6 }} key={t}>
-                  {t}
-                </p>
-              ))}
-            </section>
-          ))}
-        </div>
+      <main className="screen sub doc">
+        <EnteteSousPage
+          titre=""
+          retour="Retour"
+          onRetour={() => (window.history.length > 1 ? router.back() : router.push('/reglages'))}
+        />
+        <header className="doc-tete">
+          <h1>{titre}</h1>
+          <p className="doc-date">Dernière mise à jour : {miseAJour}</p>
+          {intro && <p className="doc-intro">{intro}</p>}
+        </header>
+        {sections.map((s, i) => (
+          <section className="doc-section" key={s.titre}>
+            <h2>
+              <span className="doc-num">{i + 1}.</span> {s.titre}
+            </h2>
+            {s.texte.map((t) => (
+              <p key={t}>{t}</p>
+            ))}
+          </section>
+        ))}
+        <nav className="doc-liens" aria-label="Autres documents">
+          <Link href="/confidentialite">Politique de confidentialité</Link>
+          <Link href="/conditions">Conditions d’utilisation</Link>
+          <Link href="/mentions">Mentions légales</Link>
+        </nav>
       </main>
     </div>
   );

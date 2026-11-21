@@ -45,9 +45,18 @@ import {
 import { AppBar } from './AppBar';
 import { useConfirmer } from './Confirmer';
 import { AppIcon } from './AppIcon';
-import { Icon, type IconName } from './Icon';
+import { Icon } from './Icon';
 import { InterAppNotifications, InterAppOnboarding } from './InterAppNotifications';
 import { Logo } from './Logo';
+import {
+  EnteteSousPage,
+  Groupe,
+  Ligne,
+  LigneAction,
+  LigneChoix,
+  LigneInterrupteur,
+  LigneLien,
+} from './Liste';
 
 type Theme = 'auto' | 'light' | 'dark';
 // Chaque thème est montré comme le logo qu'il donne : fond, « 6 » et trait (mêmes valeurs que app/globals.css).
@@ -60,28 +69,6 @@ type Tuile = {
 };
 const ACCENTS: Tuile[] = themeColors.accents;
 const AMBIANCES: Tuile[] = themeColors.ambiances;
-
-/** Tuile de thème : le logo Six aux couleurs que le thème lui donne. */
-function Tile({ t, on, onPick }: { t: Tuile; on: boolean; onPick: () => void }) {
-  const vars = {
-    '--icon-bg': t.icon.background,
-    '--icon-ink': t.icon.ink,
-    '--icon-accent': t.icon.accent,
-    '--icon-grad': t.gradient
-      ? `linear-gradient(45deg, ${t.gradient.join(', ')})`
-      : t.icon.background,
-    '--icon-ring': t.ring ? 'var(--line)' : 'transparent',
-  } as CSSProperties;
-  return (
-    <button className="tile" data-id={t.id} aria-pressed={on} onClick={onPick}>
-      <span className="logo six-logo" style={vars} aria-hidden="true">
-        <i className="six-logo-glyphe" />
-        <i className="six-logo-trait" />
-      </span>
-      {t.label}
-    </button>
-  );
-}
 
 // Polices : celles du système. Un téléphone qui ne les a pas (Android) affiche une police proche.
 const POLICES = [
@@ -148,26 +135,23 @@ function MemoireSix() {
 
   const appris = habitudes(m);
   return (
-    <section className="stack" aria-label="Mémoire de Six">
-      <p className="muted small">
-        Six apprend de tes choix pour écrire comme toi et se souvenir de tes contacts. Tant que la
-        mémoire est activée, tes conversations terminées sont aussi gardées sur ce téléphone,
-        jusqu&apos;à ce que tu les effaces toi-même. Ce que Six apprend est oublié après 90 jours.
-      </p>
-      <label className="toggle" htmlFor="memory-enabled" aria-label="Activer la mémoire de Six">
-        <span className="grow">
-          <b>Mémoire activée</b>
-          <span className="muted small">
-            {on ? "Six se souvient d'une fois sur l'autre" : 'Six oublie tout à chaque fois'}
-          </span>
-        </span>
-        <input
+    <>
+      {demande}
+      <Groupe
+        pied={
+          on
+            ? "Six apprend de tes choix pour écrire comme toi et se souvient de tes contacts. Tout reste sur ce téléphone ; ce qu'il apprend est oublié après 90 jours."
+            : 'Six oublie tout à chaque conversation. Rien n’est gardé sur ce téléphone.'
+        }
+      >
+        <LigneInterrupteur
           id="memory-enabled"
-          type="checkbox"
-          className="sw"
+          icon="bulb"
+          teinte="violet"
+          label="Mémoire de Six"
           checked={on}
-          onChange={(e) => {
-            if (e.target.checked) activerMemoire(true);
+          onChange={(oui) => {
+            if (oui) activerMemoire(true);
             else
               demander({
                 titre: 'Couper la mémoire ?',
@@ -179,37 +163,49 @@ function MemoireSix() {
               });
           }}
         />
-      </label>
-      {demande}
+      </Groupe>
       {on && (
         <>
-          <div className="card stack">
-            <div className="lbl">Ce que Six a appris</div>
+          <Groupe
+            titre="Ce que Six a appris"
+            pied={
+              appris.length
+                ? undefined
+                : `Six apprend à partir de 3 réponses choisies (${m.choix.length}/3).`
+            }
+          >
             {appris.length ? (
-              <div className="tags">
-                {appris.map((a) => (
-                  <span className="tag" key={a}>
-                    {a}
-                  </span>
-                ))}
+              <div className="lg-bloc">
+                <div className="tags">
+                  {appris.map((a) => (
+                    <span className="tag" key={a}>
+                      {a}
+                    </span>
+                  ))}
+                </div>
               </div>
             ) : (
-              <p className="muted small">
-                Rien encore : Six apprend à partir de 3 réponses choisies ({m.choix.length}/3).
-              </p>
+              <div className="lg-bloc muted small">Rien pour l’instant.</div>
             )}
-          </div>
-          <div className="card stack">
-            <div className="lbl">Tes contacts</div>
+          </Groupe>
+          <Groupe
+            titre="Tes contacts"
+            pied={
+              m.contacts.length
+                ? 'Ce que tu as noté sur chaque personne. Envoyé avec ta demande, nom masqué.'
+                : 'Pendant une conversation, touche « Ce que Six sait de… » pour noter qui est la personne.'
+            }
+          >
             {m.contacts.length ? (
               m.contacts.map((c) => (
-                <div className="row sp contact" key={c.nom}>
-                  <span className="grow">
-                    <b>{c.nom}</b>
-                    <span className="muted small"> · {c.note}</span>
+                <div className="lg-ligne lg-statique" key={c.nom}>
+                  <span className="lg-txt">
+                    <span className="lg-label">{c.nom}</span>
+                    <span className="lg-sous">{c.note}</span>
                   </span>
                   <button
-                    className="btn ghost small"
+                    type="button"
+                    className="lg-mini"
                     aria-label={`Oublier ${c.nom}`}
                     onClick={() => ecrireNote(c.nom, '')}
                   >
@@ -218,29 +214,31 @@ function MemoireSix() {
                 </div>
               ))
             ) : (
-              <p className="muted small">
-                Sur l&apos;écran « Protéger », dis à Six qui est la personne : il s&apos;en
-                souviendra.
-              </p>
+              <div className="lg-bloc muted small">Aucun contact noté.</div>
             )}
-          </div>
-          {m.suivis.length > 0 && (
-            <p className="muted small">
-              {m.suivis.length} suivi{m.suivis.length > 1 ? 's' : ''} en attente sur l&apos;accueil.
-            </p>
-          )}
-          <div className="card stack">
-            <div className="row sp">
-              <div className="lbl">Conversations gardées</div>
-              <span className="muted small">{nbConv}</span>
+          </Groupe>
+          <Groupe
+            titre="Sur ce téléphone"
+            pied="Tes conversations terminées restent ici tant que tu les gardes. Tu peux aussi les effacer une par une depuis l’accueil."
+          >
+            <div className="lg-ligne lg-statique">
+              <span className="lg-txt">
+                <span className="lg-label">Conversations gardées</span>
+              </span>
+              <span className="lg-val">{nbConv}</span>
             </div>
-            <p className="muted small">
-              Tes conversations terminées avec Six restent sur ce téléphone, tant que tu les
-              conserves. Efface-les ici, une par une depuis l&apos;accueil, ou coupe la mémoire.
-            </p>
+            <div className="lg-ligne lg-statique">
+              <span className="lg-txt">
+                <span className="lg-label">Suivis en attente</span>
+              </span>
+              <span className="lg-val">{m.suivis.length}</span>
+            </div>
+          </Groupe>
+          <Groupe>
             {nbConv > 0 && (
-              <button
-                className="btn ghost"
+              <LigneAction
+                danger
+                label="Effacer les conversations gardées"
                 onClick={() =>
                   demander({
                     titre: 'Effacer les conversations gardées ?',
@@ -253,90 +251,39 @@ function MemoireSix() {
                     },
                   })
                 }
-              >
-                <Icon name="trash" /> Effacer les conversations gardées
-              </button>
+              />
             )}
-          </div>
-          <button
-            className="btn ghost"
-            onClick={() =>
-              demander({
-                titre: 'Effacer la mémoire de Six ?',
-                texte:
-                  'Six oubliera tes habitudes, tes notes sur tes contacts et tes suivis. La mémoire reste activée et recommencera à apprendre.',
-                action: 'Effacer',
-                danger: true,
-                onConfirmer: effacerMemoire,
-              })
-            }
-          >
-            <Icon name="trash" /> Effacer la mémoire de Six
-          </button>
+            <LigneAction
+              danger
+              label="Effacer la mémoire de Six"
+              onClick={() =>
+                demander({
+                  titre: 'Effacer la mémoire de Six ?',
+                  texte:
+                    'Six oubliera tes habitudes, tes notes sur tes contacts et tes suivis. La mémoire reste activée et recommencera à apprendre.',
+                  action: 'Effacer',
+                  danger: true,
+                  onConfirmer: effacerMemoire,
+                })
+              }
+            />
+          </Groupe>
         </>
       )}
-    </section>
+    </>
   );
 }
 
 type Vue = '' | 'theme' | 'police' | 'style' | 'memoire' | 'compte' | 'notifications';
 const TITRES: Record<Exclude<Vue, ''>, string> = {
-  theme: 'Thème et couleurs',
+  theme: 'Thème',
   police: 'Police',
   style: "Mon style d'écriture",
-  memoire: 'Mémoire de Six',
+  memoire: 'Mémoire',
   compte: 'Compte',
   notifications: 'Notifications des apps',
 };
 const MODES: Record<Theme, string> = { auto: 'Auto', light: 'Clair', dark: 'Sombre' };
-
-/** Rangée d'une liste de réglages : icône, libellé, valeur actuelle, chevron. */
-function Rangee({
-  icon,
-  label,
-  valeur,
-  onClick,
-}: {
-  icon: IconName;
-  label: string;
-  valeur?: string;
-  onClick: () => void;
-}) {
-  return (
-    <button className="set-row" onClick={onClick}>
-      <span className="set-ico" aria-hidden="true">
-        <Icon name={icon} size={18} />
-      </span>
-      <span className="grow">{label}</span>
-      {valeur && <span className="set-val">{valeur}</span>}
-      <Icon name="chevron" size={18} />
-    </button>
-  );
-}
-
-function LienRangee({ href, icon, label }: { href: string; icon: IconName; label: string }) {
-  return (
-    <Link className="set-row" href={href}>
-      <span className="set-ico" aria-hidden="true">
-        <Icon name={icon} size={18} />
-      </span>
-      <span className="grow">{label}</span>
-      <Icon name="chevron" size={18} />
-    </Link>
-  );
-}
-
-function LienExterne({ href, icon, label }: { href: string; icon: IconName; label: string }) {
-  return (
-    <a className="set-row" href={href} target="_blank" rel="noopener noreferrer">
-      <span className="set-ico" aria-hidden="true">
-        <Icon name={icon} size={18} />
-      </span>
-      <span className="grow">{label}</span>
-      <Icon name="chevron" size={18} />
-    </a>
-  );
-}
 
 type ModeAuth = 'connexion' | 'inscription' | 'otp' | 'oubli';
 
@@ -425,7 +372,7 @@ function evaluerForceMdp(pwd: string): { niveau: 'weak' | 'medium' | 'strong'; t
   return { niveau: 'weak', texte: 'Sécurité faible' };
 }
 
-/** Compte : invité par défaut ; connexion / inscription par e-mail ou code qui synchronise la mémoire de Six. */
+/** Compte : invité par défaut ; connexion / inscription par e-mail ou code. La mémoire ne part sur le compte qu'avec l'autorisation de la personne. */
 function CompteVue() {
   const [demande, demander] = useConfirmer();
   const [sync, setSync] = useState(false);
@@ -500,7 +447,7 @@ function CompteVue() {
       setErreur(err);
     } else {
       setMotDePasse('');
-      setInfo('Ravi de te revoir ! Ta mémoire est synchronisée.');
+      setInfo('Ravi de te revoir !');
     }
   }
 
@@ -539,7 +486,9 @@ function CompteVue() {
     } else {
       setMotDePasse('');
       setConfirmationMdp('');
-      setInfo('Compte créé avec succès ! Ta mémoire est synchronisée.');
+      setInfo(
+        'Compte créé. Ta mémoire reste sur ce téléphone, sauf si tu choisis de la copier sur ton compte.',
+      );
     }
   }
 
@@ -604,7 +553,7 @@ function CompteVue() {
     else {
       setIdOtp(null);
       setEmail('');
-      setInfo('Connecté. Ta mémoire est réunie avec celle de ton compte.');
+      setInfo('Connecté.');
     }
   }
 
@@ -638,51 +587,50 @@ function CompteVue() {
 
       <InterAppOnboarding connected={c.statut === 'connecte'} />
 
-      <div className="group-list pad">
-        <label htmlFor="prenom" className="set-label">
-          Ton prénom
-        </label>
-        <input
-          id="prenom"
-          type="text"
-          autoComplete="given-name"
-          maxLength={30}
-          value={prenom}
-          onChange={(e) => setPrenom(e.target.value)}
-          onBlur={() => ecrirePrenom(prenom)}
-          placeholder="Pour que Six te salue"
-        />
-        <p className="muted small">
-          {c.statut === 'connecte'
-            ? 'Gardé sur ton profil, synchronisé sur tous tes appareils.'
-            : 'Gardé sur ce téléphone seulement.'}
-        </p>
-      </div>
+      <Groupe
+        titre="Profil"
+        pied={
+          c.statut === 'connecte'
+            ? 'Ton prénom est gardé sur ton compte, pour que Six te salue sur tous tes appareils.'
+            : 'Gardé sur ce téléphone seulement.'
+        }
+      >
+        <div className="lg-ligne lg-statique lg-saisie">
+          <label htmlFor="prenom" className="lg-label lg-cle">
+            Prénom
+          </label>
+          <input
+            id="prenom"
+            type="text"
+            autoComplete="given-name"
+            maxLength={30}
+            value={prenom}
+            onChange={(e) => setPrenom(e.target.value)}
+            onBlur={() => ecrirePrenom(prenom)}
+            placeholder="Pour que Six te salue"
+          />
+        </div>
+      </Groupe>
 
       {c.statut === 'connecte' ? (
-        <div className="group-list pad">
+        <>
           {demande}
-          <label
-            className="toggle"
-            htmlFor="memoire-sync"
-            aria-label="Copier ma mémoire sur mon compte"
+          <Groupe
+            titre="Mémoire et compte"
+            pied={
+              sync
+                ? 'Tes habitudes, tes notes sur tes contacts et tes suivis te suivent sur tes autres appareils. Jamais tes conversations.'
+                : 'Désactivé : ta mémoire reste sur ce téléphone. Active-le pour la retrouver sur tes autres appareils.'
+            }
           >
-            <span className="grow">
-              <b>Copier ma mémoire sur mon compte</b>
-              <span className="muted small">
-                {sync
-                  ? 'Tes habitudes, tes notes sur tes contacts et tes suivis te suivent sur tes autres appareils. Jamais tes conversations.'
-                  : 'Désactivé : ta mémoire reste sur ce téléphone. Active-le pour la retrouver sur tes autres appareils.'}
-              </span>
-            </span>
-            <input
+            <LigneInterrupteur
               id="memoire-sync"
-              type="checkbox"
-              className="sw"
+              icon="refresh"
+              teinte="bleu"
+              label="Copier ma mémoire sur mon compte"
               checked={sync}
               disabled={busy}
-              onChange={async (e) => {
-                const on = e.target.checked;
+              onChange={async (on) => {
                 if (on) {
                   setBusy(true);
                   const err = await autoriserSync(true);
@@ -705,26 +653,25 @@ function CompteVue() {
                 });
               }}
             />
-          </label>
-
-          <div className="profile-stats-grid">
-            <div className="profile-stat-tile">
-              <span className="profile-stat-num">{statsMemoire.habitudes}</span>
-              <span className="profile-stat-lbl">
-                Habitude{statsMemoire.habitudes > 1 ? 's' : ''}
+            <div className="lg-ligne lg-statique">
+              <span className="lg-txt">
+                <span className="lg-label">Habitudes apprises</span>
               </span>
+              <span className="lg-val">{statsMemoire.habitudes}</span>
             </div>
-            <div className="profile-stat-tile">
-              <span className="profile-stat-num">{statsMemoire.contacts}</span>
-              <span className="profile-stat-lbl">
-                Contact{statsMemoire.contacts > 1 ? 's' : ''}
+            <div className="lg-ligne lg-statique">
+              <span className="lg-txt">
+                <span className="lg-label">Contacts notés</span>
               </span>
+              <span className="lg-val">{statsMemoire.contacts}</span>
             </div>
-            <div className="profile-stat-tile">
-              <span className="profile-stat-num">{statsMemoire.suivis}</span>
-              <span className="profile-stat-lbl">Rappel{statsMemoire.suivis > 1 ? 's' : ''}</span>
+            <div className="lg-ligne lg-statique">
+              <span className="lg-txt">
+                <span className="lg-label">Rappels</span>
+              </span>
+              <span className="lg-val">{statsMemoire.suivis}</span>
             </div>
-          </div>
+          </Groupe>
 
           {info && (
             <div className="auth-alert-succes" role="status">
@@ -739,109 +686,111 @@ function CompteVue() {
             </div>
           )}
 
-          <button
-            className="btn ghost"
-            disabled={busy}
-            onClick={() => setShowPwdChange((ouvert) => !ouvert)}
-            aria-expanded={showPwdChange}
-          >
-            <Icon name="lock" /> {showPwdChange ? 'Fermer' : 'Changer mon mot de passe'}
-          </button>
-          {showPwdChange && (
-            <form onSubmit={handleChangerMotDePasse} className="stack auth-pwd-change">
-              <label htmlFor="nouveau-mdp" className="set-label">
-                Nouveau mot de passe (au moins {MDP_MIN_INSCRIPTION} caractères)
-              </label>
-              <div className="input-pwd-wrap">
+          <Groupe titre="Sécurité">
+            <Ligne
+              icon="key"
+              teinte="gris"
+              label="Changer le mot de passe"
+              valeur={showPwdChange ? 'Ouvert' : undefined}
+              onClick={() => setShowPwdChange((ouvert) => !ouvert)}
+            />
+            {showPwdChange && (
+              <form onSubmit={handleChangerMotDePasse} className="lg-bloc auth-pwd-change">
+                <label htmlFor="nouveau-mdp" className="set-label">
+                  Nouveau mot de passe (au moins {MDP_MIN_INSCRIPTION} caractères)
+                </label>
+                <div className="input-pwd-wrap">
+                  <input
+                    id="nouveau-mdp"
+                    type={showPwd ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    minLength={MDP_MIN_INSCRIPTION}
+                    value={nouveauMdp}
+                    onChange={(e) => setNouveauMdp(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                  />
+                  <button
+                    type="button"
+                    className="pwd-toggle-btn"
+                    onClick={() => setShowPwd(!showPwd)}
+                    aria-label={showPwd ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                  >
+                    <Icon name={showPwd ? 'eyeOff' : 'eye'} size={18} />
+                  </button>
+                </div>
+                <label htmlFor="confirmation-nouveau-mdp" className="set-label">
+                  Confirmer le nouveau mot de passe
+                </label>
                 <input
-                  id="nouveau-mdp"
+                  id="confirmation-nouveau-mdp"
                   type={showPwd ? 'text' : 'password'}
                   autoComplete="new-password"
                   minLength={MDP_MIN_INSCRIPTION}
-                  value={nouveauMdp}
-                  onChange={(e) => setNouveauMdp(e.target.value)}
+                  value={confirmationNouveau}
+                  onChange={(e) => setConfirmationNouveau(e.target.value)}
                   placeholder="••••••••"
                   required
                 />
+                {confirmationNouveau && nouveauMdp !== confirmationNouveau && (
+                  <p className="auth-field-error" role="status">
+                    Les deux mots de passe ne correspondent pas encore.
+                  </p>
+                )}
                 <button
-                  type="button"
-                  className="pwd-toggle-btn"
-                  onClick={() => setShowPwd(!showPwd)}
-                  aria-label={showPwd ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                  className="btn primary"
+                  type="submit"
+                  disabled={
+                    busy ||
+                    nouveauMdp.length < MDP_MIN_INSCRIPTION ||
+                    nouveauMdp !== confirmationNouveau
+                  }
                 >
-                  <Icon name={showPwd ? 'eyeOff' : 'eye'} size={18} />
+                  {busy ? 'Enregistrement…' : 'Enregistrer le mot de passe'}
                 </button>
-              </div>
-              <label htmlFor="confirmation-nouveau-mdp" className="set-label">
-                Confirmer le nouveau mot de passe
-              </label>
-              <input
-                id="confirmation-nouveau-mdp"
-                type={showPwd ? 'text' : 'password'}
-                autoComplete="new-password"
-                minLength={MDP_MIN_INSCRIPTION}
-                value={confirmationNouveau}
-                onChange={(e) => setConfirmationNouveau(e.target.value)}
-                placeholder="••••••••"
-                required
-              />
-              {confirmationNouveau && nouveauMdp !== confirmationNouveau && (
-                <p className="auth-field-error" role="status">
-                  Les deux mots de passe ne correspondent pas encore.
-                </p>
-              )}
-              <button
-                className="btn primary"
-                type="submit"
-                disabled={
-                  busy ||
-                  nouveauMdp.length < MDP_MIN_INSCRIPTION ||
-                  nouveauMdp !== confirmationNouveau
-                }
-              >
-                {busy ? 'Enregistrement…' : 'Enregistrer le mot de passe'}
-              </button>
-            </form>
-          )}
-          <button
-            className="btn ghost"
-            disabled={busy}
-            onClick={() =>
-              demander({
-                titre: 'Effacer la mémoire partout ?',
-                texte:
-                  'Ta mémoire sera effacée de ton compte et de ce téléphone : habitudes, notes sur tes contacts et suivis. On ne peut pas revenir en arrière.',
-                action: 'Tout effacer',
-                danger: true,
-                onConfirmer: async () => {
-                  const err = await oublierMemoireDuCompte();
-                  setErreur(err ?? '');
-                  setInfo(err ? '' : 'Mémoire effacée du compte et de ce téléphone.');
-                },
-              })
-            }
-          >
-            <Icon name="trash" /> Effacer la mémoire partout
-          </button>
-          <button
-            className="btn ghost"
-            disabled={busy}
-            onClick={() =>
-              demander({
-                titre: 'Se déconnecter ?',
-                texte:
-                  'Ta mémoire reste sur ce téléphone. Tu pourras te reconnecter à tout moment avec ton adresse e-mail.',
-                action: 'Se déconnecter',
-                onConfirmer: async () => {
-                  await deconnecter();
-                  setInfo('');
-                },
-              })
-            }
-          >
-            Se déconnecter
-          </button>
-        </div>
+              </form>
+            )}
+          </Groupe>
+
+          <Groupe>
+            <LigneAction
+              danger
+              disabled={busy}
+              label="Effacer la mémoire partout"
+              onClick={() =>
+                demander({
+                  titre: 'Effacer la mémoire partout ?',
+                  texte:
+                    'Ta mémoire sera effacée de ton compte et de ce téléphone : habitudes, notes sur tes contacts et suivis. On ne peut pas revenir en arrière.',
+                  action: 'Tout effacer',
+                  danger: true,
+                  onConfirmer: async () => {
+                    const err = await oublierMemoireDuCompte();
+                    setErreur(err ?? '');
+                    setInfo(err ? '' : 'Mémoire effacée du compte et de ce téléphone.');
+                  },
+                })
+              }
+            />
+            <LigneAction
+              danger
+              disabled={busy}
+              label="Se déconnecter"
+              onClick={() =>
+                demander({
+                  titre: 'Se déconnecter ?',
+                  texte:
+                    'Ta mémoire reste sur ce téléphone. Tu pourras te reconnecter à tout moment avec ton adresse e-mail.',
+                  action: 'Se déconnecter',
+                  onConfirmer: async () => {
+                    await deconnecter();
+                    setInfo('');
+                  },
+                })
+              }
+            />
+          </Groupe>
+        </>
       ) : !CONNEXION_DISPONIBLE ? (
         <div className="group-list pad">
           <b>Connexion</b>
@@ -868,12 +817,12 @@ function CompteVue() {
             </h2>
             <p>
               {mode === 'inscription'
-                ? 'Retrouve ta mémoire Six et tes suivis sur tous tes appareils.'
+                ? 'Garde ton prénom et, si tu le choisis, ta mémoire sur tous tes appareils.'
                 : mode === 'otp'
                   ? 'Reçois un code sécurisé dans ta boîte e-mail pour te connecter.'
                   : mode === 'oubli'
                     ? 'On t’enverra un lien sécurisé pour choisir un nouveau mot de passe.'
-                    : 'Connecte-toi pour retrouver ta mémoire et tes suivis sur tous tes appareils.'}
+                    : 'Connecte-toi pour garder ton prénom et, si tu le choisis, ta mémoire sur tous tes appareils.'}
             </p>
           </div>
           {/* Connexion en un geste : le reste (e-mail, code) ne change pas. */}
@@ -1458,206 +1407,182 @@ export function Settings() {
 
   if (vue) {
     return (
-      <main className="screen sub">
-        <div className="top">
-          <button className="back" onClick={retour} aria-label="Retour aux réglages">
-            <Icon name="back" />
-          </button>
-          <h1 className="top-title">{TITRES[vue]}</h1>
-        </div>
+      <main className="screen sub lg-page">
+        <EnteteSousPage titre={TITRES[vue]} retour="Réglages" onRetour={retour} />
         {vue === 'theme' && (
           <>
-            <section className="card preview" aria-label="Aperçu du thème">
-              <div className="row sp">
-                <span className="muted small">Aperçu</span>
-                <Logo small label="" />
+            <div className="apercu" aria-label="Aperçu du thème">
+              <p className="apercu-in">On dit quoi pour samedi ?</p>
+              <p className="apercu-out">Je serai là samedi chez Maman !</p>
+            </div>
+            <Groupe titre="Apparence">
+              <div className="modes" role="radiogroup" aria-label="Apparence">
+                {(['light', 'dark', 'auto'] as const).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    role="radio"
+                    aria-checked={theme === m}
+                    className="mode"
+                    onClick={() => applyTheme(m)}
+                  >
+                    <span className={`mode-ecran mode-${m}`} aria-hidden="true">
+                      <i />
+                      <i />
+                      <i />
+                    </span>
+                    <span className="mode-nom">{MODES[m]}</span>
+                    <span className="mode-coche" aria-hidden="true">
+                      {theme === m && <Icon name="check" size={13} stroke={3} />}
+                    </span>
+                  </button>
+                ))}
               </div>
-              <p className="pv-in">On dit quoi pour samedi ?</p>
-              <p className="pv-out">Je serai là samedi chez Maman !</p>
-              <span className="btn primary small" aria-hidden="true">
-                <Icon name="copy" size={16} /> Copier la réponse
-              </span>
-            </section>
-            <h2 className="group-title" id="mode">
-              Mode
-            </h2>
-            <div className="seg" role="group" aria-labelledby="mode">
-              <button aria-pressed={theme === 'dark'} onClick={() => applyTheme('dark')}>
-                <Icon name="moon" size={16} /> Sombre
-              </button>
-              <button aria-pressed={theme === 'light'} onClick={() => applyTheme('light')}>
-                <Icon name="sun" size={16} /> Clair
-              </button>
-              <button aria-pressed={theme === 'auto'} onClick={() => applyTheme('auto')}>
-                <Icon name="phone" size={16} /> Auto
-              </button>
-            </div>
-            <h2 className="group-title" id="couleurs">
-              Couleurs de Six
-            </h2>
-            <div className="tiles" role="group" aria-labelledby="couleurs">
-              {ACCENTS.map((a) => (
-                <Tile key={a.id} t={a} on={accent === a.id} onPick={() => applyAccent(a.id)} />
-              ))}
-            </div>
-            <h2 className="group-title" id="apps">
-              Ambiances
-            </h2>
-            <div className="tiles scroll-x" role="group" aria-labelledby="apps">
-              {AMBIANCES.map((a) => (
-                <Tile key={a.id} t={a} on={accent === a.id} onPick={() => applyAccent(a.id)} />
-              ))}
-            </div>
-            <p className="muted small">
-              Le thème change toute l&apos;app : fonds, textes, boutons et icône. Ces réglages
-              restent sur ton téléphone. L&apos;icône native suit le thème sur Android et iOS ; les
-              icônes de raccourcis web installées restent celles du manifeste.
-            </p>
-            {themeIconError && (
-              <p className="muted small" role="alert">
-                Six n&apos;a pas pu changer son icône. Relance l&apos;application puis réessaie.
-              </p>
-            )}
+            </Groupe>
+            <Groupe titre="Couleur">
+              <Pastilles liste={ACCENTS} choisi={accent} onChoisir={applyAccent} />
+            </Groupe>
+            <Groupe
+              titre="Ambiances"
+              pied={
+                themeIconError
+                  ? "Six n'a pas pu changer son icône. Relance l'application puis réessaie."
+                  : "La couleur change toute l'app : fonds, boutons et icône. Ce réglage reste sur ce téléphone."
+              }
+            >
+              <Pastilles liste={AMBIANCES} choisi={accent} onChoisir={applyAccent} />
+            </Groupe>
           </>
         )}
         {vue === 'police' && (
-          <>
-            <div className="fonts" role="group" aria-label="Police">
+          <Groupe pied="Si ton téléphone n’a pas la police, Six affiche la plus proche.">
+            <div role="radiogroup" aria-label="Police" className="lg-contenu">
               {POLICES.map((p) => (
-                <button
+                <LigneChoix
                   key={p.id}
-                  className="font"
-                  aria-label={p.label}
-                  title={p.label}
-                  aria-pressed={police === p.id}
+                  label={<span style={{ fontFamily: p.family }}>{p.label}</span>}
+                  choisi={police === p.id}
                   onClick={() => applyPolice(p.id)}
-                >
-                  <b style={{ fontFamily: p.family }}>Aa</b>
-                  {p.court}
-                </button>
+                />
               ))}
             </div>
-            <p className="muted small">
-              Toute l&apos;app change de police. Si ton téléphone ne l&apos;a pas, Six affiche la
-              police la plus proche.
-            </p>
-          </>
+          </Groupe>
         )}
         {vue === 'style' && (
           <>
-            <p className="muted small">
-              Six s&apos;en sert pour écrire comme toi. Ce réglage reste sur ton téléphone.
-            </p>
-            <div className="group-list pad">
-              <label htmlFor="deco" className="set-label">
-                Registre
-              </label>
-              <input
-                id="deco"
-                type="range"
-                min={0}
-                max={100}
-                value={style.decontracte}
-                onChange={(e) => updateStyle({ ...style, decontracte: Number(e.target.value) })}
-              />
-              <div className="ends" aria-hidden="true">
-                <span>Formel</span>
-                <span>Décontracté</span>
-              </div>
-              <label htmlFor="det" className="set-label">
-                Longueur
-              </label>
-              <input
-                id="det"
-                type="range"
-                min={0}
-                max={100}
-                value={style.detaille}
-                onChange={(e) => updateStyle({ ...style, detaille: Number(e.target.value) })}
-              />
-              <div className="ends" aria-hidden="true">
-                <span>Bref</span>
-                <span>Détaillé</span>
-              </div>
-              <label className="row sp">
-                <span>Emojis</span>
-                <input
-                  type="checkbox"
-                  className="sw"
-                  checked={style.emojis}
-                  onChange={(e) => updateStyle({ ...style, emojis: e.target.checked })}
-                />
-              </label>
-            </div>
-            <div className="group-list pad">
-              <span className="set-label">Tes expressions (5 maximum)</span>
-              {style.expressions.length > 0 && (
-                <div className="chips">
-                  {style.expressions.map((x) => (
-                    <button
-                      key={x}
-                      className="chip"
-                      aria-label={`Retirer ${x}`}
-                      onClick={() =>
-                        updateStyle({
-                          ...style,
-                          expressions: style.expressions.filter((e) => e !== x),
-                        })
-                      }
-                    >
-                      « {x} » ✕
-                    </button>
-                  ))}
-                </div>
-              )}
-              <form
-                className="row"
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const val = expr.trim().slice(0, 40);
-                  if (val && style.expressions.length < 5 && !style.expressions.includes(val))
-                    updateStyle({ ...style, expressions: [...style.expressions, val] });
-                  setExpr('');
-                }}
-              >
-                <label className="sr" htmlFor="expr">
-                  Ajouter une expression
+            <Groupe
+              titre="Ta façon d’écrire"
+              pied="Six s’en sert pour écrire comme toi. Ce réglage reste sur ce téléphone."
+            >
+              <div className="lg-bloc">
+                <label htmlFor="deco" className="lg-label">
+                  Registre
                 </label>
                 <input
-                  id="expr"
-                  type="text"
-                  value={expr}
-                  maxLength={40}
-                  onChange={(e) => setExpr(e.target.value)}
-                  placeholder="Ex : Pas de souci"
+                  id="deco"
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={style.decontracte}
+                  onChange={(e) => updateStyle({ ...style, decontracte: Number(e.target.value) })}
                 />
-                <button
-                  className="btn ghost small"
-                  type="submit"
-                  disabled={style.expressions.length >= 5}
+                <div className="ends" aria-hidden="true">
+                  <span>Formel</span>
+                  <span>Décontracté</span>
+                </div>
+              </div>
+              <div className="lg-bloc">
+                <label htmlFor="det" className="lg-label">
+                  Longueur
+                </label>
+                <input
+                  id="det"
+                  type="range"
+                  min={0}
+                  max={100}
+                  value={style.detaille}
+                  onChange={(e) => updateStyle({ ...style, detaille: Number(e.target.value) })}
+                />
+                <div className="ends" aria-hidden="true">
+                  <span>Bref</span>
+                  <span>Détaillé</span>
+                </div>
+              </div>
+              <LigneInterrupteur
+                id="emojis"
+                label="Emojis"
+                checked={style.emojis}
+                onChange={(on) => updateStyle({ ...style, emojis: on })}
+              />
+            </Groupe>
+            <Groupe titre="Tes expressions" pied="Jusqu’à 5 expressions que tu utilises souvent.">
+              {style.expressions.map((x) => (
+                <div className="lg-ligne lg-statique" key={x}>
+                  <span className="lg-txt">
+                    <span className="lg-label">« {x} »</span>
+                  </span>
+                  <button
+                    type="button"
+                    className="lg-mini"
+                    aria-label={`Retirer ${x}`}
+                    onClick={() =>
+                      updateStyle({
+                        ...style,
+                        expressions: style.expressions.filter((e) => e !== x),
+                      })
+                    }
+                  >
+                    <Icon name="x" size={16} />
+                  </button>
+                </div>
+              ))}
+              {style.expressions.length < 5 && (
+                <form
+                  className="lg-ligne lg-statique lg-saisie"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    const val = expr.trim().slice(0, 40);
+                    if (val && !style.expressions.includes(val))
+                      updateStyle({ ...style, expressions: [...style.expressions, val] });
+                    setExpr('');
+                  }}
                 >
-                  Ajouter
-                </button>
-              </form>
-            </div>
-            <button
-              className="btn ghost"
-              onClick={() =>
-                demander({
-                  titre: 'Effacer ton style ?',
-                  texte:
-                    'Ton registre, ta longueur préférée et tes expressions reviendront aux réglages de départ.',
-                  action: 'Effacer',
-                  danger: true,
-                  onConfirmer: () => {
-                    clearStyle();
-                    setStyle(DEFAULT_STYLE);
-                  },
-                })
-              }
-            >
-              <Icon name="trash" /> Effacer mon style
-            </button>
+                  <label className="sr" htmlFor="expr">
+                    Ajouter une expression
+                  </label>
+                  <input
+                    id="expr"
+                    type="text"
+                    value={expr}
+                    maxLength={40}
+                    onChange={(e) => setExpr(e.target.value)}
+                    placeholder="Ajouter, ex. : Pas de souci"
+                  />
+                  <button type="submit" className="lg-ajout" disabled={!expr.trim()}>
+                    Ajouter
+                  </button>
+                </form>
+              )}
+            </Groupe>
+            <Groupe>
+              <LigneAction
+                danger
+                label="Effacer mon style"
+                onClick={() =>
+                  demander({
+                    titre: 'Effacer ton style ?',
+                    texte:
+                      'Ton registre, ta longueur préférée et tes expressions reviendront aux réglages de départ.',
+                    action: 'Effacer',
+                    danger: true,
+                    onConfirmer: () => {
+                      clearStyle();
+                      setStyle(DEFAULT_STYLE);
+                    },
+                  })
+                }
+              />
+            </Groupe>
             {demande}
           </>
         )}
@@ -1673,82 +1598,130 @@ export function Settings() {
     style.decontracte >= 66 ? 'Décontracté' : style.decontracte <= 33 ? 'Formel' : 'Équilibré';
   return (
     <>
-      <AppBar page="reglages" titre="Réglages" />
-      <main className="screen settings">
-        <button className="profile-card" onClick={() => ouvrir('compte')}>
-          <span className="avatar avatar-md" aria-hidden="true">
-            {initiale(compte) || <Icon name="user" size={22} />}
-            <span className={`avatar-dot${compte.statut === 'connecte' ? ' on' : ''}`} />
+      <AppBar page="reglages" titre="" />
+      <main className="screen settings lg-page">
+        <h1 className="lg-grand-titre">Réglages</h1>
+        <button type="button" className="lg-profil" onClick={() => ouvrir('compte')}>
+          <span className="avatar lg-avatar" aria-hidden="true">
+            {initiale(compte) || <Icon name="user" size={26} />}
           </span>
-          <span className="grow">
-            <b>{compte.prenom || 'Invité'}</b>
-            <span className="muted small">
-              {compte.statut === 'connecte' ? compte.identifiant : 'Non connecté, tout reste ici'}
+          <span className="lg-txt">
+            <span className="lg-profil-nom">{compte.prenom || 'Invité'}</span>
+            <span className="lg-sous">
+              {compte.statut === 'connecte'
+                ? compte.identifiant
+                : 'Se connecter, prénom, mémoire sur le compte'}
             </span>
           </span>
-          <Icon name="chevron" size={18} />
+          <Icon name="chevron" size={16} className="lg-fleche" />
         </button>
-        <section aria-labelledby="g-apparence">
-          <h2 className="group-title" id="g-apparence">
-            Apparence
-          </h2>
-          <div className="group-list">
-            <Rangee
-              icon="sun"
-              label="Thème et couleurs"
-              valeur={`${couleur}, ${MODES[theme].toLowerCase()}`}
-              onClick={() => ouvrir('theme')}
-            />
-            <Rangee
-              icon="type"
-              label="Police"
-              valeur={POLICES.find((p) => p.id === police)?.court}
-              onClick={() => ouvrir('police')}
-            />
-          </div>
-        </section>
-        <section aria-labelledby="g-six">
-          <h2 className="group-title" id="g-six">
-            Six
-          </h2>
-          <div className="group-list">
-            <Rangee
-              icon="pencil"
-              label="Mon style d'écriture"
-              valeur={registre}
-              onClick={() => ouvrir('style')}
-            />
-            <Rangee
-              icon="bulb"
-              label="Mémoire de Six"
-              valeur={memOn ? 'Activée' : 'Désactivée'}
-              onClick={() => ouvrir('memoire')}
-            />
-            <Rangee
-              icon="bell"
-              label="Notifications des apps"
-              valeur="Android"
-              onClick={() => ouvrir('notifications')}
-            />
-          </div>
-        </section>
-        <section aria-labelledby="g-infos">
-          <h2 className="group-title" id="g-infos">
-            Confidentialité et informations
-          </h2>
-          <div className="group-list">
-            <LienRangee href="/confidentialite" icon="lock" label="Confidentialité" />
-            <LienRangee href="/conditions" icon="file" label="Conditions d'utilisation" />
-            <LienRangee href="/mentions" icon="file" label="Mentions légales" />
-            <LienExterne
-              href="https://effulgent-jelly-177a12.netlify.app"
-              icon="home"
-              label="Version web de Six"
-            />
-          </div>
-        </section>
-        <p className="muted small set-foot">Six par Seven.AI, version de démonstration</p>
+
+        <Groupe titre="Personnalisation">
+          <Ligne
+            icon="palette"
+            teinte="bleu"
+            label="Thème"
+            valeur={`${couleur}, ${MODES[theme].toLowerCase()}`}
+            onClick={() => ouvrir('theme')}
+          />
+          <Ligne
+            icon="type"
+            teinte="gris"
+            label="Police"
+            valeur={POLICES.find((p) => p.id === police)?.court}
+            onClick={() => ouvrir('police')}
+          />
+          <Ligne
+            icon="pencil"
+            teinte="orange"
+            label="Mon style d’écriture"
+            valeur={registre}
+            onClick={() => ouvrir('style')}
+          />
+        </Groupe>
+
+        <Groupe titre="Six">
+          <Ligne
+            icon="bulb"
+            teinte="violet"
+            label="Mémoire"
+            valeur={memOn ? 'Activée' : 'Désactivée'}
+            onClick={() => ouvrir('memoire')}
+          />
+          <Ligne
+            icon="bell"
+            teinte="rouge"
+            label="Notifications des apps"
+            valeur="Android"
+            onClick={() => ouvrir('notifications')}
+          />
+        </Groupe>
+
+        <Groupe titre="Confidentialité et aide">
+          <LigneLien href="/confidentialite" icon="lock" teinte="vert" label="Confidentialité" />
+          <LigneLien
+            href="/conditions"
+            icon="file"
+            teinte="gris"
+            label="Conditions d’utilisation"
+          />
+          <LigneLien href="/mentions" icon="file" teinte="gris" label="Mentions légales" />
+          <LigneLien
+            href="https://effulgent-jelly-177a12.netlify.app"
+            externe
+            icon="globe"
+            teinte="indigo"
+            label="Version web de Six"
+          />
+        </Groupe>
+
+        <footer className="lg-signature">
+          <Logo small label="" />
+          <span>Six par Seven.AI</span>
+          <span className="muted small">Version de démonstration</span>
+        </footer>
       </main>
     </>
+  );
+}
+
+/** Pastilles de couleur, comme le choix de couleur d'un téléphone : un rond, le nom dessous, une coche. */
+function Pastilles({
+  liste,
+  choisi,
+  onChoisir,
+}: {
+  liste: Tuile[];
+  choisi: string;
+  onChoisir: (id: string) => void;
+}) {
+  return (
+    <div className="pastilles" role="radiogroup">
+      {liste.map((t) => (
+        <button
+          key={t.id}
+          type="button"
+          role="radio"
+          aria-checked={choisi === t.id}
+          className="pastille"
+          onClick={() => onChoisir(t.id)}
+        >
+          <span
+            className="pastille-rond"
+            aria-hidden="true"
+            style={
+              {
+                '--p-fond': t.gradient
+                  ? `linear-gradient(45deg, ${t.gradient.join(', ')})`
+                  : `linear-gradient(135deg, ${t.icon.accent}, ${t.icon.background})`,
+              } as CSSProperties
+            }
+          >
+            {choisi === t.id && <Icon name="check" size={16} stroke={3} />}
+          </span>
+          <span className="pastille-nom">{t.label}</span>
+        </button>
+      ))}
+    </div>
   );
 }
