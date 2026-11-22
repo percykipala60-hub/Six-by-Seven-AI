@@ -5694,3 +5694,118 @@ body {
   margin: 0 auto;
   padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
 }
+
+/* ---------- Seven AI : discussions dans le menu, barre de saisie fixée en bas ---------- */
+.drawer-chats {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-top: 14px;
+}
+.drawer-chats-titre {
+  padding: 0 12px 6px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.drawer-chat {
+  display: block;
+  padding: 9px 12px;
+  border-radius: 10px;
+  color: var(--ink);
+  font-size: 0.92rem;
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.drawer-chat[aria-current='page'] {
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+}
+@media (hover: hover) and (pointer: fine) {
+  .drawer-chat:hover {
+    background: color-mix(in srgb, var(--ink) 6%, transparent);
+  }
+}
+
+/* La discussion défile dans son propre espace : sans min-height: 0, un long fil poussait la barre
+   de saisie sous le bord de l'écran. */
+.seven-fil {
+  min-height: 0;
+}
+/* Barre de saisie : fond d'un bord à l'autre de l'écran, toujours collée en bas ; les outils sont
+   réunis dans une seule capsule arrondie, centrée sur la colonne de lecture. */
+.seven-composer {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  display: block;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  padding: 10px calc(12px + env(safe-area-inset-right, 0px))
+    calc(12px + env(safe-area-inset-bottom, 0px)) calc(12px + env(safe-area-inset-left, 0px));
+  border-top: 0;
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in srgb, var(--bg) 88%, transparent) 38%
+  );
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.seven-capsule {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 6px;
+  border: 1px solid color-mix(in srgb, var(--ink) 12%, transparent);
+  border-radius: 26px;
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+  box-shadow: 0 8px 28px rgb(0 0 0 / 0.22);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
+}
+.seven-capsule:focus-within {
+  border-color: color-mix(in srgb, var(--brand) 55%, transparent);
+}
+.seven-composer .seven-capsule input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 8px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font-size: 15px;
+}
+.seven-composer .seven-capsule input:focus {
+  border-color: transparent;
+}
+.seven-composer .seven-capsule button {
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  box-shadow: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .seven-composer .seven-capsule button:not(:disabled):hover {
+    color: var(--ink);
+    background: color-mix(in srgb, var(--ink) 7%, transparent);
+  }
+}
+.seven-composer .seven-capsule button[type='submit'] {
+  background: var(--brand);
+  color: #fff;
+}
+.seven-composer .seven-capsule button.seven-mic.rec {
+  background: #e5484d;
+  color: #fff;
+}
+.seven-composer .seven-capsule button:disabled {
+  opacity: 0.35;
+}

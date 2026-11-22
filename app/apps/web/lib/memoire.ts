@@ -108,6 +108,7 @@ export function activerMemoire(on: boolean): void {
       localStorage.setItem(OFF, '1');
       localStorage.removeItem(KEY);
       effacerConversations(); // mémoire coupée : les conversations gardées partent aussi
+      effacerDiscussionsSeven();
     }
   } catch {
     /* stockage bloqué */
@@ -141,7 +142,18 @@ export function effacerMemoire(): void {
     /* rien à effacer */
   }
   effacerConversations(); // « Effacer la mémoire de Six » efface aussi les conversations gardées
+  effacerDiscussionsSeven();
   annoncer();
+}
+
+/** Discussions avec Seven AI (lib/seven-chats, clés recopiées ici pour éviter un import circulaire). */
+function effacerDiscussionsSeven(): void {
+  try {
+    localStorage.removeItem('seven-ai-chats');
+    localStorage.removeItem('seven-ai-chat');
+  } catch {
+    /* rien à effacer */
+  }
 }
 
 /**

@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { ecouterCompte, lireCompte, type Compte } from '@/lib/compte';
 import { AvatarContenu } from './AvatarContenu';
 import { LIEN_CONFIDENTIALITE } from '@/lib/liens';
+import { ecouterChats, lireChats, type ChatSeven } from '@/lib/seven-chats';
 import { Icon } from './Icon';
 import { Logo } from './Logo';
 import { Suivis } from './Suivis';
@@ -109,12 +110,21 @@ export function AppBar({
   page,
   titre,
   onNouvelle,
+  chatActif,
 }: {
   page: Page;
   titre?: string;
   onNouvelle?: () => void;
+  /** Seven AI : discussion ouverte, en relief dans la liste du menu. */
+  chatActif?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const [chats, setChats] = useState<ChatSeven[]>([]);
+  useEffect(() => {
+    const lire = () => setChats(lireChats());
+    lire();
+    return ecouterChats(lire);
+  }, []);
   const panel = useRef<HTMLDivElement>(null);
   const opener = useRef<HTMLButtonElement>(null);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
@@ -266,7 +276,17 @@ export function AppBar({
             <Icon name="x" />
           </button>
         </div>
-        {page === 'accueil' && onNouvelle ? (
+        {page === 'seven-ai' ? (
+          <button
+            className="drawer-item drawer-new"
+            onClick={() => {
+              setOpen(false);
+              onNouvelle?.();
+            }}
+          >
+            <Icon name="plus" /> Nouvelle discussion
+          </button>
+        ) : page === 'accueil' && onNouvelle ? (
           <button
             className="drawer-item drawer-new"
             onClick={() => {
@@ -284,7 +304,6 @@ export function AppBar({
         <nav aria-label="Navigation principale" className="drawer-nav">
           {item('/', 'accueil', <Icon name="home" />, 'Accueil')}
           {item('/sujets', 'sujets', <Icon name="quoiDire" />, 'Quoi dire ?')}
-          {item('/seven-ai', 'seven-ai', <Icon name="sparkles" />, 'Seven AI')}
           {item('/espace-jeu', 'espace-jeu', <Icon name="jeu" />, 'Espace jeu')}
           {item('/reglages', 'reglages', <Icon name="sliders" />, 'Réglages')}
           <a
@@ -298,6 +317,23 @@ export function AppBar({
             <span>Confidentialité</span>
           </a>
         </nav>
+        {chats.length > 0 && (
+          <nav aria-label="Discussions avec Seven AI" className="drawer-chats">
+            <span className="drawer-chats-titre">Discussions</span>
+            {chats.map((c) => (
+              <Link
+                key={c.id}
+                href={`/seven-ai?c=${encodeURIComponent(c.id)}`}
+                className="drawer-chat"
+                aria-current={page === 'seven-ai' && c.id === chatActif ? 'page' : undefined}
+                onClick={() => setOpen(false)}
+                title={c.titre}
+              >
+                {c.titre}
+              </Link>
+            ))}
+          </nav>
+        )}
         <Suivis />
         <Link href="/reglages?v=compte" className="drawer-profile" onClick={() => setOpen(false)}>
           <ProfilLigne />

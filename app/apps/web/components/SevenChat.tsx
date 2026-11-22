@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { AppBar } from './AppBar';
 import { useConfirmer } from './Confirmer';
 import { Icon } from './Icon';
@@ -9,11 +9,9 @@ import { memoireActive } from '@/lib/memoire';
 import { CHAT_MAX_BYTES, CHAT_MAX_CONTENT, CHAT_MAX_MESSAGES } from '@/lib/api-schemas';
 import { detecterOrdre } from '@/lib/seven-ordres';
 import type { ChatMessage, ChatResult } from '@/lib/types';
+import { MAX_MSG, effacerChat, garderChat, lireChat, nouvelId } from '@/lib/seven-chats';
 
-const CLE_SEVEN = 'seven-ai-chat';
-// L'historique est gardé sur l'appareil jusqu'à ce que la personne l'efface elle-même
-// (bouton poubelle du compositeur), ou jusqu'à ce qu'elle coupe la mémoire de Six.
-const MAX_MSG = 200;
+// Les discussions sont gardées sur l'appareil (lib/seven-chats), tant que la mémoire de Six est active.
 // Un document importé (texte ou PDF) est envoyé dans le message : on le borne pour
 // rester dans la limite du serveur (20 000 caractères) et raisonnable côté coûts.
 const TAILLE_DOC_MAX = 12_000;
@@ -37,32 +35,6 @@ function preparerRequete(historique: ChatMessage[], content: string): string {
     corps = candidat;
   }
   return corps;
-}
-
-function lireHistorique(): ChatMessage[] {
-  if (!memoireActive()) return []; // mémoire coupée : Seven AI oublie tout, l'historique est vide
-  try {
-    const brut = localStorage.getItem(CLE_SEVEN);
-    if (!brut) return [];
-    const liste = JSON.parse(brut) as ChatMessage[];
-    if (!Array.isArray(liste)) return [];
-    return liste
-      .filter(
-        (m) => m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string',
-      )
-      .slice(-MAX_MSG);
-  } catch {
-    return [];
-  }
-}
-
-function garderHistorique(messages: ChatMessage[]) {
-  if (!memoireActive()) return; // mémoire coupée : rien n'est gardé
-  try {
-    localStorage.setItem(CLE_SEVEN, JSON.stringify(messages.slice(-MAX_MSG)));
-  } catch {
-    /* historique non gardé */
-  }
 }
 
 /** Extrait le texte d'un PDF côté navigateur (pdfjs-dist, chargé à la demande). */
@@ -180,12 +152,14 @@ function dicterTexte(signal: AbortSignal): Promise<string> {
  */
 export function SevenChatPage() {
   const router = useRouter();
+  const params = useSearchParams();
+  const demandee = params.get('c') ?? ''; // discussion ouverte depuis le menu ; vide : nouvelle discussion
+  const chatId = useRef('');
   const [demande, demander] = useConfirmer();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [saisie, setSaisie] = useState('');
   const [occupe, setOccupe] = useState(false);
   const [erreur, setErreur] = useState('');
-  const [demo, setDemo] = useState<boolean | null>(null);
   const [transcription, setTranscription] = useState<boolean | null>(null);
   const [dernierEchec, setDernierEchec] = useState<{
     texte: string;
@@ -232,32 +206,36 @@ export function SevenChatPage() {
   const verrouMicro = useRef(false);
   const [memOn, setMemOn] = useState(false); // mémoire de Six active (gate de conservation de l'historique)
   const [enregistre, setEnregistre] = useState(false); // micro en cours d'enregistrement
-  const charge = useRef(false); // l'historique est lu une seule fois
   const fin = useRef<HTMLDivElement>(null);
   const champ = useRef<HTMLInputElement>(null);
   const docInput = useRef<HTMLInputElement>(null);
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const chunksAudio = useRef<Blob[]>([]);
 
+  // Ouvre la discussion demandée par l'adresse (menu latéral), ou une nouvelle discussion vide.
   useEffect(() => {
-    if (charge.current) return;
-    charge.current = true;
-    const historique = lireHistorique();
+    operation.current?.abort();
+    const chat = demandee ? lireChat(demandee) : undefined;
+    chatId.current = chat?.id ?? nouvelId();
+    const historique = chat?.messages ?? [];
     setMessages(historique);
+    setSaisie('');
+    setErreur('');
+    setDernierEchec(undefined);
+    documentActif.current = '';
     setDocumentAReimporter(
       historique.some((message) => message.role === 'user' && message.content.startsWith('📄 ')),
     );
     setMemOn(memoireActive());
     champ.current?.focus();
-  }, []);
+  }, [demandee]);
 
   useEffect(() => {
     const controleur = new AbortController();
     void fetch('/api/chat', { signal: controleur.signal })
       .then(async (res) => {
         if (!res.ok) throw new Error('État indisponible');
-        const etat = (await res.json()) as { demo: boolean; transcription: boolean };
-        setDemo(etat.demo);
+        const etat = (await res.json()) as { transcription: boolean };
         setTranscription(etat.transcription);
       })
       .catch(() => {
@@ -299,7 +277,7 @@ export function SevenChatPage() {
 
   function pousser(fil: ChatMessage[]) {
     setMessages(fil);
-    garderHistorique(fil);
+    garderChat(chatId.current, fil);
   }
 
   async function envoyer(texte: string, affichage?: string, document?: string) {
@@ -356,7 +334,6 @@ export function SevenChatPage() {
         setDocumentAReimporter(false);
       }
       setSaisie('');
-      setDemo(data.demo);
     } catch (e) {
       setDernierEchec({ texte, affichage, document });
       setErreur(
@@ -535,11 +512,25 @@ export function SevenChatPage() {
     }
   }
 
-  const propositions = ['Qui es-tu ?', "C'est quoi Six ?", 'Aide-moi à répondre à un message'];
-
   return (
     <main className="screen seven-screen">
-      <AppBar page="seven-ai" titre="Seven AI" />
+      <AppBar
+        page="seven-ai"
+        titre="Seven AI"
+        chatActif={messages.length ? chatId.current : undefined}
+        onNouvelle={() => {
+          operation.current?.abort();
+          chatId.current = nouvelId();
+          setMessages([]);
+          setSaisie('');
+          setErreur('');
+          setDernierEchec(undefined);
+          documentActif.current = '';
+          setDocumentAReimporter(false);
+          if (demandee) router.replace('/seven-ai');
+          champ.current?.focus();
+        }}
+      />
       {demande}
       <div className="seven-fil" aria-live="polite">
         {messages.length === 0 && !occupe && (
@@ -556,13 +547,6 @@ export function SevenChatPage() {
               question, importe un document, envoie un vocal — ou donne-moi un ordre comme « ouvre
               les réglages » et Six obéit.
             </p>
-            <div className="seven-suggestions">
-              {propositions.map((p) => (
-                <button key={p} type="button" onClick={() => void envoyer(p)}>
-                  {p}
-                </button>
-              ))}
-            </div>
           </div>
         )}
         {messages.map((m, i) => (
@@ -627,9 +611,6 @@ export function SevenChatPage() {
             conservé uniquement pendant cette visite.
           </p>
         )}
-        {demo === true && (
-          <p className="seven-note-demo">Mode démonstration : aucune IA connectée.</p>
-        )}
         {!memOn && (
           <p className="seven-note-demo">
             Mémoire désactivée : Seven AI oublie tout à chaque visite. Active-la dans Réglages →
@@ -646,80 +627,81 @@ export function SevenChatPage() {
           void envoyer(saisie);
         }}
       >
-        {messages.length > 0 && !occupe && (
+        <div className="seven-capsule">
+          {messages.length > 0 && !occupe && (
+            <button
+              type="button"
+              className="seven-effacer"
+              aria-label="Effacer la conversation avec Seven AI"
+              title="Effacer la conversation"
+              onClick={() =>
+                demander({
+                  titre: 'Effacer cette discussion ?',
+                  texte:
+                    'Les messages de cette discussion avec Seven AI seront effacés de ce téléphone.',
+                  action: 'Effacer',
+                  danger: true,
+                  onConfirmer: () => {
+                    effacerChat(chatId.current);
+                    chatId.current = nouvelId();
+                    if (demandee) router.replace('/seven-ai');
+                    setMessages([]);
+                    setDernierEchec(undefined);
+                    documentActif.current = '';
+                    setDocumentAReimporter(false);
+                  },
+                })
+              }
+            >
+              <Icon name="trash" size={18} />
+            </button>
+          )}
           <button
             type="button"
-            className="seven-effacer"
-            aria-label="Effacer la conversation avec Seven AI"
-            title="Effacer la conversation"
-            onClick={() =>
-              demander({
-                titre: 'Effacer la conversation ?',
-                texte: 'Tous les messages échangés avec Seven AI seront effacés de ce téléphone.',
-                action: 'Effacer',
-                danger: true,
-                onConfirmer: () => {
-                  try {
-                    localStorage.removeItem(CLE_SEVEN);
-                  } catch {
-                    /* stockage bloqué : rien à effacer */
-                  }
-                  setMessages([]);
-                  setDernierEchec(undefined);
-                  documentActif.current = '';
-                  setDocumentAReimporter(false);
-                },
-              })
-            }
+            className="seven-doc"
+            aria-label="Importer un document (texte ou PDF)"
+            title="Importer un document"
+            disabled={occupe || enregistre}
+            onClick={() => docInput.current?.click()}
           >
-            <Icon name="trash" size={18} />
+            <Icon name="clip" size={18} />
           </button>
-        )}
-        <button
-          type="button"
-          className="seven-doc"
-          aria-label="Importer un document (texte ou PDF)"
-          title="Importer un document"
-          disabled={occupe || enregistre}
-          onClick={() => docInput.current?.click()}
-        >
-          <Icon name="clip" size={18} />
-        </button>
-        <input
-          ref={docInput}
-          type="file"
-          accept=".txt,.md,.csv,.json,.log,.pdf"
-          className="seven-doc-input"
-          aria-hidden="true"
-          tabIndex={-1}
-          onChange={(e) => void importerDoc(e.target.files?.[0])}
-        />
-        <input
-          ref={champ}
-          type="text"
-          value={saisie}
-          onChange={(e) => setSaisie(e.target.value)}
-          placeholder="Écris à Seven AI…"
-          aria-label="Écrire à Seven AI"
-          disabled={occupe}
-        />
-        <button
-          type="button"
-          className={`seven-mic${enregistre ? ' rec' : ''}`}
-          aria-label={enregistre ? 'Arrêter le message vocal' : 'Envoyer un message vocal'}
-          title={enregistre ? 'Terminer le vocal' : 'Message vocal'}
-          disabled={occupe && !enregistre}
-          onClick={() => void basculerMicro()}
-        >
-          <Icon name={enregistre ? 'x' : 'mic'} size={18} />
-        </button>
-        <button
-          type="submit"
-          disabled={occupe || enregistre || !saisie.trim()}
-          aria-label="Envoyer"
-        >
-          <Icon name="up" size={18} />
-        </button>
+          <input
+            ref={docInput}
+            type="file"
+            accept=".txt,.md,.csv,.json,.log,.pdf"
+            className="seven-doc-input"
+            aria-hidden="true"
+            tabIndex={-1}
+            onChange={(e) => void importerDoc(e.target.files?.[0])}
+          />
+          <input
+            ref={champ}
+            type="text"
+            value={saisie}
+            onChange={(e) => setSaisie(e.target.value)}
+            placeholder="Écris à Seven AI…"
+            aria-label="Écrire à Seven AI"
+            disabled={occupe}
+          />
+          <button
+            type="button"
+            className={`seven-mic${enregistre ? ' rec' : ''}`}
+            aria-label={enregistre ? 'Arrêter le message vocal' : 'Envoyer un message vocal'}
+            title={enregistre ? 'Terminer le vocal' : 'Message vocal'}
+            disabled={occupe && !enregistre}
+            onClick={() => void basculerMicro()}
+          >
+            <Icon name={enregistre ? 'x' : 'mic'} size={18} />
+          </button>
+          <button
+            type="submit"
+            disabled={occupe || enregistre || !saisie.trim()}
+            aria-label="Envoyer"
+          >
+            <Icon name="up" size={18} />
+          </button>
+        </div>
       </form>
     </main>
   );
