@@ -48,6 +48,53 @@ export function Avatar({ size = 36 }: { size?: number }) {
   );
 }
 
+/**
+ * Passage d'un geste entre les deux espaces de l'accueil : Six (comprendre un message, choisir quoi
+ * répondre) et Seven AI (discussion libre). Deux icônes côte à côte, celle de l'espace ouvert en relief.
+ */
+function ChoixMode({ actif }: { actif: 'six' | 'seven' }) {
+  return (
+    <nav className="choix-mode" aria-label="Espace">
+      <Link
+        href="/"
+        className="choix-mode-btn"
+        aria-current={actif === 'six' ? 'page' : undefined}
+        aria-label="Six : répondre à un message"
+        title="Six"
+      >
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <path
+            d="M15 3.5Q9.5 8 8.4 13.2M8.4 13.2a4.6 4.6 0 1 0 1.1-1.6"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </Link>
+      <Link
+        href="/seven-ai"
+        className="choix-mode-btn"
+        aria-current={actif === 'seven' ? 'page' : undefined}
+        aria-label="Seven AI : discuter"
+        title="Seven AI"
+      >
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <path
+            d="M5.5 5H18Q13 11 11.7 19.5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </Link>
+    </nav>
+  );
+}
+
 /** Barre du haut de l'app : menu latéral à gauche, titre, profil à droite. Remplace la barre d'onglets. */
 export function AppBar({
   page,
@@ -170,7 +217,13 @@ export function AppBar({
         >
           <Icon name="menu" size={24} stroke={2.2} />
         </button>
-        <span className="appbar-title">{titre ?? 'Six'}</span>
+        {page === 'accueil' || page === 'seven-ai' ? (
+          <span className="appbar-title">
+            <ChoixMode actif={page === 'accueil' ? 'six' : 'seven'} />
+          </span>
+        ) : (
+          <span className="appbar-title">{titre ?? 'Six'}</span>
+        )}
         <Avatar />
       </header>
       <div

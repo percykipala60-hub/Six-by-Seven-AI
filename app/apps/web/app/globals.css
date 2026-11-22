@@ -5632,3 +5632,33 @@ body {
   object-fit: cover;
   display: block;
 }
+
+/* Choix d'espace dans la barre du haut : Six ou Seven AI, deux icônes, l'espace ouvert en relief. */
+.choix-mode {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 12px;
+  background: var(--verre, color-mix(in srgb, var(--ink) 6%, transparent));
+  vertical-align: middle;
+}
+.choix-mode-btn {
+  width: 38px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 9px;
+  color: var(--muted, color-mix(in srgb, var(--ink) 55%, transparent));
+  text-decoration: none;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+.choix-mode-btn[aria-current='page'] {
+  background: var(--verre-fort, color-mix(in srgb, var(--ink) 14%, transparent));
+  color: var(--ink);
+}
+.choix-mode-btn:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 1px;
+}
