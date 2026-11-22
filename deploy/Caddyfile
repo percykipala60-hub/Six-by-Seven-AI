@@ -15,9 +15,15 @@
 	# Fichiers dont le nom change à chaque version : gardés longtemps en cache.
 	@immuable path /assets/* /fonts/*
 	header @immuable Cache-Control "public, max-age=31536000, immutable"
-	# Application à page unique : toute adresse inconnue (/legal/..., /telecharger) affiche index.html.
-	try_files {path} /index.html
+	# Chaque page a son propre fichier HTML (écrit au build, voir site/vite.config.ts) : /telecharger sert
+	# telecharger/index.html, avec son titre et son adresse canonique, pour les moteurs de recherche.
+	try_files {path} {path}/index.html
 	file_server
+	# Adresse inconnue : vraie erreur 404 (les moteurs ne la gardent pas), avec la page « perdue » du site.
+	handle_errors 404 {
+		rewrite * /404.html
+		file_server
+	}
 }
 
 www.{$DOMAINE} {
