@@ -2,17 +2,9 @@ package com.sevenai.six;
 
 import android.app.Notification;
 import android.content.Context;
-import android.content.Intent;
-import android.graphics.PixelFormat;
-import android.graphics.drawable.GradientDrawable;
-import android.os.Build;
-import android.provider.Settings;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.StatusBarNotification;
 import android.util.Log;
-import android.view.Gravity;
-import android.view.MotionEvent;
-import android.view.View;
 import android.view.WindowManager;
 import android.widget.TextView;
 
@@ -27,12 +19,6 @@ public class SixNotificationListener extends NotificationListenerService {
     private static SixNotificationListener instance;
     private WindowManager windowManager;
     private TextView bubble;
-    private WindowManager.LayoutParams bubbleParams;
-    private float downRawX;
-    private float downRawY;
-    private int downX;
-    private int downY;
-    private boolean dragged;
 
     static void refresh(Context context) {
         SixNotificationListener service = instance;
@@ -117,101 +103,9 @@ public class SixNotificationListener extends NotificationListenerService {
         return text.length() > limit ? text.substring(0, limit) : text;
     }
 
+    /** La bulle est désormais affichée par BulleService, indépendamment des notifications : on retire l'ancienne. */
     private void updateBubble() {
-        android.content.SharedPreferences prefs =
-            getSharedPreferences(InterAppConfig.PREFS, MODE_PRIVATE);
-        boolean enabled = prefs.getBoolean(InterAppConfig.BUBBLE_ENABLED, false)
-            && !selectedApps().isEmpty();
-        if (!enabled || !Settings.canDrawOverlays(this)) {
-            removeBubble();
-            return;
-        }
-        if (windowManager == null) windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
-        if (windowManager == null) return;
-        if (bubble == null) {
-            bubble = new TextView(this);
-            bubble.setTextColor(0xFFFFFFFF);
-            bubble.setTextSize(20);
-            bubble.setGravity(Gravity.CENTER);
-            bubble.setContentDescription("Ouvrir Six et consulter les messages reçus");
-            bubble.setElevation(dp(8));
-            GradientDrawable background = new GradientDrawable();
-            background.setShape(GradientDrawable.OVAL);
-            background.setColor(0xFF315BDB);
-            bubble.setBackground(background);
-            bubbleParams = new WindowManager.LayoutParams(
-                dp(56), dp(56),
-                Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
-                    ? WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY
-                    : WindowManager.LayoutParams.TYPE_PHONE,
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-                    | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL,
-                PixelFormat.TRANSLUCENT
-            );
-            bubbleParams.gravity = Gravity.TOP | Gravity.END;
-            bubbleParams.x = dp(16);
-            bubbleParams.y = dp(180);
-            bubble.setOnTouchListener(this::onBubbleTouch);
-            try {
-                windowManager.addView(bubble, bubbleParams);
-            } catch (WindowManager.BadTokenException | SecurityException error) {
-                Log.e(TAG, "Could not display the floating Six bubble.", error);
-                bubble = null;
-                bubbleParams = null;
-                return;
-            }
-        }
-        int unread = prefs.getInt(InterAppConfig.UNREAD_COUNT, 0);
-        bubble.setText(unread > 0 ? String.valueOf(Math.min(unread, 99)) : "6");
-        bubble.setContentDescription(unread > 0
-            ? "Ouvrir Six, " + unread + " notifications reçues"
-            : "Ouvrir Six");
-    }
-
-    private boolean onBubbleTouch(View view, MotionEvent event) {
-        if (bubbleParams == null || windowManager == null) return false;
-        switch (event.getAction()) {
-            case MotionEvent.ACTION_DOWN:
-                downRawX = event.getRawX();
-                downRawY = event.getRawY();
-                downX = bubbleParams.x;
-                downY = bubbleParams.y;
-                dragged = false;
-                return true;
-            case MotionEvent.ACTION_MOVE:
-                float dx = event.getRawX() - downRawX;
-                float dy = event.getRawY() - downRawY;
-                if (Math.abs(dx) + Math.abs(dy) > dp(8)) dragged = true;
-                if (dragged) {
-                    bubbleParams.x = Math.max(0, downX - Math.round(dx));
-                    bubbleParams.y = Math.max(0, downY + Math.round(dy));
-                    try {
-                        windowManager.updateViewLayout(bubble, bubbleParams);
-                    } catch (WindowManager.BadTokenException error) {
-                        Log.e(TAG, "Could not move the floating Six bubble.", error);
-                        removeBubble();
-                    }
-                }
-                return true;
-            case MotionEvent.ACTION_UP:
-                if (!dragged) openSix();
-                return true;
-            case MotionEvent.ACTION_CANCEL:
-                return true;
-            default:
-                return false;
-        }
-    }
-
-    private void openSix() {
-        Intent launch = getPackageManager().getLaunchIntentForPackage(getPackageName());
-        if (launch == null) {
-            Log.e(TAG, "Six has no launcher activity.");
-            return;
-        }
-        launch.setAction("com.sevenai.six.OPEN_NOTIFICATION_INBOX");
-        launch.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-        startActivity(launch);
+        removeBubble();
     }
 
     private void removeBubble() {
@@ -223,10 +117,5 @@ public class SixNotificationListener extends NotificationListenerService {
             }
         }
         bubble = null;
-        bubbleParams = null;
-    }
-
-    private int dp(int value) {
-        return Math.round(value * getResources().getDisplayMetrics().density);
     }
 }

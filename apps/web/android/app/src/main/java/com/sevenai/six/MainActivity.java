@@ -18,6 +18,12 @@ public class MainActivity extends BridgeActivity {
     public void onResume() {
         super.onResume();
         SixNotificationListener.refresh(this);
+        // Bulle activée et autorisée : on la (re)lance au retour dans Six.
+        if (getSharedPreferences(InterAppConfig.PREFS, MODE_PRIVATE)
+                .getBoolean(InterAppConfig.BUBBLE_ENABLED, false)
+            && android.provider.Settings.canDrawOverlays(this)) {
+            BulleService.demarrer(this);
+        }
     }
 
     @Override

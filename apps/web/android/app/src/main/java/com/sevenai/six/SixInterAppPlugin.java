@@ -38,6 +38,7 @@ public class SixInterAppPlugin extends Plugin {
         result.put("overlayAccess", Settings.canDrawOverlays(context));
         result.put("bubbleEnabled", context.getSharedPreferences(InterAppConfig.PREFS, 0)
             .getBoolean(InterAppConfig.BUBBLE_ENABLED, false));
+        result.put("keyboardEnabled", clavierActive(context));
         call.resolve(result);
     }
 
@@ -87,15 +88,12 @@ public class SixInterAppPlugin extends Plugin {
 
     @PluginMethod
     public void requestOverlayAccess(PluginCall call) {
+        // La bulle ne dépend plus de l'accès aux notifications : il suffit d'autoriser l'affichage par-dessus.
         android.content.Context context = getContext();
-        if (selectedApps(context).isEmpty() || !hasNotificationAccess(context)) {
-            call.reject("Choisis une application et active d'abord l'accès aux notifications Android.");
-            return;
-        }
         context.getSharedPreferences(InterAppConfig.PREFS, 0)
             .edit().putBoolean(InterAppConfig.BUBBLE_ENABLED, true).apply();
         if (Settings.canDrawOverlays(context)) {
-            SixNotificationListener.refresh(context);
+            BulleService.demarrer(context);
             call.resolve();
             return;
         }
@@ -113,22 +111,45 @@ public class SixInterAppPlugin extends Plugin {
     public void setBubbleEnabled(PluginCall call) {
         boolean enabled = Boolean.TRUE.equals(call.getBoolean("enabled"));
         android.content.Context context = getContext();
-        if (enabled && selectedApps(context).isEmpty()) {
-            call.reject("Choisis au moins une application avant d'activer la bulle.");
-            return;
-        }
-        if (enabled && !hasNotificationAccess(context)) {
-            call.reject("Autorise d'abord l'accès aux notifications dans les réglages Android.");
-            return;
-        }
         if (enabled && !Settings.canDrawOverlays(context)) {
             call.reject("Autorise d'abord l'affichage de Six par-dessus les autres applications.");
             return;
         }
         context.getSharedPreferences(InterAppConfig.PREFS, 0)
             .edit().putBoolean(InterAppConfig.BUBBLE_ENABLED, enabled).apply();
-        SixNotificationListener.refresh(context);
+        if (enabled) BulleService.demarrer(context);
+        else BulleService.arreter(context);
         call.resolve();
+    }
+
+    /** Ouvre la liste des claviers d'Android, pour activer le clavier Six. */
+    @PluginMethod
+    public void openKeyboardSettings(PluginCall call) {
+        try {
+            getActivity().startActivity(new Intent(Settings.ACTION_INPUT_METHOD_SETTINGS));
+            call.resolve();
+        } catch (ActivityNotFoundException | SecurityException error) {
+            call.reject("Les réglages des claviers ne peuvent pas être ouverts.", error);
+        }
+    }
+
+    /** Propose de choisir le clavier à utiliser maintenant (le clavier Six doit être activé). */
+    @PluginMethod
+    public void showKeyboardPicker(PluginCall call) {
+        android.view.inputmethod.InputMethodManager imm = (android.view.inputmethod.InputMethodManager)
+            getContext().getSystemService(android.content.Context.INPUT_METHOD_SERVICE);
+        if (imm == null) {
+            call.reject("Le choix du clavier n'est pas disponible.");
+            return;
+        }
+        imm.showInputMethodPicker();
+        call.resolve();
+    }
+
+    private static boolean clavierActive(android.content.Context context) {
+        String actives = Settings.Secure.getString(context.getContentResolver(),
+            Settings.Secure.ENABLED_INPUT_METHODS);
+        return actives != null && actives.contains(context.getPackageName() + "/");
     }
 
     @PluginMethod

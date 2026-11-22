@@ -101,6 +101,40 @@
             </intent-filter>
         </service>
 
+        <!-- Panneau rapide : ouvert par la bulle et le clavier Six, par-dessus la messagerie. -->
+        <activity
+            android:name=".RapideActivity"
+            android:theme="@style/SixRapide"
+            android:exported="false"
+            android:excludeFromRecents="true"
+            android:taskAffinity="com.sevenai.six.rapide"
+            android:launchMode="singleTask"
+            android:windowSoftInputMode="adjustResize" />
+
+        <!-- Bulle Six, visible par-dessus les autres applications. -->
+        <service
+            android:name=".BulleService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Bulle flottante qui ouvre les réponses proposées par Six" />
+        </service>
+
+        <!-- Clavier Six : écrit la réponse choisie dans le champ de la messagerie. -->
+        <service
+            android:name=".SixClavier"
+            android:label="@string/clavier_nom"
+            android:exported="true"
+            android:permission="android.permission.BIND_INPUT_METHOD">
+            <intent-filter>
+                <action android:name="android.view.InputMethod" />
+            </intent-filter>
+            <meta-data
+                android:name="android.view.im"
+                android:resource="@xml/methode_clavier" />
+        </service>
+
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -116,4 +150,7 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 </manifest>
