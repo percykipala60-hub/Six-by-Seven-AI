@@ -1,1 +1,1 @@
-pnpm typecheck && pnpm test
+cd app && pnpm typecheck && pnpm test

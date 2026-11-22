@@ -1,16 +1,23 @@
 version: 2
 updates:
   - package-ecosystem: npm
-    directory: /
+    directory: /app
     schedule: { interval: weekly, day: monday }
     open-pull-requests-limit: 5
     groups:
       # Une seule PR par semaine pour les mises à jour mineures : moins de bruit avant le 15 octobre.
       mineures:
         update-types: [minor, patch]
+  - package-ecosystem: npm
+    directory: /site
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 3
+    groups:
+      mineures:
+        update-types: [minor, patch]
   - package-ecosystem: github-actions
     directory: /
     schedule: { interval: weekly }
   - package-ecosystem: docker
-    directories: [/apps/api, /apps/web]
+    directories: [/app/apps/api, /app/apps/web]
     schedule: { interval: weekly }

@@ -1,10 +1,23 @@
-# Production de Six sur votre propre serveur (VPS), derrière votre nom de domaine.
+# Production de Six sur notre serveur, derrière sixbysevenai.com.
+# - site  : construit le site de présentation (dossier site/), puis s'arrête ; Caddy en sert le résultat.
+# - six   : l'application Six (dossier app/, Next.js).
+# - caddy : HTTPS automatique ; sixbysevenai.com → site, app.sixbysevenai.com → application.
 # Sur le serveur, depuis ce dossier :  docker compose up -d --build
 # Les réglages secrets sont dans deploy/.env (jamais dans Git) : voir .env.example.
 services:
+  site:
+    image: node:22.22-alpine
+    working_dir: /site
+    volumes:
+      - ../site:/site
+    environment:
+      SITE_URL: https://${DOMAINE}
+    command: sh -c "npm ci --no-audit --no-fund && npm run build"
+    restart: 'no'
+
   six:
     build:
-      context: ..
+      context: ../app
       dockerfile: apps/web/Dockerfile
       # Les valeurs NEXT_PUBLIC_* sont figées dans l'app au moment de la construction.
       args:
@@ -23,7 +36,6 @@ services:
       timeout: 5s
       retries: 3
 
-  # Serveur web : certificats HTTPS automatiques (Let's Encrypt), redirections, compression.
   caddy:
     image: caddy:2.10.2-alpine
     restart: unless-stopped
@@ -31,9 +43,14 @@ services:
     ports: ['80:80', '443:443', '443:443/udp']
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ../site/dist:/srv/site:ro
       - caddy_data:/data
       - caddy_config:/config
-    depends_on: [six]
+    depends_on:
+      six:
+        condition: service_started
+      site:
+        condition: service_completed_successfully
 
 volumes:
   caddy_data:

@@ -16,6 +16,11 @@ env:
   NEXT_TELEMETRY_DISABLED: 1
   NEXT_PUBLIC_API_URL: http://localhost:4000
 
+# Le dépôt réunit l'application (app/) et le site (site/) : chaque tâche travaille dans son dossier.
+defaults:
+  run:
+    working-directory: app
+
 jobs:
   qualite:
     name: Qualité (${{ matrix.os }}, Node ${{ matrix.node }})
@@ -30,10 +35,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: app/package.json
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
           cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm format:check
@@ -53,10 +61,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: app/package.json
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - run: cp apps/api/.env.example apps/api/.env && cp apps/web/.env.example apps/web/.env.local
         shell: bash
@@ -69,10 +80,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: app/package.json
       - uses: actions/setup-node@v4
         with:
-          node-version-file: .nvmrc
+          node-version-file: app/.nvmrc
           cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @six/web exec playwright-core install --with-deps chromium
       - name: Parcours e2e avec le serveur de développement
@@ -99,7 +113,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: rapport-playwright
-          path: apps/web/playwright-report
+          path: app/apps/web/playwright-report
           retention-days: 7
 
   secrets:
@@ -124,4 +138,22 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: docker build -f apps/api/Dockerfile -t six-api .
-      - run: docker build -f apps/web/Dockerfile --build-arg NEXT_PUBLIC_API_URL=http://localhost:4000 -t six-web .
+      - run: docker build -f apps/web/Dockerfile -t six-web .
+
+  site:
+    name: Site (construction)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: site
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - run: npm ci
+      - run: npm run build
+        env:
+          SITE_URL: https://sixbysevenai.com

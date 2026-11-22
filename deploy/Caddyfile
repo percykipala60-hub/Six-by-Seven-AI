@@ -1,0 +1,38 @@
+# Adresses (DOMAINE est défini dans deploy/.env : sixbysevenai.com).
+# - DOMAINE          : le site de présentation (dossier site/, construit par le service « site »)
+# - www.DOMAINE      : renvoie vers DOMAINE
+# - app.DOMAINE      : l'application Six (site, API, page /rapide de la bulle et du clavier Android)
+
+{$DOMAINE} {
+	root * /srv/site
+	encode zstd gzip
+	header {
+		X-Frame-Options DENY
+		X-Content-Type-Options nosniff
+		Referrer-Policy strict-origin-when-cross-origin
+		Permissions-Policy "camera=(), microphone=(), geolocation=()"
+	}
+	# Fichiers dont le nom change à chaque version : gardés longtemps en cache.
+	@immuable path /assets/* /fonts/*
+	header @immuable Cache-Control "public, max-age=31536000, immutable"
+	# Application à page unique : toute adresse inconnue (/legal/..., /telecharger) affiche index.html.
+	try_files {path} /index.html
+	file_server
+}
+
+www.{$DOMAINE} {
+	redir https://{$DOMAINE}{uri} permanent
+}
+
+app.{$DOMAINE} {
+	encode zstd gzip
+	reverse_proxy six:3000
+	# Journal technique sans contenu : ni en-têtes, ni paramètres d'adresse (tout ce qui suit « ? »).
+	log {
+		output stdout
+		format filter {
+			request>headers delete
+			request>uri regexp \?.* ""
+		}
+	}
+}

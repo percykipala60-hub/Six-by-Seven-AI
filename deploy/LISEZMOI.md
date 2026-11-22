@@ -8,8 +8,8 @@ Téléphone / navigateur ──HTTPS──> Cloudflare (DNS) ──> votre serve
                                                                                     └──> fournisseur d'IA
 ```
 
-- `app.votredomaine` : l'application, son API et la page `/rapide` (bulle et clavier Android).
-- `votredomaine` et `www.votredomaine` : renvoient vers l'application, en attendant le site de présentation.
+- `sixbysevenai.com` : le site de présentation (dossier `site/`) ; `www` y renvoie.
+- `app.sixbysevenai.com` : l'application, son API et la page `/rapide` (bulle et clavier Android) — dossier `app/`.
 
 ## 1. Le nom de domaine
 
@@ -35,12 +35,12 @@ Mettre le nuage en **gris (DNS only)** au début : Caddy obtient ainsi ses certi
 En tant qu'utilisateur `six` sur le serveur :
 
 ```bash
-git clone <adresse du dépôt GitHub> six && cd six/deploy
+git clone https://github.com/percykipala60-hub/Six-by-Seven-AI.git six && cd six/deploy
 cp .env.example .env && nano .env      # DOMAINE, clés d'IA, Supabase
 docker compose up -d --build
 ```
 
-Ouvrir `https://app.votredomaine` : Six doit répondre, avec un cadenas HTTPS.
+Ouvrir `https://sixbysevenai.com` (le site) et `https://app.sixbysevenai.com` (Six) : cadenas HTTPS sur les deux.
 
 ## 5. Mettre à jour
 
