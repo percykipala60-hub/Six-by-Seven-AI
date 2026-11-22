@@ -1,30 +1,33 @@
 # Six
 
-> L'IA propose, l'humain décide. — une PWA par **7 AI**
+> L'IA propose, l'humain décide. — une application de **Seven.AI**
 
-Six aide à répondre à une conversation (WhatsApp, SMS, Messenger, e-mail) sans jamais parler à la place de l'utilisateur. Ce dépôt contient la PWA, l'API et le code partagé.
+Six aide à répondre à une conversation (WhatsApp, SMS, Messenger, e-mail) sans jamais parler à la place de l'utilisateur : il explique ce que l'autre veut dire, repère les arnaques et propose trois réponses au ton juste. L'utilisateur choisit, ajuste et envoie lui-même. Seven AI, l'assistant de discussion, vit dans la même app.
 
 ## Où trouver Six
 
-- **Application web** : <https://app.sixbysevenai.com>
-- **Version web et vitrine (dépôt)** : <https://github.com/percykipala60-hub/Six-by-Seven-AI>
-- **Jeu du ton juste** : `/ton-juste` dans l'application (140 devinettes, dont 100 difficiles, et 50 énigmes)
+- **Application** : <https://app.sixbysevenai.com> (navigateur, et apps Android et iOS qui l'ouvrent)
+- **Site de présentation** : <https://sixbysevenai.com> (dossier [`../site`](../site))
+- **Dépôt** : <https://github.com/percykipala60-hub/Six-by-Seven-AI>
 
-**État : Phase 1** — squelette qui tourne, sécurité de base, CI. Le parcours en 11 étapes arrive en Phases 2 à 5.
+Produit et public : [`apps/web/PRODUCT.md`](apps/web/PRODUCT.md). Système visuel : [`apps/web/DESIGN.md`](apps/web/DESIGN.md). Décisions de l'équipe : [`docs/decisions.md`](docs/decisions.md).
 
 ## Structure
 
 ```
 apps/
-  api/        API Fastify (Node 22) — GET /health pour l'instant
-  web/        PWA Next.js 16 + Tailwind 4
+  web/        L'application en ligne : Next.js 16 + Tailwind 4, routes IA (app/api/), apps Android et iOS (Capacitor)
+  api/        API Fastify (Node 22) et Agent Six : sert aux essais d'IA et au banc, pas déployée en production
 packages/
   shared/     Contrat front/back : schémas Zod (zod/mini, léger pour la 3G)
-web/
-  Six-by-Seven-AI/   Version web et vitrine, reliée en sous-module (<https://github.com/percykipala60-hub/Six-by-Seven-AI>) — `git submodule update --init` après un clonage
-docs/
-  decisions.md   Résultats des votes de l'équipe
+jeu-du-ton-juste/   Le jeu du ton juste (client Vite et serveur), intégré sur /ton-juste
+kin-rush-app/       Kin Rush, jeu autonome en un fichier HTML, intégré sur /jeu
+banc/               Conversations d'exemple pour `pnpm banc`
+docs/               Décisions, faisabilité, apprentissage du style
+setup_complet_supabase.sql   Création de la base Supabase (comptes, mémoire)
 ```
+
+En production, seule `apps/web` tourne : elle appelle elle-même les fournisseurs d'IA (Claude, puis OpenAI en relais).
 
 ## Démarrer (Windows, macOS, Linux)
 
@@ -37,77 +40,48 @@ cp apps/web/.env.example apps/web/.env.local    # Windows : copy apps\web\.env.e
 pnpm dev
 ```
 
-- PWA : http://localhost:3000 (la pastille doit afficher « Serveur en ligne »)
-- API : http://localhost:4000/health
+- Application : http://localhost:3000
+- API d'essai : http://localhost:4000/health
 
-Avec Docker, tout d'un coup (API, PWA, Redis) : `docker compose up --build`.
+Dans `apps/web/.env.local` :
+
+- `ANTHROPIC_API_KEY` (ou `OPENAI_API_KEY`) : sans clé, Six répond avec un faux modèle (bandeau « Mode démonstration »). `pnpm --filter @six/web check-ai` teste chaque clé.
+- `NEXT_PUBLIC_SUPABASE_URL` et `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` : un compte est obligatoire à l'ouverture de l'app, il faut donc un projet Supabase (base créée avec `setup_complet_supabase.sql`).
+
+Avec Docker, tout d'un coup (API, application, Redis) : `docker compose up --build`.
 
 ## Commandes
 
-| Commande                       | Rôle                                                         |
-| ------------------------------ | ------------------------------------------------------------ |
-| `pnpm dev`                     | Lance l'API et la PWA en mode développement                  |
-| `pnpm check`                   | Lint + format + types + tests : **à lancer avant chaque PR** |
-| `pnpm test`                    | Tests unitaires (Vitest)                                     |
-| `pnpm test:e2e`                | Tests navigateur Chromium (Android) et WebKit (iPhone)       |
-| `pnpm build`                   | Build de production de tout le dépôt                         |
-| `pnpm --filter @six/web icons` | Régénère les icônes PWA depuis le symbole vectoriel          |
+| Commande                               | Rôle                                                                 |
+| -------------------------------------- | -------------------------------------------------------------------- |
+| `pnpm dev`                             | Lance l'API et l'application en mode développement                   |
+| `pnpm check`                           | Lint + format + types + tests : **à lancer avant chaque PR**         |
+| `pnpm test`                            | Tests unitaires (Vitest)                                             |
+| `pnpm test:e2e`                        | Parcours et jeux dans un vrai navigateur (serveur déjà lancé)        |
+| `pnpm build`                           | Build de production de tout le dépôt                                 |
+| `pnpm verifier`                        | Vérifie qu'un clone neuf démarre                                     |
+| `pnpm --filter @six/web apk`           | Construit l'APK Android de test                                      |
+| `pnpm --filter @six/web android:store` | Construit l'AAB signé pour le Play Store (voir `apps/web/README.md`) |
 
-Première fois pour les tests navigateur : `pnpm --filter @six/web exec playwright install --with-deps chromium webkit`.
-Connexion lente ? Un Chromium déjà installé suffit : `PW_CHROMIUM_PATH=/chemin/vers/chrome pnpm test:e2e --project=android-chromium`.
+Tests navigateur : Edge est utilisé par défaut sous Windows, Chromium ailleurs (`pnpm --filter @six/web exec playwright-core install chromium` la première fois). `BASE_URL` change le serveur visé, `BROWSER_CHANNEL=chrome` utilise Chrome.
 
-## Écrans de Six 1.0
+## Écrans
 
-| Où                 | Écrans                                                                                                                                                                                                                                          |
-| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/`                | Bienvenue                                                                                                                                                                                                                                       |
-| `/accueil`         | Nouvelle conversation, sources (WhatsApp, texte), outils                                                                                                                                                                                        |
-| `/repondre`        | Import (texte, .txt, .zip) → Anonymisation → Analyse → Compréhension (tension, récap) → Objectif + question → Ton, longueur, langue → Trois réponses (Autres, Ajuster, Pourquoi ?) → Ajustement → Copié. Alerte arnaque et bouclier hors ligne. |
-| `/ton`             | Vérificateur de ton avant envoi                                                                                                                                                                                                                 |
-| `/quoi-dire`       | Idées pour lancer ou relancer une conversation (marche hors ligne)                                                                                                                                                                              |
-| `/arnaques`        | Arnaques de chez nous et règle d'or                                                                                                                                                                                                             |
-| `/reglages`        | Apparence, moteur de Six, réponses par défaut, mes données                                                                                                                                                                                      |
-| `/confidentialite` | Ce qui se passe avec tes messages, politique, conditions, mentions                                                                                                                                                                              |
+| Où                                                    | Écrans                                                                                                                                                                                                                                            |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/`                                                   | Six : connexion obligatoire, puis un seul écran comme une messagerie d'IA. On colle ou importe une conversation (texte, `.txt`, `.zip`, captures), Six la masque, l'explique, signale les arnaques et propose trois réponses à ajuster et copier. |
+| `/seven-ai`                                           | Seven AI : plusieurs discussions (menu « Nouvelle discussion »), documents, micro, export PDF                                                                                                                                                     |
+| `/sujets`                                             | « Quoi dire ? » : idées pour lancer ou relancer une conversation                                                                                                                                                                                  |
+| `/rapide`                                             | Page ouverte par la bulle et le clavier Android                                                                                                                                                                                                   |
+| `/reglages`                                           | Apparence (thèmes, polices), style d'écriture, notifications des apps, mémoire et compte                                                                                                                                                          |
+| `/espace-jeu`, `/jeu`, `/ton-juste`, `/coupe-arnaque` | Les jeux : Kin Rush, Le jeu du ton juste, Coupe l'arnaque                                                                                                                                                                                         |
+| `/confidentialite`, `/conditions`, `/mentions`        | Textes légaux                                                                                                                                                                                                                                     |
 
-## Utiliser Six 1.0 sur ton PC (l'app complète)
+Le choix entre Six et Seven AI se fait par les deux icônes de la barre du haut.
 
-1. Ouvre Ollama (le modèle choisi dans `apps/api/.env`, `OLLAMA_MODEL`, doit être téléchargé).
-2. Dans le dossier du projet : `pnpm dev`, puis ouvre <http://localhost:3000> et touche « Coller une conversation ».
-3. Colle quelques messages ou importe l'export WhatsApp (.txt, « sans médias »).
+## Agent Six et essais d'IA
 
-Ce qui se passe, dans l'ordre :
-
-| Où        | Quoi                                                                                                            |
-| --------- | --------------------------------------------------------------------------------------------------------------- |
-| Téléphone | Lecture du fil, choix de « moi », **anti-arnaque par règles** (sans réseau)                                     |
-| Téléphone | Risque élevé → **bouclier** : 3 réponses sûres, rien n'est envoyé                                               |
-| Téléphone | **Masquage vérifiable** des 12 derniers messages : noms, numéros, e-mails. L'utilisateur relit, décoche, ajoute |
-| Serveur   | 2e passe de masquage (numéros, e-mails), **Agent Six** (rédaction, contrôle, corrections ciblées)               |
-| Téléphone | Les vrais noms sont remis dans les brouillons ; l'utilisateur choisit, modifie, copie, envoie lui-même          |
-
-Avec une clé Claude dans `apps/api/.env` (`ANTHROPIC_API_KEY=sk-ant-…`), l'app utilise Claude au lieu d'Ollama, sans autre changement.
-Les offres gratuites en ligne (Groq, Gemini) ne sont jamais utilisées par l'app : seulement par les scripts d'essai, avec `--cloud-ok`.
-
-## Essayer l'IA sur une vraie conversation
-
-`pnpm essai-ia <conversation.txt>` envoie une conversation (export WhatsApp ou texte copié) aux fournisseurs configurés dans `apps/api/.env`, puis affiche côte à côte le résumé, les 3 réponses et le temps de chaque modèle. Rien n'est enregistré.
-
-**Serveur local (recommandé pour les vraies conversations : rien ne quitte le PC)**
-
-1. Installe Ollama depuis https://ollama.com puis lance l'application.
-2. `ollama pull llama3.2:3b` (PC avec 8 Go de RAM) ou `ollama pull mistral:7b` (16 Go).
-3. `pnpm essai-ia ma-conversation.txt --fournisseurs=ollama`
-
-**API gratuites en ligne** : crée une clé chez Groq (console.groq.com), Google AI Studio (Gemini) ou Mistral, colle-la dans `apps/api/.env`, puis ajoute `--cloud-ok`. Leurs offres gratuites peuvent utiliser les conversations pour entraîner leurs modèles : n'y envoie que des conversations dont les personnes sont d'accord.
-
-**Deux IA en même temps**
-
-- Comparer : `OLLAMA_MODEL=llama3.2:3b,mistral:7b` dans `apps/api/.env`. Les modèles rédigent en parallèle et s'affichent l'un sous l'autre (`--sequentiel` pour l'un après l'autre).
-- Rédacteur + vérificateur : `--verifier=mistral:7b` fait relire chaque brouillon par un second modèle, qui valide, refuse (avec la raison) et propose une correction. Un modèle en ligne s'écrit `groq/llama-3.3-70b-versatile`.
-
-**Agent Six : encadrer un petit modèle**
-
-`--agent` remplace l'appel direct au modèle par l'Agent Six (`apps/api/src/agent/`) :
+L'Agent Six (`apps/api/src/agent/`) encadre un petit modèle (Ollama sur le PC, ou Claude avec `ANTHROPIC_API_KEY` dans `apps/api/.env`) :
 
 1. le code lit le fil (auteurs, dernier message, heures et montants cités) ;
 2. des règles détectent les arnaques connues (code PIN, Mobile Money, urgence, secret, faux recrutement, lien raccourci), sans IA ;
@@ -116,24 +90,25 @@ Les offres gratuites en ligne (Groq, Gemini) ne sont jamais utilisées par l'app
 5. si le modèle échoue, l'agent fournit des brouillons sûrs.
 
 ```bash
-pnpm essai-ia chat.txt --moi="Damien" --agent
-pnpm banc mes-conversations/ --moi="Damien"          # modèle seul contre agent, chiffres à l'appui
-pnpm banc mes-conversations/ --moi="Damien" --modele=mistral:7b
+pnpm essai-ia chat.txt --moi="Damien" --agent         # une conversation, modèles côte à côte
+pnpm banc banc/ --moi="Damien"                         # modèle seul contre agent, chiffres à l'appui
+pnpm banc banc/ --moi="Damien" --modele=mistral:7b
 ```
 
-Avec `--moi`, l'agent **apprend ta façon d'écrire** à chaque conversation (des chiffres seulement, stockés sur ton PC dans `~/.six/`) et te demande quel brouillon tu choisirais, pour retenir ton type de réponse préféré. Avant d'écrire, il réfléchit comme un ami : relation, ressenti, demande, non-dit, enjeu, tu ou vous. Voir `docs/apprentissage.md`. `--sans-apprentissage` désactive l'apprentissage.
-
-Dans le dossier du banc, nomme `arnaque-….txt` les conversations qui contiennent une arnaque : le banc vérifie qu'elles sont signalées.
+- **Ollama (recommandé pour les vraies conversations, rien ne quitte le PC)** : installe-le depuis https://ollama.com, puis `ollama pull llama3.2:3b` (8 Go de RAM) ou `ollama pull mistral:7b` (16 Go).
+- **API gratuites en ligne** (Groq, Gemini, Mistral) : clé dans `apps/api/.env`, puis `--cloud-ok`. Leurs offres gratuites peuvent utiliser les conversations pour entraîner leurs modèles : n'y envoie que des conversations dont les personnes sont d'accord. L'application ne les utilise jamais.
+- **Deux modèles** : `OLLAMA_MODEL=llama3.2:3b,mistral:7b` pour comparer ; `--verifier=mistral:7b` pour faire relire chaque brouillon par un second modèle (un modèle en ligne s'écrit `groq/llama-3.3-70b-versatile`).
+- **Apprentissage** : avec `--moi`, l'agent apprend ta façon d'écrire (des chiffres seulement, stockés dans `~/.six/`) et retient ton type de réponse préféré. Voir [`docs/apprentissage.md`](docs/apprentissage.md). `--sans-apprentissage` le désactive.
+- Dans le dossier du banc, nomme `arnaque-….txt` les conversations qui contiennent une arnaque : le banc vérifie qu'elles sont signalées.
 
 Options : `--moi="Ton nom dans WhatsApp"`, `--ton=amical|professionnel|ferme|chaleureux|court`, `--langue=fr|en|ln`, `--objectif="gagner du temps"`.
 
 ## Règles non négociables
 
-1. **Aucune conversation stockée ni journalisée.** Les logs de l'API n'écrivent ni corps, ni query string, ni en-têtes, ni IP (test `apps/api/test/logs.test.ts`).
-2. **Les secrets restent côté serveur.** Seules les variables `NEXT_PUBLIC_*` arrivent dans le navigateur ; `.env` n'est jamais commité ; gitleaks bloque la CI si une clé fuit.
+1. **Aucune conversation stockée ni journalisée.** Les conversations et les discussions Seven AI restent sur l'appareil ; le compte ne garde que la mémoire de Six (habitudes, notes), et seulement si la personne l'autorise. Les logs n'écrivent ni corps, ni query string, ni en-têtes, ni IP (test `apps/api/test/logs.test.ts`).
+2. **Les secrets restent côté serveur.** Seules les variables `NEXT_PUBLIC_*` arrivent dans le navigateur ; `.env` et les clés Apple (`*.p8`) ne sont jamais commités ; gitleaks bloque la CI si une clé fuit.
 3. **Le texte de l'IA s'affiche en texte**, jamais en HTML (`dangerouslySetInnerHTML` est interdit par ESLint).
-4. **Tout marche sur iPhone ET Android bas de gamme** : chaque test navigateur tourne sur WebKit et Chromium.
-5. Une fonctionnalité non terminée le 13 octobre ne part pas en production.
+4. **Tout marche sur iPhone ET Android bas de gamme**, avec un réseau faible.
 
 ## Hooks Git
 
@@ -144,7 +119,7 @@ Installés automatiquement par `pnpm install` (Husky) :
 
 ## Mise en ligne
 
-Six tourne sur notre serveur (DigitalOcean, Francfort) : l'application sur https://app.sixbysevenai.com et le site sur https://sixbysevenai.com. Installation et mises à jour : voir [`deploy/LISEZMOI.md`](../deploy/LISEZMOI.md) à la racine du dépôt.
+Six tourne sur notre serveur (DigitalOcean, Francfort), derrière Caddy : l'application sur https://app.sixbysevenai.com et le site sur https://sixbysevenai.com. Installation et mises à jour : voir [`deploy/LISEZMOI.md`](../deploy/LISEZMOI.md) à la racine du dépôt. Apps Android et iOS : voir [`apps/web/README.md`](apps/web/README.md).
 
 ## Contribuer
 
