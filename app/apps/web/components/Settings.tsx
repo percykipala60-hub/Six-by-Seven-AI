@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type FormEvent } from 'react';
-import Link from 'next/link';
 import { DEFAULT_STYLE, clearStyle, loadStyle, saveStyle } from '@/lib/style';
 import {
   activerMemoire,
@@ -15,6 +14,7 @@ import {
 import { effacerConversations, lireConversations } from '@/lib/conversations';
 import { applyThemeIcon, hasNativeThemeIconError } from '@/lib/theme-icon';
 import { lireAccent } from '@/lib/theme-ids';
+import { LIEN_CONDITIONS, LIEN_CONFIDENTIALITE } from '@/lib/liens';
 import { FONDS, fondValide, type FondId } from './Fond';
 import themeColors from '@/lib/theme-colors.json';
 import type { UserStyle } from '@/lib/types';
@@ -1109,13 +1109,23 @@ function CompteVue() {
                 />
                 <span>
                   J’accepte les{' '}
-                  <Link href="/conditions" onClick={(e) => e.stopPropagation()}>
+                  <a
+                    href={LIEN_CONDITIONS}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     conditions d’utilisation
-                  </Link>{' '}
+                  </a>{' '}
                   et la{' '}
-                  <Link href="/confidentialite" onClick={(e) => e.stopPropagation()}>
+                  <a
+                    href={LIEN_CONFIDENTIALITE}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                  >
                     politique de confidentialité
-                  </Link>
+                  </a>
                   .
                 </span>
               </label>
@@ -1657,7 +1667,8 @@ export function Settings() {
       label: 'Confidentialité',
       sous: 'Ce que Six traite et comment l’effacer',
       cles: 'données vie privée politique',
-      href: '/confidentialite',
+      href: LIEN_CONFIDENTIALITE,
+      externe: true,
     },
     {
       id: 'conditions',
@@ -1665,7 +1676,8 @@ export function Settings() {
       label: 'Conditions et mentions légales',
       sous: 'Règles d’utilisation, éditeur, hébergement',
       cles: 'cgu conditions mentions légales éditeur hébergeur',
-      href: '/conditions',
+      href: LIEN_CONDITIONS,
+      externe: true,
     },
   ];
   const normaliser = (t: string) => t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');

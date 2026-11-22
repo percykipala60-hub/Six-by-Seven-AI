@@ -9,6 +9,7 @@ import {
 } from 'react';
 import Link from 'next/link';
 import { ecouterCompte, initiale, lireCompte, type Compte } from '@/lib/compte';
+import { LIEN_CONFIDENTIALITE } from '@/lib/liens';
 import { Icon } from './Icon';
 import { Logo } from './Logo';
 import { Suivis } from './Suivis';
@@ -223,7 +224,16 @@ export function AppBar({
           {item('/seven-ai', 'seven-ai', <Icon name="sparkles" />, 'Seven AI')}
           {item('/espace-jeu', 'espace-jeu', <Icon name="jeu" />, 'Espace jeu')}
           {item('/reglages', 'reglages', <Icon name="sliders" />, 'Réglages')}
-          {item('/confidentialite', 'confidentialite', <Icon name="lock" />, 'Confidentialité')}
+          <a
+            href={LIEN_CONFIDENTIALITE}
+            className="drawer-item"
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => setOpen(false)}
+          >
+            <Icon name="lock" />
+            <span>Confidentialité</span>
+          </a>
         </nav>
         <Suivis />
         <Link href="/reglages?v=compte" className="drawer-profile" onClick={() => setOpen(false)}>

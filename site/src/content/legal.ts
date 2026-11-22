@@ -13,7 +13,7 @@ export type LegalPage = {
 
 export const legalMeta = {
   eyebrow: "Informations légales",
-  updated: "Dernière mise à jour : 10 octobre 2026",
+  updated: "Dernière mise à jour : 22 novembre 2026",
   otherPages: "Autres documents",
   back: "Retour à l'accueil",
   manageCookies: "Gérer mes cookies",
@@ -124,44 +124,14 @@ export const legalPages: LegalPage[] = [
         ],
       },
       {
-        title: "2. Données collectées",
+        title: "2. Notre principe et nos engagements",
         body: [
-          "Dans le cadre de l'utilisation de Six, Seven.AI est susceptible de collecter les catégories de données suivantes :",
-          {
-            list: [
-              "Données d'identification et de compte : identifiant de connexion (adresse électronique ou numéro de téléphone), nom ou pseudonyme, paramètres de l'application.",
-              "Contenus transmis : conversations, exports et textes que vous soumettez au service, ainsi que les propositions de réponse générées.",
-              "Données d'utilisation : quota, date et nombre de demandes, informations techniques (type d'appareil, version de l'application, journaux d'erreurs).",
-              "Correspondance : échanges avec notre service d'assistance, le cas échéant.",
-            ],
-          },
-          "Les captures d'écran ne sont pas collectées : leur texte est extrait directement sur votre appareil et l'image n'est jamais transmise à nos serveurs.",
-        ],
-      },
-      {
-        title: "3. Finalités et bases légales du traitement",
-        body: [
-          "Vos données sont traitées pour les finalités suivantes :",
-          {
-            list: [
-              "Fourniture du service : analyse des conversations que vous soumettez et génération de propositions de réponse (exécution du contrat).",
-              "Gestion des comptes utilisateurs : authentification, suivi des quotas, paramètres et assistance (exécution du contrat).",
-              "Sauvegarde des données, afin de permettre leur restauration en cas de panne, de perte ou d'incident technique (intérêt légitime).",
-              "Sécurité du service : prévention des abus, de la fraude et des usages contraires aux conditions d'utilisation (intérêt légitime).",
-              "Amélioration du service : correction des erreurs et établissement de statistiques d'usage agrégées, ne permettant pas de vous identifier (intérêt légitime). La fréquentation du site est mesurée au moyen de Google Analytics, uniquement avec votre consentement.",
-              "Respect des obligations légales et réglementaires applicables à Seven.AI (obligation légale).",
-            ],
-          },
-        ],
-      },
-      {
-        title: "4. Engagements de Seven.AI",
-        body: [
+          "Vos données restent sur votre appareil. Elles ne sont copiées sur votre compte que si vous l'autorisez vous-même, et vous pouvez retirer cette autorisation à tout moment.",
           "Seven.AI s'engage à :",
           {
             list: [
               "ne pas vendre, louer ni échanger vos données personnelles ;",
-              "ne pas utiliser vos conversations pour entraîner ses modèles d'intelligence artificielle ;",
+              "ne pas utiliser vos conversations pour entraîner des modèles d'intelligence artificielle sans votre accord explicite ;",
               "ne pas exploiter vos données à des fins de publicité ciblée ;",
               "ne pas consulter le contenu de vos conversations, sauf à votre demande dans le cadre de l'assistance, ou lorsque la loi l'exige.",
             ],
@@ -169,40 +139,63 @@ export const legalPages: LegalPage[] = [
         ],
       },
       {
-        title: "5. Masquage des informations sensibles",
+        title: "3. Messages et captures d'écran",
         body: [
-          "Préalablement à toute analyse par le modèle d'intelligence artificielle, Six remplace automatiquement sept catégories d'informations : noms, prénoms, numéros de téléphone, codes, numéros de compte, adresses et pseudonymes. Le modèle ne reçoit que la version masquée ; les informations d'origine sont réintégrées dans la réponse sur nos serveurs.",
-          "Un écran de vérification vous présente le contenu avant son envoi. Le masquage automatique n'étant pas infaillible, il vous appartient de masquer manuellement toute information qui n'aurait pas été détectée.",
+          "Vous choisissez le texte ou l'image à analyser. Le texte des captures d'écran est lu sur votre appareil : l'image n'est jamais envoyée.",
+          "Avant tout envoi, Six remplace sur votre appareil les noms, numéros de téléphone, adresses électroniques, liens, codes, numéros de compte, adresses et pseudonymes reconnus par des repères, et vous montre exactement le texte qui sera transmis. Les informations d'origine sont remises dans la réponse sur votre appareil, jamais sur nos serveurs.",
+          "Pour l'analyse et la rédaction, ce texte masqué passe par notre serveur puis par un prestataire d'intelligence artificielle. Le masquage automatique peut manquer un élément : vérifiez le texte affiché avant de continuer.",
+          "Notre serveur n'enregistre pas le contenu des messages. Seules des données techniques sans contenu (par exemple le nombre de demandes) sont journalisées pour le fonctionnement et la sécurité du service.",
         ],
       },
       {
-        title: "6. Modèle d'intelligence artificielle",
-        body: ["Le modèle d'intelligence artificielle utilisé par Six est fourni par Seven.AI."],
+        title: "4. Données conservées sur votre appareil",
+        body: [
+          {
+            list: [
+              "La mémoire de Six : habitudes d'écriture résumées en nombres, notes que vous ajoutez sur vos contacts, rappels de suivi. Ce que Six apprend est oublié après 90 jours.",
+              "Lorsque la mémoire est activée : vos conversations terminées avec Six (un court extrait masqué et la réponse retenue) et vos échanges avec Seven AI, jusqu'à ce que vous les effaciez. Ils ne sont jamais envoyés à votre compte.",
+              "Sur Android, si vous l'autorisez : les aperçus des notifications des applications que vous choisissez (25 au plus), dans le stockage privé de l'appareil. Rien n'est envoyé tant que vous ne lancez pas vous-même une analyse.",
+            ],
+          },
+          "Vous pouvez consulter, effacer ou désactiver tout cela dans les Réglages de l'application.",
+        ],
+      },
+      {
+        title: "5. Compte et copie de la mémoire",
+        body: [
+          "La création d'un compte est facultative. Si vous en créez un, Seven.AI traite votre adresse électronique pour l'authentification, ainsi que votre prénom.",
+          "Votre mémoire n'est copiée sur votre compte que si vous l'autorisez expressément (Réglages > Compte). Si vous retirez cette autorisation, la copie conservée sur le compte est effacée.",
+          "Ces données sont hébergées par Supabase, dans une région située à Paris (Union européenne), avec des règles d'accès qui réservent chaque compte à son titulaire.",
+        ],
+      },
+      {
+        title: "6. Intelligence artificielle",
+        body: [
+          "L'analyse et la rédaction font appel à des prestataires d'intelligence artificielle, actuellement Anthropic et, en secours, OpenAI. Seul le texte masqué leur est transmis ; ils appliquent leurs propres règles de traitement à leurs services.",
+        ],
       },
       {
         title: "7. Durée de conservation",
         body: [
           {
             list: [
-              "Les données de compte et les contenus transmis sont conservés pendant toute la durée d'activité de votre compte.",
-              "En cas de suppression du compte, ces données sont effacées de nos systèmes actifs, puis de nos sauvegardes au terme de leur cycle de renouvellement.",
-              "Les journaux techniques sont conservés pour une durée limitée, strictement nécessaire à la sécurité et au bon fonctionnement du service.",
-              "Certaines données peuvent être conservées au-delà de ces durées lorsqu'une obligation légale l'impose.",
+              "Contenu des messages : aucune conservation sur nos serveurs.",
+              "Données de compte (adresse électronique, prénom, copie de la mémoire si vous l'avez autorisée) : jusqu'à la suppression du compte.",
+              "Journaux techniques sans contenu : durée limitée, strictement nécessaire à la sécurité et au bon fonctionnement du service.",
             ],
           },
         ],
       },
       {
-        title: "8. Destinataires des données",
+        title: "8. Prestataires",
         body: [
-          "Vos données sont accessibles aux seules personnes habilitées de Seven.AI, dans la limite de ce qui est nécessaire à l'exercice de leurs fonctions, ainsi qu'à nos prestataires techniques (hébergement, stockage, sauvegarde), qui agissent exclusivement sur nos instructions et pour les besoins du service.",
-          "Elles peuvent être communiquées aux autorités compétentes lorsque la loi l'exige. Elles ne sont en aucun cas cédées à des tiers à des fins commerciales.",
+          "Le service s'appuie sur des prestataires qui traitent uniquement les données nécessaires à leur prestation : hébergement du site et de l'application (DigitalOcean, serveur situé à Francfort), nom de domaine (Cloudflare), comptes (Supabase, Paris) et intelligence artificielle (Anthropic, OpenAI). Vos données ne sont jamais cédées à des tiers à des fins commerciales.",
         ],
       },
       {
         title: "9. Transferts de données",
         body: [
-          "Certains de nos prestataires sont susceptibles d'être établis hors de votre pays de résidence, notamment aux États-Unis s'agissant de l'hébergement du présent site et de la mesure d'audience. Seven.AI veille, dans ce cas, à ce que vos données bénéficient d'un niveau de protection conforme aux principes énoncés dans la présente politique.",
+          "Certains prestataires sont établis aux États-Unis (intelligence artificielle, mesure d'audience du site). Seul le texte masqué est transmis aux prestataires d'intelligence artificielle.",
         ],
       },
       {

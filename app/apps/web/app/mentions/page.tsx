@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
+import { LIEN_MENTIONS } from '@/lib/liens';
 
-// Les mentions légales font désormais partie du document « Conditions et mentions légales ».
+// Une seule version des pages juridiques, sur le site : l'ancienne adresse de l'application y renvoie (mentions légales).
 export default function Page() {
-  redirect('/conditions');
+  redirect(LIEN_MENTIONS);
 }
