@@ -32,7 +32,6 @@ import {
   ecrirePrenom,
   enRecuperation,
   fournisseursActifs,
-  initiale,
   inscrire,
   lireCompte,
   autoriserSync,
@@ -47,6 +46,7 @@ import {
   type TypeCode,
 } from '@/lib/compte';
 import { AppBar } from './AppBar';
+import { AvatarContenu } from './AvatarContenu';
 import { useConfirmer } from './Confirmer';
 import { AppIcon } from './AppIcon';
 import { Icon, type IconName } from './Icon';
@@ -617,7 +617,7 @@ function CompteVue() {
     <>
       <div className="compte-head">
         <span className="avatar avatar-lg" aria-hidden="true">
-          {initiale(c) || <Icon name="user" size={34} />}
+          <AvatarContenu c={c} taille={34} />
           <span className={`avatar-dot${c.statut === 'connecte' ? ' on' : ''}`} />
         </span>
         <b className="compte-nom">
@@ -1749,7 +1749,7 @@ export function Settings() {
           <>
             <button type="button" className="lg-ligne lg-profil" onClick={() => ouvrir('compte')}>
               <span className="avatar lg-avatar" aria-hidden="true">
-                {initiale(compte) || <Icon name="user" size={28} stroke={1.75} />}
+                <AvatarContenu c={compte} taille={28} trait={1.75} />
               </span>
               <span className="lg-txt">
                 <span className="lg-profil-nom">{compte.prenom || 'Invité'}</span>

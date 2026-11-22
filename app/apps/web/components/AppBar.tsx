@@ -8,7 +8,8 @@ import {
   type TouchEvent as ReactTouchEvent,
 } from 'react';
 import Link from 'next/link';
-import { ecouterCompte, initiale, lireCompte, type Compte } from '@/lib/compte';
+import { ecouterCompte, lireCompte, type Compte } from '@/lib/compte';
+import { AvatarContenu } from './AvatarContenu';
 import { LIEN_CONFIDENTIALITE } from '@/lib/liens';
 import { Icon } from './Icon';
 import { Logo } from './Logo';
@@ -41,7 +42,7 @@ export function Avatar({ size = 36 }: { size?: number }) {
       style={{ width: size, height: size }}
       aria-label={`Profil${c.prenom ? ` de ${c.prenom}` : ''} : ${etat}`}
     >
-      {initiale(c) || <Icon name="user" size={Math.round(size * 0.5)} />}
+      <AvatarContenu c={c} taille={Math.round(size * 0.5)} />
       <span className={`avatar-dot${c.statut === 'connecte' ? ' on' : ''}`} aria-hidden="true" />
     </Link>
   );
@@ -254,7 +255,7 @@ function ProfilLigne() {
   return (
     <>
       <span className="avatar avatar-static" aria-hidden="true">
-        {initiale(c) || <Icon name="user" size={18} />}
+        <AvatarContenu c={c} taille={18} />
         <span className={`avatar-dot${c.statut === 'connecte' ? ' on' : ''}`} />
       </span>
       <span className="grow">

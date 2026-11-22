@@ -183,7 +183,7 @@ export async function envoyerParResend(
     method: 'POST',
     headers: { Authorization: `Bearer ${cle}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      from: process.env.EMAIL_EXPEDITEUR || 'Six <noreply@sixbysevenai.com>',
+      from: process.env.EMAIL_EXPEDITEUR || 'Six by Seven AI <noreply@sixbysevenai.com>',
       to: [a],
       subject: objet,
       html,

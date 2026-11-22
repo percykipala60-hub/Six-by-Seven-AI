@@ -19,7 +19,7 @@ const SYNC = 'six-memoire-sync'; // '1' : la personne a autorisé la copie de sa
 
 export type Compte =
   | { statut: 'invite'; prenom: string }
-  | { statut: 'connecte'; prenom: string; identifiant: string };
+  | { statut: 'connecte'; prenom: string; identifiant: string; photo?: string };
 
 function lireJson(k: string): Record<string, unknown> {
   try {
@@ -38,9 +38,16 @@ export function lireCompte(): Compte {
   const p = lireJson(KEY).prenom;
   const prenom = typeof p === 'string' ? p.trim().slice(0, 30) : '';
   const s = lireJson(SESSION);
-  if (CONNEXION_DISPONIBLE && typeof s.identifiant === 'string' && s.identifiant)
-    return { statut: 'connecte', prenom, identifiant: s.identifiant };
+  if (CONNEXION_DISPONIBLE && typeof s.identifiant === 'string' && s.identifiant) {
+    const photo = photoSure(s.photo);
+    return { statut: 'connecte', prenom, identifiant: s.identifiant, ...(photo ? { photo } : {}) };
+  }
   return { statut: 'invite', prenom };
+}
+
+/** Photo de profil fournie par Google ou Apple : seulement une adresse https, sinon rien. */
+function photoSure(v: unknown): string {
+  return typeof v === 'string' && /^https:\/\/[^\s"'<>]+$/.test(v) && v.length < 1000 ? v : '';
 }
 
 function garderPrenom(prenom: string) {
@@ -630,10 +637,20 @@ export async function demarrerCompte(): Promise<void> {
           JSON.stringify({
             id: u.id,
             identifiant: u.email || '',
+            // Connexion avec Google (ou Apple) : on reprend la photo de profil du compte.
+            photo: photoSure(u.user_metadata?.avatar_url ?? u.user_metadata?.picture),
           }),
         );
+        const meta = u.user_metadata ?? {};
+        const nomComplet = typeof meta.full_name === 'string' ? meta.full_name : meta.name;
         const distant =
-          typeof u.user_metadata?.prenom === 'string' ? (u.user_metadata.prenom as string) : '';
+          typeof meta.prenom === 'string'
+            ? (meta.prenom as string)
+            : typeof meta.given_name === 'string'
+              ? (meta.given_name as string)
+              : typeof nomComplet === 'string'
+                ? nomComplet.trim().split(/\s+/)[0] || ''
+                : '';
         const local = lireCompte().prenom;
         if (distant && !local) garderPrenom(distant);
         else if (local && !distant) void sb.auth.updateUser({ data: { prenom: local } });
