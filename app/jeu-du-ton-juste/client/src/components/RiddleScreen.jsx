@@ -77,7 +77,10 @@ function RiddleCategory({ categorie, solved, onSolve, onLoseAll }) {
 
   // Temps imparti : base par niveau, réduit de 15 % à chaque recommencement (plancher de 15 s).
   const tempsMax = item
-    ? Math.max(TEMPS_MINI, Math.round((TEMPS_PAR_NIVEAU[niveau] ?? 45) / HAUSSE_DIFFICULTE ** recommencements))
+    ? Math.max(
+        TEMPS_MINI,
+        Math.round((TEMPS_PAR_NIVEAU[niveau] ?? 45) / HAUSSE_DIFFICULTE ** recommencements),
+      )
     : null;
   // Secondes affichées : le chrono s'il appartient à cette question, sinon le temps complet.
   const temps = chrono && chrono.id === item?.id ? chrono.restant : tempsMax;
@@ -119,7 +122,8 @@ function RiddleCategory({ categorie, solved, onSolve, onLoseAll }) {
   }
 
   function choisir(index) {
-    if (choice !== null || solved.includes(item.id) || ratees.has(item.id) || epuise || perdu) return;
+    if (choice !== null || solved.includes(item.id) || ratees.has(item.id) || epuise || perdu)
+      return;
     setChoice(index); // le décompte s'arrête : l'effet du minuteur se nettoie tout seul
     if (index === item.bonneReponse) {
       jouerSon('bonne-reponse');
