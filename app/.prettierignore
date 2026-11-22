@@ -18,8 +18,6 @@ apps/web/next-env.d.ts
 **/next-env.d.ts
 
 # Copies historiques non utilisées par le monorepo actif
-apps/web/six-app/
-six-app/
 _ancien-web-avant-six-app/
 
 # Copies HTML autonomes et identiques du jeu, avec scripts intégrés volumineux

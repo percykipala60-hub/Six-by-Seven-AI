@@ -1,5 +1,5 @@
 # Enregistre une clé d'API dans .env.local sans l'afficher ni la garder dans l'historique PowerShell.
-# Usage (depuis le dossier six-app) :
+# Usage (depuis le dossier app/apps/web) :
 #   powershell -ExecutionPolicy Bypass -File scripts/set-key.ps1 claude
 #   powershell -ExecutionPolicy Bypass -File scripts/set-key.ps1 openai
 # (-ExecutionPolicy Bypass vaut pour cette seule exécution, il ne change aucun réglage de ton PC.)

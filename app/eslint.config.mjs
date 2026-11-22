@@ -20,8 +20,6 @@ export default tseslint.config(
       'apps/web/ios/**',
       'apps/web/public/ocr/**',
       'apps/web/public/ton-juste/**', // jeu construit par pnpm build:ton-juste
-      'apps/web/six-app/**',
-      'six-app/**',
       '_ancien-web-avant-six-app/**',
     ],
   },

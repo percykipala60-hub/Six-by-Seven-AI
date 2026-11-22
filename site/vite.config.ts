@@ -6,18 +6,9 @@ import { legalPages } from "./src/content/legal";
 import { analytics, app, brand, downloadPage, faq, hero, notFound, privacy, relations } from "./src/content/site";
 
 // Adresse publique du site, pour l'aperçu des liens partagés, le plan du site (sitemap.xml) et robots.txt.
-// Elle est trouvée toute seule chez les hébergeurs courants ; ailleurs, ou avec un nom de domaine à soi,
-// il suffit de définir la variable SITE_URL au moment du build (ex. SITE_URL=https://six.app).
+// Par défaut sixbysevenai.com ; la variable SITE_URL la remplace au moment du build (deploy/docker-compose.yml).
 function siteUrl() {
-  const env = process.env;
-  const vercel = env.VERCEL_PROJECT_PRODUCTION_URL && `https://${env.VERCEL_PROJECT_PRODUCTION_URL}`;
-  const url =
-    env.SITE_URL || // choisie à la main : toujours prioritaire
-    env.URL || // Netlify
-    vercel || // Vercel
-    env.RENDER_EXTERNAL_URL || // Render
-    "https://six-by-sevenai.onrender.com";
-  return url.replace(/\/+$/, "");
+  return (process.env.SITE_URL || "https://sixbysevenai.com").replace(/\/+$/, "");
 }
 
 // Pages publiques listées dans le plan du site. Les pages légales sont reprises de content/legal.ts :

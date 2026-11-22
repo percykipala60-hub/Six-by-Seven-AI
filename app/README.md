@@ -142,13 +142,9 @@ Installés automatiquement par `pnpm install` (Husky) :
 - avant chaque commit : ESLint et Prettier sur les fichiers modifiés ;
 - avant chaque push : types et tests.
 
-## Mettre en ligne la version de test
+## Mise en ligne
 
-1. **API** sur [Render](https://render.com) : New → Web Service → ce dépôt → Docker, chemin `apps/api/Dockerfile`, contexte `.`. Variables : `CORS_ORIGINS=https://<ton-site>.vercel.app`, `NODE_ENV=production`.
-2. **PWA** sur [Vercel](https://vercel.com) : New Project → ce dépôt → Root Directory `apps/web`. Variable : `NEXT_PUBLIC_API_URL=https://<ton-api>.onrender.com`.
-3. Ouvre le site sur un téléphone : la pastille doit passer au vert.
-
-À vérifier avant le lancement public : l'offre gratuite de Vercel est réservée à un usage non commercial, et l'offre gratuite de Render se met en veille (premier appel lent). Voir `docs/decisions.md`.
+Six tourne sur notre serveur (DigitalOcean, Francfort) : l'application sur https://app.sixbysevenai.com et le site sur https://sixbysevenai.com. Installation et mises à jour : voir [`deploy/LISEZMOI.md`](../deploy/LISEZMOI.md) à la racine du dépôt.
 
 ## Contribuer
 
