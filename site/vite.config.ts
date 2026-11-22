@@ -3,7 +3,7 @@ import { dirname, join, resolve } from "node:path";
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import { legalPages } from "./src/content/legal";
-import { analytics, app, brand, downloadPage, faq, hero, notFound, privacy, relations } from "./src/content/site";
+import { analytics, app, brand, contact, downloadPage, faq, hero, notFound, privacy, relations, socials } from "./src/content/site";
 
 // Adresse publique du site, pour l'aperçu des liens partagés, le plan du site (sitemap.xml) et robots.txt.
 // Par défaut sixbysevenai.com ; la variable SITE_URL la remplace au moment du build (deploy/docker-compose.yml).
@@ -127,6 +127,36 @@ function pagesStatiques(): PageStatique[] {
   return [accueil, telecharger, ...legales, introuvable].map((x) => ({ ...x, corps: `${x.corps}\n${nav}` }));
 }
 
+function donneesStructurees(site: string): string {
+  const noms = ["sixbysevenai", "Six by Seven AI", "Six by Seven.AI", "Six"];
+  const donnees = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "WebSite",
+        "@id": `${site}/#site`,
+        url: `${site}/`,
+        name: "Six by Seven.AI",
+        alternateName: noms,
+        inLanguage: "fr",
+        publisher: { "@id": `${site}/#organisation` },
+      },
+      {
+        "@type": "Organization",
+        "@id": `${site}/#organisation`,
+        name: brand.company,
+        alternateName: noms,
+        url: `${site}/`,
+        logo: `${site}/apple-touch-icon.png`,
+        email: contact.email,
+        sameAs: socials.flatMap((s) => (s.href ? [s.href] : [])),
+      },
+    ],
+  };
+  // « < » échappé : le JSON ne peut pas fermer la balise <script> par accident.
+  return `<script type="application/ld+json">${JSON.stringify(donnees).replace(/</g, "\\u003c")}</script>`;
+}
+
 function pagesHtml(): Plugin {
   const site = siteUrl();
   let outDir = "dist";
@@ -154,6 +184,9 @@ function pagesHtml(): Plugin {
           ? remplacer(html, /\s*<link rel="canonical" href="[^"]*" \/>/, `\n    <meta name="robots" content="noindex" />`)
           : remplacer(html, /<link rel="canonical" href="[^"]*" \/>/, `<link rel="canonical" href="${url}" />`);
         html = remplacer(html, /<div id="root"><\/div>/, `<div id="root">\n${page.corps}\n</div>`);
+        // Accueil : nom du site et de l'entreprise pour Google (données structurées schema.org), pour qu'une
+        // recherche « sixbysevenai » ou « Six by Seven.AI » mène directement à ce site.
+        if (page.path === "/") html = remplacer(html, /<\/head>/, `    ${donneesStructurees(site)}\n  </head>`);
         const fichier =
           page.path === "/" ? join(outDir, "index.html") : page.path === "/404" ? join(outDir, "404.html") : join(outDir, page.path, "index.html");
         mkdirSync(dirname(fichier), { recursive: true });
