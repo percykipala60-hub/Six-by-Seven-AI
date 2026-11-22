@@ -54,8 +54,8 @@ describe('statut MaishaPay', () => {
 describe('offres et références', () => {
   it('prend les prix de l’environnement, avec des valeurs par défaut', () => {
     expect(offres().map((o) => [o.id, o.jours, o.montant, o.devise])).toEqual([
-      ['7j', 7, 1, 'USD'],
-      ['30j', 30, 3, 'USD'],
+      ['7j', 7, 3, 'USD'],
+      ['30j', 30, 7, 'USD'],
     ]);
     vi.stubEnv('PREMIUM_PRIX_30J', '7500');
     vi.stubEnv('PREMIUM_DEVISE', 'cdf');

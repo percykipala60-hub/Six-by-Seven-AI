@@ -28,8 +28,8 @@ export type Offre = { id: OffreId; jours: number; montant: number; devise: strin
 export function offres(): Offre[] {
   const devise = env('PREMIUM_DEVISE').toUpperCase() || 'USD';
   return [
-    { id: '7j', jours: 7, montant: nombre('PREMIUM_PRIX_7J', 1), devise },
-    { id: '30j', jours: 30, montant: nombre('PREMIUM_PRIX_30J', 3), devise },
+    { id: '7j', jours: 7, montant: nombre('PREMIUM_PRIX_7J', 3), devise },
+    { id: '30j', jours: 30, montant: nombre('PREMIUM_PRIX_30J', 7), devise },
   ];
 }
 
