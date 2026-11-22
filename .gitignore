@@ -1,8 +1,17 @@
-node_modules
-dist
-*.local
-.DS_Store
-.claude/
+# Dépendances et constructions
+node_modules/
+dist/
+.next/
+*.tsbuildinfo
 
-# Documents personnels (rapports, etc.) : jamais dans le dépôt
+# Secrets : jamais dans le dépôt
+.env
+.env.*
+!.env.example
+
+# Documents personnels (rapports, etc.)
 *.docx
+
+# Outils locaux
+.claude/
+.DS_Store
