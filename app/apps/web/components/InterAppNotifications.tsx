@@ -63,7 +63,16 @@ export function InterAppOnboarding({ connected }: { connected: boolean }) {
   function startSetup() {
     try {
       localStorage.setItem(ONBOARDING_KEY, 'true');
-      router.push('/reglages?v=notifications');
+      setDismissed(true);
+      const cible = '/reglages?v=notifications';
+      if (window.location.pathname === '/reglages') {
+        // Déjà dans Réglages : la page ne relit l'URL qu'au chargement et sur « popstate ».
+        // router.push ne change que la query, donc rien ne bougeait : on prévient la page.
+        window.history.pushState(null, '', cible);
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      } else {
+        router.push(cible);
+      }
     } catch {
       setError(
         "Six n'a pas pu mémoriser ton choix. Réessaie ou ouvre Notifications des apps dans Réglages.",
