@@ -2599,6 +2599,10 @@ a.avatar::after {
   gap: 0;
   height: 100dvh;
   overflow: hidden;
+  /* Coupe seulement en hauteur (la discussion défile dans .seven-fil) : la barre du haut, qui va
+     d'un bord à l'autre de l'écran, reste visible en entier. */
+  overflow-x: visible;
+  overflow-y: clip;
   padding-bottom: 0;
 }
 .seven-screen > .appbar {
