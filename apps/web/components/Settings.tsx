@@ -48,6 +48,7 @@ import { useConfirmer } from './Confirmer';
 import { AppIcon } from './AppIcon';
 import { Icon, type IconName } from './Icon';
 import { InterAppNotifications, InterAppOnboarding } from './InterAppNotifications';
+import { Raccourcis } from './Raccourcis';
 import { Logo } from './Logo';
 import {
   EnteteSousPage,
@@ -263,7 +264,8 @@ function MemoireSix() {
   );
 }
 
-type Vue = '' | 'theme' | 'police' | 'style' | 'memoire' | 'compte' | 'notifications';
+type Vue =
+  '' | 'theme' | 'police' | 'style' | 'memoire' | 'compte' | 'notifications' | 'raccourcis';
 const TITRES: Record<Exclude<Vue, ''>, string> = {
   theme: 'Thème',
   police: 'Police',
@@ -271,6 +273,7 @@ const TITRES: Record<Exclude<Vue, ''>, string> = {
   memoire: 'Mémoire',
   compte: 'Compte',
   notifications: 'Notifications des apps',
+  raccourcis: 'Bulle et clavier',
 };
 const MODES: Record<Theme, string> = { auto: 'Auto', light: 'Clair', dark: 'Sombre' };
 
@@ -1588,6 +1591,7 @@ export function Settings() {
         {vue === 'memoire' && <MemoireSix />}
         {vue === 'compte' && <CompteVue />}
         {vue === 'notifications' && <InterAppNotifications />}
+        {vue === 'raccourcis' && <Raccourcis />}
       </main>
     );
   }
@@ -1632,6 +1636,13 @@ export function Settings() {
       label: 'Mémoire',
       sous: memOn ? 'Activée, gardée sur ce téléphone' : 'Désactivée',
       cles: 'contacts conversations gardées habitudes effacer',
+    },
+    {
+      id: 'raccourcis',
+      icon: 'phone',
+      label: 'Bulle et clavier',
+      sous: 'Répondre depuis n’importe quelle app (Android)',
+      cles: 'bulle flottante clavier raccourci rapide whatsapp',
     },
     {
       id: 'notifications',
@@ -1742,8 +1753,6 @@ export function Settings() {
             {demande}
           </>
         )}
-
-        <footer className="lg-signature">Six par Seven.AI · version de démonstration</footer>
       </main>
     </>
   );

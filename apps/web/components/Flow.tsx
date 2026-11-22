@@ -51,22 +51,19 @@ import { Reflexion } from './Reflexion';
 /* eslint-disable jsx-a11y/no-noninteractive-element-interactions -- Drag/drop is optional; import buttons are keyboard accessible. */
 
 // Exemples fictifs pour essayer Six sans conversation à soi (les noms sont masqués comme les autres).
-const EXEMPLES: { titre: string; icon: 'chat' | 'shield' | 'alert'; texte: string }[] = [
+const EXEMPLES: { titre: string; texte: string }[] = [
   {
     titre: 'Mon patron menace de me renvoyer',
-    icon: 'alert',
     texte:
       "Patron : Une information confidentielle a fuité depuis ton poste. Si tu ne me donnes pas une explication valable d'ici demain, c'est le licenciement.",
   },
   {
     titre: '« Tu as disparu ! » : un reproche ?',
-    icon: 'chat',
     texte:
       'Junior : Eh grand frère, tu as disparu !! On dit quoi ? Depuis ton nouveau travail tu nous as oubliés 😂\nJunior : Samedi on fait la fête chez Maman, il faut passer hein. Sinon on va voir.',
   },
   {
     titre: '« Votre compte mobile money est bloqué »',
-    icon: 'shield',
     texte:
       'Service client : Votre compte mobile money est bloqué. Envoyez votre code PIN immédiatement pour le débloquer, sinon il sera supprimé.',
   },
@@ -408,6 +405,7 @@ export function Flow() {
   const [shots, setShots] = useState<File[]>([]); // captures en cours de lecture (elles restent sur le téléphone)
   const [dragging, setDragging] = useState(false);
   const [attach, setAttach] = useState(false); // feuille d'import (« + » de la barre de saisie)
+  const [exemples, setExemples] = useState(false); // exemples dépliés dans la feuille d'import
   // Salutation lue après le rendu (heure, prénom), remise à jour chaque minute : elle suit le moment de la journée.
   const [hello, setHello] = useState({ mot: 'Bonjour', phrase: '', prenom: '' });
   useEffect(() => {
@@ -1884,7 +1882,11 @@ export function Flow() {
                 void pasteFromClipboard();
               }}
             >
-              <Icon name="clip" /> Coller depuis le presse-papiers
+              <Icon name="clip" size={22} stroke={1.75} />
+              <span className="attach-txt">
+                <span>Coller</span>
+                <span className="attach-sous">Le message que tu as copié</span>
+              </span>
             </button>
             <button
               className="attach-item"
@@ -1894,7 +1896,11 @@ export function Flow() {
                 imageInput.current?.click();
               }}
             >
-              <Icon name="image" /> Captures d&apos;écran
+              <Icon name="image" size={22} stroke={1.75} />
+              <span className="attach-txt">
+                <span>Captures d&apos;écran</span>
+                <span className="attach-sous">Lues sur ton téléphone, jamais envoyées</span>
+              </span>
             </button>
             <button
               className="attach-item"
@@ -1903,21 +1909,36 @@ export function Flow() {
                 setStep('whatsapp');
               }}
             >
-              <Icon name="chat" /> Export de conversation
+              <Icon name="file" size={22} stroke={1.75} />
+              <span className="attach-txt">
+                <span>Fichier d&apos;export</span>
+                <span className="attach-sous">Discussion exportée depuis ta messagerie</span>
+              </span>
             </button>
             {empty && !finalText && (
               <>
                 <div className="attach-sep" role="separator" />
-                <p className="attach-titre">Essayer avec un exemple</p>
-                {EXEMPLES.map((ex) => (
-                  <button
-                    key={ex.titre}
-                    className="attach-item ex"
-                    onClick={() => prepare(ex.texte)}
-                  >
-                    <Icon name={ex.icon} size={18} /> {ex.titre}
-                  </button>
-                ))}
+                <button
+                  className="attach-item"
+                  aria-expanded={exemples}
+                  onClick={() => setExemples((v) => !v)}
+                >
+                  <Icon name="quoiDire" size={22} stroke={1.75} />
+                  <span className="attach-txt">
+                    <span>Essayer avec un exemple</span>
+                    <span className="attach-sous">Des conversations inventées</span>
+                  </span>
+                </button>
+                {exemples &&
+                  EXEMPLES.map((ex) => (
+                    <button
+                      key={ex.titre}
+                      className="attach-item ex"
+                      onClick={() => prepare(ex.texte)}
+                    >
+                      {ex.titre}
+                    </button>
+                  ))}
               </>
             )}
           </div>

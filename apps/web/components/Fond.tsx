@@ -209,6 +209,8 @@ export function Fond() {
 
     const dessiner = (temps: number) => {
       ctx.clearRect(0, 0, largeur, hauteur);
+      // Toile masquée (fond uni, panneau rapide) : rien à dessiner.
+      if (!largeur || !hauteur) return;
       if (fond !== 'uni') PEINTRES[fond](ctx, largeur, hauteur, temps / 1000, teinte);
     };
 
@@ -233,6 +235,7 @@ export function Fond() {
     const surTheme = () => {
       teinte = lireTeinte();
       fond = fondValide(root.dataset.fond);
+      redimensionner(); // la toile peut redevenir visible (après le fond uni)
       dessiner(horloge);
     };
     const observateur = new MutationObserver(surTheme);

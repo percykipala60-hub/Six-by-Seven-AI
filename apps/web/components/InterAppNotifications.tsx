@@ -175,38 +175,6 @@ export function InterAppNotifications() {
     }
   }
 
-  async function toggleBubble() {
-    if (!status) return;
-    setBusy(true);
-    setError('');
-    setInfo('');
-    try {
-      if (!status.notificationAccess && status.bubbleEnabled) {
-        await SixInterApp.setBubbleEnabled({ enabled: false });
-        await refresh();
-        setInfo('Bulle flottante désactivée.');
-      } else if (!status.notificationAccess) {
-        setError("Active d'abord l'accès aux notifications Android.");
-      } else if (!status.overlayAccess) {
-        await SixInterApp.requestOverlayAccess();
-        setInfo('Autorise « Afficher par-dessus les autres applications », puis reviens dans Six.');
-      } else {
-        await SixInterApp.setBubbleEnabled({ enabled: !status.bubbleEnabled });
-        if (await refresh()) {
-          setInfo(
-            status.bubbleEnabled ? 'Bulle flottante désactivée.' : 'Bulle flottante activée.',
-          );
-        }
-      }
-    } catch (cause) {
-      setError(
-        cause instanceof Error ? cause.message : "Le réglage de la bulle n'a pas pu être modifié.",
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
-
   async function clearInbox() {
     setBusy(true);
     setError('');
@@ -312,32 +280,6 @@ export function InterAppNotifications() {
             Accès aux notifications Android activé sur cet appareil.
           </p>
         )}
-      </section>
-
-      <section className="group-list pad stack" aria-labelledby="floating-bubble">
-        <b id="floating-bubble">Bulle flottante Six</b>
-        <p className="muted small">
-          La bulle reste visible au-dessus des autres apps. Appuie dessus pour ouvrir Six; fais-la
-          glisser pour la déplacer.
-        </p>
-        {!status?.overlayAccess && (
-          <p className="muted small">
-            Android demandera séparément l&apos;autorisation « Afficher par-dessus les autres
-            applications ».
-          </p>
-        )}
-        <button
-          className={status?.bubbleEnabled && status.overlayAccess ? 'btn ghost' : 'btn primary'}
-          disabled={
-            busy ||
-            (!status?.bubbleEnabled && (!status?.notificationAccess || selected.length === 0))
-          }
-          onClick={toggleBubble}
-        >
-          {status?.bubbleEnabled && status.overlayAccess
-            ? 'Désactiver la bulle'
-            : 'Activer la bulle flottante'}
-        </button>
       </section>
 
       <section className="group-list pad stack" aria-labelledby="received-notifications">
