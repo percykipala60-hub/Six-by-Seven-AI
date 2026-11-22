@@ -7,38 +7,44 @@ describe('export PDF Seven AI', () => {
     expect(nettoyerTextePdf('Réponse  avec   espaces')).toBe('Réponse avec espaces');
   });
 
-  it('construit un PDF valide qui contient la marque et les messages', async () => {
-    const doc = await construirePdfSeven(
-      [
-        { role: 'user', content: 'Présente-moi Six en une phrase.' },
-        {
-          role: 'assistant',
-          content:
-            'Six est l’application de Seven.AI qui t’aide à répondre juste à tes conversations.',
-        },
-      ],
-      'Conversation de test',
-    );
-    const buf = doc.output('arraybuffer');
-    expect(buf.byteLength).toBeGreaterThan(500);
-    const octets = new Uint8Array(buf);
-    expect(String.fromCharCode(...octets.slice(0, 5))).toBe('%PDF-');
+  // Le premier chargement de jsPDF prend quelques secondes : avec toute la suite en parallèle,
+  // la limite par défaut (5 s) était parfois dépassée sans que le PDF soit en cause.
+  it(
+    'construit un PDF valide qui contient la marque et les messages',
+    { timeout: 20_000 },
+    async () => {
+      const doc = await construirePdfSeven(
+        [
+          { role: 'user', content: 'Présente-moi Six en une phrase.' },
+          {
+            role: 'assistant',
+            content:
+              'Six est l’application de Seven.AI qui t’aide à répondre juste à tes conversations.',
+          },
+        ],
+        'Conversation de test',
+      );
+      const buf = doc.output('arraybuffer');
+      expect(buf.byteLength).toBeGreaterThan(500);
+      const octets = new Uint8Array(buf);
+      expect(String.fromCharCode(...octets.slice(0, 5))).toBe('%PDF-');
 
-    // Round-trip : on relit le texte du PDF généré pour vérifier la mise en page réelle.
-    const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
-    const pdf = await pdfjs.getDocument({ data: buf }).promise;
-    expect(pdf.numPages).toBeGreaterThanOrEqual(1);
-    let texte = '';
-    for (let p = 1; p <= pdf.numPages; p++) {
-      const page = await pdf.getPage(p);
-      const contenu = await page.getTextContent();
-      texte += contenu.items.map((it) => ('str' in it ? it.str : '')).join(' ') + '\n';
-    }
-    expect(texte).toContain('Seven AI');
-    expect(texte).toContain('SEVEN AI');
-    expect(texte).toContain('répondre juste');
-    expect(texte).toContain('Page 1 /');
-  });
+      // Round-trip : on relit le texte du PDF généré pour vérifier la mise en page réelle.
+      const pdfjs = await import('pdfjs-dist/legacy/build/pdf.mjs');
+      const pdf = await pdfjs.getDocument({ data: buf }).promise;
+      expect(pdf.numPages).toBeGreaterThanOrEqual(1);
+      let texte = '';
+      for (let p = 1; p <= pdf.numPages; p++) {
+        const page = await pdf.getPage(p);
+        const contenu = await page.getTextContent();
+        texte += contenu.items.map((it) => ('str' in it ? it.str : '')).join(' ') + '\n';
+      }
+      expect(texte).toContain('Seven AI');
+      expect(texte).toContain('SEVEN AI');
+      expect(texte).toContain('répondre juste');
+      expect(texte).toContain('Page 1 /');
+    },
+  );
 
   it('ne déborde pas vers le pied de page, même avec un long message', async () => {
     const long =
