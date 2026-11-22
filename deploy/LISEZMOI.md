@@ -45,8 +45,10 @@ Ouvrir `https://sixbysevenai.com` (le site) et `https://six.sixbysevenai.com` (S
 ## 5. Mettre à jour
 
 ```bash
-cd ~/six && git pull && cd deploy && docker compose up -d --build
+cd ~/six && git pull && cd deploy && docker compose up -d --build && docker compose restart caddy
 ```
+
+`restart caddy` recharge la configuration du serveur web (Caddyfile) si elle a changé.
 
 Revenir à la version précédente : `git checkout <version>` puis la même commande.
 
