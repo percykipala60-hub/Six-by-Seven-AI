@@ -5,7 +5,7 @@ Un seul dépôt pour tout le projet :
 | Dossier | Contenu | En ligne |
 |---|---|---|
 | [`site/`](site) | Site de présentation (React, Vite) | https://sixbysevenai.com |
-| [`app/`](app) | Application Six : app web (Next.js), API, apps Android et iOS (Capacitor), jeux | https://app.sixbysevenai.com |
+| [`app/`](app) | Application Six : app web (Next.js), API, apps Android et iOS (Capacitor), jeux | https://six.sixbysevenai.com |
 | [`deploy/`](deploy) | Hébergement sur notre serveur (Docker, Caddy, HTTPS) | serveur DigitalOcean, Francfort |
 
 ## Travailler sur une partie

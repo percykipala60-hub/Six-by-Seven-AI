@@ -9,7 +9,7 @@ Téléphone / navigateur ──HTTPS──> Cloudflare (DNS) ──> votre serve
 ```
 
 - `sixbysevenai.com` : le site de présentation (dossier `site/`) ; `www` y renvoie.
-- `app.sixbysevenai.com` : l'application, son API et la page `/rapide` (bulle et clavier Android) — dossier `app/`.
+- `six.sixbysevenai.com` : l'application, son API et la page `/rapide` (bulle et clavier Android) — dossier `app/`.
 
 ## 1. Le nom de domaine
 
@@ -40,7 +40,7 @@ cp .env.example .env && nano .env      # DOMAINE, clés d'IA, Supabase
 docker compose up -d --build
 ```
 
-Ouvrir `https://sixbysevenai.com` (le site) et `https://app.sixbysevenai.com` (Six) : cadenas HTTPS sur les deux.
+Ouvrir `https://sixbysevenai.com` (le site) et `https://six.sixbysevenai.com` (Six) : cadenas HTTPS sur les deux.
 
 ## 5. Mettre à jour
 

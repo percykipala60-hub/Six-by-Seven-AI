@@ -1,7 +1,7 @@
 # Production de Six sur notre serveur, derrière sixbysevenai.com.
 # - site  : construit le site de présentation (dossier site/), puis s'arrête ; Caddy en sert le résultat.
 # - six   : l'application Six (dossier app/, Next.js).
-# - caddy : HTTPS automatique ; sixbysevenai.com → site, app.sixbysevenai.com → application.
+# - caddy : HTTPS automatique ; sixbysevenai.com → site, six.sixbysevenai.com → application.
 # Sur le serveur, depuis ce dossier :  docker compose up -d --build
 # Les réglages secrets sont dans deploy/.env (jamais dans Git) : voir .env.example.
 services:

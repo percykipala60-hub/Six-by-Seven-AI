@@ -1,7 +1,7 @@
 # Adresses (DOMAINE est défini dans deploy/.env : sixbysevenai.com).
 # - DOMAINE          : le site de présentation (dossier site/, construit par le service « site »)
 # - www.DOMAINE      : renvoie vers DOMAINE
-# - app.DOMAINE      : l'application Six (site, API, page /rapide de la bulle et du clavier Android)
+# - six.DOMAINE      : l'application Six (site, API, page /rapide de la bulle et du clavier Android)
 
 {$DOMAINE} {
 	root * /srv/site
@@ -24,7 +24,7 @@ www.{$DOMAINE} {
 	redir https://{$DOMAINE}{uri} permanent
 }
 
-app.{$DOMAINE} {
+six.{$DOMAINE} {
 	encode zstd gzip
 	reverse_proxy six:3000
 	# Journal technique sans contenu : ni en-têtes, ni paramètres d'adresse (tout ce qui suit « ? »).
