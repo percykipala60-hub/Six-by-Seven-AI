@@ -29,6 +29,7 @@ import {
   ecouterCompte,
   ecrirePrenom,
   envoyerCode,
+  fournisseursActifs,
   initiale,
   inscrire,
   lireCompte,
@@ -41,6 +42,7 @@ import {
   verifierCode,
   type Compte,
   type FournisseurSocial,
+  type FournisseursActifs,
   type Identifiant,
 } from '@/lib/compte';
 import { AppBar } from './AppBar';
@@ -380,6 +382,15 @@ function CompteVue() {
   const [showPwd, setShowPwd] = useState(false);
   const [accepteConditions, setAccepteConditions] = useState(false);
   const [socialBusy, setSocialBusy] = useState<FournisseurSocial | null>(null);
+  // Boutons Google / Apple affichés seulement si le fournisseur est activé côté Supabase.
+  const [sociaux, setSociaux] = useState<FournisseursActifs>({ google: false, apple: false });
+  useEffect(() => {
+    let vivant = true;
+    void fournisseursActifs().then((a) => vivant && setSociaux(a));
+    return () => {
+      vivant = false;
+    };
+  }, []);
 
   // OTP (code par e-mail)
   const [idOtp, setIdOtp] = useState<Identifiant | null>(null);
@@ -802,37 +813,42 @@ function CompteVue() {
             </p>
           </div>
           {/* Connexion en un geste : le reste (e-mail, code) ne change pas. */}
-          {(mode === 'connexion' || mode === 'inscription') && (
-            <>
-              <div className="auth-socials">
-                <button
-                  type="button"
-                  className="auth-social-btn solid"
-                  onClick={() => void handleSocial('google')}
-                  disabled={busy || socialBusy !== null}
-                >
-                  <AppIcon id="google" size={22} className="auth-social-icon" />
-                  <span>
-                    {socialBusy === 'google' ? 'Ouverture de Google…' : 'Continuer avec Google'}
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  className="auth-social-btn"
-                  onClick={() => void handleSocial('apple')}
-                  disabled={busy || socialBusy !== null}
-                >
-                  <AppleLogo size={20} />
-                  <span>
-                    {socialBusy === 'apple' ? 'Ouverture d’Apple…' : 'Continuer avec Apple'}
-                  </span>
-                </button>
-              </div>
-              <div className="auth-divider" role="separator">
-                <span>ou par e-mail</span>
-              </div>
-            </>
-          )}
+          {(mode === 'connexion' || mode === 'inscription') &&
+            (sociaux.google || sociaux.apple) && (
+              <>
+                <div className="auth-socials">
+                  {sociaux.google && (
+                    <button
+                      type="button"
+                      className="auth-social-btn solid"
+                      onClick={() => void handleSocial('google')}
+                      disabled={busy || socialBusy !== null}
+                    >
+                      <AppIcon id="google" size={22} className="auth-social-icon" />
+                      <span>
+                        {socialBusy === 'google' ? 'Ouverture de Google…' : 'Continuer avec Google'}
+                      </span>
+                    </button>
+                  )}
+                  {sociaux.apple && (
+                    <button
+                      type="button"
+                      className="auth-social-btn"
+                      onClick={() => void handleSocial('apple')}
+                      disabled={busy || socialBusy !== null}
+                    >
+                      <AppleLogo size={20} />
+                      <span>
+                        {socialBusy === 'apple' ? 'Ouverture d’Apple…' : 'Continuer avec Apple'}
+                      </span>
+                    </button>
+                  )}
+                </div>
+                <div className="auth-divider" role="separator">
+                  <span>ou par e-mail</span>
+                </div>
+              </>
+            )}
 
           {/* Onglets Connexion / Inscription si on n'est pas en sous-mode OTP ou Oubli */}
           {(mode === 'connexion' || mode === 'inscription') && (

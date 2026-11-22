@@ -924,8 +924,15 @@ const stationOk = id => (id === "app" ? radio.app.length > 0 : id === "mine" ? r
 function curStation() { const st = STATIONS.find(x => x.id === SAVE.station); return st && stationOk(st.id) ? st : STATIONS[0]; }
 function loadTrack(announce) {
   const tr = radio.list[radio.idx]; if (!tr) return;
-  player.src = tr.url; player.play().catch(() => {
-    if (curStation().id === "app") { radio.list = []; applyStation(true); toast("Playlist Six indisponible · mix original activé"); }
+  player.src = tr.url; player.play().catch(e => {
+    if (e && e.name === "NotAllowedError") return; // lecture automatique refusée : elle reprendra au prochain geste
+    if (curStation().id === "app") {
+      // Titre introuvable : on le retire pour de bon, sinon la playlist se recharge sans fin.
+      radio.app = radio.app.filter(x => x !== tr);
+      if (!radio.app.length && SAVE.station === "app") { SAVE.station = STATIONS[0].id; save(); }
+      applyStation(false);
+      if (!radio.app.length) toast("Playlist Six indisponible · mix original activé");
+    }
     else toast("Lecture audio impossible pour ce fichier.");
   });
   if (announce) toast("🎵 " + tr.title);

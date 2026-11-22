@@ -8,7 +8,7 @@
  */
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { effacerMemoire, fusionner, lireMemoire, memoireActive, remplacerMemoire } from './memoire';
-import { CONNEXION_DISPONIBLE, supabase } from './supabase';
+import { CLE, CONNEXION_DISPONIBLE, URL_SUPABASE, supabase } from './supabase';
 
 export { CONNEXION_DISPONIBLE };
 
@@ -277,12 +277,36 @@ export async function reinitialiserMotDePasse(email: string): Promise<string | n
   return null;
 }
 
+export type FournisseursActifs = Record<FournisseurSocial, boolean>;
+
+let actifs: Promise<FournisseursActifs> | null = null;
+
+/**
+ * Fournisseurs réellement activés dans Supabase (réglages publics du projet). Seuls leurs
+ * boutons s'affichent : un fournisseur pas encore configuré n'ouvre jamais de fenêtre d'erreur.
+ * En cas de doute (hors ligne, réponse illisible), aucun bouton : l'e-mail reste toujours possible.
+ */
+export function fournisseursActifs(): Promise<FournisseursActifs> {
+  const aucun: FournisseursActifs = { google: false, apple: false };
+  if (!CONNEXION_DISPONIBLE || typeof window === 'undefined') return Promise.resolve(aucun);
+  actifs ??= fetch(`${URL_SUPABASE}/auth/v1/settings`, { headers: { apikey: CLE } })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((j: { external?: Partial<FournisseursActifs> } | null) => ({
+      google: j?.external?.google === true,
+      apple: j?.external?.apple === true,
+    }))
+    .catch(() => {
+      actifs = null;
+      return aucun;
+    });
+  return actifs;
+}
+
 /**
  * Connexion en un geste avec Google ou Apple (fournisseurs à activer dans Supabase).
  *
  * La fenêtre du fournisseur s'ouvre à part : l'app reste exactement en place (plus
- * d'écran remplacé par la page du fournisseur). Si le fournisseur n'est pas activé
- * côté Supabase, c'est la nouvelle fenêtre qui affiche l'erreur, et on le dit ici.
+ * d'écran remplacé par la page du fournisseur).
  */
 export async function connecterAvecFournisseur(
   fournisseur: FournisseurSocial,
@@ -290,6 +314,12 @@ export async function connecterAvecFournisseur(
   const sb = await supabase();
   if (!sb) return { erreur: "La connexion n'est pas disponible pour le moment.", info: null };
   const nom = fournisseur === 'google' ? 'Google' : 'Apple';
+  if (!(await fournisseursActifs())[fournisseur]) {
+    return {
+      erreur: `La connexion avec ${nom} n’est pas encore disponible. Utilise ton adresse e-mail.`,
+      info: null,
+    };
+  }
   try {
     const { data, error } = await sb.auth.signInWithOAuth({
       provider: fournisseur,
@@ -314,7 +344,10 @@ export async function connecterAvecFournisseur(
         info: null,
       };
     }
-    const fenetre = window.open(data.url, '_blank', 'noopener');
+    // Sans « noopener » dans les options : avec lui, window.open renvoie toujours null et la
+    // fenêtre passerait pour bloquée. On coupe le lien vers l'app juste après.
+    const fenetre = window.open(data.url, '_blank');
+    if (fenetre) fenetre.opener = null;
     if (!fenetre) {
       return {
         erreur: `La fenêtre ${nom} a été bloquée par le navigateur. Autorise les fenêtres pop-up pour Six, ou utilise ton adresse e-mail.`,
@@ -324,7 +357,7 @@ export async function connecterAvecFournisseur(
     // L'app est restée en place ; le fournisseur se termine dans la nouvelle fenêtre.
     return {
       erreur: null,
-      info: `Une fenêtre ${nom} s’est ouverte pour continuer. Si elle affiche une erreur, la connexion avec ${nom} n’est pas encore activée : utilise ton adresse e-mail en attendant.`,
+      info: `Une fenêtre ${nom} s’est ouverte pour continuer.`,
     };
   } catch {
     return {
