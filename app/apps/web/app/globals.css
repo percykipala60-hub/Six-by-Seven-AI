@@ -5633,29 +5633,33 @@ body {
   display: block;
 }
 
-/* Choix d'espace dans la barre du haut : Six ou Seven AI, deux icônes, l'espace ouvert en relief. */
+/* Choix d'espace dans la barre du haut : Six (conversation) ou Seven AI (chat).
+   Deux boutons carrés aux traits fins ; seul l'espace ouvert a un fond discret. */
 .choix-mode {
   display: inline-flex;
-  gap: 2px;
-  padding: 3px;
-  border-radius: 12px;
-  background: var(--verre, color-mix(in srgb, var(--ink) 6%, transparent));
+  gap: 4px;
   vertical-align: middle;
 }
 .choix-mode-btn {
-  width: 38px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
   display: grid;
   place-items: center;
   border-radius: 9px;
-  color: var(--muted, color-mix(in srgb, var(--ink) 55%, transparent));
+  border: 1px solid transparent;
+  color: var(--muted);
   text-decoration: none;
   transition:
     background 0.15s,
-    color 0.15s;
+    color 0.15s,
+    border-color 0.15s;
+}
+.choix-mode-btn:hover {
+  color: var(--ink);
 }
 .choix-mode-btn[aria-current='page'] {
-  background: var(--verre-fort, color-mix(in srgb, var(--ink) 14%, transparent));
+  background: color-mix(in srgb, var(--ink) 9%, transparent);
+  border-color: color-mix(in srgb, var(--ink) 10%, transparent);
   color: var(--ink);
 }
 .choix-mode-btn:focus-visible {
