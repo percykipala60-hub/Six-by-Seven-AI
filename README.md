@@ -6,7 +6,7 @@ Six aide à répondre à une conversation (WhatsApp, SMS, Messenger, e-mail) san
 
 ## Où trouver Six
 
-- **Application web** : <https://effulgent-jelly-177a12.netlify.app>
+- **Application web** : <https://app.sixbysevenai.com>
 - **Version web et vitrine (dépôt)** : <https://github.com/percykipala60-hub/Six-by-Seven-AI>
 - **Jeu du ton juste** : `/ton-juste` dans l'application (140 devinettes, dont 100 difficiles, et 50 énigmes)
 

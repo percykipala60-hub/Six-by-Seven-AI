@@ -1,6 +1,6 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
-const serverUrl = process.env.CAP_SERVER_URL ?? 'https://effulgent-jelly-177a12.netlify.app';
+const serverUrl = process.env.CAP_SERVER_URL ?? 'https://app.sixbysevenai.com';
 
 /** App native Capacitor de Six. CAP_SERVER_URL peut viser un serveur local en développement. */
 const config: CapacitorConfig = {

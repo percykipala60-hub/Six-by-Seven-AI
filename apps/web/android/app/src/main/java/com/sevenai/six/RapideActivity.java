@@ -89,7 +89,7 @@ public class RapideActivity extends Activity {
         } catch (Exception erreur) {
             Log.e(TAG, "Adresse du serveur introuvable dans capacitor.config.json.", erreur);
         }
-        return "https://effulgent-jelly-177a12.netlify.app";
+        return "https://app.sixbysevenai.com";
     }
 
     @Override
