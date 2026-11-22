@@ -139,6 +139,10 @@ function chain(role: Role): Provider[] {
   return [...new Set(order)].map((id) => ALL[id]).filter((p) => p.configured(role));
 }
 
+export function hasChatAI(): boolean {
+  return chain('redaction').length > 0;
+}
+
 export function hasAI(): boolean {
   return chain('analyse').length > 0 && chain('redaction').length > 0;
 }

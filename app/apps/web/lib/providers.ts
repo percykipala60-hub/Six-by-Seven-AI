@@ -1,4 +1,4 @@
-import { ProviderError, callAI, callChat, hasAI } from './ai';
+import { ProviderError, callAI, callChat, hasChatAI, hasAI } from './ai';
 import {
   analysisPrompt,
   adjustPrompt,
@@ -76,7 +76,7 @@ export async function topics(situation: Situation, contexte: string): Promise<To
 export async function chat(messages: ChatMessage[]): Promise<ChatResult> {
   const user = messages[messages.length - 1]?.content ?? '';
   const history = messages.slice(0, -1);
-  if (!hasAI()) return { reponse: demoChat(user), demo: true };
+  if (!hasChatAI()) return { reponse: demoChat(user), demo: true };
   const reponse = (await callChat(sevenAiSystem(), user, history, 1500)).trim();
   if (!reponse) throw new ProviderError('La réponse de Seven AI était vide. Réessaie.');
   return { reponse, demo: false };

@@ -30,7 +30,20 @@ export async function POST(req: Request) {
 
   try {
     const corps = new FormData();
-    corps.append('file', audio, 'message.webm');
+    const format = audio.type.split(';')[0]?.toLowerCase();
+    const extensions: Record<string, string> = {
+      'audio/webm': 'webm',
+      'audio/mp4': 'mp4',
+      'audio/m4a': 'm4a',
+      'audio/x-m4a': 'm4a',
+      'audio/wav': 'wav',
+      'audio/mpeg': 'mp3',
+      'audio/ogg': 'ogg',
+      'audio/flac': 'flac',
+    };
+    const extension = format && extensions[format];
+    if (!extension) return fail(415, 'Ce format audio ne peut pas être transcrit.');
+    corps.append('file', audio, `message.${extension}`);
     corps.append('model', (process.env.OPENAI_TRANSCRIBE_MODEL ?? '').trim() || 'whisper-1');
     corps.append('response_format', 'json');
     const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {

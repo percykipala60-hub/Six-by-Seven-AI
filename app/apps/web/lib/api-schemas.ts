@@ -38,14 +38,19 @@ export const TopicsBodySchema = z.object({
 
 // Seven AI : historique borné (40 messages) pour rester raisonnable côté coûts. Le contenu d'un
 // message monte à 20 000 caractères : un document importé (texte ou PDF) peut être long.
+export const CHAT_MAX_MESSAGES = 40;
+export const CHAT_MAX_CONTENT = 20_000;
+export const CHAT_MAX_BYTES = 20_000;
+
 export const ChatBodySchema = z.object({
   messages: z
     .array(
       z.object({
         role: z.enum(['user', 'assistant']),
-        content: z.string().trim().min(1).max(20_000),
+        content: z.string().trim().min(1).max(CHAT_MAX_CONTENT),
       }),
     )
     .min(1)
-    .max(40),
+    .max(CHAT_MAX_MESSAGES)
+    .refine((messages) => messages.at(-1)?.role === 'user'),
 });
