@@ -18,7 +18,7 @@ Téléphone / navigateur ──HTTPS──> Cloudflare (DNS) ──> votre serve
 
 ## 2. Le serveur
 
-1. Créer un serveur chez Hetzner ou OVH : **Ubuntu 24.04**, en Europe (près de Supabase, à Paris), 2 Go de mémoire au moins.
+1. Créer un serveur chez DigitalOcean (Droplet) : **Ubuntu 24.04**, à Francfort (près de Supabase, à Paris), offre Regular à 1 Go (le script ajoute 2 Go de mémoire d'appoint).
 2. Ajouter votre clé SSH à la création (pas de mot de passe root).
 3. Se connecter en root, envoyer puis lancer le script :
    ```bash
