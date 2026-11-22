@@ -43,6 +43,7 @@ import { InterAppNotifications, InterAppOnboarding } from './InterAppNotificatio
 import { Raccourcis } from './Raccourcis';
 import { EVT_PREMIUM, PremiumVue } from './Premium';
 import { lireEtatPremium } from '@/lib/premium-client';
+import { ouvrirRaccourcisIOS, surIPhoneNatif } from '@/lib/raccourcis-ios';
 import {
   EnteteSousPage,
   Groupe,
@@ -673,6 +674,11 @@ export function Settings() {
   const [premium, setPremium] = useState(false);
   // Entrée Six Premium cachée tant que le paiement n'est pas ouvert (premium en veille).
   const [premiumOuvert, setPremiumOuvert] = useState(false);
+  // « Siri et raccourcis » : seulement dans l'app iPhone.
+  const [iphone, setIphone] = useState(false);
+  useEffect(() => {
+    void surIPhoneNatif().then(setIphone);
+  }, []);
   useEffect(() => {
     const lirePremium = () =>
       void lireEtatPremium().then((e) => {
@@ -1001,6 +1007,7 @@ export function Settings() {
     cles: string;
     href?: string;
     externe?: boolean;
+    action?: () => void;
   }[] = [
     ...(premiumOuvert || premium
       ? [
@@ -1048,6 +1055,18 @@ export function Settings() {
       sous: 'Répondre depuis n’importe quelle app (Android)',
       cles: 'bulle flottante clavier raccourci rapide whatsapp',
     },
+    ...(iphone
+      ? [
+          {
+            id: 'siri',
+            icon: 'mic' as const,
+            label: 'Siri et raccourcis',
+            sous: 'Bouton Action, écran verrouillé, AssistiveTouch',
+            cles: 'siri raccourcis shortcuts bouton action assistivetouch iphone centre de contrôle',
+            action: () => void ouvrirRaccourcisIOS(),
+          },
+        ]
+      : []),
     {
       id: 'notifications',
       icon: 'bell',
@@ -1132,7 +1151,7 @@ export function Settings() {
                   icon={e.icon}
                   label={e.label}
                   sous={e.sous}
-                  onClick={() => ouvrir(e.id as Vue)}
+                  onClick={() => (e.action ? e.action() : ouvrir(e.id as Vue))}
                 />
               ),
             )}

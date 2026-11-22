@@ -335,6 +335,9 @@ export function InterAppNotifications() {
   );
 }
 
+/** Pages que les raccourcis iPhone (App Intents, liens six://) peuvent ouvrir. */
+const PAGES_RACCOURCIS = new Set(['/', '/seven-ai', '/sujets', '/espace-jeu']);
+
 export function InterAppLaunchHandler() {
   const router = useRouter();
   const [error, setError] = useState('');
@@ -345,13 +348,21 @@ export function InterAppLaunchHandler() {
       let active = true;
       const importSharedDraft = async () => {
         try {
-          const share = registerPlugin<{ consumeSharedDraft(): Promise<{ text: string }> }>(
-            'SixShare',
-          );
+          const share = registerPlugin<{
+            consumeSharedDraft(): Promise<{ text: string }>;
+            consumePendingRoute?(): Promise<{ route: string }>;
+          }>('SixShare');
           const { text } = await share.consumeSharedDraft();
-          if (!active || !text) return;
-          sessionStorage.setItem('six-notification-draft', text);
-          window.dispatchEvent(new Event('six-shared-draft'));
+          if (active && text) {
+            sessionStorage.setItem('six-notification-draft', text);
+            window.dispatchEvent(new Event('six-shared-draft'));
+          }
+          // Raccourci (Siri, bouton Action…) ou lien six:// : ouvre la page demandée, parmi celles connues.
+          const { route } = (await share.consumePendingRoute?.().catch(() => null)) ?? {
+            route: '',
+          };
+          if (active && PAGES_RACCOURCIS.has(route) && route !== window.location.pathname)
+            router.push(route);
         } catch {
           // Le plugin n'existe que dans l'application iOS native.
         }

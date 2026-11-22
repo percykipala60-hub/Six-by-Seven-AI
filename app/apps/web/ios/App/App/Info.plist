@@ -5,9 +5,20 @@
   <key>CAPACITOR_DEBUG</key>
 	<string>$(CAPACITOR_DEBUG)</string>
 	<key>CFBundleDevelopmentRegion</key>
-	<string>en</string>
+	<string>fr</string>
 	<key>CFBundleDisplayName</key>
         <string>Six</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.sevenai.six</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>six</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -22,6 +33,12 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Six utilise le micro seulement quand tu dictes un message à Seven AI.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Six utilise l’appareil photo seulement si tu prends en photo une conversation à analyser.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Six ouvre tes photos seulement pour importer les captures d’écran que tu choisis.</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

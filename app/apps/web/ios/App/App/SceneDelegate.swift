@@ -43,7 +43,9 @@ public class SixSharePlugin: CAPPlugin, CAPBridgedPlugin {
     public let identifier = "SixSharePlugin"
     public let jsName = "SixShare"
     public let pluginMethods: [CAPPluginMethod] = [
-        CAPPluginMethod(name: "consumeSharedDraft", returnType: CAPPluginReturnPromise)
+        CAPPluginMethod(name: "consumeSharedDraft", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "consumePendingRoute", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "openShortcuts", returnType: CAPPluginReturnPromise)
     ]
 
     @objc func consumeSharedDraft(_ call: CAPPluginCall) {
@@ -51,6 +53,19 @@ public class SixSharePlugin: CAPPlugin, CAPBridgedPlugin {
         let draft = shared?.string(forKey: "sharedDraft") ?? ""
         shared?.removeObject(forKey: "sharedDraft")
         call.resolve(["text": draft])
+    }
+
+    /// Page demandée par un raccourci (Siri, bouton Action…) ou un lien six://, une seule fois.
+    @objc func consumePendingRoute(_ call: CAPPluginCall) {
+        call.resolve(["route": SixRaccourcis.consommerPage()])
+    }
+
+    /// Écran natif « Siri et raccourcis » (Réglages de Six).
+    @objc func openShortcuts(_ call: CAPPluginCall) {
+        DispatchQueue.main.async { [weak self] in
+            SixRaccourcisEcran.presenter(depuis: self?.bridge?.viewController)
+            call.resolve()
+        }
     }
 }
 
@@ -64,10 +79,13 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window?.rootViewController = SixBridgeViewController()
         window?.makeKeyAndVisible()
 
+        // Ouverture à froid par un lien six://… : la page est reprise par l'app web au chargement.
+        for contexte in connectionOptions.urlContexts { SixRaccourcis.gererLien(contexte.url) }
         SceneDelegateProxy.shared.scene(scene, willConnectTo: session, options: connectionOptions)
     }
 
     func scene(_ scene: UIScene, openURLContexts URLContexts: Set<UIOpenURLContext>) {
+        for contexte in URLContexts { SixRaccourcis.gererLien(contexte.url) }
         SceneDelegateProxy.shared.scene(scene, openURLContexts: URLContexts)
     }
 
