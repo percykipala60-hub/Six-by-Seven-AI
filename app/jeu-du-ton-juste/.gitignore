@@ -1,0 +1,18 @@
+# Dépendances
+node_modules
+
+# Secrets : jamais de clé API dans le dépôt (voir server/.env.example)
+.env
+.env.*
+!.env.example
+
+# Sorties de build
+dist
+out
+
+# Journaux et caches
+*.log
+.run.log
+npm-debug.log*
+.vite
+coverage

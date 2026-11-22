@@ -1,0 +1,47 @@
+{
+  "name": "@six/web",
+  "version": "0.2.0",
+  "private": true,
+  "description": "App Six (Next.js) : design Six 3 (ex-dossier six-app) + jeu Kin Rush sur /jeu.",
+  "scripts": {
+    "predev": "node scripts/copy-ocr.mjs",
+    "dev": "next dev --port 3000",
+    "prebuild": "node scripts/copy-ocr.mjs",
+    "build": "next build",
+    "start": "next start --port 3000",
+    "test": "vitest run",
+    "test:e2e": "node e2e/parcours.mjs",
+    "test:e2e:jeux": "node e2e/jeux.mjs",
+    "typecheck": "tsc --noEmit",
+    "check-ai": "node scripts/check-ai.mjs",
+    "e2e": "node e2e/parcours.mjs",
+    "set-key": "node scripts/set-key.mjs",
+    "check-cache": "vitest run --config vitest.integration.mts",
+    "android:store": "node scripts/build-store-android.mjs",
+    "mobile": "bash scripts/build-mobile.sh",
+    "apk": "bash scripts/build-android-apk.sh",
+    "serve-lan": "bash scripts/serve-lan.sh"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.131.0",
+    "@capacitor/core": "8.5.3",
+    "@supabase/supabase-js": "2.117.2",
+    "@tesseract.js-data/fra": "^1.0.0",
+    "jspdf": "4.2.1",
+    "next": "16.3.8",
+    "pdfjs-dist": "^6.4.299",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "tesseract.js": "^7.0.0",
+    "tesseract.js-core": "^7.0.0",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.4",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "playwright-core": "^1.63.0",
+    "typescript": "~5.6",
+    "vitest": "5.0.3"
+  }
+}

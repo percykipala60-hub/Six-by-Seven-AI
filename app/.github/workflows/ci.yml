@@ -1,0 +1,127 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NEXT_TELEMETRY_DISABLED: 1
+  NEXT_PUBLIC_API_URL: http://localhost:4000
+
+jobs:
+  qualite:
+    name: Qualité (${{ matrix.os }}, Node ${{ matrix.node }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # L'équipe code sous Windows, macOS et Linux : tout doit passer partout.
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        # Node 22 (référence) et Node 24 (version installée sur les PC de l'équipe).
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm format:check
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+
+  demarrage:
+    name: Démarrage à froid (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    needs: qualite
+    strategy:
+      fail-fast: false
+      matrix:
+        # Comme sur les PC de l'équipe : zip neuf, pnpm install, pnpm dev.
+        os: [windows-latest, ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: cp apps/api/.env.example apps/api/.env && cp apps/web/.env.example apps/web/.env.local
+        shell: bash
+      - run: pnpm verifier
+
+  e2e:
+    name: Navigateur (Chromium)
+    runs-on: ubuntu-latest
+    needs: qualite
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @six/web exec playwright-core install --with-deps chromium
+      - name: Parcours e2e avec le serveur de développement
+        run: |
+          pnpm --filter @six/shared build
+          pnpm --filter @six/web dev > /tmp/six-web.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" 2>/dev/null || true' EXIT
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent http://localhost:3000/ > /dev/null; then
+              pnpm test:e2e
+              exit $?
+            fi
+            if ! kill -0 "$server_pid" 2>/dev/null; then
+              cat /tmp/six-web.log
+              exit 1
+            fi
+            sleep 1
+          done
+          cat /tmp/six-web.log
+          echo "Next.js did not become ready within 60 seconds."
+          exit 1
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rapport-playwright
+          path: apps/web/playwright-report
+          retention-days: 7
+
+  secrets:
+    name: Recherche de secrets
+    runs-on: ubuntu-latest
+    # Sur une PR, gitleaks lit la liste des commits de la PR : sans ce droit, il échoue (403).
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  docker:
+    name: Images Docker
+    runs-on: ubuntu-latest
+    needs: qualite
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -f apps/api/Dockerfile -t six-api .
+      - run: docker build -f apps/web/Dockerfile --build-arg NEXT_PUBLIC_API_URL=http://localhost:4000 -t six-web .

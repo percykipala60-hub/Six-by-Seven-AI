@@ -1,0 +1,17 @@
+{
+  "name": "jeu-du-ton-juste",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Le jeu du ton juste (par Six, Seven.AI) — client React et serveur d'évaluation.",
+  "scripts": {
+    "installer": "npm install --prefix client && npm install --prefix server",
+    "serveur": "npm start --prefix server",
+    "jeu": "npm run dev --prefix client",
+    "test": "npm test --prefix client && npm test --prefix server",
+    "lint": "npm run lint --prefix client && npm run lint --prefix server",
+    "build": "npm run build --prefix client",
+    "fumee": "npm run fumee --prefix server",
+    "calibrer": "npm run calibrer --prefix server",
+    "verifier": "npm run lint && npm test && npm run build"
+  }
+}

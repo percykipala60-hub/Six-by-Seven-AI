@@ -1,0 +1,26 @@
+# Builds / exports
+*.apk
+*.aab
+*.jks
+*.keystore
+*.zip
+*.ipa
+
+# Artefacts locaux
+artifacts/
+next-cache-*/
+node_modules/
+
+# macOS
+.DS_Store
+
+# Distribué mais locaux
+.DS_Store
+
+# Secrets locaux : ne jamais suivre les fichiers d'environnement
+.env
+.env.*
+!.env.example
+
+# Local Netlify folder
+.netlify

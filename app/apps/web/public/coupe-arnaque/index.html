@@ -1,0 +1,1180 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#090f1b">
+<meta name="description" content="Coupe l'arnaque : enquête sur des messages piégés ou coupe les arnaques d'un geste. Un jeu Six by Seven.AI.">
+<title>Coupe l'arnaque</title>
+<link rel="stylesheet" href="fonts.css">
+<style>
+/* Layout : un écran de jeu plein cadre (colonne de téléphone sur ordinateur), interface posée sur le canvas.
+   Univers : la nuit bleu Six by Seven.AI, des bulles de discussion qui volent, une lame de lumière. Thème sombre, volontairement. */
+:root {
+  --night: #090f1b;
+  --night-2: #121a2f;
+  --ink: #f2f5fa;
+  --mut: #9aa6bf;
+  --blue: #4d7cfe;
+  --red: #ff5a4e;
+  --gold: #ffd84d;
+  --line: rgba(255, 255, 255, 0.1);
+  --font: "Manrope", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; overflow: hidden; overscroll-behavior: none; }
+body { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+body { background: var(--night); color: var(--ink); font: 600 16px/1.4 var(--font); -webkit-tap-highlight-color: transparent; }
+button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
+button:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+#stage { position: relative; height: 100%; max-width: 480px; margin: 0 auto; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+#cv { display: block; width: 100%; height: 100%; }
+
+/* HUD */
+.top { position: absolute; left: 0; right: 0; top: 0; padding: 14px max(16px, env(safe-area-inset-right, 0px)) 0 max(16px, env(safe-area-inset-left, 0px)); display: flex; justify-content: space-between; align-items: flex-start; pointer-events: none; }
+.score { font-weight: 300; font-size: 44px; line-height: 1; letter-spacing: -0.04em; font-variant-numeric: tabular-nums; }
+.mult { margin-top: 6px; font-size: 13px; font-weight: 800; color: var(--blue); letter-spacing: 0.04em; }
+.hearts { display: flex; gap: 6px; font-size: 20px; }
+.hearts span { transition: transform 0.3s, opacity 0.3s; }
+.hearts span.lost { opacity: 0.18; transform: scale(0.75); filter: grayscale(1); }
+.clock { font-weight: 300; font-size: 40px; line-height: 1; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.clock.late { color: var(--red); animation: beat 0.5s infinite; }
+@keyframes beat { 50% { transform: scale(1.08); } }
+.ib { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; color: var(--mut); background: rgba(255, 255, 255, 0.06); }
+.ib svg { width: 18px; height: 18px; }
+
+/* Accueil */
+.ov { position: absolute; inset: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y; }
+.brand { position: absolute; top: 16px; left: max(20px, env(safe-area-inset-left, 0px)); display: inline-flex; align-items: center; gap: 8px; z-index: 2; }
+.brand b { font-weight: 800; font-size: 18px; letter-spacing: -0.03em; }
+.brand small { font-size: 11px; color: var(--mut); padding-left: 8px; border-left: 1px solid rgba(255, 255, 255, 0.15); }
+.brand small strong { color: var(--ink); font-weight: 600; }
+.menu > .ib { position: absolute; top: 14px; right: max(16px, env(safe-area-inset-right, 0px)); z-index: 2; }
+.sheet { margin-top: 30vh; padding: 140px max(20px, env(safe-area-inset-right, 0px)) 28px max(20px, env(safe-area-inset-left, 0px)); background: linear-gradient(to bottom, rgba(9, 15, 27, 0) 0, rgba(9, 15, 27, 0.92) 120px, var(--night) 170px); }
+.title { margin: 0; font-weight: 800; font-size: clamp(50px, 15vw, 68px); line-height: 0.95; letter-spacing: -0.05em; }
+.title span { font-weight: 300; color: var(--blue); }
+.lead { margin: 14px 0 0; max-width: 30ch; color: var(--mut); font-size: 17px; font-weight: 500; }
+.lead b { color: var(--ink); }
+.play { width: 100%; margin-top: 24px; min-height: 64px; border-radius: 18px; background: var(--blue); color: #fff; font-weight: 800; font-size: 19px; display: flex; align-items: center; justify-content: space-between; padding: 0 22px; box-shadow: 0 14px 36px -12px rgba(77, 124, 254, 0.7); transition: transform 0.12s; text-align: left; }
+.play small { display: block; font-size: 13px; font-weight: 600; opacity: 0.8; }
+.play:active, .mode:active { transform: scale(0.98); }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+.mode { min-height: 64px; border-radius: 16px; background: rgba(255, 255, 255, 0.07); border: 1px solid var(--line); padding: 10px 14px; text-align: left; transition: transform 0.12s; }
+.mode b { display: block; font-weight: 800; }
+.mode span { font-size: 13px; color: var(--mut); }
+.mode.done span { color: var(--gold); }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 18px; font-size: 12px; color: var(--mut); }
+.stats b { display: block; color: var(--ink); font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; line-height: 1.2; }
+h2 { margin: 28px 0 8px; font-size: 12px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mut); }
+.list { border-top: 1px solid var(--line); }
+.row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.row .k { flex: 1; min-width: 0; }
+.row .k b { display: block; font-weight: 700; }
+.row .k span { font-size: 13px; color: var(--mut); }
+.row .v { font-weight: 800; white-space: nowrap; color: var(--gold); font-variant-numeric: tabular-nums; }
+.row.done .k b { color: #7fe0a8; }
+.bar { height: 3px; margin-top: 8px; border-radius: 2px; background: rgba(255, 255, 255, 0.1); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--blue); border-radius: inherit; }
+.row.done .bar i { background: #7fe0a8; }
+.blades { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.blade { border-radius: 14px; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--line); padding: 12px 10px 10px; text-align: left; }
+.blade.sel { border-color: var(--ink); background: rgba(255, 255, 255, 0.1); }
+.blade i { display: block; height: 6px; border-radius: 3px; margin: 4px 0 12px; transform: rotate(-8deg); }
+.blade b { display: block; font-size: 13px; font-weight: 800; }
+.blade span { font-size: 12px; color: var(--mut); }
+.blade.lock { opacity: 0.6; }
+.blade.can span { color: var(--gold); }
+.foot { margin: 26px 0 0; font-size: 12px; color: var(--mut); text-align: center; }
+
+/* Fin de partie */
+.over { display: flex; flex-direction: column; justify-content: center; padding: 24px max(20px, env(safe-area-inset-right, 0px)) 24px max(20px, env(safe-area-inset-left, 0px)); background: rgba(9, 15, 27, 0.8); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+.kick { margin: 0; font-size: 12px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mut); }
+.why { margin: 6px 0 0; font-size: 15px; color: var(--red); font-weight: 700; }
+.big { margin: 8px 0 0; font-weight: 300; font-size: clamp(84px, 28vw, 120px); line-height: 0.9; letter-spacing: -0.06em; font-variant-numeric: tabular-nums; }
+.rec { margin: 10px 0 0; font-weight: 700; color: var(--mut); }
+.rec.new { color: var(--gold); }
+.news { display: grid; gap: 6px; margin-top: 16px; }
+.news p { margin: 0; padding: 10px 12px; border-radius: 12px; background: rgba(255, 255, 255, 0.06); font-size: 14px; font-weight: 700; }
+.news p.gold { color: var(--gold); }
+.rank { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--line); }
+.rank b { display: block; }
+.rank span { font-size: 13px; color: var(--mut); }
+.sec { min-height: 50px; border-radius: 14px; background: rgba(255, 255, 255, 0.07); font-weight: 700; }
+.sharebox { width: 100%; min-height: 84px; margin-top: 10px; padding: 10px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.15); background: var(--night-2); color: var(--ink); font: 500 14px/1.4 var(--font); resize: none; }
+/* Enquêtes */
+.solid { background: var(--night); padding: 14px max(16px, env(safe-area-inset-right, 0px)) 28px max(16px, env(safe-area-inset-left, 0px)); }
+.bar2 { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 10px; padding: 4px 0 12px; background: var(--night); }
+.bar2 b { flex: 1; font-size: 17px; font-weight: 800; }
+.back { width: 36px; height: 36px; border-radius: 50%; background: rgba(255, 255, 255, 0.07); font-size: 18px; }
+.pill { padding: 5px 10px; border-radius: 99px; background: rgba(255, 255, 255, 0.07); font-size: 13px; font-weight: 800; color: var(--gold); white-space: nowrap; }
+.intro { margin: 0 0 6px; color: var(--mut); font-size: 14px; max-width: 46ch; }
+.chap { margin-top: 20px; }
+.chap h3 { margin: 0; font-size: 16px; font-weight: 800; display: flex; justify-content: space-between; gap: 10px; }
+.chap h3 span { color: var(--gold); font-size: 13px; white-space: nowrap; }
+.chap p { margin: 2px 0 10px; font-size: 13px; color: var(--mut); }
+.chap.lock h3 { color: var(--mut); }
+.cgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.cbtn { min-height: 62px; border-radius: 14px; background: rgba(255, 255, 255, 0.06); border: 1px solid var(--line); text-align: left; padding: 8px 10px; }
+.cbtn b { display: block; font-size: 13px; }
+.cbtn span { font-size: 14px; color: var(--gold); letter-spacing: 1px; }
+.cbtn span i { font-style: normal; color: rgba(255, 255, 255, 0.18); }
+.cbtn.lock { opacity: 0.38; }
+.cbtn.next { border-color: var(--blue); background: rgba(77, 124, 254, 0.14); }
+.chat { background: #0f1729; border: 1px solid var(--line); border-radius: 22px; overflow: hidden; }
+.chead { display: flex; align-items: center; gap: 12px; padding: 12px 14px; background: rgba(255, 255, 255, 0.04); border-bottom: 1px solid var(--line); }
+.cav { width: 40px; height: 40px; flex: none; border-radius: 50%; display: grid; place-items: center; background: var(--night-2); font-weight: 800; }
+.chead b { display: block; font-size: 16px; }
+.cnum { font-size: 13px; color: var(--mut); }
+.cbody { padding: 14px 12px 16px; display: flex; flex-direction: column; gap: 8px; }
+.msg { align-self: flex-start; max-width: 90%; background: #f4f6fb; color: #0e1526; border-radius: 4px 18px 18px 18px; padding: 10px 13px 6px; font-size: 16px; line-height: 1.55; font-weight: 500; overflow-wrap: anywhere; }
+.msg time { display: block; text-align: right; font-size: 11px; color: #77808f; }
+.w, .k { cursor: pointer; border-radius: 4px; padding: 1px 1px; transition: background 0.15s; }
+.marked { background: rgba(255, 90, 78, 0.22); box-shadow: inset 0 -2px 0 #ff5a4e; }
+.found { background: rgba(30, 220, 150, 0.25); box-shadow: inset 0 -2px 0 #1d9b6a; }
+.hinted { background: rgba(77, 124, 254, 0.25); box-shadow: inset 0 -2px 0 var(--blue); }
+.missed { background: rgba(255, 216, 77, 0.32); box-shadow: inset 0 -2px 0 #e3a91c; }
+.wrong { text-decoration: line-through; text-decoration-color: #ff5a4e; text-decoration-thickness: 2px; }
+.cnum .found, .cnum .missed, .cnum .hinted, .cnum .marked { color: var(--ink); }
+.cfoot { margin-top: 14px; }
+.help { margin: 0 0 10px; font-size: 14px; color: var(--mut); text-align: center; }
+.vno, .vyes { min-height: 58px; border-radius: 16px; font-weight: 800; font-size: 17px; }
+.vno { background: rgba(255, 90, 78, 0.14); color: #ff8a80; border: 1.5px solid #ff5a4e; }
+.vyes { background: var(--blue); color: #fff; }
+.hint { display: block; margin: 12px auto 0; padding: 8px 14px; border-radius: 10px; color: var(--mut); font-weight: 700; font-size: 14px; }
+.cres { margin-top: 16px; }
+.verdict { margin: 0; font-size: 20px; font-weight: 800; }
+.verdict.ok { color: #7fe0a8; }
+.verdict.ko { color: #ff8a80; }
+.cstars { margin: 6px 0 2px; font-size: 30px; letter-spacing: 4px; color: var(--gold); }
+.cstars i { font-style: normal; color: rgba(255, 255, 255, 0.18); }
+.clues { margin-top: 10px; border-top: 1px solid var(--line); }
+.clue { display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14px; color: var(--mut); }
+.clue b { display: block; color: var(--ink); font-size: 15px; }
+.clue .ic { flex: none; width: 22px; font-weight: 800; }
+.clue .ic.ok { color: #7fe0a8; }
+.clue .ic.no { color: var(--gold); }
+.clue .ic.bad { color: #ff8a80; }
+.tip { margin: 12px 0 0; padding: 12px 14px; border-radius: 14px; background: rgba(77, 124, 254, 0.12); color: #c9d6ff; font-size: 14px; }
+.tip b { display: block; color: #fff; }
+.learn { display: grid; gap: 8px; margin-top: 14px; }
+.learn h4 { margin: 4px 0 0; font-size: 12px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mut); }
+.learn p { margin: 0; padding: 10px 12px; border-radius: 12px; background: rgba(255, 255, 255, 0.05); font-size: 14px; color: var(--mut); }
+.learn p b { display: block; color: var(--ink); }
+.sub2 { margin: 16px 0 0; font-size: 13px; color: var(--mut); }
+.row3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
+.row3 .mode { min-height: 60px; padding: 8px 10px; }
+.row3 .mode span { font-size: 12px; }
+.toast { position: absolute; left: 50%; bottom: calc(22px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); padding: 10px 16px; border-radius: 12px; background: var(--ink); color: var(--night); font-weight: 700; font-size: 14px; max-width: calc(100% - 32px); text-align: center; z-index: 5; }
+@media (prefers-reduced-motion: reduce) { .clock.late { animation: none; } }
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <canvas id="cv"></canvas>
+
+  <div class="top" id="hud" hidden>
+    <div><div class="score" id="score">0</div><div class="mult" id="mult"></div></div>
+    <div><div class="hearts" id="hearts"></div><div class="clock" id="clock" hidden></div></div>
+  </div>
+
+  <section class="ov menu" id="menu">
+    <span class="brand" translate="no" aria-label="Six by Seven.AI">
+      <svg width="24" height="24" viewBox="0 0 100 100" aria-hidden="true"><g transform="translate(66.82 0)">
+        <path d="M-35.20 31.00 L-21.18 31.00 L-44.61 89.00 L-58.63 89.00 Z" fill="#4d7cfe"/>
+        <path d="M-37.20 11.00 L8.47 11.00 L-11.13 59.50 L-23.18 54.63 L-10.80 24.00 L-37.20 24.00 Z" fill="#f2f5fa"/>
+        <circle cx="0.00" cy="64.00" r="18.50" fill="none" stroke="#f2f5fa" stroke-width="15.20"/></g></svg>
+      <b>Six</b><small>by <strong>Seven.AI</strong></small>
+    </span>
+    <button class="ib" id="soundBtn" aria-label="Couper le son"></button>
+    <div class="sheet">
+      <h1 class="title">Coupe<br><span>l'arnaque.</span></h1>
+      <p class="lead">Mène l'enquête sur des messages piégés, ou <b>coupe les arnaques</b> d'un geste. Laisse passer les messages de tes proches.</p>
+      <button class="play" id="casesBtn"><span>🔎 Enquêtes<small id="casesInfo"></small></span><span aria-hidden="true">→</span></button>
+      <p class="sub2">Ou coupe les arnaques à toute vitesse :</p>
+      <div class="row3">
+        <button class="mode" id="playBtn"><b>Classique</b><span>3 cœurs</span></button>
+        <button class="mode" id="chronoBtn"><b>⏱ Chrono</b><span id="chronoInfo">60 s</span></button>
+        <button class="mode" id="dailyBtn"><b>Défi</b><span id="dailyInfo"></span></button>
+      </div>
+      <div class="stats">
+        <div><b id="mBest">0</b>Record</div>
+        <div><b id="mStars">0</b>Étoiles</div>
+        <div><b id="mStreak">0</b>Jours</div>
+        <div><b id="mRank"></b>Rang</div>
+      </div>
+      <h2>Missions du jour</h2>
+      <div class="list" id="missions"></div>
+      <h2>Lames</h2>
+      <div class="blades" id="blades"></div>
+      <h2>Bulles spéciales</h2>
+      <div class="list">
+        <div class="row"><div class="k"><b>💰 Arnaque en or</b><span>Bordure dorée : cinq fois plus de points.</span></div></div>
+        <div class="row"><div class="k"><b>↪ Arnaque transférée</b><span>Coupée, elle se divise en deux petites arnaques.</span></div></div>
+        <div class="row"><div class="k"><b>Six</b><span>Ralenti de 5 secondes, les arnaques s'allument en rouge.</span></div></div>
+        <div class="row"><div class="k"><b>❤️ · ❄️ · ⏱</b><span>Une vie en plus, l'écran gelé, ou 5 secondes de plus en Chrono.</span></div></div>
+      </div>
+      <p class="foot">Un jeu Six by Seven.AI</p>
+    </div>
+  </section>
+
+  <section class="ov over" id="over" hidden>
+    <p class="kick" id="oKick"></p>
+    <p class="why" id="oWhy"></p>
+    <div class="big" id="oScore">0</div>
+    <p class="rec" id="oRec"></p>
+    <div class="news" id="oNews"></div>
+    <div class="learn" id="oLearn"></div>
+    <div class="rank"><b id="oRank"></b><span id="oNext"></span><div class="bar"><i id="oBar"></i></div></div>
+    <button class="play" id="againBtn"><span>Rejouer</span><span aria-hidden="true">→</span></button>
+    <div class="row2"><button class="sec" id="homeBtn">Accueil</button><button class="sec" id="shareBtn">Partager</button></div>
+    <textarea class="sharebox" id="shareBox" readonly hidden aria-label="Texte à partager"></textarea>
+  </section>
+
+  <section class="ov solid" id="cases" hidden>
+    <div class="bar2"><button class="back" id="casesBack" aria-label="Retour">←</button><b>Enquêtes</b><span class="pill" id="casesStars"></span></div>
+    <p class="intro">Lis la conversation, touche les indices suspects, puis rends ton verdict. Chaque enquête rapporte jusqu'à 3 ★ : une pour le bon verdict, deux de plus pour les indices.</p>
+    <div id="caseList"></div>
+  </section>
+
+  <section class="ov solid" id="case" hidden>
+    <div class="bar2"><button class="back" id="caseBack" aria-label="Retour aux enquêtes">←</button><b id="caseTitle"></b><span class="pill" id="caseMarks"></span></div>
+    <div class="chat">
+      <div class="chead"><span class="cav" id="cAv"></span><div><b id="cName"></b><div class="cnum" id="cNum"></div></div></div>
+      <div class="cbody" id="cBody"></div>
+    </div>
+    <div class="cfoot" id="cFoot">
+      <p class="help">Touche les mots suspects, puis rends ton verdict.</p>
+      <div class="row2"><button class="vno" id="vScam">Arnaque</button><button class="vyes" id="vSafe">Message sûr</button></div>
+      <button class="hint" id="hintBtn">💡 Un indice de Six (1 ⭐)</button>
+    </div>
+    <div class="cres" id="cRes" hidden></div>
+  </section>
+
+  <div class="toast" id="toast" hidden></div>
+</div>
+
+<script>
+/* ================= Messages ================= */
+// Des messages courts pour se lire en vol. Les arnaques gardent leurs signaux : argent, code, lien, urgence.
+const SCAMS = [
+  ["Numéro inconnu", "Tu as gagné 1 000 $ 🎁", "On ne gagne pas à un jeu auquel on n'a pas joué."],
+  ["Service client", "Envoie ton code PIN", "Aucun service ne demande ton code PIN."],
+  ["Numéro inconnu", "Paye 10 $ pour recevoir ton gain", "Un vrai gain ne coûte rien."],
+  ["+243 8•• ••• 12", "Je t'ai envoyé par erreur, renvoie vite !", "Le faux « envoi par erreur » : vérifie ton solde dans l'appli, pas dans le message."],
+  ["Numéro inconnu", "Clique ici : bit.ly/cadeau", "Un lien raccourci d'un inconnu cache sa vraie adresse."],
+  ["Maman (nouveau n°)", "Envoie-moi 20 000 FC, vite", "Nouveau numéro et argent urgent : appelle l'ancien numéro d'abord."],
+  ["Ta banque", "Confirme ton mot de passe ici", "Ta banque ne te demande jamais ton mot de passe par message."],
+  ["Recrutement", "300 $ par semaine, inscription 15 $", "Un employeur te paie, il ne te fait pas payer."],
+  ["Crypto Kin", "Mise 20 $, gagne 200 $ en 48 h", "Un gain énorme et rapide est toujours un piège."],
+  ["Livraison", "Paye 5 $ pour débloquer ton colis", "On ne paie pas un colis par un lien reçu par message."],
+  ["Support", "Ton compte expire, clique vite", "Les comptes n'expirent pas : l'urgence sert à te presser."],
+  ["Concours", "iPhone gratuit : partage à 20 groupes", "Ces faux concours font tourner l'arnaque."],
+  ["Agent", "Les 3 chiffres au dos de ta carte ?", "Ces chiffres servent à payer avec ta carte."],
+  ["Numéro inconnu", "Ta photo circule 😳 regarde ici", "La curiosité et la peur font cliquer sans réfléchir."],
+  ["Visa Express", "Visa accepté, paye 150 $", "Une ambassade ne se paie pas par message."],
+  ["Opérateur", "Renvoie le code reçu par SMS", "Ce code ouvre ton compte : ne le renvoie jamais."],
+  ["Investisseur", "Donne 50 $, je te rends 500 $", "Personne ne multiplie ton argent par dix."],
+  ["Cousine de Patrick", "Une recharge stp, je rembourse demain", "Une inconnue qui se sert du nom d'un ami : vérifie auprès de lui."],
+  ["Loterie Kin", "Ticket gagnant ! Envoie tes frais", "Des frais pour toucher un gain : c'est l'arnaque."],
+  ["Numéro inconnu", "Ton compte sera bloqué ce soir", "La menace et l'urgence sont faites pour te faire agir vite."],
+];
+const SAFE = [
+  ["Maman ❤️", "Tu rentres à quelle heure ?"],
+  ["Junior", "Match à 17 h devant l'école ?"],
+  ["Papa", "Bonne nuit, dors bien"],
+  ["Bénédicte", "Joyeux anniversaire !! 🎉"],
+  ["Délégué de classe", "Interro reportée à jeudi"],
+  ["Kevin", "Tu me prêtes ton chargeur demain ?"],
+  ["Tante Mado", "Réunion de famille dimanche"],
+  ["Coach", "Entraînement annulé, il pleut"],
+  ["Boutique Pagnes", "Livraison demain, paiement à la réception"],
+  ["Groupe de classe", "Qui a les notes d'hier ?"],
+  ["Grâce", "On se voit au marché ?"],
+  ["Patron", "Réunion demain à 9 h"],
+  ["Mamie", "Viens manger dimanche 🍲"],
+  ["Ruth", "Bien arrivée à la maison"],
+  ["Grand frère", "Je passe te prendre à 18 h"],
+];
+const RANKS = [
+  { n: 0, title: "Débutant" }, { n: 40, title: "Attentif" }, { n: 120, title: "Vigilant" },
+  { n: 250, title: "Pas né de la dernière pluie" }, { n: 500, title: "Fin limier" }, { n: 900, title: "Œil de lynx" },
+  { n: 1500, title: "Chasseur d'arnaques" }, { n: 2500, title: "Légende de Six" },
+];
+// Lames : couleurs de la traînée (halo, milieu, cœur).
+const BLADES = [
+  { id: "six", name: "Bleu Six", price: 0, glow: "77,124,254", mid: "159,184,255", core: "#ffffff", sparks: ["#ff5a4e", "#ffb199", "#ffffff"] },
+  { id: "or", name: "Or", price: 6, glow: "255,190,40", mid: "255,224,140", core: "#fffbe6", sparks: ["#ffd84d", "#ffb12a", "#fff6c4"] },
+  { id: "feu", name: "Feu", price: 12, glow: "255,80,30", mid: "255,160,60", core: "#fff3d6", sparks: ["#ff5a1e", "#ffa12a", "#ffe08a"] },
+  { id: "neon", name: "Néon", price: 18, glow: "255,43,214", mid: "255,140,240", core: "#ffffff", sparks: ["#ff2bd6", "#9b5cff", "#ffffff"] },
+  { id: "jade", name: "Jade", price: 25, glow: "30,220,150", mid: "140,255,200", core: "#f0fff8", sparks: ["#1edc96", "#8cffc8", "#ffffff"] },
+  { id: "arc", name: "Arc-en-ciel", price: 40, rainbow: true, sparks: ["#ff5a4e", "#ffd84d", "#1edc96", "#4d7cfe", "#ff2bd6"] },
+];
+/* ================= Enquêtes =================
+   Chaque enquête est une conversation. Les morceaux suspects sont notés [texte, indice].
+   clues : explication de chaque indice (arnaques) ; why : pourquoi le message est sûr ; tip : le bon réflexe. */
+const CLUE_LABEL = {
+  urgence: "Urgence", erreur: "Faux envoi par erreur", capture: "Capture d'écran", pin: "Demande de code PIN", num: "Numéro suspect",
+  ussd: "Code à composer", tropbeau: "Trop beau pour être vrai", perso: "Numéro personnel", nouveau: "Nouveau numéro",
+  argent: "Demande d'argent", pasappel: "Refuse l'appel", code: "Demande de code reçu par SMS", histoire: "Histoire de détresse",
+  tiers: "Faux intermédiaire", secret: "Demande de secret", lien: "Lien piégé", mdp: "Demande de mot de passe", frais: "Frais à payer",
+  garanti: "Gain garanti", temoins: "Faux témoignages", jamaisjoue: "Jeu auquel tu n'as pas joué",
+};
+const CHAPTERS = [
+  { name: "Argent mobile", desc: "Transferts, codes et faux agents.", cases: [
+    { id: "a1", scam: true, who: ["Numéro inconnu", "+243 81 •••• 447"],
+      msgs: [["Bonsoir, je viens de vous envoyer ", ["50 000 FC par erreur", "erreur"], " 😔"], ["C'est l'argent de l'hôpital de ma mère, ", ["renvoyez-les vite svp", "urgence"]], [["📷 Capture : « Vous avez reçu 50 000 FC »", "capture"]]],
+      clues: { erreur: "Le transfert « par erreur » est l'arnaque la plus courante.", urgence: "L'émotion et la vitesse t'empêchent de vérifier.", capture: "Une capture se fabrique en dix secondes. Seul ton solde dans l'appli officielle fait foi." },
+      tip: "Ouvre l'appli de ton opérateur et regarde ton solde. Si l'argent n'y est pas, ne renvoie rien." },
+    { id: "a2", scam: false, who: ["Grand frère", "Contact enregistré"],
+      msgs: [["Je t'ai envoyé 5 000 FC pour le taxi."], ["Regarde ton solde et dis-moi si c'est arrivé 👍"]],
+      why: "Un contact connu, qui te demande de vérifier toi-même et ne réclame rien en retour.",
+      tip: "Le bon réflexe est déjà dans le message : on vérifie son solde soi-même." },
+    { id: "a3", scam: true, who: ["Service Mobile Money", ["+243 99 •••• 120", "num"]],
+      msgs: [["Votre compte présente une activité inhabituelle."], ["Pour le sécuriser, ", ["communiquez votre code PIN", "pin"], " à notre agent."], [["Sans réponse sous 30 minutes", "urgence"], ", le compte sera bloqué."]],
+      clues: { num: "Un service officiel ne t'écrit pas depuis un numéro de particulier.", pin: "Personne, jamais, n'a besoin de ton code PIN.", urgence: "Le compte à rebours est fait pour t'empêcher de réfléchir." },
+      tip: "Raccroche, puis appelle toi-même le service client au numéro officiel." },
+    { id: "a4", scam: true, who: ["MobileMoney", "Expéditeur : MobileMoney"],
+      msgs: [["Vous avez reçu 120 000 FC de KABAMBA J."], ["Transaction en attente. ", ["Composez *144*4*2*0# pour valider la réception", "ussd"], "."]],
+      clues: { ussd: "On n'a jamais rien à faire pour recevoir de l'argent. Ce code lance un transfert depuis TON compte." },
+      tip: "Le nom d'expéditeur peut être imité. Juge ce qu'on te demande de faire, pas qui semble écrire." },
+    { id: "a5", scam: false, who: ["MobileMoney", "Expéditeur : MobileMoney"],
+      msgs: [["Retrait de 20 000 FC effectué le 14/10 à 18:02. Solde : 35 400 FC."], ["Si vous n'êtes pas à l'origine de cette opération, appelez le service client au numéro inscrit sur votre carte SIM."]],
+      why: "Une simple information : pas de lien, pas de code, et on te renvoie vers un numéro que tu trouves toi-même.",
+      tip: "Un message inquiétant n'est pas forcément une arnaque : regarde ce qu'il te demande." },
+    { id: "a6", scam: true, who: ["Agent Kin Transfert", "+243 85 •••• 902"],
+      msgs: [["Bonjour ! Promo exceptionnelle : ", ["envoyez 10 000 FC, recevez 25 000 FC", "tropbeau"], " 🎉"], ["Offre valable ", ["aujourd'hui seulement", "urgence"], "."], ["Envoyez sur ce numéro : ", ["0858 •••• 902", "perso"]]],
+      clues: { tropbeau: "Recevoir plus que ce qu'on envoie : impossible.", urgence: "« Aujourd'hui seulement » pour te presser.", perso: "Une vraie promo ne passe pas par le numéro personnel d'un « agent »." },
+      tip: "Une promo se vérifie dans l'appli officielle, jamais dans un message privé." },
+  ] },
+  { name: "Faux proches", desc: "Maman, papa, un ami… vraiment ?", cases: [
+    { id: "b1", scam: true, who: ["Maman", ["+243 97 •••• 310 · nouveau numéro", "nouveau"]],
+      msgs: [["C'est maman. ", ["J'ai changé de numéro", "nouveau"], ", enregistre celui-ci."], ["J'ai un problème, ", ["envoie-moi 30 000 FC tout de suite", "argent"], "."], [["Ne m'appelle pas, je suis en réunion", "pasappel"]]],
+      clues: { nouveau: "Un nouveau numéro qui se présente comme un proche : rien ne prouve que c'est elle.", argent: "La demande d'argent arrive dès le deuxième message.", pasappel: "Refuser l'appel empêche de reconnaître la voix. C'est le signal le plus fort." },
+      tip: "Appelle ta maman sur son ancien numéro, celui que tu connais." },
+    { id: "b2", scam: false, who: ["Maman ❤️", "Contact enregistré"],
+      msgs: [["Tu peux passer acheter du pain en rentrant ? 🥖"], ["Je te rembourse ce soir."]],
+      why: "Le numéro habituel de ta maman, une demande banale, rien à envoyer à distance.",
+      tip: "Toutes les demandes ne sont pas suspectes. Un proche, une demande normale : tout va bien." },
+    { id: "b3", scam: true, who: ["Junior", "Contact enregistré"],
+      msgs: [["Salut frère ! ", ["Je suis bloqué à Matadi", "histoire"], " 😩"], [["Tu peux m'envoyer le code que tu vas recevoir par SMS ?", "code"], " C'est pour récupérer mon compte."]],
+      clues: { histoire: "Une histoire de détresse pour te presser.", code: "Ce code sert à se connecter à TON compte. Même un vrai ami ne doit jamais le demander : son compte a sûrement été piraté." },
+      tip: "Même un contact enregistré peut être piraté. Appelle Junior pour vérifier." },
+    { id: "b4", scam: true, who: ["Numéro inconnu", "+243 89 •••• 207"],
+      msgs: [["Bonjour, ", ["je suis la cousine de ton ami Patrick", "tiers"], "."], ["Il m'a dit que tu pouvais m'aider : ", ["une recharge de 10 000 FC", "argent"], "."], ["Je te rembourse demain promis 🙏"]],
+      clues: { tiers: "Se servir du nom d'un ami pour gagner ta confiance.", argent: "Une inconnue qui demande de l'argent dès le premier message." },
+      tip: "Demande à Patrick directement s'il connaît cette personne." },
+    { id: "b5", scam: false, who: ["Délégué de classe", "Groupe de classe"],
+      msgs: [["Rappel : cotisation pour le cadeau du prof, 2 000 FC chacun."], ["À remettre en main propre à Ruth demain en classe."]],
+      why: "De l'argent remis en main propre à quelqu'un que tu connais, sans transfert ni lien.",
+      tip: "Ce qui compte : à qui va l'argent, et comment. Ici, tout est vérifiable." },
+    { id: "b6", scam: true, who: ["Papa", ["+243 82 •••• 551", "num"]],
+      msgs: [["Mon fils, ", ["j'ai été arrêté par la police", "histoire"], "."], [["Envoie 50 $ à cet agent pour ma libération", "argent"], " : 0823 •••• 118"], [["Ne dis rien à ta mère", "secret"]]],
+      clues: { num: "Ce n'est pas le numéro de ton père enregistré dans tes contacts.", histoire: "Une histoire choc pour te faire paniquer.", argent: "L'argent part vers un inconnu.", secret: "Demander le secret t'isole de ceux qui pourraient t'alerter." },
+      tip: "Appelle ton père sur son vrai numéro, et parles-en à ta mère." },
+  ] },
+  { name: "Liens et comptes", desc: "Faux supports, faux sites, comptes piratés.", cases: [
+    { id: "c1", scam: true, who: ["Support WhatsApp", ["+44 7•••• 220", "num"]],
+      msgs: [["Votre compte sera désactivé ", ["dans 24 h", "urgence"], " pour violation des règles."], ["Pour l'éviter, vérifiez ici : ", ["wa-securite-check.com", "lien"]]],
+      clues: { num: "Un support ne t'écrit pas depuis un numéro étranger quelconque.", urgence: "La menace de fermeture sert à te presser.", lien: "Ce n'est pas un site officiel : n'importe qui peut acheter ce nom." },
+      tip: "Ne clique pas. Les vrais messages de sécurité apparaissent dans l'appli elle-même." },
+    { id: "c2", scam: false, who: ["Code de vérification", "Expéditeur officiel"],
+      msgs: [["Ton code de connexion est 482 913."], ["Ne le partage avec personne. Si tu n'as rien demandé, ignore ce message."]],
+      why: "Le message lui-même est normal : il te donne un code et te dit de le garder. Le danger serait de le transmettre.",
+      tip: "Si quelqu'un te réclame ce code juste après, là c'est une arnaque." },
+    { id: "c3", scam: true, who: ["Grâce", "Contact enregistré"],
+      msgs: [["😳 C'est toi sur cette vidéo ??"], [["bit.ly/v1deo-kin", "lien"]], [["Regarde vite avant qu'ils la suppriment", "urgence"]]],
+      clues: { lien: "Un lien raccourci : impossible de voir où il mène.", urgence: "La peur et la curiosité font cliquer sans réfléchir." },
+      tip: "Le compte de Grâce a sûrement été piraté. Préviens-la par un autre moyen." },
+    { id: "c4", scam: true, who: ["Banque Kin", "Expéditeur : BANQUEKIN"],
+      msgs: [["Connexion depuis un nouvel appareil (Lubumbashi, 02:14)."], ["Si ce n'est pas vous, sécurisez votre compte : ", ["banquekin-securite.cd-login.net", "lien"]]],
+      clues: { lien: "Lis la fin de l'adresse : « cd-login.net » n'est pas le site de la banque. C'est elle qui compte, pas le début." },
+      tip: "En cas de doute, ouvre toi-même l'appli de la banque, sans passer par le lien." },
+    { id: "c5", scam: false, who: ["Banque Kin", "Expéditeur : BANQUEKIN"],
+      msgs: [["Votre nouvelle carte est disponible à l'agence de la Gombe."], ["Présentez-vous avec votre pièce d'identité. Aucune démarche en ligne n'est nécessaire."]],
+      why: "Pas de lien, pas de code : on te demande de venir en agence, en personne.",
+      tip: "Un message qui t'envoie en agence, sans rien demander, est rassurant." },
+    { id: "c6", scam: true, who: ["Concours Insta", "@kin_cadeaux_officiel"],
+      msgs: [["Bravo ! Tu fais partie des 10 gagnants 🎁"], ["Pour recevoir ton lot, ", ["connecte-toi avec ton mot de passe Instagram", "mdp"], " ici :"], [["kin-cadeaux.site/login", "lien"]]],
+      clues: { mdp: "Aucun concours n'a besoin de ton mot de passe.", lien: "Une fausse page de connexion pour voler ton compte." },
+      tip: "Le mot « officiel » dans un pseudo ne prouve rien." },
+  ] },
+  { name: "Offres trop belles", desc: "Emplois, bourses, placements et loteries.", cases: [
+    { id: "d1", scam: true, who: ["Recrutement Express", "Numéro inconnu"],
+      msgs: [["Poste disponible : ", ["300 $ par semaine, juste en likant des vidéos", "tropbeau"], "."], [["Inscription : 15 $", "frais"], " à envoyer ", ["avant ce soir", "urgence"], "."]],
+      clues: { tropbeau: "Beaucoup d'argent pour presque rien : trop beau.", frais: "Un employeur te paie. Il ne te fait jamais payer.", urgence: "La date limite sert à t'empêcher de te renseigner." },
+      tip: "Un vrai emploi passe par un entretien, pas par un paiement." },
+    { id: "d2", scam: false, who: ["Kin Logistique · RH", "rh@kinlogistique.cd"],
+      msgs: [["Bonjour, votre candidature au poste de magasinier a retenu notre attention."], ["Entretien jeudi à 10 h dans nos bureaux de Limete. Apportez votre CV imprimé."]],
+      why: "Un entretien en personne, dans des bureaux, sans aucun paiement demandé.",
+      tip: "Tu peux aussi vérifier l'adresse des bureaux avant d'y aller." },
+    { id: "d3", scam: true, who: ["Bourse Études Canada", "+1 (438) •••-••12"],
+      msgs: [["Félicitations ! Votre bourse complète est acceptée 🎓"], ["Pour finaliser, ", ["payez 150 $ de frais de dossier", "frais"], " par Mobile Money au ", ["0974 •••• 220", "perso"], "."]],
+      clues: { frais: "Une bourse ne se débloque pas en payant des frais par message.", perso: "L'argent part vers un numéro de particulier en RDC, pas vers une université." },
+      tip: "Les vraies bourses se vérifient sur le site officiel de l'établissement." },
+    { id: "d4", scam: true, who: ["Crypto Kin", "Groupe « Investisseurs RDC » · 4 812 membres"],
+      msgs: [["Investis 20 $, ", ["récupère 200 $ en 48 h", "tropbeau"], " 📈"], [["Garanti à 100 %", "garanti"], ", regarde les témoignages 👇"], [["« J'ai gagné 2 000 $ en une semaine ! » · Patrick", "temoins"]]],
+      clues: { tropbeau: "Multiplier par dix en deux jours : impossible.", garanti: "Aucun placement honnête n'est garanti.", temoins: "Les témoignages se fabriquent. Dans ces groupes, les « gagnants » sont souvent les arnaqueurs." },
+      tip: "Un grand nombre de membres ne prouve rien : ce sont souvent de faux comptes." },
+    { id: "d5", scam: false, who: ["Boutique Pagnes Kin", "Contact enregistré"],
+      msgs: [["Promo -20 % ce week-end sur les wax 🎉"], ["Passez au marché central, ou commandez : paiement à la livraison."]],
+      why: "Une boutique connue, et tu paies quand tu as l'article en main.",
+      tip: "Le paiement à la livraison te protège." },
+    { id: "d6", scam: true, who: ["Loterie nationale", "Expéditeur : LOTO-RDC"],
+      msgs: [["Votre numéro a été tiré au sort : vous gagnez une moto 🏍️"], ["Les frais de livraison sont de 25 $. ", ["Payez-les pour recevoir votre lot", "frais"], "."], ["Vous n'avez jamais acheté de ticket ? ", ["Pas grave, le tirage est automatique", "jamaisjoue"], "."]],
+      clues: { frais: "Payer pour recevoir un gain : c'est le piège.", jamaisjoue: "On ne gagne pas à une loterie à laquelle on n'a pas joué." },
+      tip: "Un nom d'expéditeur sérieux peut être imité. Le contenu te dit la vérité." },
+  ] },
+];
+const CH_UNLOCK = 8;   // ★ nécessaires dans un chapitre pour ouvrir le suivant
+
+// kind "day" : cumulé sur la journée ; "best" : en une partie.
+const MISSIONS = [
+  { id: "cases", kind: "day", goals: [2, 3, 5], txt: n => "Résous " + n + " enquêtes" },
+  { id: "perfectcase", kind: "day", goals: [1, 2, 3], txt: n => "Obtiens 3 ★ sur " + n + " enquête" + (n > 1 ? "s" : "") },
+  { id: "cut", kind: "best", goals: [25, 40, 60], txt: n => "Coupe " + n + " arnaques en une partie" },
+  { id: "combo", kind: "best", goals: [2, 3, 4], txt: n => (n === 2 ? "Fais un DOUBLE" : n === 3 ? "Fais un TRIPLE" : "Coupe 4 arnaques d'un seul geste") },
+  { id: "gold", kind: "day", goals: [1, 2, 4], txt: n => "Coupe " + n + " arnaque" + (n > 1 ? "s" : "") + " en or" },
+  { id: "perfect", kind: "day", goals: [3, 6, 10], txt: n => "Réussis " + n + " coupes parfaites" },
+  { id: "chrono", kind: "best", goals: [300, 500, 800], txt: n => "Marque " + n + " points en Chrono" },
+  { id: "classic", kind: "best", goals: [400, 700, 1000], txt: n => "Marque " + n + " points en Classique" },
+  { id: "daily", kind: "day", goals: [1, 1, 1], txt: () => "Joue le défi du jour" },
+  { id: "six", kind: "day", goals: [1, 2, 3], txt: n => "Active le mode Six" + (n > 1 ? " " + n + " fois" : "") },
+];
+const MISSION_STARS = [2, 3, 5];
+const CHRONO = 60;
+
+/* ================= Sauvegarde ================= */
+const KEY = "coupe-arnaque";
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} },
+};
+let SAVE = Object.assign({ best: 0, bestChrono: 0, cut: 0, games: 0, tuto: false, mute: false, streak: 0, lastDay: null,
+  stars: 0, blades: ["six"], blade: "six", mDay: null, mProg: {}, mDone: {}, daily: {}, caseStars: {} }, store.get(KEY, {}));
+const save = () => store.set(KEY, SAVE);
+
+/* ================= Outils ================= */
+const $ = s => document.querySelector(s);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const rand = (a, b) => a + Math.random() * (b - a);
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const fmt = n => Math.floor(n).toLocaleString("fr-FR");
+const pad2 = n => String(n).padStart(2, "0");
+const dayKey = d => d.getFullYear() + "-" + pad2(d.getMonth() + 1) + "-" + pad2(d.getDate());
+const today = () => dayKey(new Date());
+const yesterday = () => { const d = new Date(); d.setDate(d.getDate() - 1); return dayKey(d); };
+const dayNumber = k => { const [y, m, d] = k.split("-").map(Number); return Math.round((Date.UTC(y, m - 1, d) - Date.UTC(2026, 9, 1)) / 864e5) + 1; };
+const streakNow = () => (SAVE.lastDay === today() || SAVE.lastDay === yesterday() ? SAVE.streak : 0);
+const rankIdx = n => RANKS.reduce((a, r, i) => (n >= r.n ? i : a), 0);
+const buzz = ms => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} };
+function rng(seed) { return () => { seed = (seed + 0x6D2B79F5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+function shuffle(a, r = Math.random) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function rr(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
+let toastT;
+function toast(m) { const t = $("#toast"); t.textContent = m; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => { t.hidden = true; }, 2200); }
+function todayMissions() {
+  const k = today();
+  if (SAVE.mDay !== k) { SAVE.mDay = k; SAVE.mProg = {}; SAVE.mDone = {}; save(); }
+  const r = rng(dayNumber(k) * 53 + 11);
+  return shuffle(MISSIONS, r).slice(0, 3).map(m => { const lv = Math.floor(r() * 3); return Object.assign({}, m, { goal: m.goals[lv], stars: MISSION_STARS[lv] }); });
+}
+const curBlade = () => BLADES.find(b => b.id === SAVE.blade) || BLADES[0];
+function missionProgress(add, best) {
+  const news = []; let stars = 0;
+  for (const m of todayMissions()) {
+    if (SAVE.mDone[m.id]) continue;
+    const p = SAVE.mProg[m.id] || 0, np = m.kind === "day" ? p + (add[m.id] || 0) : Math.max(p, best[m.id] || 0);
+    SAVE.mProg[m.id] = np;
+    if (np >= m.goal) { SAVE.mDone[m.id] = true; stars += m.stars; news.push("Mission réussie : " + m.txt(m.goal) + " · +" + m.stars + " ⭐"); }
+  }
+  return { news, stars };
+}
+
+/* ================= Son ================= */
+let AC = null, NOISE = null;
+function audio() {
+  if (SAVE.mute) return null;
+  if (!AC) { try { AC = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { return null; } }
+  if (AC.state === "suspended") AC.resume();
+  return AC;
+}
+function tone(f1, f2, dur, type = "sine", vol = 0.08, at = 0) {
+  const a = audio(); if (!a) return;
+  const t = a.currentTime + at, o = a.createOscillator(), g = a.createGain();
+  o.type = type; o.frequency.setValueAtTime(f1, t); o.frequency.exponentialRampToValueAtTime(f2, t + dur);
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(vol, t + 0.008); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  o.connect(g).connect(a.destination); o.start(t); o.stop(t + dur + 0.02);
+}
+function whoosh(vol = 0.12, freq = 2500, dur = 0.12) {
+  const a = audio(); if (!a) return;
+  if (!NOISE) { NOISE = a.createBuffer(1, a.sampleRate * 0.6, a.sampleRate); const d = NOISE.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
+  const s = a.createBufferSource(), f = a.createBiquadFilter(), g = a.createGain(), t = a.currentTime;
+  s.buffer = NOISE; f.type = "bandpass"; f.frequency.setValueAtTime(freq, t); f.frequency.exponentialRampToValueAtTime(freq * 2.2, t + dur); f.Q.value = 0.8;
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  s.connect(f).connect(g).connect(a.destination); s.start(t); s.stop(t + dur + 0.02);
+}
+const sfx = {
+  cut: k => { whoosh(0.14); tone(700 + k * 90, 1100 + k * 120, 0.12, "triangle", 0.07); },
+  gold: () => [1047, 1319, 1568, 2093].forEach((f, i) => tone(f, f, 0.14, "sine", 0.06, i * 0.05)),
+  perfect: () => tone(1568, 2093, 0.18, "sine", 0.07),
+  bad: () => { tone(220, 90, 0.35, "sawtooth", 0.06); whoosh(0.1, 600, 0.2); },
+  miss: () => tone(330, 110, 0.4, "triangle", 0.09),
+  combo: n => [660, 880, 1100, 1320].slice(0, n + 1).forEach((f, i) => tone(f, f, 0.12, "sine", 0.06, i * 0.06)),
+  power: () => { tone(300, 1200, 0.5, "sine", 0.08); whoosh(0.1, 1500, 0.5); },
+  freeze: () => { tone(1800, 900, 0.5, "sine", 0.06); tone(2400, 1200, 0.5, "sine", 0.04, 0.05); },
+  alarm: () => [0, 0.18, 0.36].forEach(t => tone(880, 660, 0.15, "square", 0.05, t)),
+  tick: () => tone(1320, 1320, 0.05, "sine", 0.04),
+  over: () => [523, 392, 330, 262].forEach((f, i) => tone(f, f * 0.98, 0.22, "triangle", 0.07, i * 0.12)),
+};
+const SOUND_ON = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l4-3v10l-4-3H4z"/><path d="M14 7.5a3.5 3.5 0 0 1 0 5M16 5.5a6.5 6.5 0 0 1 0 9"/></svg>';
+const SOUND_OFF = '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l4-3v10l-4-3H4z"/><path d="M14 8l4 4M18 8l-4 4"/></svg>';
+
+/* ================= Canvas ================= */
+const stage = $("#stage"), cv = $("#cv"), ctx = cv.getContext("2d");
+let W = 0, H = 0, DPR = 1, stars = [];
+function resize() {
+  const r = stage.getBoundingClientRect();
+  W = r.width; H = r.height; DPR = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  stars = Array.from({ length: 60 }, () => ({ x: Math.random() * W, y: Math.random() * H, r: rand(0.4, 1.5), s: rand(4, 18) }));
+}
+addEventListener("resize", resize);
+resize();
+
+/* ================= État ================= */
+const G = { state: "menu", mode: "classic", paused: false, t: 0, score: 0, lives: 3, time: 0, streak: 0, cut: 0, bubbles: [], pieces: [], parts: [], texts: [], queue: [],
+  next: 1, sixT: 0, freezeT: 0, powerNext: 14, frenzyNext: 40, shake: 0, flash: 0, flashCol: "255,90,78", reason: "", tuto: 0, overT: 0,
+  rnd: Math.random, stats: null, lastTick: 0 };
+const blade = { pts: [], down: false, swipeCuts: [], swipeT: 0 };
+const mult = () => Math.min(5, 1 + Math.floor(G.streak / 6));
+// Palier de difficulté : 1 (première minute), 2 (1 à 3 min), 3 (au-delà : presque impossible à tenir).
+const diffK = () => (G.t < 60 ? 1 : G.t < 180 ? 1.7 : 2.6);
+const R = (a, b) => a + G.rnd() * (b - a);
+const RP = a => a[Math.floor(G.rnd() * a.length)];
+
+/* ================= Bulles ================= */
+const FONT_T = "600 18px Manrope, system-ui, sans-serif", FONT_S = "700 12px Manrope, system-ui, sans-serif";
+function wrap(text, maxW) {
+  ctx.font = FONT_T;
+  const words = text.split(" "), lines = []; let line = "";
+  for (const w of words) { const test = line ? line + " " + w : w; if (ctx.measureText(test).width > maxW && line) { lines.push(line); line = w; } else line = test; }
+  if (line) lines.push(line);
+  return lines;
+}
+const POWERS = {
+  six: { label: "Six", c1: "#9fb8ff", c2: "#2d5fe6", glow: "77,124,254" },
+  heart: { label: "❤️", c1: "#ffb3c8", c2: "#e8336b", glow: "255,80,130" },
+  freeze: { label: "❄️", c1: "#c9f2ff", c2: "#2aa7d8", glow: "120,220,255" },
+  time: { label: "+5 s", c1: "#b5ffd9", c2: "#16a66a", glow: "40,220,150" },
+};
+function makeBubble(kind, o = {}) {
+  if (kind === "power") return Object.assign({ kind, p: o.p, r: 34, w: 68, h: 68, rot: 0, vr: R(-1, 1), scale: 1 }, o);
+  const [from, text, why] = RP(kind === "scam" ? SCAMS : SAFE);
+  const maxW = Math.min(W * 0.62, 250) - 28, lines = wrap(text, maxW);
+  ctx.font = FONT_T;
+  const tw = Math.max(...lines.map(l => ctx.measureText(l).width));
+  ctx.font = FONT_S;
+  const label = (o.split ? "↪ " : "") + from.toUpperCase() + (o.split ? " · TRANSFÉRÉ" : "");
+  const w = Math.max(tw, ctx.measureText(label).width) + 30, h = 18 + 16 + lines.length * 23 + 12;
+  return Object.assign({ kind, from, label, lines, w, h, why, rot: R(-0.12, 0.12), vr: R(-0.4, 0.4), scale: 1 }, o);
+}
+const gravity = b => H * (b.slow ? 0.42 : 0.95 + Math.min(0.9, G.t * 0.009 * diffK()));
+// Prépare le lancer depuis le bas de l'écran : la bulle monte jusqu'à un point haut puis retombe.
+function aim(b, x0) {
+  const g = gravity(b);
+  b.x = x0 != null ? x0 : R(W * 0.2, W * 0.8); b.y = H + b.h * b.scale;
+  const apex = R(H * 0.16, H * (b.slow ? 0.3 : 0.42));
+  b.vy = -Math.sqrt(2 * g * (b.y - apex));
+  const tFlight = (2 * -b.vy) / g, tx = R(W * 0.25, W * 0.75);
+  b.vx = ((tx - b.x) / tFlight) * 0.9;
+  return b;
+}
+const enqueue = (b, delay) => G.queue.push({ at: G.t + delay, b });
+
+function spawnWave() {
+  const t = G.t, k = diffK(), n = 1 + Math.floor(G.rnd() * Math.min(5, (1.3 + t / 22) * k));
+  let scams = 0, delay = 0;
+  for (let i = 0; i < n; i++) {
+    const kind = G.rnd() < Math.min(0.72, 0.58 + (k - 1) * 0.07) || (i === n - 1 && !scams) ? "scam" : "safe";
+    let o = {};
+    if (kind === "scam") { scams++; const r = G.rnd(); if (r < 0.06) o.gold = true; else if (r < (k >= 2 ? 0.2 : 0.14) && t > 15) o.split = true; }
+    enqueue(aim(makeBubble(kind, o)), delay);
+    delay += R(0.1, 0.22);
+  }
+  if (G.t > G.powerNext) {
+    G.powerNext = G.t + R(20, 30);
+    const opts = G.mode === "classic" ? ["six", "six", "freeze", G.lives < 3 ? "heart" : "six"] : ["six", "freeze", "time", "time"];
+    enqueue(aim(makeBubble("power", { p: RP(opts) })), delay + 0.15);
+  }
+  G.next = Math.max(0.45, (2.1 - t * 0.018) / k) + R(0, 0.4);
+}
+// « ALERTE SPAM » : une rafale d'arnaques qui arrivent des deux côtés.
+function frenzy() {
+  G.frenzyNext = G.t + R(26, 36);
+  addText("⚠ ALERTE SPAM", W / 2, H * 0.3, "#ff5a4e", 1.5);
+  G.flash = 0.7; G.flashCol = "255,90,78"; sfx.alarm(); buzz(50);
+  for (let i = 0; i < 9; i++) enqueue(aim(makeBubble("scam"), i % 2 ? W * 0.12 : W * 0.88), 0.5 + i * 0.17);
+  G.next = 3.4;
+}
+
+/* ================= Partie ================= */
+function startGame(mode) {
+  audio();
+  const daily = mode === "daily";
+  Object.assign(G, { state: "play", mode, paused: false, t: 0, score: 0, lives: 3, time: CHRONO, streak: 0, cut: 0, bubbles: [], pieces: [], parts: [], texts: [], queue: [],
+    next: 0.8, sixT: 0, freezeT: 0, powerNext: 14, frenzyNext: mode === "classic" ? 42 : 25, shake: 0, flash: 0, reason: "", overT: 0, lastTick: 99,
+    rnd: daily ? rng(dayNumber(today()) * 7919 + 1) : Math.random, stats: { gold: 0, perfect: 0, six: 0, bestSwipe: 0 }, mistakes: [] });
+  G.tuto = SAVE.tuto || mode !== "classic" ? 0 : 1;
+  $("#menu").hidden = true; $("#over").hidden = true; $("#hud").hidden = false; $("#shareBox").hidden = true;
+  $("#hearts").hidden = mode !== "classic"; $("#clock").hidden = mode === "classic";
+  if (G.tuto) tutoStep();
+  else if (mode !== "classic") addText(daily ? "Défi n°" + dayNumber(today()) + " · 60 secondes" : "60 secondes. Coupe tout !", W / 2, H * 0.4, "#9fb8ff", 1.2);
+  renderHud();
+  parent.postMessage({ source: "coupe-arnaque", type: "game_start" }, location.origin);
+}
+// Tutoriel du premier lancement : une arnaque à couper, puis un message de Maman à laisser passer.
+function tutoStep() {
+  if (G.tuto === 1) { const b = makeBubble("scam", { slow: true }); b.from = "Numéro inconnu"; b.label = "NUMÉRO INCONNU"; b.lines = wrap("Tu as gagné 1 000 $ 🎁", 220); b.hint = "Coupe-la ! ✂"; enqueue(aim(b), 0); }
+  if (G.tuto === 2) { const b = makeBubble("safe", { slow: true }); b.from = "Maman ❤️"; b.label = "MAMAN ❤️"; b.lines = wrap("Tu rentres à quelle heure ?", 220); b.hint = "Laisse-la passer"; enqueue(aim(b), 0); }
+}
+function renderHud() {
+  $("#score").textContent = fmt(G.score);
+  const m = mult();
+  $("#mult").textContent = G.freezeT > 0 ? "❄️ GELÉ" : G.sixT > 0 ? "MODE SIX · RALENTI" : m > 1 ? "×" + m + "  ·  " + G.streak + " d'affilée" : "";
+  $("#hearts").innerHTML = [0, 1, 2].map(i => '<span class="' + (i < G.lives ? "" : "lost") + '">❤️</span>').join("");
+  const c = $("#clock"), s = Math.max(0, Math.ceil(G.time));
+  c.textContent = Math.floor(s / 60) + ":" + pad2(s % 60);
+  c.classList.toggle("late", s <= 10);
+}
+function addText(txt, x, y, col, size = 1) { G.texts.push({ txt, x, y, col, size, life: 1 }); }
+function burst(x, y, cols, n = 18, sp = 320) {
+  for (let i = 0; i < n; i++) { const a = Math.random() * Math.PI * 2, v = rand(60, sp); G.parts.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v - 80, life: rand(0.4, 0.8), max: 0.8, r: rand(1.5, 3.5), col: pick(cols) }); }
+}
+function penalty(reason, secs) {
+  if (G.tuto || G.state !== "play") return;
+  G.streak = 0; G.flash = 1; G.flashCol = "255,90,78"; G.shake = 12; G.reason = reason; buzz(90);
+  if (G.mode === "classic") { G.lives--; if (G.lives <= 0) { G.state = "dying"; G.overT = 0.9; sfx.over(); } }
+  else { G.time -= secs; addText("−" + secs + " s", W - 70, 70, "#ff5a4e", 1.1); }
+  renderHud();
+}
+
+// Coupe d'une bulle : deux moitiés qui s'écartent, des éclats, des points.
+function slice(b, ang, x1, y1, x2, y2) {
+  b.dead = true;
+  const nx = -Math.sin(ang), ny = Math.cos(ang);
+  for (const s of [-1, 1]) G.pieces.push({ b, side: s, ang, x: b.x, y: b.y, vx: b.vx * 0.4 + nx * s * 160, vy: b.vy * 0.3 + ny * s * 160 - 60, rot: b.rot, vr: s * rand(2, 5), life: 1 });
+  if (b.kind === "power") {
+    const P = POWERS[b.p];
+    burst(b.x, b.y, [P.c1, P.c2, "#ffffff"], 30, 420); sfx.power();
+    if (b.p === "six") { G.sixT = 3.5; G.stats.six++; addText("MODE SIX : les arnaques s'allument", W / 2, H * 0.32, "#9fb8ff", 1.05); }
+    if (b.p === "heart") { G.lives = Math.min(3, G.lives + 1); addText("+1 ❤️", b.x, b.y, "#ffb3c8", 1.3); }
+    if (b.p === "freeze") { G.freezeT = 2; sfx.freeze(); addText("❄️ GELÉ", W / 2, H * 0.32, "#c9f2ff", 1.4); }
+    if (b.p === "time") { G.time += 5; addText("+5 s", b.x, b.y, "#b5ffd9", 1.4); }
+    renderHud(); return;
+  }
+  if (b.kind === "scam") {
+    G.streak++; G.cut++;
+    // Coupe parfaite : la lame passe au centre de la bulle.
+    const L = Math.hypot(x2 - x1, y2 - y1) || 1, dist = Math.abs((x2 - x1) * (y1 - b.y) - (x1 - b.x) * (y2 - y1)) / L;
+    const perfect = dist < 12 * b.scale;
+    let pts = 10 * mult();
+    if (b.gold) { pts *= 5; G.stats.gold++; sfx.gold(); burst(b.x, b.y, ["#ffd84d", "#fff6c4", "#ffb12a"], 30, 380); addText("OR ×5  +" + pts, b.x, b.y - 30, "#ffd84d", 1.3); }
+    else addText("+" + pts, b.x, b.y - b.h / 2, "#ffffff");
+    if (perfect) { pts += 5; G.stats.perfect++; addText("PARFAIT +5", b.x, b.y + 26, "#9fb8ff", 0.95); sfx.perfect(); }
+    G.score += pts; blade.swipeCuts.push(b);
+    burst(b.x, b.y, curBlade().sparks);
+    sfx.cut(Math.min(4, blade.swipeCuts.length - 1)); buzz(12);
+    if (b.split) {
+      // L'arnaque transférée se divise en deux petites copies.
+      for (const s of [-1, 1]) {
+        const m = makeBubble("scam", { scale: 0.72 });
+        m.lines = b.lines; m.from = b.from; m.label = "↪ COPIE"; m.w = b.w; m.h = b.h;
+        m.x = b.x; m.y = b.y; m.vx = s * W * 0.35; m.vy = -H * 0.75; m.grace = 0.3; G.bubbles.push(m);
+      }
+      addText("TRANSFÉRÉE ! Coupe les copies", W / 2, H * 0.36, "#ffb199", 1.05);
+    }
+    if (G.tuto === 1) { G.tuto = 2; addText("Bravo ! Une arnaque de moins.", W / 2, H * 0.4, "#9fb8ff", 1.05); setTimeout(tutoStep, 900); }
+  } else {
+    burst(b.x, b.y, ["#9aa6bf", "#f2f5fa"], 12, 200);
+    sfx.bad();
+    if (G.tuto) { addText("Non ! C'était " + b.from.replace(" ❤️", "") + " 😅", W / 2, H * 0.4, "#ff9f94", 1.05); setTimeout(tutoStep, 900); return; }
+    addText("C'était " + b.from + " !", b.x, b.y, "#ff9f94", 1.05);
+    G.mistakes.push({ m: b.from + " : « " + b.lines.join(" ") + " »", why: "Un vrai message : ni argent, ni code, ni lien. Il fallait le laisser passer." });
+    penalty("Tu as coupé le message de " + b.from + ".", 3);
+  }
+  renderHud();
+}
+
+/* ================= Lame ================= */
+function segHitsBox(x1, y1, x2, y2, b) {
+  const pad = 6, hw = (b.w * b.scale) / 2 + pad, hh = (b.h * b.scale) / 2 + pad;
+  const l = b.x - hw, r = b.x + hw, t = b.y - hh, bt = b.y + hh;
+  let u0 = 0, u1 = 1; const dx = x2 - x1, dy = y2 - y1;
+  for (const [p, q] of [[-dx, x1 - l], [dx, r - x1], [-dy, y1 - t], [dy, bt - y1]]) {
+    if (p === 0) { if (q < 0) return false; }
+    else { const u = q / p; if (p < 0) { if (u > u1) return false; if (u > u0) u0 = u; } else { if (u < u0) return false; if (u < u1) u1 = u; } }
+  }
+  return true;
+}
+function bladeMove(x, y) {
+  const now = performance.now(), last = blade.pts[blade.pts.length - 1];
+  blade.pts.push({ x, y, t: now });
+  if (!last || G.state !== "play" || G.paused) return;
+  const d = Math.hypot(x - last.x, y - last.y);
+  if (d < 4) return;
+  if (d > 25 && now - blade.swipeT > 90) { whoosh(0.05, 3000, 0.08); blade.swipeT = now; }
+  const ang = Math.atan2(y - last.y, x - last.x);
+  for (const b of G.bubbles.slice()) if (!b.dead && !b.grace && segHitsBox(last.x, last.y, x, y, b)) slice(b, ang, last.x, last.y, x, y);
+}
+function bladeEnd() {
+  blade.down = false;
+  const n = blade.swipeCuts.length;
+  if (G.stats) G.stats.bestSwipe = Math.max(G.stats.bestSwipe, n);
+  if (n >= 2 && G.state === "play") {
+    const bonus = [0, 0, 20, 50, 100, 200][Math.min(5, n)] * mult();
+    G.score += bonus;
+    const last = blade.swipeCuts[n - 1];
+    addText((n === 2 ? "DOUBLE" : n === 3 ? "TRIPLE" : "MÉGA COMBO") + " +" + bonus, last.x, last.y - 40, "#ffd84d", 1.35);
+    G.flash = 0.5; G.flashCol = "255,216,77";
+    sfx.combo(Math.min(3, n - 1)); buzz(30); renderHud();
+  }
+  blade.swipeCuts = [];
+}
+const pos = e => { const r = cv.getBoundingClientRect(); return [e.clientX - r.left, e.clientY - r.top]; };
+cv.addEventListener("pointerdown", e => { audio(); blade.down = true; blade.pts = []; blade.swipeCuts = []; const [x, y] = pos(e); bladeMove(x, y); try { cv.setPointerCapture(e.pointerId); } catch (err) {} });
+cv.addEventListener("pointermove", e => { if (!blade.down) return; const [x, y] = pos(e); bladeMove(x, y); });
+cv.addEventListener("pointerup", bladeEnd);
+cv.addEventListener("pointercancel", bladeEnd);
+
+/* ================= Boucle ================= */
+function update(dt) {
+  if (G.paused) return;
+  const playing = G.state === "play";
+  if (playing) G.t += dt;
+  const slow = G.sixT > 0 ? 0.45 : G.state === "dying" ? 0.25 : 1;
+  const pdt = dt * slow, frozen = G.freezeT > 0;
+  if (G.sixT > 0) { G.sixT -= dt; if (G.sixT <= 0) renderHud(); }
+  if (G.freezeT > 0) { G.freezeT -= dt; if (G.freezeT <= 0) renderHud(); }
+  if (playing && !G.tuto) {
+    G.next -= dt; if (G.next <= 0) spawnWave();
+    if (G.t > G.frenzyNext) frenzy();
+    if (G.mode !== "classic") {
+      if (!frozen) G.time -= dt;
+      const s = Math.ceil(G.time);
+      if (s !== G.lastTick) { G.lastTick = s; renderHud(); if (s <= 5 && s > 0) sfx.tick(); }
+      if (G.time <= 0) { G.time = 0; G.reason = "Temps écoulé !"; G.state = "dying"; G.overT = 0.8; sfx.over(); renderHud(); }
+    }
+  }
+  if (G.state === "menu") attract(dt);
+  G.queue = G.queue.filter(q => { if (G.t >= q.at || G.state === "menu") { if (G.state === "play" || G.state === "menu") G.bubbles.push(q.b); return false; } return true; });
+  for (const b of G.bubbles) {
+    if (b.grace) b.grace = Math.max(0, b.grace - dt);
+    if (frozen && G.state === "play") continue;
+    b.vy += gravity(b) * pdt; b.x += b.vx * pdt; b.y += b.vy * pdt; b.rot += b.vr * pdt * 0.3;
+    if (!b.dead && b.vy > 0 && b.y - (b.h * b.scale) / 2 > H + 10) {
+      b.dead = true;
+      if (G.state !== "play") continue;
+      if (b.kind === "scam") {
+        if (G.tuto) { addText("Elle t'a échappé. Encore une fois !", W / 2, H * 0.4, "#ff9f94"); setTimeout(tutoStep, 700); }
+        else { addText("Arnaque passée !", clamp(b.x, 90, W - 90), H - 40, "#ff5a4e", 1.1); sfx.miss(); G.mistakes.push({ m: b.from + " : « " + b.lines.join(" ") + " »", why: b.why || "" }); penalty("Une arnaque t'a échappé : « " + b.lines.join(" ") + " »", 2); }
+      } else if (b.kind === "safe") {
+        if (G.tuto === 2) { G.tuto = 0; SAVE.tuto = true; save(); addText("Parfait. C'est parti !", W / 2, H * 0.4, "#9fb8ff", 1.2); G.next = 1.2; }
+        else if (!G.tuto) { G.score += 2; renderHud(); }
+      }
+    }
+  }
+  G.bubbles = G.bubbles.filter(b => !b.dead);
+  for (const p of G.pieces) { p.vy += H * 1.2 * pdt; p.x += p.vx * pdt; p.y += p.vy * pdt; p.rot += p.vr * pdt; p.life -= pdt * 1.1; }
+  G.pieces = G.pieces.filter(p => p.life > 0 && p.y < H + 200);
+  for (const p of G.parts) { p.vy += 500 * pdt; p.x += p.vx * pdt; p.y += p.vy * pdt; p.life -= pdt; }
+  G.parts = G.parts.filter(p => p.life > 0);
+  for (const t of G.texts) { t.y -= 40 * dt; t.life -= dt * 0.8; }
+  G.texts = G.texts.filter(t => t.life > 0);
+  G.shake = Math.max(0, G.shake - 40 * dt); G.flash = Math.max(0, G.flash - 2.5 * dt);
+  const now = performance.now();
+  blade.pts = blade.pts.filter(p => now - p.t < 140);
+  for (const s of stars) { s.y += s.s * dt; if (s.y > H) { s.y = -2; s.x = Math.random() * W; } }
+  if (G.state === "dying") { G.overT -= dt; if (G.overT <= 0) endGame(); }
+}
+
+// Sur l'accueil, les bulles volent et une lame fantôme coupe les arnaques : on comprend le jeu sans lire.
+function attract(dt) {
+  G.next -= dt;
+  if (G.next <= 0) { G.rnd = Math.random; G.bubbles.push(aim(makeBubble(Math.random() < 0.6 ? "scam" : "safe", { slow: true, gold: Math.random() < 0.1 }))); G.next = rand(0.9, 1.5); }
+  for (const b of G.bubbles) if (b.kind === "scam" && !b.dead && !b.botCut && b.vy > -40) {
+    b.botCut = true;
+    const a = rand(-0.6, 0.6), L = b.w * 0.75, x1 = b.x - Math.cos(a) * L, y1 = b.y - Math.sin(a) * L;
+    for (let k = 0; k <= 6; k++) blade.pts.push({ x: x1 + Math.cos(a) * L * 2 * k / 6, y: y1 + Math.sin(a) * L * 2 * k / 6, t: performance.now() - (6 - k) * 14 });
+    b.dead = true;
+    for (const s of [-1, 1]) G.pieces.push({ b, side: s, ang: a, x: b.x, y: b.y, vx: -Math.sin(a) * s * 140, vy: Math.cos(a) * s * 140 - 40, rot: b.rot, vr: s * 3, life: 1 });
+    burst(b.x, b.y, curBlade().sparks, 12, 240);
+  }
+}
+
+function drawBubble(b, hl) {
+  if (b.kind === "power") {
+    const P = POWERS[b.p], g = ctx.createRadialGradient(-10, -12, 4, 0, 0, b.r);
+    g.addColorStop(0, P.c1); g.addColorStop(1, P.c2);
+    ctx.shadowColor = "rgba(" + P.glow + ",.85)"; ctx.shadowBlur = 26;
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, b.r, 0, 7); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = "rgba(255,255,255,.6)"; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, b.r - 4, 0, 7); ctx.stroke();
+    ctx.fillStyle = "#fff"; ctx.font = "800 " + (b.p === "time" ? 16 : b.p === "six" ? 19 : 26) + "px Manrope, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(P.label, 0, 1);
+    return;
+  }
+  const w = b.w, h = b.h, x = -w / 2, y = -h / 2, gold = b.gold;
+  ctx.shadowColor = hl ? "rgba(255,90,78,.75)" : gold ? "rgba(255,216,77,.8)" : "rgba(0,0,0,.45)"; ctx.shadowBlur = hl || gold ? 26 : 18; ctx.shadowOffsetY = hl || gold ? 0 : 8;
+  ctx.fillStyle = gold ? "#fff7d6" : "#f4f6fb";
+  rr(ctx, x, y, w, h, 18); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(x + 10, y + h - 2); ctx.lineTo(x - 2, y + h + 9); ctx.lineTo(x + 26, y + h - 2); ctx.closePath(); ctx.fill();
+  ctx.shadowBlur = 0; ctx.shadowOffsetY = 0;
+  if (gold) {
+    const gg = ctx.createLinearGradient(x, y, x + w, y + h); gg.addColorStop(0, "#ffd84d"); gg.addColorStop(0.5, "#fff3b0"); gg.addColorStop(1, "#e3a91c");
+    ctx.strokeStyle = gg; ctx.lineWidth = 4; rr(ctx, x, y, w, h, 18); ctx.stroke();
+    ctx.font = "16px sans-serif"; ctx.textAlign = "right"; ctx.textBaseline = "alphabetic"; ctx.fillText("💰", x + w - 8, y + 22);
+  }
+  if (hl) { ctx.strokeStyle = "#ff5a4e"; ctx.lineWidth = 3; rr(ctx, x, y, w, h, 18); ctx.stroke(); }
+  ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+  ctx.font = FONT_S; ctx.fillStyle = hl ? "#ff5a4e" : gold ? "#b07c00" : b.split ? "#d0563f" : "#2d5fe6";
+  ctx.fillText((hl ? "⚠ " : "") + b.label, x + 15, y + 24);
+  ctx.font = FONT_T; ctx.fillStyle = "#0e1526";
+  b.lines.forEach((l, i) => ctx.fillText(l, x + 15, y + 48 + i * 23));
+}
+function drawBlade() {
+  const pts = blade.pts, B = curBlade();
+  if (pts.length < 2) return;
+  ctx.lineCap = "round"; ctx.lineJoin = "round";
+  const layers = B.rainbow ? [[14, 0.3], [6, 0.85], [2.5, 1]] : [[14, "rgba(" + B.glow + ",.3)"], [6, "rgba(" + B.mid + ",.85)"], [2.5, B.core]];
+  for (const [wd, col] of layers) {
+    for (let i = 1; i < pts.length; i++) {
+      ctx.strokeStyle = B.rainbow ? (wd < 3 ? "#ffffff" : "hsla(" + ((i * 30 + performance.now() / 4) % 360) + ",95%,65%," + col + ")") : col;
+      ctx.lineWidth = wd * (i / pts.length);
+      ctx.beginPath(); ctx.moveTo(pts[i - 1].x, pts[i - 1].y); ctx.lineTo(pts[i].x, pts[i].y); ctx.stroke();
+    }
+  }
+}
+function render() {
+  ctx.save();
+  if (G.shake) ctx.translate(rand(-1, 1) * G.shake, rand(-1, 1) * G.shake);
+  const g = ctx.createRadialGradient(W / 2, H * 0.35, 20, W / 2, H * 0.5, H * 0.85);
+  g.addColorStop(0, G.freezeT > 0 ? "#163a52" : G.sixT > 0 ? "#1b2a55" : "#16213b"); g.addColorStop(1, "#090f1b");
+  ctx.fillStyle = g; ctx.fillRect(-30, -30, W + 60, H + 60);
+  ctx.fillStyle = "rgba(242,245,250,.35)";
+  for (const s of stars) { ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 7); ctx.fill(); }
+  const hl = G.sixT > 0;
+  for (const b of G.bubbles) {
+    ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(b.rot); if (b.scale !== 1) ctx.scale(b.scale, b.scale);
+    drawBubble(b, hl && b.kind === "scam");
+    if (G.freezeT > 0) { ctx.strokeStyle = "rgba(200,240,255,.7)"; ctx.lineWidth = 2; rr(ctx, -b.w / 2 - 4, -b.h / 2 - 4, b.w + 8, b.h + 8, 20); ctx.stroke(); }
+    ctx.restore();
+    if (b.hint) {
+      ctx.font = "800 20px Manrope, sans-serif"; ctx.textAlign = "center"; ctx.fillStyle = b.kind === "scam" ? "#ffd84d" : "#9fb8ff";
+      ctx.fillText(b.hint, clamp(b.x, 100, W - 100), b.y - b.h / 2 - 22);
+      if (b.kind === "scam") {   // un doigt qui montre le geste
+        const k = (performance.now() % 1200) / 1200, fx = b.x - b.w * 0.6 + k * b.w * 1.2, fy = b.y + b.h * 0.25 - k * b.h * 0.5;
+        ctx.globalAlpha = 1 - k; ctx.font = "30px sans-serif"; ctx.fillText("👆", fx, fy + 40); ctx.globalAlpha = 1;
+      }
+    }
+  }
+  for (const p of G.pieces) {
+    ctx.save(); ctx.globalAlpha = clamp(p.life, 0, 1); ctx.translate(p.x, p.y); ctx.rotate(p.rot); if (p.b.scale !== 1) ctx.scale(p.b.scale, p.b.scale);
+    ctx.save(); ctx.rotate(p.ang - p.rot); ctx.beginPath(); ctx.rect(-400, p.side < 0 ? -400 : 0, 800, 400); ctx.restore();
+    ctx.clip(); drawBubble(p.b, false);
+    ctx.restore();
+  }
+  for (const p of G.parts) { ctx.globalAlpha = clamp(p.life / p.max, 0, 1); ctx.fillStyle = p.col; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill(); }
+  ctx.globalAlpha = 1;
+  drawBlade();
+  ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.lineJoin = "round";
+  for (const t of G.texts) {
+    ctx.globalAlpha = clamp(t.life * 1.6, 0, 1);
+    const k = 1 + Math.max(0, t.life - 0.85) * 2;
+    ctx.font = "800 " + Math.round(20 * t.size * k) + "px Manrope, sans-serif";
+    ctx.strokeStyle = "rgba(9,15,27,.8)"; ctx.lineWidth = 5; ctx.strokeText(t.txt, clamp(t.x, 130, W - 130), t.y);
+    ctx.fillStyle = t.col; ctx.fillText(t.txt, clamp(t.x, 130, W - 130), t.y);
+  }
+  ctx.globalAlpha = 1;
+  if (G.flash > 0) { const v = ctx.createRadialGradient(W / 2, H / 2, H * 0.3, W / 2, H / 2, H * 0.8); v.addColorStop(0, "rgba(" + G.flashCol + ",0)"); v.addColorStop(1, "rgba(" + G.flashCol + "," + 0.45 * G.flash + ")"); ctx.fillStyle = v; ctx.fillRect(0, 0, W, H); }
+  ctx.restore();
+}
+let last = 0;
+function frame(ts) { const minFrame = G.state === "play" && !G.paused ? 1000 / 60 : 1000 / 24; if (ts - last < minFrame) { requestAnimationFrame(frame); return; } const dt = Math.min(0.05, (ts - last) / 1000 || 0); last = ts; update(dt); render(); requestAnimationFrame(frame); }
+
+function pauseGame(paused) {
+  if (G.state !== "play" && G.state !== "dying") return;
+  G.paused = paused;
+  parent.postMessage({ source: "coupe-arnaque", type: "pause_state", paused }, location.origin);
+}
+addEventListener("message", event => {
+  if (event.source !== parent || event.origin !== location.origin || event.data?.source !== "six-host") return;
+  if (event.data.type === "pause") pauseGame(true);
+  if (event.data.type === "resume") pauseGame(false);
+});
+
+/* ================= Fin de partie et accueil ================= */
+function endGame() {
+  G.state = "over";
+  const k = today(), mode = G.mode, prev = rankIdx(SAVE.cut), news = [];
+  let rec = false;
+  if (mode === "classic") { rec = G.score > SAVE.best; if (rec) SAVE.best = G.score; }
+  if (mode === "chrono") { rec = G.score > SAVE.bestChrono; if (rec) SAVE.bestChrono = G.score; }
+  if (mode === "daily") { const d = SAVE.daily[k] || 0; rec = G.score > d; if (rec) SAVE.daily[k] = G.score; }
+  SAVE.cut += G.cut; SAVE.games++;
+  if (SAVE.lastDay !== k) { SAVE.streak = SAVE.lastDay === yesterday() ? SAVE.streak + 1 : 1; SAVE.lastDay = k; news.push("🔥 " + (SAVE.streak > 1 ? SAVE.streak + " jours de suite" : "Flamme allumée pour aujourd'hui")); }
+  // Étoiles : une toutes les 250 points, plus les missions.
+  let st = Math.floor(G.score / 250);
+  const add = { gold: G.stats.gold, perfect: G.stats.perfect, daily: mode === "daily" ? 1 : 0, six: G.stats.six };
+  const best = { cut: G.cut, combo: G.stats.bestSwipe, chrono: mode === "chrono" ? G.score : 0, classic: mode === "classic" ? G.score : 0 };
+  const mp = missionProgress(add, best);
+  st += mp.stars; news.push(...mp.news);
+  SAVE.stars += st;
+  if (st) news.unshift("+" + st + " ⭐ étoiles");
+  const buyable = BLADES.find(b => !SAVE.blades.includes(b.id) && SAVE.stars >= b.price);
+  if (buyable) news.push("Tu peux débloquer la lame « " + buyable.name + " » !");
+  const r = rankIdx(SAVE.cut), nx = RANKS[r + 1];
+  if (r > prev) news.unshift("Nouveau rang : " + RANKS[r].title);
+  save();
+
+  $("#oKick").textContent = mode === "classic" ? "Classique" : mode === "chrono" ? "Chrono 60 s" : "Défi n°" + dayNumber(k);
+  $("#oWhy").textContent = G.reason;
+  $("#oScore").textContent = fmt(G.score);
+  const bestOf = mode === "classic" ? SAVE.best : mode === "chrono" ? SAVE.bestChrono : SAVE.daily[k];
+  const rc = $("#oRec");
+  rc.className = "rec" + (rec && SAVE.games > 1 ? " new" : "");
+  rc.textContent = rec && SAVE.games > 1 ? (mode === "daily" ? "Ton meilleur score du jour !" : "Nouveau record !")
+    : bestOf - G.score > 0 && bestOf - G.score < bestOf * 0.25 ? "Plus que " + fmt(bestOf - G.score) + " points pour ton record"
+    : "Record : " + fmt(bestOf) + " · " + G.cut + " arnaques coupées";
+  const seen = new Set(), learn = G.mistakes.filter(x => !seen.has(x.m) && seen.add(x.m)).slice(0, 3);
+  $("#oLearn").innerHTML = learn.length ? "<h4>À retenir</h4>" + learn.map(x => "<p><b>" + x.m + "</b>" + x.why + "</p>").join("") : "";
+  $("#oNews").innerHTML = news.map(n => '<p class="' + (n.includes("⭐") || n.includes("lame") ? "gold" : "") + '">' + n + "</p>").join("");
+  $("#oRank").textContent = RANKS[r].title;
+  $("#oNext").textContent = nx ? "Encore " + (nx.n - SAVE.cut) + " arnaques à couper pour « " + nx.title + " »" : "Le rang le plus haut.";
+  $("#oBar").style.width = (nx ? (SAVE.cut - RANKS[r].n) / (nx.n - RANKS[r].n) * 100 : 100) + "%";
+  $("#againBtn").firstElementChild.textContent = mode === "daily" ? "Rejouer le défi" : "Rejouer";
+  $("#hud").hidden = true; $("#over").hidden = false; $("#over").scrollTop = 0;
+  try {
+    const msg = JSON.stringify({ source: "coupe-arnaque", type: "game_end", mode, score: G.score, cut: G.cut, record: rec, stars: SAVE.stars, rank: RANKS[r].title });
+    if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(msg);
+    if (window.CoupeArnaqueChannel) window.CoupeArnaqueChannel.postMessage(msg);
+    if (window.parent !== window) window.parent.postMessage(msg, "*");
+  } catch (e) {}
+  setTimeout(() => $("#againBtn").focus({ preventScroll: true }), 50);
+}
+const chStars = ch => CHAPTERS[ch].cases.reduce((a, c) => a + (SAVE.caseStars[c.id] || 0), 0);
+const chOpen = ch => ch === 0 || chStars(ch - 1) >= CH_UNLOCK;
+const caseOpen = (ch, i) => chOpen(ch) && (i === 0 || (SAVE.caseStars[CHAPTERS[ch].cases[i - 1].id] || 0) > 0);
+const totalCases = () => CHAPTERS.reduce((a, c) => a + c.cases.length, 0);
+const caseStarsTotal = () => CHAPTERS.reduce((a, _, i) => a + chStars(i), 0);
+const starRow = n => "★".repeat(n) + "<i>" + "★".repeat(3 - n) + "</i>";
+let CUR = null;
+function openCases() {
+  $("#menu").hidden = true; $("#case").hidden = true; $("#cases").hidden = false; $("#cases").scrollTop = 0;
+  renderCases();
+}
+function renderCases() {
+  $("#casesStars").textContent = caseStarsTotal() + " / " + totalCases() * 3 + " ★";
+  let nextMarked = false;
+  $("#caseList").innerHTML = CHAPTERS.map((ch, ci) => {
+    const open = chOpen(ci);
+    const cells = ch.cases.map((c, i) => {
+      const st = SAVE.caseStars[c.id] || 0, op = caseOpen(ci, i);
+      let cls = "cbtn" + (op ? "" : " lock");
+      if (op && !st && !nextMarked) { cls += " next"; nextMarked = true; }
+      return '<button class="' + cls + '" data-ch="' + ci + '" data-i="' + i + '"><b>' + (op ? "Enquête " + (ci + 1) + "." + (i + 1) : "🔒 " + (ci + 1) + "." + (i + 1)) + "</b><span>" + starRow(st) + "</span></button>";
+    }).join("");
+    return '<div class="chap' + (open ? "" : " lock") + '"><h3>' + (ci + 1) + ". " + ch.name + "<span>" + chStars(ci) + " / 18 ★</span></h3><p>" +
+      (open ? ch.desc : "Gagne " + CH_UNLOCK + " ★ au chapitre " + ci + " pour ouvrir ce chapitre.") + '</p><div class="cgrid">' + cells + "</div></div>";
+  }).join("");
+}
+$("#caseList").addEventListener("click", e => {
+  const b = e.target.closest(".cbtn"); if (!b) return;
+  const ch = +b.dataset.ch, i = +b.dataset.i;
+  if (!caseOpen(ch, i)) { toast(chOpen(ch) ? "Résous d'abord l'enquête précédente." : "Gagne " + CH_UNLOCK + " ★ au chapitre précédent."); return; }
+  openCase(ch, i);
+});
+function tokens(parts, into) {
+  for (const p of parts) {
+    if (typeof p === "string") {
+      for (const s of p.split(/(\s+)/)) {
+        if (!s) continue;
+        if (/^\s+$/.test(s)) { into.append(s); continue; }
+        const w = document.createElement("span"); w.className = "w"; w.textContent = s; into.append(w);
+      }
+    } else { const k = document.createElement("span"); k.className = "k"; k.dataset.key = p[1]; k.textContent = p[0]; into.append(k); }
+  }
+}
+function openCase(ch, i) {
+  audio();
+  const c = CHAPTERS[ch].cases[i];
+  CUR = { ch, i, c, revealed: false, hinted: new Set(), usedHint: false };
+  $("#cases").hidden = true; $("#case").hidden = false; $("#case").scrollTop = 0;
+  $("#caseTitle").textContent = "Enquête " + (ch + 1) + "." + (i + 1);
+  $("#cName").textContent = c.who[0];
+  $("#cAv").textContent = /^[+\d]/.test(c.who[0]) || c.who[0] === "Numéro inconnu" ? "?" : c.who[0].replace(/[^A-Za-zÀ-ÿ]/g, "").slice(0, 1).toUpperCase();
+  const num = $("#cNum"); num.innerHTML = ""; tokens([c.who[1]], num);
+  const body = $("#cBody"); body.innerHTML = "";
+  c.msgs.forEach((m, k) => {
+    const d = document.createElement("div"); d.className = "msg"; tokens(m, d);
+    const t = document.createElement("time"); t.textContent = "18:" + pad2(2 + k * 2); d.append(t);
+    body.append(d);
+  });
+  $("#cFoot").hidden = false; $("#cRes").hidden = true;
+  updateMarks();
+}
+function updateMarks() {
+  const n = $("#case").querySelectorAll(".marked").length;
+  $("#caseMarks").textContent = n ? "🔎 " + n + " indice" + (n > 1 ? "s" : "") : "🔎 0";
+}
+$("#case").addEventListener("click", e => {
+  if (!CUR || CUR.revealed) return;
+  const t = e.target.closest(".w, .k"); if (!t || t.classList.contains("hinted")) return;
+  t.classList.toggle("marked");
+  tone(t.classList.contains("marked") ? 880 : 520, t.classList.contains("marked") ? 1100 : 420, 0.07, "sine", 0.05);
+  updateMarks();
+});
+function useHint() {
+  if (!CUR || CUR.revealed) return;
+  if (SAVE.stars < 1) { toast("Il te faut 1 ⭐ pour un indice. Gagne-en en jouant."); return; }
+  const c = CUR.c;
+  if (!c.scam) {
+    if (CUR.usedHint) { toast("Tu as déjà utilisé l'indice de cette enquête."); return; }
+    SAVE.stars--; CUR.usedHint = true; save(); toast("💡 Six : regarde bien qui écrit et ce qu'on te demande vraiment."); return;
+  }
+  const marked = new Set([...$("#case").querySelectorAll(".k.marked")].map(k => k.dataset.key));
+  const key = Object.keys(c.clues).find(k => !marked.has(k) && !CUR.hinted.has(k));
+  if (!key) { toast("Tu as déjà trouvé tous les indices. Rends ton verdict !"); return; }
+  SAVE.stars--; CUR.usedHint = true; CUR.hinted.add(key); save();
+  $("#case").querySelectorAll('.k[data-key="' + key + '"]').forEach(k => { k.classList.remove("marked"); k.classList.add("hinted"); });
+  toast("💡 Indice : " + CLUE_LABEL[key]);
+}
+function verdict(saidScam) {
+  if (!CUR || CUR.revealed) return;
+  CUR.revealed = true;
+  const c = CUR.c, root = $("#case");
+  const marked = [...root.querySelectorAll(".marked")];
+  const keys = new Set(marked.filter(e => e.classList.contains("k")).map(e => e.dataset.key));
+  CUR.hinted.forEach(k => keys.add(k));
+  const falseMarks = marked.filter(e => e.classList.contains("w"));
+  const clueKeys = Object.keys(c.clues || {}), found = clueKeys.filter(k => keys.has(k));
+  const ok = saidScam === c.scam;
+  let st = 0;
+  if (ok) st = c.scam ? 1 + (found.length >= Math.ceil(clueKeys.length / 2) ? 1 : 0) + (found.length === clueKeys.length && !falseMarks.length ? 1 : 0)
+    : 1 + (falseMarks.length <= 1 ? 1 : 0) + (!falseMarks.length ? 1 : 0);
+  if (CUR.usedHint) st = Math.min(st, 2);
+  const prev = SAVE.caseStars[c.id] || 0, gained = Math.max(0, st - prev);
+  if (st > prev) { SAVE.caseStars[c.id] = st; SAVE.stars += gained; }
+  const mp = missionProgress({ cases: ok ? 1 : 0, perfectcase: st === 3 ? 1 : 0 }, {});
+  SAVE.stars += mp.stars;
+  if (SAVE.lastDay !== today()) { SAVE.streak = SAVE.lastDay === yesterday() ? SAVE.streak + 1 : 1; SAVE.lastDay = today(); }
+  save();
+  try {
+    const msg = JSON.stringify({ source: "coupe-arnaque", type: "case_done", id: c.id, correct: ok, stars: st, totalStars: caseStarsTotal() });
+    if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(msg);
+    if (window.CoupeArnaqueChannel) window.CoupeArnaqueChannel.postMessage(msg);
+    if (window.parent !== window) window.parent.postMessage(msg, "*");
+  } catch (e) {}
+  root.querySelectorAll(".k").forEach(k => { k.classList.remove("marked"); if (!k.classList.contains("hinted")) k.classList.add(keys.has(k.dataset.key) ? "found" : "missed"); });
+  falseMarks.forEach(w => { w.classList.remove("marked"); w.classList.add("wrong"); });
+  if (ok) { sfx.combo(st); buzz(20); } else { sfx.bad(); buzz(80); }
+  const head = ok ? (c.scam ? "✓ Bien vu : c'est une arnaque." : "✓ Bien vu : ce message est sûr.") : (c.scam ? "✗ Raté : c'était une arnaque." : "✗ Raté : ce message était sûr.");
+  let list = "";
+  if (c.scam) list = clueKeys.map(k => '<div class="clue"><span class="ic ' + (keys.has(k) ? "ok" : "no") + '">' + (keys.has(k) ? "✓" : "○") + "</span><div><b>" + CLUE_LABEL[k] + (keys.has(k) ? "" : " · indice raté") + "</b>" + c.clues[k] + "</div></div>").join("");
+  else list = '<div class="clue"><span class="ic ok">✓</span><div><b>Pourquoi c\'est sûr</b>' + c.why + "</div></div>";
+  if (falseMarks.length) list += '<div class="clue"><span class="ic bad">✗</span><div><b>' + falseMarks.length + " faux indice" + (falseMarks.length > 1 ? "s" : "") + "</b>Les mots barrés n'avaient rien de suspect. Un bon enquêteur ne voit pas des pièges partout.</div></div>";
+  const nextIdx = nextCase();
+  $("#cRes").innerHTML = '<p class="verdict ' + (ok ? "ok" : "ko") + '">' + head + '</p><div class="cstars">' + starRow(st) + "</div>" +
+    (gained ? '<p class="help" style="text-align:left;margin:0">+' + gained + " ⭐" + (CUR.usedHint ? " · 3 ★ impossibles avec un indice" : "") + "</p>" : "") +
+    '<div class="clues">' + list + '</div><p class="tip"><b>Le bon réflexe</b>' + c.tip + "</p>" +
+    mp.news.map(n => '<p class="tip" style="background:rgba(255,216,77,.12);color:#ffe9a0">' + n + "</p>").join("") +
+    '<div class="row2" style="margin-top:14px"><button class="sec" id="cRetry">Recommencer</button><button class="vyes" id="cNext">' + (nextIdx ? "Enquête suivante →" : "Toutes les enquêtes") + "</button></div>";
+  $("#cFoot").hidden = true; $("#cRes").hidden = false;
+  $("#cRetry").onclick = () => openCase(CUR.ch, CUR.i);
+  $("#cNext").onclick = () => (nextIdx ? openCase(nextIdx[0], nextIdx[1]) : openCases());
+  setTimeout(() => $("#cRes").scrollIntoView({ behavior: "smooth", block: "start" }), 60);
+  updateMarks();
+}
+function nextCase() {
+  for (let ch = CUR.ch; ch < CHAPTERS.length; ch++)
+    for (let i = ch === CUR.ch ? CUR.i + 1 : 0; i < CHAPTERS[ch].cases.length; i++)
+      if (caseOpen(ch, i)) return [ch, i];
+  return null;
+}
+$("#vScam").onclick = () => verdict(true);
+$("#vSafe").onclick = () => verdict(false);
+$("#hintBtn").onclick = useHint;
+$("#casesBtn").onclick = openCases;
+$("#casesBack").onclick = () => { $("#cases").hidden = true; toMenu(); };
+$("#caseBack").onclick = openCases;
+
+function toMenu() {
+  Object.assign(G, { state: "menu", bubbles: [], pieces: [], parts: [], texts: [], queue: [], next: 0.3, sixT: 0, freezeT: 0, tuto: 0, rnd: Math.random });
+  $("#over").hidden = true; $("#hud").hidden = true; $("#cases").hidden = true; $("#case").hidden = true; $("#menu").hidden = false; $("#menu").scrollTop = 0;
+  renderMenu();
+}
+function renderMenu() {
+  const k = today();
+  $("#mBest").textContent = fmt(SAVE.best);
+  $("#mStars").textContent = fmt(SAVE.stars) + " ⭐";
+  $("#mStreak").textContent = "🔥 " + streakNow();
+  $("#mRank").textContent = RANKS[rankIdx(SAVE.cut)].title;
+  $("#soundBtn").innerHTML = SAVE.mute ? SOUND_OFF : SOUND_ON;
+  $("#chronoInfo").textContent = SAVE.bestChrono ? "Record " + fmt(SAVE.bestChrono) : "60 s";
+  const d = SAVE.daily[k];
+  $("#dailyInfo").textContent = d ? "n°" + dayNumber(k) + " · " + fmt(d) : "n°" + dayNumber(k);
+  $("#casesInfo").textContent = caseStarsTotal() + " / " + totalCases() * 3 + " ★ · 24 conversations à analyser";
+  $("#dailyBtn").classList.toggle("done", !!d);
+  $("#missions").innerHTML = todayMissions().map(m => {
+    const done = !!SAVE.mDone[m.id], p = Math.min(m.goal, SAVE.mProg[m.id] || 0);
+    return '<div class="row' + (done ? " done" : "") + '"><div class="k"><b>' + m.txt(m.goal) + "</b><span>" + (done ? "Réussie" : fmt(p) + " / " + fmt(m.goal)) +
+      '</span><div class="bar"><i style="width:' + (p / m.goal * 100) + '%"></i></div></div><div class="v">' + (done ? "✓" : "+" + m.stars + " ⭐") + "</div></div>";
+  }).join("");
+  const box = $("#blades"); box.innerHTML = "";
+  for (const b of BLADES) {
+    const own = SAVE.blades.includes(b.id), sel = SAVE.blade === b.id, can = !own && SAVE.stars >= b.price;
+    const el = document.createElement("button");
+    el.className = "blade" + (sel ? " sel" : "") + (!own ? (can ? " can" : " lock") : "");
+    const grad = b.rainbow ? "linear-gradient(90deg,#ff5a4e,#ffd84d,#1edc96,#4d7cfe,#ff2bd6)" : "linear-gradient(90deg, rgba(" + b.glow + ",.2), rgb(" + b.mid + ") 40%, " + b.core + ")";
+    const glow = b.rainbow ? "0 0 12px rgba(255,255,255,.4)" : "0 0 14px rgba(" + b.glow + ",.9)";
+    el.innerHTML = '<i style="background:' + grad + ";box-shadow:" + glow + '"></i><b>' + b.name + "</b><span>" + (sel ? "Choisie" : own ? "Choisir" : b.price + " ⭐") + "</span>";
+    el.onclick = () => {
+      if (own) SAVE.blade = b.id;
+      else if (can) { SAVE.stars -= b.price; SAVE.blades.push(b.id); SAVE.blade = b.id; toast("Lame « " + b.name + " » débloquée !"); sfx.gold(); }
+      else { toast("Encore " + (b.price - SAVE.stars) + " ⭐ à gagner"); return; }
+      save(); renderMenu();
+    };
+    box.append(el);
+  }
+}
+$("#playBtn").onclick = () => startGame("classic");
+$("#chronoBtn").onclick = () => startGame("chrono");
+$("#dailyBtn").onclick = () => startGame("daily");
+$("#againBtn").onclick = () => startGame(G.mode);
+$("#homeBtn").onclick = toMenu;
+$("#soundBtn").onclick = () => { SAVE.mute = !SAVE.mute; save(); renderMenu(); };
+$("#shareBtn").onclick = () => {
+  const head = G.mode === "daily" ? "Défi n°" + dayNumber(today()) + " de « Coupe l'arnaque » : " : G.mode === "chrono" ? "Chrono « Coupe l'arnaque » : " : "« Coupe l'arnaque » : ";
+  const text = "✂️ " + head + fmt(G.score) + " points, " + G.cut + " arnaques coupées.\nTu fais mieux ?\nSix by Seven.AI";
+  const box = $("#shareBox"), fb = () => { box.value = text; box.hidden = false; box.focus(); box.select(); toast("Sélectionne le texte et copie-le"); };
+  try { navigator.clipboard.writeText(text).then(() => toast("Copié. Colle-le dans WhatsApp."), fb); } catch (e) { fb(); }
+};
+addEventListener("keydown", e => { if ((e.key === "Enter" || e.key === " ") && G.state !== "play" && G.state !== "dying" && document.activeElement === document.body && $("#cases").hidden && $("#case").hidden) { e.preventDefault(); startGame(G.state === "over" ? G.mode : "classic"); } });
+document.addEventListener("visibilitychange", () => { if (document.hidden && AC) AC.suspend(); else if (AC && !SAVE.mute) AC.resume(); });
+window.coupeArnaque = {
+  play: mode => startGame(mode || "classic"),
+  pause: () => pauseGame(true),
+  resume: () => pauseGame(false),
+  menu: () => toMenu(),
+  setMuted: m => { SAVE.mute = !!m; save(); renderMenu(); },
+  stats: () => ({ best: SAVE.best, bestChrono: SAVE.bestChrono, stars: SAVE.stars, cut: SAVE.cut, rank: RANKS[rankIdx(SAVE.cut)].title, streak: streakNow() }),
+};
+
+renderMenu();
+requestAnimationFrame(frame);
+</script>
+
+</body>
+</html>

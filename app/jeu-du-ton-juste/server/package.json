@@ -1,0 +1,28 @@
+{
+  "name": "social-game-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "test": "node --test \"tests/*.test.js\"",
+    "lint": "eslint .",
+    "start:sixapp": "node --env-file=../../seven-ai-six/six-app/.env.local index.js",
+    "fumee": "node scripts/fumee.mjs",
+    "calibrer": "node scripts/calibrer.mjs"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "0.131.0",
+    "cors": "^2.8.5",
+    "express": "^4.19.2"
+  },
+  "engines": {
+    "node": ">=20.12"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.13.0",
+    "globals": "^17.13.0"
+  }
+}

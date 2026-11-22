@@ -1,0 +1,16 @@
+# Railway — API Six (apps/api uniquement).
+# Sur Railway : « New Project » → « Deploy from GitHub repo » → ce dépôt,
+# puis dans les réglages du service : Settings → Source → Root Directory = /apps/api.
+# Railway détecte le Dockerfile et le construit depuis la racine du dépôt.
+# Il reste à définir dans « Variables » :
+#   CORS_ORIGINS       = https://<ton-site>.netlify.app   (l'adresse publique de la PWA)
+#   ANTHROPIC_API_KEY  = sk-ant-…                          (clé côté serveur uniquement)
+# Railway fournit PORT automatiquement ; le Dockerfile l'écoute déjà (HOST=0.0.0.0).
+# Sans Redis, la limite de requêtes est gardée en mémoire : suffisant pour une instance.
+
+[deploy]
+  # Le Dockerfile déclare déjà HEALTHCHECK sur /health ; Railway peut aussi sonder :
+  healthcheckPath = "/health"
+  healthcheckTimeout = 60
+  restartPolicyType = "ON_FAILURE"
+  restartPolicyMaxRetries = 3

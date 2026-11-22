@@ -1,0 +1,28 @@
+pnpm-lock.yaml
+.next/
+dist/
+coverage/
+playwright-report/
+test-results/
+apps/web/next-env.d.ts
+
+# Fichiers générés par les builds natifs et l'OCR
+**/android/**
+**/ios/**
+**/public/ocr/**
+**/public/ton-juste/**
+**/capacitor-www/**
+**/.next/**
+**/dist/**
+**/node_modules/**
+**/next-env.d.ts
+
+# Copies historiques non utilisées par le monorepo actif
+apps/web/six-app/
+six-app/
+_ancien-web-avant-six-app/
+
+# Copies HTML autonomes et identiques du jeu, avec scripts intégrés volumineux
+apps/web/public/jeu/index.html
+apps/web/public/coupe-arnaque/index.html
+kin-rush-app/index.html
