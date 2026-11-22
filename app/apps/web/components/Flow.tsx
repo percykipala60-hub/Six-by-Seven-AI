@@ -26,6 +26,7 @@ import { MAX_IMAGES, OcrError, prechaufferLecteur, readScreenshots } from '@/lib
 import { ZipError, readChatFromZip } from '@/lib/zip';
 import { loadStyle } from '@/lib/style';
 import { entetesCompte } from '@/lib/premium-client';
+import { EVT_CAPTURE, prendreCapture } from '@/lib/raccourcis-ios';
 import { ecouterCompte, lireCompte, phraseAccueil, salutation } from '@/lib/compte';
 import {
   NOTE_MAX,
@@ -562,6 +563,18 @@ export function Flow() {
     return () => window.removeEventListener('six-shared-draft', importSharedDraft);
   }, []);
 
+  // Capture reçue du raccourci iPhone « Analyser une capture avec Six » : lue comme une capture importée.
+  const addShotsRef = useRef<(files: File[]) => void>(() => {});
+  useEffect(() => {
+    const importerCapture = () => {
+      const f = prendreCapture();
+      if (f) addShotsRef.current([f]);
+    };
+    importerCapture();
+    window.addEventListener(EVT_CAPTURE, importerCapture);
+    return () => window.removeEventListener(EVT_CAPTURE, importerCapture);
+  }, []);
+
   // Une discussion tient souvent sur plusieurs captures : on les range de la plus ancienne à la plus récente.
   const sortShots = (files: File[]) => [...files].sort((a, b) => a.lastModified - b.lastModified);
 
@@ -577,6 +590,9 @@ export function Flow() {
     );
     void readShots(files.slice(0, MAX_IMAGES));
   }
+  useEffect(() => {
+    addShotsRef.current = addShots;
+  });
 
   async function readShots(files: File[]) {
     if (!files.length) return;

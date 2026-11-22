@@ -51,6 +51,45 @@ enum SixRaccourcis {
         UserDefaults(suiteName: groupe)?.set(String(propre.prefix(2000)), forKey: cleTexte)
     }
 
+    /// Capture d'écran reçue d'un raccourci (« Prendre une capture d'écran » puis « Analyser une capture
+    /// avec Six »). Gardée dans le groupe d'apps jusqu'à ce que Six la lise sur le téléphone, puis effacée.
+    private static var fichierCapture: URL? {
+        FileManager.default
+            .containerURL(forSecurityApplicationGroupIdentifier: groupe)?
+            .appendingPathComponent("capture-partagee")
+    }
+
+    /// 15 Mo au plus : une capture d'écran d'iPhone fait quelques Mo.
+    static let tailleMaxCapture = 15 * 1024 * 1024
+
+    static func preparerCapture(_ donnees: Data) -> Bool {
+        guard !donnees.isEmpty, donnees.count <= tailleMaxCapture, let url = fichierCapture else {
+            return false
+        }
+        do {
+            try donnees.write(to: url, options: [.atomic, .completeFileProtection])
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    /// Renvoie la capture en attente (base64 et type) et l'efface : elle n'est lue qu'une fois.
+    static func consommerCapture() -> (base64: String, type: String)? {
+        guard let url = fichierCapture, let donnees = try? Data(contentsOf: url) else { return nil }
+        try? FileManager.default.removeItem(at: url)
+        let octets = [UInt8](donnees.prefix(4))
+        let type: String
+        if octets.starts(with: [0x89, 0x50, 0x4E, 0x47]) {
+            type = "image/png"
+        } else if octets.starts(with: [0xFF, 0xD8]) {
+            type = "image/jpeg"
+        } else {
+            return nil // format inconnu (HEIC…) : non lu par Six, on n'insiste pas
+        }
+        return (donnees.base64EncodedString(), type)
+    }
+
     static func consommerPage() -> String {
         let defaults = UserDefaults(suiteName: groupe)
         let page = defaults?.string(forKey: clePage) ?? ""
@@ -82,6 +121,34 @@ struct RepondreAvecSixIntent: AppIntent {
         // iOS demande l'autorisation de coller : rien n'est lu sans l'accord de l'utilisateur.
         if let texte = UIPasteboard.general.string {
             SixRaccourcis.preparerTexte(texte)
+        }
+        SixRaccourcis.ouvrir(.repondre)
+        return .result()
+    }
+}
+
+/// À utiliser dans un raccourci : « Prendre une capture d'écran », puis cette action. Le raccourci peut
+/// ensuite être placé sur le bouton Action, AssistiveTouch (double toucher), le Centre de contrôle ou Toucher
+/// le dos. Six lit la capture sur le téléphone ; rien n'est envoyé avant que l'utilisateur lance l'analyse.
+@available(iOS 16.0, *)
+struct AnalyserCaptureIntent: AppIntent {
+    static var title: LocalizedStringResource = "Analyser une capture avec Six"
+    static var description = IntentDescription(
+        "Ouvre Six avec une capture d'écran de conversation, lue sur le téléphone, pour choisir une réponse."
+    )
+    static var openAppWhenRun = true
+
+    @Parameter(title: "Capture", supportedTypeIdentifiers: ["public.png", "public.jpeg"])
+    var capture: IntentFile
+
+    static var parameterSummary: some ParameterSummary {
+        Summary("Analyser \(\.$capture) avec Six")
+    }
+
+    @MainActor
+    func perform() async throws -> some IntentResult {
+        guard SixRaccourcis.preparerCapture(capture.data) else {
+            throw $capture.needsValueError("Choisis une capture d'écran (PNG ou JPEG, 15 Mo au plus).")
         }
         SixRaccourcis.ouvrir(.repondre)
         return .result()
@@ -158,6 +225,13 @@ struct SixRaccourcisVue: View {
                     Text("Lance Six d'un seul geste, sans ouvrir l'app d'abord. Copie un message, puis déclenche « Répondre avec Six » : Six s'ouvre avec le texte, prêt à être relu.")
                         .font(.subheadline)
                         .foregroundColor(.secondary)
+                }
+                Section(
+                    header: Text("Capture d'écran en un geste"),
+                    footer: Text("Six lit la capture sur ton téléphone. Rien n'est envoyé avant que tu lances l'analyse.")
+                ) {
+                    Text("Dans l'app Raccourcis : + > « Prendre une capture d'écran », puis « Analyser une capture avec Six ». Place ensuite ce raccourci sur le bouton Action, sur le double toucher d'AssistiveTouch ou sur Toucher le dos (Accessibilité > Toucher).")
+                        .font(.footnote)
                 }
                 Section(header: Text("Ajouter les raccourcis")) {
                     if #available(iOS 17.0, *) {

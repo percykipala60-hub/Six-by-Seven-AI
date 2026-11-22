@@ -121,3 +121,22 @@ Action, et un lien `six://seven-ai` dans Safari.
 Un pass numérique utilisé dans l'app doit être vendu par l'achat intégré d'Apple (StoreKit) si on le propose dans
 l'app. Le choix actuel : aucun achat ni lien vers le paiement dans l'app iPhone ; un premium acheté sur le site
 s'active par le compte (règle 3.1.3(b) des services multiplateformes). À revoir avec le lancement du premium.
+
+## 8. Capture d'écran en un geste
+
+iOS ne laisse pas une app réagir à un double toucher sur son icône, ni capturer l'écran d'une autre app. Six
+propose donc l'action **« Analyser une capture avec Six »**, à utiliser dans un raccourci de deux étapes :
+
+1. App Raccourcis > + > « Prendre une capture d'écran » ;
+2. puis « Analyser une capture avec Six ».
+
+Ce raccourci se place sur le bouton Action, le double toucher d'AssistiveTouch, Toucher le dos (Accessibilité >
+Toucher) ou le Centre de contrôle. Six s'ouvre et lit la capture sur le téléphone (comme une capture importée) ;
+rien n'est envoyé avant que l'utilisateur lance l'analyse.
+
+## 9. Compilation automatique (GitHub Actions)
+
+`.github/workflows/ios.yml` compile l'app sur un Mac de GitHub (simulateur, sans signature) à chaque changement
+du dossier `ios/`, ou à la demande (Actions > iOS > Run workflow). En cas d'échec, le journal `xcodebuild-log`
+est joint à l'exécution. Il ne produit pas d'app à installer : pour TestFlight et l'App Store, il faut signer avec
+le compte Apple Developer (Xcode sur un Mac, ou un Mac loué).

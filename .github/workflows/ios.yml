@@ -1,0 +1,69 @@
+name: iOS
+
+# Compile l'app iPhone sur un Mac de GitHub (aucun Mac dans l'équipe) : vérifie que le code Swift
+# (raccourcis Siri, extension de partage…) compile. Build pour le simulateur, sans signature : il ne produit
+# pas d'app à installer ni à envoyer sur l'App Store (pour ça : Xcode avec le compte Apple Developer).
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app/apps/web/ios/**'
+      - 'app/apps/web/capacitor.config.ts'
+      - 'app/apps/web/package.json'
+      - '.github/workflows/ios.yml'
+  pull_request:
+    paths:
+      - 'app/apps/web/ios/**'
+      - 'app/apps/web/capacitor.config.ts'
+      - '.github/workflows/ios.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: app
+
+jobs:
+  compiler:
+    name: Compilation iOS (simulateur, sans signature)
+    runs-on: macos-15
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: app/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - name: Version de Xcode
+        run: xcodebuild -version
+      - name: Synchroniser Capacitor (app en ligne)
+        working-directory: app/apps/web
+        env:
+          CAP_SERVER_URL: https://app.sixbysevenai.com
+        run: npx cap sync ios
+      - name: Compiler
+        working-directory: app/apps/web
+        run: |
+          set -o pipefail
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Debug \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO build | tee xcodebuild.log | grep -E 'error:|warning: .*SixRaccourcis|BUILD (SUCCEEDED|FAILED)' || true
+          grep -q 'BUILD SUCCEEDED' xcodebuild.log
+      - name: Journal de compilation
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-log
+          path: app/apps/web/xcodebuild.log
+          retention-days: 7

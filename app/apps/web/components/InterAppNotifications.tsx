@@ -9,6 +9,7 @@ import {
   type InterAppId,
   type ReceivedAppNotification,
 } from '@/lib/inter-app-notifications';
+import { deposerCapture } from '@/lib/raccourcis-ios';
 import { AppIcon } from './AppIcon';
 import { Icon } from './Icon';
 
@@ -351,12 +352,16 @@ export function InterAppLaunchHandler() {
           const share = registerPlugin<{
             consumeSharedDraft(): Promise<{ text: string }>;
             consumePendingRoute?(): Promise<{ route: string }>;
+            consumeSharedCapture?(): Promise<{ data: string; type: string }>;
           }>('SixShare');
           const { text } = await share.consumeSharedDraft();
           if (active && text) {
             sessionStorage.setItem('six-notification-draft', text);
             window.dispatchEvent(new Event('six-shared-draft'));
           }
+          // Capture d'écran du raccourci « Analyser une capture avec Six » : lue ensuite sur le téléphone.
+          const capture = await share.consumeSharedCapture?.().catch(() => null);
+          if (active && capture?.data) deposerCapture(capture.data, capture.type);
           // Raccourci (Siri, bouton Action…) ou lien six:// : ouvre la page demandée, parmi celles connues.
           const { route } = (await share.consumePendingRoute?.().catch(() => null)) ?? {
             route: '',

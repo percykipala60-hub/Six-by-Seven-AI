@@ -45,6 +45,7 @@ public class SixSharePlugin: CAPPlugin, CAPBridgedPlugin {
     public let pluginMethods: [CAPPluginMethod] = [
         CAPPluginMethod(name: "consumeSharedDraft", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "consumePendingRoute", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "consumeSharedCapture", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "openShortcuts", returnType: CAPPluginReturnPromise)
     ]
 
@@ -58,6 +59,17 @@ public class SixSharePlugin: CAPPlugin, CAPBridgedPlugin {
     /// Page demandée par un raccourci (Siri, bouton Action…) ou un lien six://, une seule fois.
     @objc func consumePendingRoute(_ call: CAPPluginCall) {
         call.resolve(["route": SixRaccourcis.consommerPage()])
+    }
+
+    /// Capture d'écran déposée par le raccourci « Analyser une capture avec Six », une seule fois.
+    @objc func consumeSharedCapture(_ call: CAPPluginCall) {
+        DispatchQueue.global(qos: .userInitiated).async {
+            if let capture = SixRaccourcis.consommerCapture() {
+                call.resolve(["data": capture.base64, "type": capture.type])
+            } else {
+                call.resolve(["data": "", "type": ""])
+            }
+        }
     }
 
     /// Écran natif « Siri et raccourcis » (Réglages de Six).
