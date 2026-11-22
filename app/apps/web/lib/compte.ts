@@ -147,12 +147,12 @@ function obtenirRedirectUrl(): string {
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
   return origin && origin.startsWith('http') && !origin.includes('localhost')
     ? origin
-    : 'https://six.sixbysevenai.com';
+    : 'https://app.sixbysevenai.com';
 }
 
 function obtenirOrigineOAuth(): string {
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
-  return origin.startsWith('http') ? origin : 'https://six.sixbysevenai.com';
+  return origin.startsWith('http') ? origin : 'https://app.sixbysevenai.com';
 }
 
 function messageErreur(

@@ -29,7 +29,7 @@ hooks/usePageMeta.ts    titre, description et adresse canonique de chaque page
 ## Mise en ligne
 
 Le site est publié sur **https://sixbysevenai.com**, sur notre propre serveur (DigitalOcean, Francfort),
-servi par Caddy à côté de l'application Six (**https://six.sixbysevenai.com**). Configuration du serveur :
+servi par Caddy à côté de l'application Six (**https://app.sixbysevenai.com**). Configuration du serveur :
 dépôt SixSeven, dossier `deploy/` (Caddyfile : site statique, renvoi de toutes les adresses vers `index.html`,
 en-têtes de sécurité, cache long pour `/assets` et `/fonts`).
 

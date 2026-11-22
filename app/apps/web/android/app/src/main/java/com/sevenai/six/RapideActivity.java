@@ -89,7 +89,7 @@ public class RapideActivity extends Activity {
         } catch (Exception erreur) {
             Log.e(TAG, "Adresse du serveur introuvable dans capacitor.config.json.", erreur);
         }
-        return "https://six.sixbysevenai.com";
+        return "https://app.sixbysevenai.com";
     }
 
     @Override
