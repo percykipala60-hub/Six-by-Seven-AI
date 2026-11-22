@@ -41,6 +41,8 @@ import { useConfirmer } from './Confirmer';
 import { Icon, type IconName } from './Icon';
 import { InterAppNotifications, InterAppOnboarding } from './InterAppNotifications';
 import { Raccourcis } from './Raccourcis';
+import { EVT_PREMIUM, PremiumVue } from './Premium';
+import { lireEtatPremium } from '@/lib/premium-client';
 import {
   EnteteSousPage,
   Groupe,
@@ -256,8 +258,17 @@ function MemoireSix() {
 }
 
 type Vue =
-  '' | 'theme' | 'police' | 'style' | 'memoire' | 'compte' | 'notifications' | 'raccourcis';
+  | ''
+  | 'premium'
+  | 'theme'
+  | 'police'
+  | 'style'
+  | 'memoire'
+  | 'compte'
+  | 'notifications'
+  | 'raccourcis';
 const TITRES: Record<Exclude<Vue, ''>, string> = {
+  premium: 'Six Premium',
   theme: 'Thème',
   police: 'Police',
   style: "Mon style d'écriture",
@@ -276,6 +287,11 @@ const MODES: Record<Theme, string> = { auto: 'Auto', light: 'Clair', dark: 'Somb
 function CompteVue() {
   const [demande, demander] = useConfirmer();
   const [sync, setSync] = useState(false);
+  // La copie de la mémoire sur le compte est réservée à Six Premium (règle aussi appliquée par Supabase).
+  const [premium, setPremium] = useState<boolean | null>(null);
+  useEffect(() => {
+    void lireEtatPremium().then((e) => setPremium(Boolean(e?.premium)));
+  }, []);
   const [c, setC] = useState<Compte>({ statut: 'invite', prenom: '' });
   const [prenom, setPrenom] = useState('');
 
@@ -416,9 +432,11 @@ function CompteVue() {
           <Groupe
             titre="Mémoire et compte"
             pied={
-              sync
-                ? 'Tes habitudes, tes notes sur tes contacts et tes suivis te suivent sur tes autres appareils. Jamais tes conversations.'
-                : 'Désactivé : ta mémoire reste sur ce téléphone. Active-le pour la retrouver sur tes autres appareils.'
+              premium === false && !sync
+                ? 'Avec Six Premium, ta mémoire te suit sur tes autres appareils (Réglages > Six Premium). Sans premium, elle reste sur ce téléphone.'
+                : sync
+                  ? 'Tes habitudes, tes notes sur tes contacts et tes suivis te suivent sur tes autres appareils. Jamais tes conversations.'
+                  : 'Désactivé : ta mémoire reste sur ce téléphone. Active-le pour la retrouver sur tes autres appareils.'
             }
           >
             <LigneInterrupteur
@@ -426,7 +444,7 @@ function CompteVue() {
               icon="refresh"
               label="Copier ma mémoire sur mon compte"
               checked={sync}
-              disabled={busy}
+              disabled={busy || (!sync && premium !== true)}
               onChange={async (on) => {
                 if (on) {
                   setBusy(true);
@@ -651,6 +669,13 @@ export function Settings() {
   const [memOn, setMemOn] = useState(false);
   const [compte, setCompte] = useState<Compte>({ statut: 'invite', prenom: '' });
   const [recherche, setRecherche] = useState('');
+  const [premium, setPremium] = useState(false);
+  useEffect(() => {
+    const lirePremium = () => void lireEtatPremium().then((e) => setPremium(Boolean(e?.premium)));
+    lirePremium();
+    window.addEventListener(EVT_PREMIUM, lirePremium);
+    return () => window.removeEventListener(EVT_PREMIUM, lirePremium);
+  }, []);
 
   useEffect(() => {
     const t = read('six-theme');
@@ -949,6 +974,7 @@ export function Settings() {
           </>
         )}
         {vue === 'memoire' && <MemoireSix />}
+        {vue === 'premium' && <PremiumVue />}
         {vue === 'compte' && <CompteVue />}
         {vue === 'notifications' && <InterAppNotifications />}
         {vue === 'raccourcis' && <Raccourcis />}
@@ -969,6 +995,13 @@ export function Settings() {
     href?: string;
     externe?: boolean;
   }[] = [
+    {
+      id: 'premium',
+      icon: 'sparkles',
+      label: 'Six Premium',
+      sous: premium ? 'Actif' : 'Sans limite, meilleur modèle, mémoire partout',
+      cles: 'premium abonnement payer paiement mobile money carte pass limite',
+    },
     {
       id: 'theme',
       icon: 'palette',

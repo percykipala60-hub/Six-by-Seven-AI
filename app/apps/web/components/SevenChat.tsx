@@ -6,6 +6,7 @@ import { AppBar } from './AppBar';
 import { useConfirmer } from './Confirmer';
 import { Icon } from './Icon';
 import { memoireActive } from '@/lib/memoire';
+import { entetesCompte } from '@/lib/premium-client';
 import { CHAT_MAX_BYTES, CHAT_MAX_CONTENT, CHAT_MAX_MESSAGES } from '@/lib/api-schemas';
 import { detecterOrdre } from '@/lib/seven-ordres';
 import type { ChatMessage, ChatResult } from '@/lib/types';
@@ -320,7 +321,7 @@ export function SevenChatPage() {
       );
       const res = await requete('/api/chat', {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: { 'content-type': 'application/json', ...(await entetesCompte()) },
         body: corps,
       });
       const data = (await res.json().catch(() => ({}))) as ChatResult & { error?: string };

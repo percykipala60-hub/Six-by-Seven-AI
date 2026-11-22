@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { POST } from '@/app/api/replies/route';
 
 const reponses = vi.hoisted(() =>
-  vi.fn(async (_input: unknown) => ({
+  vi.fn(async (_input: unknown, _premium?: boolean) => ({
     reponses: ['Réponse A', 'Réponse B', 'Réponse C'] as [string, string, string],
     demo: true,
   })),
@@ -35,15 +35,18 @@ describe('route de rédaction', () => {
     });
 
     expect(response.status).toBe(200);
-    expect(reponses).toHaveBeenCalledWith({
-      conversation: 'Bonjour',
-      objectif: 'Répondre avec tact',
-      ton: 'amical',
-      longueur: 'courte',
-      precision: undefined,
-      style: undefined,
-      canal: undefined,
-    });
+    expect(reponses).toHaveBeenCalledWith(
+      {
+        conversation: 'Bonjour',
+        objectif: 'Répondre avec tact',
+        ton: 'amical',
+        longueur: 'courte',
+        precision: undefined,
+        style: undefined,
+        canal: undefined,
+      },
+      false, // sans compte premium : modèle de la version gratuite
+    );
   });
 
   it('indique le champ invalide sans exposer le contenu de la conversation', async () => {

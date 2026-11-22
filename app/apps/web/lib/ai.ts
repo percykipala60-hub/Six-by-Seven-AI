@@ -16,7 +16,8 @@ interface Provider {
   id: string;
   label: string;
   configured(role: Role): boolean;
-  model(role: Role): string;
+  /** premium : le meilleur modèle de rédaction ; sinon le modèle de la version gratuite. */
+  model(role: Role, premium?: boolean): string;
   call(
     model: string,
     system: string,
@@ -49,10 +50,13 @@ const claude: Provider = {
   label: 'Claude',
   configured: () => Boolean(env('ANTHROPIC_API_KEY')),
   // Analyse et retouches : petit modèle, rapide et économe. Rédaction : modèle principal.
-  model: (role) =>
+  // Rédaction : modèle principal pour le premium, modèle plus léger (CLAUDE_MODEL_REDACTION_GRATUIT) sinon.
+  model: (role, premium = true) =>
     role === 'analyse'
       ? env('CLAUDE_MODEL_ANALYSE') || 'claude-haiku-4-5-20251001'
-      : env('CLAUDE_MODEL_REDACTION') || 'claude-sonnet-5-5',
+      : premium
+        ? env('CLAUDE_MODEL_REDACTION') || 'claude-sonnet-5-5'
+        : env('CLAUDE_MODEL_REDACTION_GRATUIT') || 'claude-haiku-4-5-20251001',
   async call(model, system, user, maxTokens, signal, history) {
     const client = new Anthropic({
       apiKey: env('ANTHROPIC_API_KEY'),
@@ -93,8 +97,10 @@ const openai: Provider = {
   label: 'ChatGPT (OpenAI)',
   // Pas de nom de modèle par défaut : à choisir dans la doc OpenAI, puis à mettre dans .env.local.
   configured: (role) => Boolean(env('OPENAI_API_KEY') && openai.model(role)),
-  model: (role) =>
-    (role === 'analyse' ? env('OPENAI_MODEL_ANALYSE') : env('OPENAI_MODEL_REDACTION')) ||
+  model: (role, premium = true) =>
+    (role === 'analyse'
+      ? env('OPENAI_MODEL_ANALYSE')
+      : (!premium && env('OPENAI_MODEL_REDACTION_GRATUIT')) || env('OPENAI_MODEL_REDACTION')) ||
     env('OPENAI_MODEL'),
   async call(model, system, user, maxTokens, signal, history) {
     const res = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -198,6 +204,7 @@ export async function callAI(
   system: string,
   user: string,
   maxTokens: number,
+  premium = true,
 ): Promise<string> {
   const providers = chain(role);
   if (!providers.length) throw new ProviderError("Aucun service d'IA n'est configuré.");
@@ -215,7 +222,7 @@ export async function callAI(
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), timeout);
     try {
-      return await p.call(p.model(role), system, user, maxTokens, ctl.signal);
+      return await p.call(p.model(role, premium), system, user, maxTokens, ctl.signal);
     } catch (e) {
       lastStatus = e instanceof HttpFailure ? e.status : 0;
       // Journal technique sans aucun contenu de conversation ni clé.
@@ -237,6 +244,7 @@ export async function callChat(
   user: string,
   history: ChatMessage[],
   maxTokens: number,
+  premium = true,
 ): Promise<string> {
   const providers = chain('redaction');
   if (!providers.length) throw new ProviderError("Aucun service d'IA n'est configuré.");
@@ -253,7 +261,14 @@ export async function callChat(
     const ctl = new AbortController();
     const timer = setTimeout(() => ctl.abort(), timeout);
     try {
-      return await p.call(p.model('redaction'), system, user, maxTokens, ctl.signal, history);
+      return await p.call(
+        p.model('redaction', premium),
+        system,
+        user,
+        maxTokens,
+        ctl.signal,
+        history,
+      );
     } catch (e) {
       lastStatus = e instanceof HttpFailure ? e.status : 0;
       // Journal technique sans aucun contenu de conversation ni clé.

@@ -51,10 +51,13 @@ export async function analyze(conversation: string): Promise<Analysis> {
   return { ...r, arnaque: mergeScam(local, r.arnaque), demo: false };
 }
 
-export async function replies(input: RepliesInput): Promise<RepliesResult> {
+export async function replies(input: RepliesInput, premium = true): Promise<RepliesResult> {
   if (!hasAI()) return { reponses: demoReplies(input.ton), demo: true };
   const { system, user } = repliesPrompt(input);
-  const reponses = await withRetry(() => callAI('redaction', system, user, 4000), parseReplies);
+  const reponses = await withRetry(
+    () => callAI('redaction', system, user, 4000, premium),
+    parseReplies,
+  );
   return { reponses, demo: false };
 }
 
@@ -73,11 +76,11 @@ export async function topics(situation: Situation, contexte: string): Promise<To
 }
 
 /** Seven AI : le chatbot intégré. Conversation libre, multi-tours, identité connue du prompt système. */
-export async function chat(messages: ChatMessage[]): Promise<ChatResult> {
+export async function chat(messages: ChatMessage[], premium = true): Promise<ChatResult> {
   const user = messages[messages.length - 1]?.content ?? '';
   const history = messages.slice(0, -1);
   if (!hasChatAI()) return { reponse: demoChat(user), demo: true };
-  const reponse = (await callChat(sevenAiSystem(), user, history, 1500)).trim();
+  const reponse = (await callChat(sevenAiSystem(), user, history, 1500, premium)).trim();
   if (!reponse) throw new ProviderError('La réponse de Seven AI était vide. Réessaie.');
   return { reponse, demo: false };
 }

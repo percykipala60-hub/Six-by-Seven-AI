@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { anonymize, restore } from '@/lib/anonymize';
 import { heuristicScam, SCAM_THRESHOLD } from '@/lib/scam';
 import { loadStyle } from '@/lib/style';
+import { entetesCompte } from '@/lib/premium-client';
 import { MAX_CHARS, type RepliesResult, type Ton } from '@/lib/types';
 import { looksLikeWhatsApp, parseWhatsApp, speakerLabels, toConversation } from '@/lib/whatsapp';
 import { Icon } from './Icon';
@@ -62,7 +63,7 @@ export function Rapide() {
     try {
       const res = await fetch('/api/replies', {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: { 'content-type': 'application/json', ...(await entetesCompte()) },
         body: JSON.stringify({
           conversation: masque.text,
           objectif: 'Répondre de façon adaptée',

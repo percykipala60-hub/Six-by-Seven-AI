@@ -54,3 +54,29 @@ export const ChatBodySchema = z.object({
     .max(CHAT_MAX_MESSAGES)
     .refine((messages) => messages.at(-1)?.role === 'user'),
 });
+
+// Paiement du premium. Le numéro est au format international (+243…), sans espaces.
+const telephone = z
+  .string()
+  .trim()
+  .transform((s) => s.replace(/[\s.-]/g, ''))
+  .pipe(z.string().regex(/^\+\d{9,15}$/));
+const nomClient = z.string().trim().min(1).max(60);
+
+export const PayerBodySchema = z.discriminatedUnion('canal', [
+  z.object({
+    canal: z.literal('mobile'),
+    offre: z.enum(['7j', '30j']),
+    operateur: z.enum(['airtel', 'orange', 'mpesa', 'afrimoney']),
+    telephone,
+  }),
+  z.object({
+    canal: z.literal('carte'),
+    offre: z.enum(['7j', '30j']),
+    reseau: z.enum(['VISA', 'MASTERCARD']),
+    prenom: nomClient,
+    nom: nomClient,
+    telephone,
+    ville: z.string().trim().min(2).max(60),
+  }),
+]);

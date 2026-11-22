@@ -25,6 +25,7 @@ import {
 import { MAX_IMAGES, OcrError, prechaufferLecteur, readScreenshots } from '@/lib/ocr';
 import { ZipError, readChatFromZip } from '@/lib/zip';
 import { loadStyle } from '@/lib/style';
+import { entetesCompte } from '@/lib/premium-client';
 import { ecouterCompte, lireCompte, phraseAccueil, salutation } from '@/lib/compte';
 import {
   NOTE_MAX,
@@ -309,7 +310,7 @@ async function post<T>(url: string, body: unknown): Promise<T> {
   try {
     res = await fetch(url, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: { 'content-type': 'application/json', ...(await entetesCompte()) },
       body: JSON.stringify(body),
     });
   } catch {

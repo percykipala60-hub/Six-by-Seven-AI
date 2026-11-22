@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { fail, guard, providerFail, readJson } from '@/lib/http';
 import { RepliesBodySchema } from '@/lib/api-schemas';
 import { replies } from '@/lib/providers';
+import { appelant } from '@/lib/premium';
 
 const CHAMPS_REDACTION: Record<string, string> = {
   conversation: 'conversation',
@@ -37,10 +38,11 @@ export async function POST(req: Request) {
     );
   }
   const { conversation, objectif, precision, ton, longueur, style, canal } = parsed.data;
+  const { premium } = await appelant(req);
   try {
     return NextResponse.json(
       // Réseau inconnu ou absent : ignoré, Six garde la forme de la conversation.
-      await replies({ conversation, objectif, ton, longueur, precision, style, canal }),
+      await replies({ conversation, objectif, ton, longueur, precision, style, canal }, premium),
     );
   } catch (e) {
     return providerFail(e);
