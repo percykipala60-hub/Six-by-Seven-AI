@@ -5,14 +5,12 @@
 app.{$DOMAINE} {
 	encode zstd gzip
 	reverse_proxy six:3000
-	# Journal technique sans contenu : ni corps de requête, ni paramètres d'adresse.
+	# Journal technique sans contenu : ni en-têtes, ni paramètres d'adresse (tout ce qui suit « ? »).
 	log {
 		output stdout
 		format filter {
-			request>uri query {
-				delete
-			}
 			request>headers delete
+			request>uri regexp \?.* ""
 		}
 	}
 }
