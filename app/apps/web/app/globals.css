@@ -5682,3 +5682,15 @@ html,
 body {
   overflow-x: clip; /* 100vw compte la barre de défilement : pas de défilement horizontal pour autant */
 }
+
+/* Écran de connexion obligatoire (components/Connexion.tsx) : formulaire centré, plein écran. */
+.auth-screen {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100dvh;
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
+}

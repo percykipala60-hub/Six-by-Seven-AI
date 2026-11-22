@@ -23,6 +23,8 @@ page.on('response', async (res) => {
 try {
   // Accueil et écran WhatsApp
   await page.goto(BASE + '/');
+  // L'accueil s'affiche une fois la session lue (components/Connexion.tsx) : on l'attend.
+  await page.waitForSelector('#conv', { timeout: 15000 }).catch(() => {});
   r.verifier('Accueil affiché', (await page.locator('#conv').count()) === 1);
   await page.getByRole('button', { name: 'Importer' }).click(); // le « + » de la barre de saisie ouvre la feuille d'import
   await page.getByRole('button', { name: 'Export de conversation' }).click();
@@ -132,6 +134,7 @@ try {
 
   // Mobile : pas de défilement horizontal
   await page.goto(BASE + '/');
+  await page.waitForSelector('#conv', { timeout: 15000 }).catch(() => {});
   r.verifier(
     'Pas de défilement horizontal à 375 px',
     await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),

@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { CompteSync } from '@/components/CompteSync';
+import { PorteCompte } from '@/components/Connexion';
 import { Fond } from '@/components/Fond';
 import { NetworkStatus } from '@/components/NetworkStatus';
 import { InterAppLaunchHandler } from '@/components/InterAppNotifications';
@@ -44,7 +45,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <InterAppLaunchHandler />
         <ThemeIcon />
         <CompteSync />
-        {children}
+        <PorteCompte>{children}</PorteCompte>
       </body>
     </html>
   );

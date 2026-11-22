@@ -24,6 +24,19 @@ export async function ouvrir({ mobile = true } = {}) {
   const ctx = await browser.newContext({
     viewport: mobile ? { width: 375, height: 812 } : { width: 1280, height: 800 },
   });
+  // Le compte est obligatoire (components/Connexion.tsx) : les parcours démarrent avec une session d'essai
+  // locale, sans vrai compte ni appel à Supabase (« six-auth » absent, la synchronisation ne démarre pas).
+  await ctx.addInitScript(() => {
+    try {
+      if (!localStorage.getItem('six-session'))
+        localStorage.setItem(
+          'six-session',
+          JSON.stringify({ id: 'e2e', identifiant: 'essai@example.com' }),
+        );
+    } catch {
+      /* stockage bloqué : le parcours verra l'écran de connexion */
+    }
+  });
   const page = await ctx.newPage();
   return { browser, ctx, page };
 }
