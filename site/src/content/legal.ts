@@ -43,7 +43,7 @@ export const legalPages: LegalPage[] = [
       {
         title: "3. Ton compte",
         body: [
-          "Certaines fonctionnalités nécessitent un compte. Les informations que tu fournis à l'inscription doivent être exactes. Tu es responsable de la confidentialité de tes identifiants et de ce qui est fait depuis ton compte.",
+          "L'utilisation de Six nécessite un compte. Les informations que tu fournis à l'inscription doivent être exactes. Tu es responsable de la confidentialité de tes identifiants et de ce qui est fait depuis ton compte.",
           "L'utilisation de Six peut être limitée par des quotas, indiqués dans l'application.",
         ],
       },
@@ -163,7 +163,7 @@ export const legalPages: LegalPage[] = [
       {
         title: "5. Compte et copie de la mémoire",
         body: [
-          "La création d'un compte est facultative. Si vous en créez un, Seven.AI traite votre adresse électronique pour l'authentification, ainsi que votre prénom.",
+          "Un compte est nécessaire pour utiliser Six. Seven.AI traite votre adresse électronique pour l'authentification, ainsi que votre prénom.",
           "Votre mémoire n'est copiée sur votre compte que si vous l'autorisez expressément (Réglages > Compte). Si vous retirez cette autorisation, la copie conservée sur le compte est effacée.",
           "Ces données sont hébergées par Supabase, dans une région située à Paris (Union européenne), avec des règles d'accès qui réservent chaque compte à son titulaire.",
         ],

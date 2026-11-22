@@ -156,7 +156,7 @@ export const faq = {
 // Mesure d'audience : identifiant de mesure Google Analytics 4 (« G-… »), visible dans Analytics sous
 // Administration > Flux de données > le flux du site. Vide : aucune mesure.
 export const analytics = {
-  gaMeasurementId: "G-8PXSQH45JG",
+  gaMeasurementId: "G-C9NW9ZH62Z", // compte Google Analytics « Seven.AI » de sevenai.dc@gmail.com
 };
 
 // Bandeau et panneau de consentement aux cookies.
