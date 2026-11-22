@@ -56,6 +56,15 @@ export function paiementDisponible(): boolean {
   return maishapayDisponible() && adminDisponible();
 }
 
+/**
+ * Premium en veille : tant que le paiement n'est pas configuré sur le serveur (clés MaishaPay et clé secrète
+ * Supabase), personne ne peut payer. On ne limite alors personne : pas de limites du jour, meilleur modèle pour
+ * tous, et l'entrée Six Premium est cachée dans l'app. Voir docs/premium.md pour le lancement.
+ */
+export function premiumEnVeille(): boolean {
+  return !paiementDisponible();
+}
+
 /** Adresse publique de l'app, pour les retours de MaishaPay (jamais lue depuis la requête). */
 export function urlPublique(): string {
   return (env('PREMIUM_URL_PUBLIQUE') || 'https://app.sixbysevenai.com').replace(/\/$/, '');
@@ -65,6 +74,8 @@ export type Appelant = {
   utilisateur: Utilisateur | null;
   premium: boolean;
   jusquA: Date | null;
+  /** Pas de limites et meilleur modèle : premium actif, ou premium en veille (personne ne peut payer). */
+  illimite: boolean;
   /** Clé des compteurs du jour : le compte s'il est connecté, sinon l'adresse. */
   cle: string;
 };
@@ -80,10 +91,12 @@ export async function appelant(req: Request): Promise<Appelant> {
       console.error('[premium] lecture du premium impossible');
     }
   }
+  const premium = Boolean(jusquA && jusquA.getTime() > Date.now());
   return {
     utilisateur,
     jusquA,
-    premium: Boolean(jusquA && jusquA.getTime() > Date.now()),
+    premium,
+    illimite: premium || premiumEnVeille(),
     cle: utilisateur ? `u:${utilisateur.id}` : `ip:${clientKey(req)}`,
   };
 }

@@ -127,17 +127,27 @@ describe('limites gratuites', () => {
 });
 
 describe('route d’analyse', () => {
-  it('refuse au-delà des analyses gratuites du jour (402)', async () => {
-    vi.stubEnv('GRATUIT_ANALYSES_JOUR', '1');
+  const demande = async () => {
     const { POST } = await import('@/app/api/analyze/route');
-    const demande = () =>
-      POST(
-        new Request('http://localhost/api/analyze', {
-          method: 'POST',
-          headers: { origin: 'http://localhost', 'content-type': 'application/json' },
-          body: JSON.stringify({ conversation: 'Salut, tu viens samedi ?' }),
-        }),
-      );
+    return POST(
+      new Request('http://localhost/api/analyze', {
+        method: 'POST',
+        headers: { origin: 'http://localhost', 'content-type': 'application/json' },
+        body: JSON.stringify({ conversation: 'Salut, tu viens samedi ?' }),
+      }),
+    );
+  };
+
+  it('en veille (paiement pas configuré), ne limite personne', async () => {
+    vi.stubEnv('GRATUIT_ANALYSES_JOUR', '1');
+    for (let i = 0; i < 3; i++) expect((await demande()).status).toBe(200);
+  });
+
+  it('paiement ouvert : refuse au-delà des analyses gratuites du jour (402)', async () => {
+    vi.stubEnv('GRATUIT_ANALYSES_JOUR', '1');
+    vi.stubEnv('MAISHAPAY_PUBLIC_KEY', 'test-public');
+    vi.stubEnv('MAISHAPAY_SECRET_KEY', 'test-secret');
+    vi.stubEnv('SUPABASE_SERVICE_ROLE_KEY', 'test-service');
     expect((await demande()).status).toBe(200); // mode démonstration, sans clé d'IA
     const refus = await demande();
     expect(refus.status).toBe(402);

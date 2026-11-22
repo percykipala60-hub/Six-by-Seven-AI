@@ -38,11 +38,11 @@ export async function POST(req: Request) {
     );
   }
   const { conversation, objectif, precision, ton, longueur, style, canal } = parsed.data;
-  const { premium } = await appelant(req);
+  const { illimite } = await appelant(req);
   try {
     return NextResponse.json(
       // Réseau inconnu ou absent : ignoré, Six garde la forme de la conversation.
-      await replies({ conversation, objectif, ton, longueur, precision, style, canal }, premium),
+      await replies({ conversation, objectif, ton, longueur, precision, style, canal }, illimite),
     );
   } catch (e) {
     return providerFail(e);

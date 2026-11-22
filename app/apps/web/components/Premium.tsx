@@ -211,12 +211,18 @@ export function PremiumVue() {
         <LigneInfo
           icon="chat"
           label="Analyses sans limite"
-          sous={limites.analyses ? `Gratuit : ${limites.analyses} par jour` : undefined}
+          sous={
+            limites.analyses && !etat.veille ? `Gratuit : ${limites.analyses} par jour` : undefined
+          }
         />
         <LigneInfo
           icon="sparkles"
           label="Seven AI sans limite"
-          sous={limites.messages ? `Gratuit : ${limites.messages} messages par jour` : undefined}
+          sous={
+            limites.messages && !etat.veille
+              ? `Gratuit : ${limites.messages} messages par jour`
+              : undefined
+          }
         />
         <LigneInfo icon="bulb" label="Le meilleur modèle d’IA" sous="Des réponses plus fines" />
         <LigneInfo

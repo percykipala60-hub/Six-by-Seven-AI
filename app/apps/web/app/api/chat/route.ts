@@ -25,10 +25,10 @@ export async function POST(req: Request) {
   const parsed = ChatBodySchema.safeParse(b);
   if (!parsed.success) return fail(400, 'Les messages du chat sont invalides.');
   const a = await appelant(req);
-  if (!a.premium && (await depasse('messages', a.cle, limitesGratuites().messages)))
+  if (!a.illimite && (await depasse('messages', a.cle, limitesGratuites().messages)))
     return fail(402, MESSAGE_LIMITE.messages);
   try {
-    return NextResponse.json(await chat(parsed.data.messages, a.premium));
+    return NextResponse.json(await chat(parsed.data.messages, a.illimite));
   } catch (e) {
     return providerFail(e);
   }

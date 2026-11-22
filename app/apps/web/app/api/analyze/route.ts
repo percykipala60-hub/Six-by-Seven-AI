@@ -12,7 +12,7 @@ export async function POST(req: Request) {
   const parsed = AnalyseBodySchema.safeParse(body);
   if (!parsed.success) return fail(400, 'Colle une conversation valide de 1 à 2000 caractères.');
   const a = await appelant(req);
-  if (!a.premium && (await depasse('analyses', a.cle, limitesGratuites().analyses)))
+  if (!a.illimite && (await depasse('analyses', a.cle, limitesGratuites().analyses)))
     return fail(402, MESSAGE_LIMITE.analyses);
   try {
     return NextResponse.json(await analyze(parsed.data.conversation));

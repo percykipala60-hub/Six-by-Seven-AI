@@ -25,6 +25,8 @@ export type EtatPremium = {
   offres: OffrePremium[];
   limites: { analyses: number; messages: number };
   paiementDisponible: boolean;
+  /** Paiement pas encore ouvert : pas de limites, l'entrée Six Premium est cachée. */
+  veille: boolean;
 };
 
 export async function lireEtatPremium(): Promise<EtatPremium | null> {

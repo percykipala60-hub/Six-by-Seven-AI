@@ -45,7 +45,7 @@ describe('route de rédaction', () => {
         style: undefined,
         canal: undefined,
       },
-      false, // sans compte premium : modèle de la version gratuite
+      true, // premium en veille (paiement pas configuré) : meilleur modèle pour tous
     );
   });
 

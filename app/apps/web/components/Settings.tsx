@@ -290,7 +290,8 @@ function CompteVue() {
   // La copie de la mémoire sur le compte est réservée à Six Premium (règle aussi appliquée par Supabase).
   const [premium, setPremium] = useState<boolean | null>(null);
   useEffect(() => {
-    void lireEtatPremium().then((e) => setPremium(Boolean(e?.premium)));
+    // En veille (paiement pas encore ouvert), la copie reste ouverte à tous.
+    void lireEtatPremium().then((e) => setPremium(e ? e.premium || e.veille : null));
   }, []);
   const [c, setC] = useState<Compte>({ statut: 'invite', prenom: '' });
   const [prenom, setPrenom] = useState('');
@@ -444,7 +445,7 @@ function CompteVue() {
               icon="refresh"
               label="Copier ma mémoire sur mon compte"
               checked={sync}
-              disabled={busy || (!sync && premium !== true)}
+              disabled={busy || (!sync && premium === false)}
               onChange={async (on) => {
                 if (on) {
                   setBusy(true);
@@ -670,8 +671,14 @@ export function Settings() {
   const [compte, setCompte] = useState<Compte>({ statut: 'invite', prenom: '' });
   const [recherche, setRecherche] = useState('');
   const [premium, setPremium] = useState(false);
+  // Entrée Six Premium cachée tant que le paiement n'est pas ouvert (premium en veille).
+  const [premiumOuvert, setPremiumOuvert] = useState(false);
   useEffect(() => {
-    const lirePremium = () => void lireEtatPremium().then((e) => setPremium(Boolean(e?.premium)));
+    const lirePremium = () =>
+      void lireEtatPremium().then((e) => {
+        setPremium(Boolean(e?.premium));
+        setPremiumOuvert(Boolean(e && !e.veille));
+      });
     lirePremium();
     window.addEventListener(EVT_PREMIUM, lirePremium);
     return () => window.removeEventListener(EVT_PREMIUM, lirePremium);
@@ -995,13 +1002,17 @@ export function Settings() {
     href?: string;
     externe?: boolean;
   }[] = [
-    {
-      id: 'premium',
-      icon: 'sparkles',
-      label: 'Six Premium',
-      sous: premium ? 'Actif' : 'Sans limite, meilleur modèle, mémoire partout',
-      cles: 'premium abonnement payer paiement mobile money carte pass limite',
-    },
+    ...(premiumOuvert || premium
+      ? [
+          {
+            id: 'premium',
+            icon: 'sparkles' as const,
+            label: 'Six Premium',
+            sous: premium ? 'Actif' : 'Sans limite, meilleur modèle, mémoire partout',
+            cles: 'premium abonnement payer paiement mobile money carte pass limite',
+          },
+        ]
+      : []),
     {
       id: 'theme',
       icon: 'palette',

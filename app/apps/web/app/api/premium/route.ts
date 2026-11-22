@@ -1,6 +1,12 @@
 import { NextResponse } from 'next/server';
 import { fail, foreignOrigin } from '@/lib/http';
-import { appelant, limitesGratuites, offres, paiementDisponible } from '@/lib/premium';
+import {
+  appelant,
+  limitesGratuites,
+  offres,
+  paiementDisponible,
+  premiumEnVeille,
+} from '@/lib/premium';
 
 /** État du premium du compte qui appelle, offres et limites gratuites. */
 export async function GET(req: Request) {
@@ -14,6 +20,7 @@ export async function GET(req: Request) {
       offres: offres(),
       limites: limitesGratuites(),
       paiementDisponible: paiementDisponible(),
+      veille: premiumEnVeille(),
     },
     { headers: { 'Cache-Control': 'no-store' } },
   );

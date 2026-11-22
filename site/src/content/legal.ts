@@ -48,16 +48,7 @@ export const legalPages: LegalPage[] = [
         ],
       },
       {
-        title: "4. Six Premium",
-        body: [
-          "Six est gratuit, avec des limites par jour indiquées dans l'application. Six Premium les lève, rédige avec un modèle d'IA plus avancé et permet de copier ta mémoire sur ton compte.",
-          "Six Premium est un pass de 7 ou 30 jours, payé d'avance sur le site de Six, par Mobile Money ou par carte bancaire, via notre prestataire de paiement MaishaPay. Le prix est affiché avant le paiement. Il n'y a ni abonnement ni prélèvement automatique : à la fin du pass, Six repasse en version gratuite, sans perte de tes données.",
-          "Le pass démarre dès la confirmation du paiement. Un nouveau pass acheté pendant un pass en cours s'ajoute à sa fin. Le pass est lié à ton compte et vaut sur tous tes appareils.",
-          `Si un paiement a été débité sans que le premium soit activé, écris-nous à ${EMAIL} avec la date et le numéro utilisé : nous activons le pass ou te remboursons.`,
-        ],
-      },
-      {
-        title: "5. Ce que tu t'engages à faire",
+        title: "4. Ce que tu t'engages à faire",
         body: [
           {
             list: [
@@ -69,52 +60,52 @@ export const legalPages: LegalPage[] = [
         ],
       },
       {
-        title: "6. Tes contenus",
+        title: "5. Tes contenus",
         body: [
           "Les conversations que tu transmets restent les tiennes. Tu nous autorises seulement à les traiter pour te fournir le service, à les conserver et à les sauvegarder pour ton compte, et à les utiliser pour la sécurité de Six.",
           "Nous ne vendons pas tes contenus et ne les utilisons pas pour entraîner nos modèles d'IA.",
         ],
       },
       {
-        title: "7. Réponses proposées par l'IA",
+        title: "6. Réponses proposées par l'IA",
         body: [
           "Les réponses sont générées automatiquement et peuvent contenir des erreurs ou mal interpréter une situation. Tu restes seul responsable des messages que tu envoies.",
           "La détection d'arnaques est une aide, pas une garantie. En cas de doute, contacte directement l'organisme concerné par un canal officiel.",
         ],
       },
       {
-        title: "8. Données personnelles",
+        title: "7. Données personnelles",
         body: [
           "La façon dont nous collectons, utilisons, conservons et protégeons tes données est détaillée dans notre politique de confidentialité, qui fait partie de ces conditions.",
         ],
       },
       {
-        title: "9. Propriété intellectuelle",
+        title: "8. Propriété intellectuelle",
         body: [
           "Six, son logo, son interface et ses contenus appartiennent à Seven.AI. Tu peux utiliser librement les réponses que tu choisis d'envoyer.",
         ],
       },
       {
-        title: "10. Disponibilité et responsabilité",
+        title: "9. Disponibilité et responsabilité",
         body: [
           "Six est fourni en l'état. Nous faisons notre possible pour qu'il soit disponible et fiable, et sauvegardons régulièrement les données, sans pouvoir garantir l'absence d'interruption ou d'erreur.",
           "Seven.AI ne peut être tenue responsable des conséquences des messages que tu choisis d'envoyer, ni d'une décision prise sur la seule base d'une alerte ou d'une réponse proposée par Six.",
         ],
       },
       {
-        title: "11. Suspension et suppression du compte",
+        title: "10. Suspension et suppression du compte",
         body: [
           "Tu peux supprimer ton compte à tout moment, depuis l'application ou en nous écrivant. Nous pouvons suspendre ou fermer un compte en cas de manquement grave à ces conditions, après t'avoir prévenu lorsque c'est possible.",
         ],
       },
       {
-        title: "12. Évolution des conditions",
+        title: "11. Évolution des conditions",
         body: [
           "Le service et ces conditions peuvent évoluer. Les changements importants te seront signalés dans l'application ou sur ce site avant de s'appliquer.",
         ],
       },
       {
-        title: "13. Contact",
+        title: "12. Contact",
         body: [`Pour toute question : ${EMAIL}.`],
       },
     ],
@@ -173,58 +164,49 @@ export const legalPages: LegalPage[] = [
         title: "5. Compte et copie de la mémoire",
         body: [
           "Un compte est nécessaire pour utiliser Six. Seven.AI traite votre adresse électronique pour l'authentification, ainsi que votre prénom.",
-          "Votre mémoire n'est copiée sur votre compte que si vous l'autorisez expressément (Réglages > Compte), avec Six Premium. Si vous retirez cette autorisation, la copie conservée sur le compte est effacée.",
-          "Pour appliquer les limites de la version gratuite, notre serveur reconnaît votre compte à chaque demande et compte les demandes du jour, sous une forme chiffrée et sans aucun contenu. Ces compteurs sont effacés après deux jours.",
+          "Votre mémoire n'est copiée sur votre compte que si vous l'autorisez expressément (Réglages > Compte). Si vous retirez cette autorisation, la copie conservée sur le compte est effacée.",
           "Ces données sont hébergées par Supabase, dans une région située à Paris (Union européenne), avec des règles d'accès qui réservent chaque compte à son titulaire.",
         ],
       },
       {
-        title: "6. Paiement de Six Premium",
-        body: [
-          "Le paiement est traité par MaishaPay. Pour un paiement Mobile Money, votre numéro, votre opérateur et votre nom lui sont transmis ; pour une carte, votre nom, votre téléphone et votre ville. Les données de carte sont saisies sur la page sécurisée de MaishaPay : Seven.AI ne les voit jamais.",
-          "Seven.AI conserve pour chaque paiement : la référence, l'offre, le montant, le moyen de paiement (opérateur ou type de carte), le statut et la date, ainsi que la date de fin de votre premium. Votre numéro de téléphone n'est pas conservé par Seven.AI.",
-        ],
-      },
-      {
-        title: "7. Intelligence artificielle",
+        title: "6. Intelligence artificielle",
         body: [
           "L'analyse et la rédaction font appel à des prestataires d'intelligence artificielle, actuellement Anthropic et, en secours, OpenAI. Seul le texte masqué leur est transmis ; ils appliquent leurs propres règles de traitement à leurs services.",
         ],
       },
       {
-        title: "8. Durée de conservation",
+        title: "7. Durée de conservation",
         body: [
           {
             list: [
               "Contenu des messages : aucune conservation sur nos serveurs.",
               "Données de compte (adresse électronique, prénom, copie de la mémoire si vous l'avez autorisée) : jusqu'à la suppression du compte.",
-              "Paiements de Six Premium : la durée imposée par les obligations comptables, y compris après la suppression du compte si la loi l'exige.",
               "Journaux techniques sans contenu : durée limitée, strictement nécessaire à la sécurité et au bon fonctionnement du service.",
             ],
           },
         ],
       },
       {
-        title: "9. Prestataires",
+        title: "8. Prestataires",
         body: [
-          "Le service s'appuie sur des prestataires qui traitent uniquement les données nécessaires à leur prestation : hébergement du site et de l'application (DigitalOcean, serveur situé à Francfort), nom de domaine (Cloudflare), comptes (Supabase, Paris), paiement de Six Premium (MaishaPay) et intelligence artificielle (Anthropic, OpenAI). Vos données ne sont jamais cédées à des tiers à des fins commerciales.",
+          "Le service s'appuie sur des prestataires qui traitent uniquement les données nécessaires à leur prestation : hébergement du site et de l'application (DigitalOcean, serveur situé à Francfort), nom de domaine (Cloudflare), comptes (Supabase, Paris) et intelligence artificielle (Anthropic, OpenAI). Vos données ne sont jamais cédées à des tiers à des fins commerciales.",
         ],
       },
       {
-        title: "10. Transferts de données",
+        title: "9. Transferts de données",
         body: [
           "Certains prestataires sont établis aux États-Unis (intelligence artificielle, mesure d'audience du site). Seul le texte masqué est transmis aux prestataires d'intelligence artificielle.",
         ],
       },
       {
-        title: "11. Sécurité des données",
+        title: "10. Sécurité des données",
         body: [
           "Seven.AI met en œuvre des mesures techniques et organisationnelles appropriées pour protéger vos données : chiffrement des échanges (HTTPS), restriction des accès aux seules personnes habilitées, protection des sauvegardes.",
           "Aucun système n'étant totalement infaillible, Seven.AI s'engage à vous informer dans les meilleurs délais de toute violation de données susceptible de vous concerner.",
         ],
       },
       {
-        title: "12. Vos droits",
+        title: "11. Vos droits",
         body: [
           "Conformément à la réglementation applicable en matière de protection des données personnelles, vous disposez des droits suivants :",
           {
@@ -240,13 +222,13 @@ export const legalPages: LegalPage[] = [
         ],
       },
       {
-        title: "13. Cookies et traceurs",
+        title: "12. Cookies et traceurs",
         body: [
           "Le présent site utilise des cookies strictement nécessaires à son fonctionnement et, sous réserve de votre consentement, des cookies de mesure d'audience et de traduction. Leur fonctionnement est détaillé dans notre politique cookies.",
         ],
       },
       {
-        title: "14. Modification de la présente politique",
+        title: "13. Modification de la présente politique",
         body: [
           "Seven.AI se réserve le droit de modifier la présente politique. Toute modification substantielle vous sera notifiée dans l'application ou sur le présent site avant son entrée en vigueur.",
         ],
