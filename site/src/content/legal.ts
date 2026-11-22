@@ -271,6 +271,7 @@ export const legalPages: LegalPage[] = [
             ],
           },
           "Les signaux publicitaires de Google sont désactivés : ces mesures ne servent jamais à de la publicité. Les statistiques sont traitées par Google, y compris aux États-Unis. Si tu retires ton accord, la mesure s'arrête et ces cookies sont effacés.",
+          "Le script de Google Analytics est chargé avec chaque page, mais la mesure y reste coupée tant que tu n'as pas accepté : aucun cookie n'est déposé et aucune visite n'est comptée. Ton navigateur contacte toutefois les serveurs de Google pour récupérer ce script, ce qui leur transmet ton adresse IP. Il est présent pour permettre à Google de vérifier que ce site nous appartient.",
         ],
       },
       {

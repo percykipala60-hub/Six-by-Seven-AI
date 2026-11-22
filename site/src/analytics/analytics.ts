@@ -3,7 +3,9 @@ import { hasConsent, onConsentChange } from "../consent/consent";
 
 // Mesure d'audience avec Google Analytics 4, seulement avec l'accord du visiteur (catégorie « Mesure
 // d'audience » du bandeau cookies) :
-// - rien n'est chargé ni déposé tant que l'accord n'est pas donné ;
+// - le script de Google est chargé par index.html, mais la mesure y est COUPÉE (ga-disable, consentement
+//   refusé) : aucun cookie déposé, aucune visite comptée tant que l'accord n'est pas donné. Il est dans la page
+//   pour que Google Search Console puisse vérifier le site avec Google Analytics ;
 // - si l'accord est retiré, la mesure s'arrête aussitôt et les cookies de Google Analytics sont effacés ;
 // - cookies gardés 13 mois au plus (recommandation de la CNIL), pas de signaux publicitaires.
 // Les changements de page (le site ne recharge pas la page) sont comptés par Google Analytics lui-même
@@ -25,32 +27,29 @@ let loaded = false;
 
 function load() {
   window[`ga-disable-${ID}`] = false;
-  if (loaded) {
-    window.gtag?.("consent", "update", { analytics_storage: "granted" });
-    return;
+  // index.html a déjà défini gtag et chargé le script, mesure coupée. Sans lui (page servie autrement),
+  // on les met en place ici, comme avant.
+  if (!window.gtag) {
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function gtag() {
+      // gtag.js attend l'objet « arguments » lui-même.
+      window.dataLayer!.push(arguments);
+    };
+    window.gtag("js", new Date());
+    const script = document.createElement("script");
+    script.async = true;
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(ID)}`;
+    document.head.appendChild(script);
   }
+  window.gtag("consent", "update", { analytics_storage: "granted" });
+  if (loaded) return;
   loaded = true;
-  window.dataLayer = window.dataLayer || [];
-  window.gtag = function gtag() {
-    // gtag.js attend l'objet « arguments » lui-même.
-    window.dataLayer!.push(arguments);
-  };
-  window.gtag("consent", "default", {
-    analytics_storage: "granted",
-    ad_storage: "denied",
-    ad_user_data: "denied",
-    ad_personalization: "denied",
-  });
-  window.gtag("js", new Date());
+  // Première activation : réglages de la mesure, et la page en cours est comptée.
   window.gtag("config", ID, {
     cookie_expires: THIRTEEN_MONTHS,
     allow_google_signals: false,
     allow_ad_personalization_signals: false,
   });
-  const script = document.createElement("script");
-  script.async = true;
-  script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(ID)}`;
-  document.head.appendChild(script);
 }
 
 function stop() {

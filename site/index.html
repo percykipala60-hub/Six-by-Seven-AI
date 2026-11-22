@@ -15,6 +15,20 @@
 
     <link rel="canonical" href="__SITE_URL__/" />
 
+    <!-- Google Analytics, mesure COUPÉE tant que le visiteur n'a pas accepté (ga-disable + consentement refusé) :
+         aucun cookie, aucune mesure. Le code est dans la page pour que Google Search Console puisse vérifier le
+         site avec Google Analytics. Après accord, src/analytics/analytics.ts active la mesure.
+         __GA_ID__ est remplacé au build par l'identifiant de src/content/site.ts (voir vite.config.ts). -->
+    <script>
+      window["ga-disable-__GA_ID__"] = true;
+      window.dataLayer = window.dataLayer || [];
+      function gtag() { dataLayer.push(arguments); }
+      gtag("consent", "default", { analytics_storage: "denied", ad_storage: "denied", ad_user_data: "denied", ad_personalization: "denied" });
+      gtag("js", new Date());
+      gtag("config", "__GA_ID__", { send_page_view: false, allow_google_signals: false, allow_ad_personalization_signals: false });
+    </script>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=__GA_ID__"></script>
+
     <!-- Google Search Console : prouve que le site appartient à Seven.AI (à garder tant que le site y est suivi). -->
     <meta name="google-site-verification" content="YXAJShDQLZISLhhT9IGDZfVhxxaLMXsNCCg44KeFrvc" />
 

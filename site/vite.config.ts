@@ -3,7 +3,7 @@ import { dirname, join, resolve } from "node:path";
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import { legalPages } from "./src/content/legal";
-import { app, brand, downloadPage, faq, hero, notFound, privacy, relations } from "./src/content/site";
+import { analytics, app, brand, downloadPage, faq, hero, notFound, privacy, relations } from "./src/content/site";
 
 // Adresse publique du site, pour l'aperçu des liens partagés, le plan du site (sitemap.xml) et robots.txt.
 // Elle est trouvée toute seule chez les hébergeurs courants ; ailleurs, ou avec un nom de domaine à soi,
@@ -34,7 +34,14 @@ function siteFiles(): Plugin {
   return {
     name: "six-site-files",
     // Dans index.html, __SITE_URL__ devient l'adresse du site.
-    transformIndexHtml: (html) => html.replaceAll("__SITE_URL__", site),
+    // __GA_ID__ devient l'identifiant Google Analytics ; sans identifiant, le bloc Analytics est retiré.
+    transformIndexHtml: (html) => {
+      const ga = analytics.gaMeasurementId.trim();
+      const page = html.replaceAll("__SITE_URL__", site);
+      return ga
+        ? page.replaceAll("__GA_ID__", ga)
+        : page.replace(/\s*<!-- Google Analytics[\s\S]*?gtag\/js\?id=__GA_ID__"><\/script>/, "");
+    },
     generateBundle() {
       const urls = PAGES.map(
         (p) => `  <url><loc>${site}${p.path}</loc><lastmod>${today}</lastmod><changefreq>${p.freq}</changefreq><priority>${p.priority}</priority></url>`,
