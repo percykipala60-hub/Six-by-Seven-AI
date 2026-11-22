@@ -3,3 +3,6 @@ dist
 *.local
 .DS_Store
 .claude/
+
+# Documents personnels (rapports, etc.) : jamais dans le dépôt
+*.docx

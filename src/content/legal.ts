@@ -320,7 +320,9 @@ export const legalPages: LegalPage[] = [
       {
         // À mettre à jour si le site change d'hébergeur.
         title: "Hébergement",
-        body: ["Le présent site est hébergé par Render Services, Inc., San Francisco (États-Unis), render.com."],
+        body: [
+          "Le présent site et l'application Six sont hébergés sur un serveur loué à DigitalOcean, LLC (New York, États-Unis), situé à Francfort (Allemagne). Le nom de domaine sixbysevenai.com est géré par Cloudflare, Inc.",
+        ],
       },
       {
         title: "Propriété intellectuelle",
