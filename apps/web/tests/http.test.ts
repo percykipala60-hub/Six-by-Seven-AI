@@ -22,6 +22,25 @@ describe('origine des requêtes', () => {
     expect(foreignOrigin(req())).toBe(true);
   });
 
+  it("derrière le relais du serveur, accepte l'adresse publique du site", () => {
+    vi.stubEnv('TRUST_PROXY', '1');
+    const derriere = {
+      origin: 'https://app.six.example',
+      'x-forwarded-host': 'app.six.example',
+      'x-forwarded-proto': 'https',
+    };
+    expect(foreignOrigin(req(derriere))).toBe(false);
+    expect(foreignOrigin(req({ ...derriere, origin: 'https://site-pirate.example' }))).toBe(true);
+  });
+
+  it("sans relais déclaré, n'écoute pas X-Forwarded-Host", () => {
+    expect(
+      foreignOrigin(
+        req({ origin: 'https://site-pirate.example', 'x-forwarded-host': 'site-pirate.example' }),
+      ),
+    ).toBe(true);
+  });
+
   it('accepte les domaines listés dans ALLOWED_ORIGINS', () => {
     vi.stubEnv('ALLOWED_ORIGINS', 'https://six.example, https://www.six.example/');
     expect(foreignOrigin(req({ origin: 'https://www.six.example' }))).toBe(false);

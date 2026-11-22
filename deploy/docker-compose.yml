@@ -1,0 +1,40 @@
+# Production de Six sur votre propre serveur (VPS), derrière votre nom de domaine.
+# Sur le serveur, depuis ce dossier :  docker compose up -d --build
+# Les réglages secrets sont dans deploy/.env (jamais dans Git) : voir .env.example.
+services:
+  six:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+      # Les valeurs NEXT_PUBLIC_* sont figées dans l'app au moment de la construction.
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-}
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:-}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      NODE_ENV: production
+      # Un seul relais de confiance devant l'app : Caddy. La limite de débit lit alors la vraie adresse.
+      TRUST_PROXY: '1'
+    expose: ['3000']
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:3000/']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  # Serveur web : certificats HTTPS automatiques (Let's Encrypt), redirections, compression.
+  caddy:
+    image: caddy:2.10.2-alpine
+    restart: unless-stopped
+    env_file: .env
+    ports: ['80:80', '443:443', '443:443/udp']
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [six]
+
+volumes:
+  caddy_data:
+  caddy_config:

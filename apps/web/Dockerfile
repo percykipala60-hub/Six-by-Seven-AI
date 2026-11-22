@@ -1,12 +1,13 @@
-# Image de production du serveur Next.js. Construire depuis la racine :
-#   docker build -f apps/web/Dockerfile --build-arg NEXT_PUBLIC_API_URL=https://api.exemple -t six-web .
+# Image de production du serveur Next.js (utilisée par deploy/docker-compose.yml). Construire depuis la racine :
+#   docker build -f apps/web/Dockerfile -t six-web .
 FROM node:22.22-alpine AS base
 RUN corepack enable && corepack prepare pnpm@10.28.0 --activate
 WORKDIR /repo
 
 FROM base AS builder
-ARG NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL NEXT_OUTPUT=standalone NEXT_TELEMETRY_DISABLED=1
+ARG NEXT_PUBLIC_SUPABASE_URL
+ARG NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY     NEXT_OUTPUT=standalone NEXT_TELEMETRY_DISABLED=1
 COPY . .
 RUN pnpm install --frozen-lockfile
 RUN pnpm --filter "@six/web..." build

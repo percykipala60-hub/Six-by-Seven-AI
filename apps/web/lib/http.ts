@@ -99,14 +99,33 @@ export async function rateLimited(req: Request): Promise<boolean> {
   return sharedRateLimited(req);
 }
 
+/**
+ * Adresses du site lui-même. Derrière un relais (Caddy sur le serveur), l'adresse vue par Next.js est interne
+ * (http://localhost:3000) : l'adresse publique vient alors des en-têtes Host / X-Forwarded-Host, et le
+ * protocole de X-Forwarded-Proto, lu seulement si TRUST_PROXY déclare un relais de confiance.
+ */
+function ownOrigins(req: Request): string[] {
+  const url = new URL(req.url);
+  const origines = [url.origin];
+  const relais = Number(process.env.TRUST_PROXY || 0) > 0;
+  const hote = (relais && req.headers.get('x-forwarded-host')) || req.headers.get('host');
+  if (hote) {
+    const proto =
+      (relais && req.headers.get('x-forwarded-proto')?.split(',')[0]?.trim()) ||
+      url.protocol.replace(':', '');
+    origines.push(`${proto}://${hote.split(',')[0].trim()}`);
+  }
+  return origines;
+}
+
 /** Sites autorisés à appeler l'API : le site lui-même, plus ALLOWED_ORIGINS (séparés par des virgules). */
 function allowedOrigin(req: Request, origin: string): boolean {
-  const own = new URL(req.url).origin;
+  const own = ownOrigins(req);
   const extra = (process.env.ALLOWED_ORIGINS ?? '')
     .split(',')
     .map((s) => s.trim().replace(/\/$/, ''))
     .filter(Boolean);
-  return origin === own || extra.includes(origin);
+  return own.includes(origin) || extra.includes(origin);
 }
 
 /**
