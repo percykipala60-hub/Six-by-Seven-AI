@@ -166,38 +166,69 @@ function messageErreur(
     return "Ce code n'est pas bon ou a expiré. Vérifie-le, ou demande un nouveau code.";
   if (m.includes('fetch') || m.includes('network'))
     return 'Pas de réseau. Réessaie dans un instant.';
+  if (m.includes('sending') || m.includes('email') || (e?.status ?? 0) >= 500)
+    return "L'e-mail n'a pas pu partir. Réessaie dans quelques minutes.";
   return "Une erreur est survenue. Vérifie l'adresse e-mail et réessaie.";
 }
 
-/** Connexion classique par e-mail et mot de passe. */
+/**
+ * Type du code à 6 chiffres attendu : « connexion » pour un compte déjà confirmé,
+ * « inscription » pour confirmer l'adresse d'un compte qui vient d'être créé.
+ */
+export type TypeCode = 'connexion' | 'inscription';
+export type ResultatEtape = { erreur: string | null; code?: TypeCode };
+
+/**
+ * Pendant la vérification du mot de passe, la session ouverte un instant par Supabase est
+ * aussitôt refermée : l'écouteur de compte l'ignore (pas de « connecté », pas de synchronisation).
+ */
+let verificationMdp = false;
+
+/**
+ * Connexion en deux étapes : 1. mot de passe vérifié, 2. code à 6 chiffres envoyé par e-mail.
+ * Le mot de passe seul n'ouvre jamais la session : il faut aussi le code (verifierCode).
+ * Une adresse pas encore confirmée reçoit à la place son code de confirmation d'inscription.
+ */
 export async function connecterParMotDePasse(
   email: string,
   motDePasse: string,
-): Promise<string | null> {
+): Promise<ResultatEtape> {
   const id = lireIdentifiant(email);
-  if (!id) return 'Écris une adresse e-mail valide.';
+  if (!id) return { erreur: 'Écris une adresse e-mail valide.' };
   if (!motDePasse || motDePasse.length < 6)
-    return 'Le mot de passe doit comporter au moins 6 caractères.';
+    return { erreur: 'Le mot de passe doit comporter au moins 6 caractères.' };
 
   const sb = await supabase();
-  if (!sb) return "La connexion n'est pas disponible pour le moment.";
+  if (!sb) return { erreur: "La connexion n'est pas disponible pour le moment." };
 
-  const { error } = await sb.auth.signInWithPassword({
-    email: id.valeur,
-    password: motDePasse,
-  });
-
-  if (error) {
-    const m = error.message.toLowerCase();
-    if (m.includes('invalid login credentials') || m.includes('invalid_grant')) {
-      return 'Adresse e-mail ou mot de passe incorrect.';
+  verificationMdp = true;
+  try {
+    const { error } = await sb.auth.signInWithPassword({
+      email: id.valeur,
+      password: motDePasse,
+    });
+    if (error) {
+      const m = error.message.toLowerCase();
+      if (m.includes('invalid login credentials') || m.includes('invalid_grant')) {
+        return { erreur: 'Adresse e-mail ou mot de passe incorrect.' };
+      }
+      if (m.includes('email not confirmed')) {
+        // Compte créé mais jamais confirmé : on renvoie le code de confirmation.
+        const err = await renvoyerConfirmation(id.valeur);
+        return err ? { erreur: err } : { erreur: null, code: 'inscription' };
+      }
+      return { erreur: messageErreur(error, id) };
     }
-    if (m.includes('email not confirmed')) {
-      return "Cette adresse e-mail n'a pas encore été confirmée. Vérifie ta boîte de réception.";
-    }
-    return messageErreur(error, id);
+    await sb.auth.signOut({ scope: 'local' });
+  } finally {
+    verificationMdp = false;
   }
-  return null;
+
+  const { error } = await sb.auth.signInWithOtp({
+    email: id.valeur,
+    options: { shouldCreateUser: false },
+  });
+  return error ? { erreur: messageErreur(error, id) } : { erreur: null, code: 'connexion' };
 }
 
 /** Inscription d'un nouveau compte avec prénom, e-mail et mot de passe. */
@@ -253,6 +284,14 @@ export async function inscrire(
       };
     }
     return { error: messageErreur(error, id), confirmationRequise: false };
+  }
+
+  // Adresse déjà confirmée : Supabase répond sans erreur (pour ne rien révéler) mais n'envoie rien.
+  if (data.user && data.user.identities?.length === 0) {
+    return {
+      error: 'Un compte existe déjà avec cette adresse e-mail. Connecte-toi directement.',
+      confirmationRequise: false,
+    };
   }
 
   garderPrenom(p);
@@ -381,34 +420,97 @@ export async function renvoyerConfirmation(email: string): Promise<string | null
   return error ? messageErreur(error, id) : null;
 }
 
-/** Définit ou remplace le mot de passe du compte connecté (utile après un lien de réinitialisation). */
-export async function changerMotDePasse(motDePasse: string): Promise<string | null> {
-  const err = erreurMotDePasse(motDePasse);
+const RECUPERATION = 'six-recuperation';
+
+/** Vrai si la session vient d'un lien « Mot de passe oublié » : on choisit alors un nouveau mot de passe sans l'ancien. */
+export function enRecuperation(): boolean {
+  try {
+    return sessionStorage.getItem(RECUPERATION) === '1';
+  } catch {
+    return false;
+  }
+}
+
+/** Après un lien « Mot de passe oublié » : nouveau mot de passe (Supabase n'exige pas l'ancien dans ce cas). */
+export async function definirMotDePasseOublie(nouveau: string): Promise<string | null> {
+  const err = erreurMotDePasse(nouveau);
   if (err) return err;
   const sb = await supabase();
   if (!sb) return "La connexion n'est pas disponible pour le moment.";
-  const { error } = await sb.auth.updateUser({ password: motDePasse });
+  const { error } = await sb.auth.updateUser({ password: nouveau });
   if (error) return messageErreur(error);
+  try {
+    sessionStorage.removeItem(RECUPERATION);
+  } catch {
+    /* stockage bloqué */
+  }
   return null;
 }
 
-/** Envoie un code à usage unique par e-mail. Le compte est créé à la première connexion. */
-export async function envoyerCode(id: Identifiant): Promise<string | null> {
+/**
+ * Changement de mot de passe, étape 1 : envoie un code à 6 chiffres à l'adresse du compte
+ * (modèle « Reauthentication » de Supabase). Sans ce code, le mot de passe ne change pas.
+ */
+export async function demanderCodeChangementMdp(): Promise<string | null> {
   const sb = await supabase();
   if (!sb) return "La connexion n'est pas disponible pour le moment.";
-  const { error } = await sb.auth.signInWithOtp({
-    email: id.valeur,
-    options: { shouldCreateUser: true, emailRedirectTo: obtenirRedirectUrl() },
-  });
-  return error ? messageErreur(error, id) : null;
+  const { error } = await sb.auth.reauthenticate();
+  return error ? messageErreur(error) : null;
 }
 
-/** Vérifie le code reçu ; la session et la synchronisation démarrent ensuite toutes seules. */
-export async function verifierCode(id: Identifiant, code: string): Promise<string | null> {
+/**
+ * Changement de mot de passe, étape 2 : ancien mot de passe + code reçu par e-mail + nouveau.
+ * Supabase vérifie lui-même l'ancien mot de passe et le code (réglages du projet).
+ */
+export async function changerMotDePasse(
+  ancien: string,
+  nouveau: string,
+  code: string,
+): Promise<string | null> {
+  if (!ancien) return 'Entre ton mot de passe actuel.';
+  const err = erreurMotDePasse(nouveau);
+  if (err) return err;
+  if (ancien === nouveau) return 'Choisis un mot de passe différent de l’actuel.';
+  const nonce = code.replace(/\D/g, '');
+  if (nonce.length !== 6) return 'Entre les 6 chiffres du code reçu par e-mail.';
   const sb = await supabase();
   if (!sb) return "La connexion n'est pas disponible pour le moment.";
-  const token = code.replace(/\s/g, '');
-  const { error } = await sb.auth.verifyOtp({ email: id.valeur, token, type: 'email' });
+  const { error } = await sb.auth.updateUser({
+    password: nouveau,
+    current_password: ancien,
+    nonce,
+  });
+  if (error) {
+    const m = error.message.toLowerCase();
+    if (m.includes('current password') || m.includes('current_password'))
+      return 'Mot de passe actuel incorrect.';
+    if (m.includes('same') || m.includes('different'))
+      return 'Choisis un mot de passe différent de l’actuel.';
+    return messageErreur(error);
+  }
+  return null;
+}
+
+/**
+ * Vérifie le code à 6 chiffres reçu par e-mail (connexion ou confirmation d'inscription) ;
+ * la session et la synchronisation démarrent ensuite toutes seules.
+ */
+export async function verifierCode(
+  email: string,
+  code: string,
+  type: TypeCode,
+): Promise<string | null> {
+  const id = lireIdentifiant(email);
+  if (!id) return 'Écris une adresse e-mail valide.';
+  const token = code.replace(/\D/g, '');
+  if (token.length !== 6) return 'Entre les 6 chiffres du code reçu par e-mail.';
+  const sb = await supabase();
+  if (!sb) return "La connexion n'est pas disponible pour le moment.";
+  const { error } = await sb.auth.verifyOtp({
+    email: id.valeur,
+    token,
+    type: type === 'inscription' ? 'signup' : 'email',
+  });
   return error ? messageErreur(error, id) : null;
 }
 
@@ -512,6 +614,14 @@ export async function demarrerCompte(): Promise<void> {
   if (!sb) return;
 
   sb.auth.onAuthStateChange((evenement, session) => {
+    // Session d'un instant pendant la vérification du mot de passe : ni « connecté », ni synchronisation.
+    if (verificationMdp) return;
+    try {
+      if (evenement === 'PASSWORD_RECOVERY') sessionStorage.setItem(RECUPERATION, '1');
+      if (evenement === 'SIGNED_OUT') sessionStorage.removeItem(RECUPERATION);
+    } catch {
+      /* stockage bloqué */
+    }
     try {
       if (session?.user) {
         const u = session.user;

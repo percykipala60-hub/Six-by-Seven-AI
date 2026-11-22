@@ -25,15 +25,16 @@ import {
   connecterAvecFournisseur,
   connecterParMotDePasse,
   deconnecter,
+  definirMotDePasseOublie,
+  demanderCodeChangementMdp,
   demarrerCompte,
   ecouterCompte,
   ecrirePrenom,
-  envoyerCode,
+  enRecuperation,
   fournisseursActifs,
   initiale,
   inscrire,
   lireCompte,
-  lireIdentifiant,
   autoriserSync,
   oublierMemoireDuCompte,
   reinitialiserMotDePasse,
@@ -43,7 +44,7 @@ import {
   type Compte,
   type FournisseurSocial,
   type FournisseursActifs,
-  type Identifiant,
+  type TypeCode,
 } from '@/lib/compte';
 import { AppBar } from './AppBar';
 import { useConfirmer } from './Confirmer';
@@ -279,7 +280,7 @@ const TITRES: Record<Exclude<Vue, ''>, string> = {
 };
 const MODES: Record<Theme, string> = { auto: 'Auto', light: 'Clair', dark: 'Sombre' };
 
-type ModeAuth = 'connexion' | 'inscription' | 'otp' | 'oubli';
+type ModeAuth = 'connexion' | 'inscription' | 'oubli';
 
 /** Logo Apple monochrome (SVG officiel simplifié), pour le bouton de connexion. */
 function AppleLogo({ size = 20 }: { size?: number }) {
@@ -392,13 +393,30 @@ function CompteVue() {
     };
   }, []);
 
-  // OTP (code par e-mail)
-  const [idOtp, setIdOtp] = useState<Identifiant | null>(null);
+  // Deuxième étape : code à 6 chiffres reçu par e-mail (connexion ou confirmation d'inscription).
+  const [etapeCode, setEtapeCode] = useState<{ email: string; type: TypeCode } | null>(null);
   const [codeOtp, setCodeOtp] = useState('');
+  // « Renvoyer le code » attend une minute entre deux envois (comme Supabase côté serveur).
+  const [attente, setAttente] = useState(0);
+  useEffect(() => {
+    if (attente <= 0) return;
+    const t = setTimeout(() => setAttente((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [attente]);
 
-  // Confirmation d'inscription et changement de mot de passe
-  const [confirmationEmail, setConfirmationEmail] = useState('');
+  // Changement de mot de passe
   const [showPwdChange, setShowPwdChange] = useState(false);
+  const [ancienMdp, setAncienMdp] = useState('');
+  const [codeMdp, setCodeMdp] = useState('');
+  const [codeMdpEnvoye, setCodeMdpEnvoye] = useState(false);
+  // Arrivée par un lien « Mot de passe oublié » : nouveau mot de passe sans l'ancien.
+  const [recuperation, setRecuperation] = useState(false);
+  useEffect(() => {
+    if (enRecuperation()) {
+      setRecuperation(true);
+      setShowPwdChange(true);
+    }
+  }, [c.statut]);
   const [nouveauMdp, setNouveauMdp] = useState('');
   const [confirmationNouveau, setConfirmationNouveau] = useState('');
 
@@ -438,20 +456,22 @@ function CompteVue() {
     else if (r.info) setInfo(r.info);
   }
 
+  function ouvrirEtapeCode(type: TypeCode) {
+    setEtapeCode({ email: email.trim().toLowerCase(), type });
+    setCodeOtp('');
+    setAttente(60);
+  }
+
   async function handleConnexion(e: FormEvent) {
     e.preventDefault();
     setErreur('');
     setInfo('');
     setBusy(true);
     await demarrerCompte();
-    const err = await connecterParMotDePasse(email, motDePasse);
+    const r = await connecterParMotDePasse(email, motDePasse);
     setBusy(false);
-    if (err) {
-      setErreur(err);
-    } else {
-      setMotDePasse('');
-      setInfo('Ravi de te revoir !');
-    }
+    if (r.erreur) setErreur(r.erreur);
+    else if (r.code) ouvrirEtapeCode(r.code);
   }
 
   async function handleInscription(e: FormEvent) {
@@ -481,11 +501,8 @@ function CompteVue() {
     if (res.error) {
       setErreur(res.error);
     } else if (res.confirmationRequise) {
-      setConfirmationEmail(email.trim().toLowerCase());
-      setInfo(
-        'Compte créé ! Un e-mail de confirmation t’a été envoyé. Clique sur le lien reçu pour valider ton compte.',
-      );
-      setMode('connexion');
+      // Le compte n'est actif qu'une fois l'adresse confirmée avec le code reçu.
+      ouvrirEtapeCode('inscription');
     } else {
       setMotDePasse('');
       setConfirmationMdp('');
@@ -495,14 +512,22 @@ function CompteVue() {
     }
   }
 
-  async function handleRenvoyerConfirmation() {
-    const adresse = confirmationEmail || email;
+  async function handleRenvoyerCode() {
+    if (!etapeCode || attente > 0) return;
     setBusy(true);
     setErreur('');
-    const err = await renvoyerConfirmation(adresse);
+    setInfo('');
+    // Connexion : on revérifie le mot de passe avant tout nouvel envoi.
+    const err =
+      etapeCode.type === 'inscription'
+        ? await renvoyerConfirmation(etapeCode.email)
+        : (await connecterParMotDePasse(etapeCode.email, motDePasse)).erreur;
     setBusy(false);
     if (err) setErreur(err);
-    else setInfo('Un nouvel e-mail de confirmation vient de partir. Regarde aussi tes spams.');
+    else {
+      setAttente(60);
+      setInfo('Un nouveau code vient de partir. Regarde aussi tes spams.');
+    }
   }
 
   async function handleChangerMotDePasse(e: FormEvent) {
@@ -514,49 +539,62 @@ function CompteVue() {
       return;
     }
     setBusy(true);
-    const err = await changerMotDePasse(nouveauMdp);
+    const err = recuperation
+      ? await definirMotDePasseOublie(nouveauMdp)
+      : await changerMotDePasse(ancienMdp, nouveauMdp, codeMdp);
     setBusy(false);
     if (err) {
       setErreur(err);
     } else {
+      setAncienMdp('');
+      setCodeMdp('');
+      setCodeMdpEnvoye(false);
       setNouveauMdp('');
       setConfirmationNouveau('');
       setShowPwdChange(false);
+      setRecuperation(false);
       setInfo('Mot de passe enregistré. Il fonctionne dès maintenant sur tous tes appareils.');
     }
   }
 
-  async function handleDemandeOtp(e: FormEvent) {
-    e.preventDefault();
-    const lu = lireIdentifiant(email);
-    if (!lu) {
-      setErreur('Écris une adresse e-mail valide (ex. : toi@exemple.com).');
-      return;
-    }
+  async function handleCodeMdp() {
+    if (attente > 0) return;
     setBusy(true);
     setErreur('');
-    await demarrerCompte();
-    const err = await envoyerCode(lu);
+    setInfo('');
+    const err = await demanderCodeChangementMdp();
     setBusy(false);
     if (err) setErreur(err);
     else {
-      setIdOtp(lu);
-      setCodeOtp('');
+      setCodeMdpEnvoye(true);
+      setAttente(60);
+      setInfo('Un code vient de partir à l’adresse de ton compte.');
     }
   }
 
-  async function handleValiderOtp(e: FormEvent) {
+  async function handleValiderCode(e: FormEvent) {
     e.preventDefault();
-    if (!idOtp) return;
+    if (!etapeCode) return;
     setBusy(true);
     setErreur('');
-    const err = await verifierCode(idOtp, codeOtp);
+    setInfo('');
+    await demarrerCompte();
+    const err = await verifierCode(etapeCode.email, codeOtp, etapeCode.type);
     setBusy(false);
     if (err) setErreur(err);
     else {
-      setIdOtp(null);
+      const inscription = etapeCode.type === 'inscription';
+      setEtapeCode(null);
+      setCodeOtp('');
       setEmail('');
-      setInfo('Connecté.');
+      setMotDePasse('');
+      setConfirmationMdp('');
+      setMode('connexion');
+      setInfo(
+        inscription
+          ? 'Adresse confirmée, ton compte est prêt. Ta mémoire reste sur ce téléphone, sauf si tu choisis de la copier sur ton compte.'
+          : 'Ravi de te revoir !',
+      );
     }
   }
 
@@ -682,6 +720,45 @@ function CompteVue() {
             />
             {showPwdChange && (
               <form onSubmit={handleChangerMotDePasse} className="lg-bloc auth-pwd-change">
+                {!recuperation && (
+                  <>
+                    <label htmlFor="ancien-mdp" className="set-label">
+                      Mot de passe actuel
+                    </label>
+                    <input
+                      id="ancien-mdp"
+                      type={showPwd ? 'text' : 'password'}
+                      autoComplete="current-password"
+                      value={ancienMdp}
+                      onChange={(e) => setAncienMdp(e.target.value)}
+                      placeholder="••••••••"
+                      required
+                    />
+                    <span className="set-label">Code reçu par e-mail</span>
+                    {codeMdpEnvoye ? (
+                      <>
+                        <CodeOtp value={codeMdp} onChange={setCodeMdp} />
+                        <button
+                          type="button"
+                          className="link"
+                          onClick={() => void handleCodeMdp()}
+                          disabled={busy || attente > 0}
+                        >
+                          {attente > 0 ? `Renvoyer le code dans ${attente} s` : 'Renvoyer le code'}
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        className="btn"
+                        onClick={() => void handleCodeMdp()}
+                        disabled={busy}
+                      >
+                        Recevoir un code par e-mail
+                      </button>
+                    )}
+                  </>
+                )}
                 <label htmlFor="nouveau-mdp" className="set-label">
                   Nouveau mot de passe (au moins {MDP_MIN_INSCRIPTION} caractères)
                 </label>
@@ -729,7 +806,8 @@ function CompteVue() {
                   disabled={
                     busy ||
                     nouveauMdp.length < MDP_MIN_INSCRIPTION ||
-                    nouveauMdp !== confirmationNouveau
+                    nouveauMdp !== confirmationNouveau ||
+                    (!recuperation && (!ancienMdp || codeMdp.replace(/\D/g, '').length < 6))
                   }
                 >
                   {busy ? 'Enregistrement…' : 'Enregistrer le mot de passe'}
@@ -792,28 +870,29 @@ function CompteVue() {
             <Logo label="Six" />
             <span className="auth-eyebrow">COMPTE SIX</span>
             <h2>
-              {mode === 'inscription'
-                ? 'Créer ton compte'
-                : mode === 'otp'
-                  ? idOtp
-                    ? 'Vérifie ton e-mail'
-                    : 'Connexion par e-mail'
+              {etapeCode
+                ? 'Vérifie ton e-mail'
+                : mode === 'inscription'
+                  ? 'Créer ton compte'
                   : mode === 'oubli'
                     ? 'Réinitialiser le mot de passe'
                     : 'Ravi de te revoir'}
             </h2>
             <p>
-              {mode === 'inscription'
-                ? 'Garde ton prénom et, si tu le choisis, ta mémoire sur tous tes appareils.'
-                : mode === 'otp'
-                  ? 'Reçois un code sécurisé dans ta boîte e-mail pour te connecter.'
+              {etapeCode
+                ? etapeCode.type === 'inscription'
+                  ? 'Dernière étape : confirme que cette adresse est bien la tienne.'
+                  : 'Pour ta sécurité, chaque connexion se confirme avec un code reçu par e-mail.'
+                : mode === 'inscription'
+                  ? 'Garde ton prénom et, si tu le choisis, ta mémoire sur tous tes appareils.'
                   : mode === 'oubli'
                     ? 'On t’enverra un lien sécurisé pour choisir un nouveau mot de passe.'
                     : 'Connecte-toi pour garder ton prénom et, si tu le choisis, ta mémoire sur tous tes appareils.'}
             </p>
           </div>
           {/* Connexion en un geste : le reste (e-mail, code) ne change pas. */}
-          {(mode === 'connexion' || mode === 'inscription') &&
+          {!etapeCode &&
+            (mode === 'connexion' || mode === 'inscription') &&
             (sociaux.google || sociaux.apple) && (
               <>
                 <div className="auth-socials">
@@ -850,8 +929,8 @@ function CompteVue() {
               </>
             )}
 
-          {/* Onglets Connexion / Inscription si on n'est pas en sous-mode OTP ou Oubli */}
-          {(mode === 'connexion' || mode === 'inscription') && (
+          {/* Onglets Connexion / Inscription (pas pendant l'étape du code ni « oubli ») */}
+          {!etapeCode && (mode === 'connexion' || mode === 'inscription') && (
             <div className="auth-tabs" role="tablist">
               <button
                 type="button"
@@ -894,25 +973,53 @@ function CompteVue() {
               <span>{erreur}</span>
             </div>
           )}
-          {confirmationEmail && (
-            <div className="auth-alert-succes auth-confirmation" role="status">
-              <Icon name="mail" size={18} />
-              <span>
-                Confirme l’adresse <b>{confirmationEmail}</b>.{' '}
+          {/* Étape 2 : code à 6 chiffres reçu par e-mail */}
+          {etapeCode && (
+            <form onSubmit={handleValiderCode} className="stack" style={{ gap: 12 }}>
+              <b>Entre le code à 6 chiffres</b>
+              <p className="muted small">
+                Envoyé à <b>{etapeCode.email}</b>. Il expire dans 10 minutes. Regarde aussi dans tes
+                courriers indésirables.
+              </p>
+              <CodeOtp value={codeOtp} onChange={setCodeOtp} />
+              <button
+                className="btn primary"
+                type="submit"
+                disabled={busy || codeOtp.replace(/\D/g, '').length < 6}
+              >
+                {busy
+                  ? 'Vérification…'
+                  : etapeCode.type === 'inscription'
+                    ? 'Confirmer mon adresse'
+                    : 'Valider et me connecter'}
+              </button>
+              <div className="auth-footer-actions">
                 <button
                   type="button"
                   className="link"
-                  onClick={() => void handleRenvoyerConfirmation()}
-                  disabled={busy}
+                  onClick={() => void handleRenvoyerCode()}
+                  disabled={busy || attente > 0}
                 >
-                  Renvoyer l’e-mail
+                  {attente > 0 ? `Renvoyer le code dans ${attente} s` : 'Renvoyer le code'}
                 </button>
-              </span>
-            </div>
+                <button
+                  type="button"
+                  className="link"
+                  onClick={() => {
+                    setEtapeCode(null);
+                    setCodeOtp('');
+                    setErreur('');
+                    setInfo('');
+                  }}
+                >
+                  <Icon name="back" size={16} /> Retour
+                </button>
+              </div>
+            </form>
           )}
 
-          {/* 1. Mode CONNEXION classique */}
-          {mode === 'connexion' && (
+          {/* 1. Mode CONNEXION : mot de passe, puis code par e-mail */}
+          {!etapeCode && mode === 'connexion' && (
             <form onSubmit={handleConnexion} className="stack" style={{ gap: 14 }}>
               <div>
                 <label htmlFor="auth-email" className="set-label">
@@ -963,7 +1070,7 @@ function CompteVue() {
                 type="submit"
                 disabled={busy || !email.trim() || !motDePasse}
               >
-                {busy ? 'Connexion en cours…' : 'Se connecter'}
+                {busy ? 'Vérification…' : 'Continuer'}
               </button>
 
               <div className="auth-footer-actions">
@@ -978,23 +1085,12 @@ function CompteVue() {
                 >
                   Mot de passe oublié ?
                 </button>
-                <button
-                  type="button"
-                  className="link"
-                  onClick={() => {
-                    setMode('otp');
-                    setErreur('');
-                    setInfo('');
-                  }}
-                >
-                  <Icon name="mail" size={16} /> Connexion sans mot de passe (code e-mail)
-                </button>
               </div>
             </form>
           )}
 
           {/* 2. Mode CRÉATION DE COMPTE (Sign up) — étapes numérotées. */}
-          {mode === 'inscription' && (
+          {!etapeCode && mode === 'inscription' && (
             <form onSubmit={handleInscription} className="stack auth-steps" style={{ gap: 14 }}>
               <div className="auth-step">
                 <span className="auth-step-num" aria-hidden="true">
@@ -1182,75 +1278,8 @@ function CompteVue() {
             </form>
           )}
 
-          {/* 3. Mode OTP (Code e-mail unique) */}
-          {mode === 'otp' && (
-            <>
-              {idOtp ? (
-                <form onSubmit={handleValiderOtp} className="stack" style={{ gap: 12 }}>
-                  <b>Entre le code à 6 chiffres</b>
-                  <p className="muted small">
-                    Envoyé à <b>{idOtp.valeur}</b>. Regarde aussi dans tes courriers indésirables.
-                  </p>
-                  <CodeOtp value={codeOtp} onChange={setCodeOtp} />
-                  <button
-                    className="btn primary"
-                    type="submit"
-                    disabled={busy || codeOtp.replace(/\s/g, '').length < 6}
-                  >
-                    {busy ? 'Vérification…' : 'Valider le code'}
-                  </button>
-                  <button
-                    type="button"
-                    className="link"
-                    onClick={() => {
-                      setIdOtp(null);
-                      setErreur('');
-                    }}
-                  >
-                    <Icon name="back" size={16} /> Changer d&apos;adresse e-mail
-                  </button>
-                </form>
-              ) : (
-                <form onSubmit={handleDemandeOtp} className="stack" style={{ gap: 12 }}>
-                  <b>Connexion sans mot de passe</b>
-                  <p className="muted small">
-                    Six t&apos;envoie un code à 6 chiffres par e-mail. Pratique si tu n&apos;as pas
-                    de mot de passe.
-                  </p>
-                  <label htmlFor="otp-email" className="set-label">
-                    Adresse e-mail
-                  </label>
-                  <input
-                    id="otp-email"
-                    type="email"
-                    inputMode="email"
-                    autoComplete="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="toi@exemple.com"
-                    required
-                  />
-                  <button className="btn primary" type="submit" disabled={busy || !email.trim()}>
-                    {busy ? 'Envoi du code…' : 'Recevoir un code de connexion'}
-                  </button>
-                  <button
-                    type="button"
-                    className="link"
-                    onClick={() => {
-                      setMode('connexion');
-                      setErreur('');
-                      setInfo('');
-                    }}
-                  >
-                    <Icon name="back" size={16} /> Retour à la connexion par mot de passe
-                  </button>
-                </form>
-              )}
-            </>
-          )}
-
           {/* 4. Mode MOT DE PASSE OUBLIÉ */}
-          {mode === 'oubli' && (
+          {!etapeCode && mode === 'oubli' && (
             <form onSubmit={handleOubli} className="stack" style={{ gap: 12 }}>
               <b>Mot de passe oublié</b>
               <p className="muted small">

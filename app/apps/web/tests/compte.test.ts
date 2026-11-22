@@ -27,10 +27,10 @@ describe('lireIdentifiant', () => {
 describe('validation de connexion et inscription', () => {
   it('rejette les e-mails invalides et mots de passe trop courts', async () => {
     const { connecterParMotDePasse, inscrire } = await import('@/lib/compte');
-    expect(await connecterParMotDePasse('mauvais-email', '123456')).toBe(
+    expect((await connecterParMotDePasse('mauvais-email', '123456')).erreur).toBe(
       'Écris une adresse e-mail valide.',
     );
-    expect(await connecterParMotDePasse('test@exemple.com', '123')).toBe(
+    expect((await connecterParMotDePasse('test@exemple.com', '123')).erreur).toBe(
       'Le mot de passe doit comporter au moins 6 caractères.',
     );
 
