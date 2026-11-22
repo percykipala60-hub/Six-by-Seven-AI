@@ -45,9 +45,15 @@ Ouvrir `https://sixbysevenai.com` (le site) et `https://app.sixbysevenai.com` (S
 ## 5. Mettre à jour
 
 ```bash
-cd ~/six && git pull && cd deploy && docker compose up -d --build && docker compose restart caddy
+cd ~/six && git pull && cd deploy && docker compose run --rm site && docker compose up -d --build && docker compose restart caddy
 ```
 
+Sur notre serveur, le dépôt est dans `/home/six/six` (`~/six` de l'utilisateur `six`). Depuis la Web Console
+de DigitalOcean, connectée en `root`, `~/six` n'existe pas : remplacer `cd ~/six` par `cd /home/six/six`, et lancer
+`git pull` en tant que `six` (`sudo -u six git pull`) pour garder les bons propriétaires de fichiers.
+
+`run --rm site` reconstruit le site de présentation : ce service s'arrête une fois le site construit, et
+`up -d --build` ne le relance pas toujours, Caddy servirait alors l'ancienne version.
 `restart caddy` recharge la configuration du serveur web (Caddyfile) si elle a changé.
 
 Revenir à la version précédente : `git checkout <version>` puis la même commande.
