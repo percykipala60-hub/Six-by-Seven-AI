@@ -83,6 +83,15 @@ jobs:
             archive | tee "$RUNNER_TEMP/archive.log" | grep -E 'error:|ARCHIVE (SUCCEEDED|FAILED)' || true
           grep -q 'ARCHIVE SUCCEEDED' "$RUNNER_TEMP/archive.log"
 
+      - name: Vérifier les raccourcis Siri dans l'archive (App Intents)
+        # Sans Metadata.appintents, iOS ne montre aucune action de Six dans Raccourcis ni AssistiveTouch.
+        run: |
+          app="$RUNNER_TEMP/Six.xcarchive/Products/Applications/App.app"
+          ls -la "$app/Metadata.appintents" || echo "::error::Metadata.appintents absent de l'archive"
+          grep -ao 'RepondreAvecSixIntent\|AnalyserCaptureIntent\|OuvrirSevenAIIntent\|QuoiDireIntent' \
+            "$app/Metadata.appintents/extract.actionsdata" | sort -u || echo "::error::Actions de Six absentes"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleDisplayName' -c 'Print :CFBundleIdentifier' "$app/Info.plist" || true
+
       - name: Envoyer sur App Store Connect (TestFlight)
         env:
           KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
