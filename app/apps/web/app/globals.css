@@ -6160,3 +6160,130 @@ body {
 .seven-composer .seven-capsule button.seven-envoyer:disabled {
   opacity: 0.4;
 }
+
+/* Chat : attente de la réponse (texte + mini vague qui ondule), bouton Arrêter dans la barre. */
+.six-attente {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px 2px;
+}
+.six-attente-texte {
+  color: var(--muted);
+  font-size: 0.9rem;
+  background: linear-gradient(90deg, var(--muted) 0%, var(--ink) 50%, var(--muted) 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: six-attente-reflet 2.2s linear infinite;
+}
+.six-attente-vague {
+  width: 72px;
+  height: 10px;
+  overflow: hidden;
+}
+.six-attente-vague path {
+  fill: none;
+  stroke: var(--brand);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  animation: six-attente-onde 1.4s linear infinite;
+}
+@keyframes six-attente-onde {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-30px);
+  }
+}
+@keyframes six-attente-reflet {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .six-attente-texte,
+  .six-attente-vague path {
+    animation: none;
+  }
+}
+.seven-composer .seven-capsule button.seven-arreter {
+  width: 36px;
+  height: 36px;
+  margin-right: 2px;
+  background: var(--ink);
+}
+.seven-arreter-carre {
+  width: 11px;
+  height: 11px;
+  border-radius: 2px;
+  background: var(--bg);
+}
+.six-reessayer {
+  align-self: flex-start;
+  margin-left: 30px;
+  padding: 6px 14px;
+  border: 1px solid color-mix(in srgb, var(--ink) 14%, transparent);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.six-reessayer:hover {
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+}
+
+/* Mini vague d'attente : trois voiles lumineux qui ondulent en décalé, fondus aux bouts. */
+.six-attente-vague {
+  width: 96px;
+  height: 16px;
+  overflow: hidden;
+  color: var(--brand);
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--brand) 55%, transparent));
+}
+.six-attente-vague path {
+  fill: none;
+  stroke-linecap: round;
+  animation: six-attente-onde 1.8s linear infinite;
+}
+.six-attente-vague .v1 {
+  stroke-width: 1.6;
+  opacity: 0.95;
+}
+.six-attente-vague .v2 {
+  stroke-width: 1.2;
+  opacity: 0.6;
+  animation-duration: 2.3s;
+  animation-direction: reverse;
+}
+.six-attente-vague .v3 {
+  stroke-width: 1;
+  opacity: 0.35;
+  animation-duration: 2.9s;
+}
+@keyframes six-attente-onde {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-60px);
+  }
+}
+
+/* Réponses de Six en verre : fond transparent légèrement flouté, liseré fin et clair. */
+.seven-msg.assistant .seven-bulle {
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ink) 14%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 10%, transparent),
+    0 6px 20px rgb(0 0 0 / 0.12);
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+}

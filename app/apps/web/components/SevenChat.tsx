@@ -200,6 +200,7 @@ export function SevenChatPage() {
   const [enAttente, setEnAttente] = useState(''); // question envoyée, réponse pas encore arrivée
   const [lectureDoc, setLectureDoc] = useState(false); // lecture locale d'un fichier (non annulable)
   const operation = useRef<AbortController | null>(null);
+  const arretVolontaire = useRef(false); // la personne a touché « Arrêter »
 
   async function requete(url: string, init: RequestInit): Promise<Response> {
     const controleur = new AbortController();
@@ -356,6 +357,8 @@ export function SevenChatPage() {
     setOccupe(true);
     setErreur('');
     setEnAttente(visible); // la question s'affiche tout de suite, en attendant la réponse
+    setSaisie(''); // et quitte la barre, comme dans les autres assistants (« Réessayer » la garde en cas d'échec)
+    arretVolontaire.current = false;
 
     // Pilotage : un ordre (« ouvre les réglages ») navigue directement, sans appel à l'IA.
     // Un document importé ne doit jamais déclencher un ordre : on le saute (affichage présent).
@@ -396,7 +399,14 @@ export function SevenChatPage() {
       setSaisie('');
     } catch (e) {
       setDernierEchec({ texte, affichage, document });
-      setErreur(e instanceof Error ? e.message : 'Six ne répond pas pour le moment. Réessaie.');
+      // Arrêt demandé par la personne : pas de message d'erreur, juste « Réessayer ».
+      setErreur(
+        arretVolontaire.current
+          ? ''
+          : e instanceof Error
+            ? e.message
+            : 'Six ne répond pas pour le moment. Réessaie.',
+      );
     } finally {
       setEnAttente('');
       setOccupe(false);
@@ -639,7 +649,36 @@ export function SevenChatPage() {
             <span className="six-msg-logo" aria-hidden="true">
               <Logo label="" small />
             </span>
-            <div className="seven-bulle seven-reflexion">Six réfléchit…</div>
+            <div className="six-attente" role="status">
+              <span className="six-attente-texte">
+                {lectureDoc ? 'Six lit ton document…' : 'Six prépare sa réponse…'}
+              </span>
+              {/* Mini vague : trois voiles qui ondulent en décalé, fondus aux deux bouts (comme la vague du fond). */}
+              <svg className="six-attente-vague" viewBox="0 0 120 18" aria-hidden="true">
+                <defs>
+                  <linearGradient id="six-vague-fondu" x1="0" x2="1" y1="0" y2="0">
+                    <stop offset="0" stopColor="currentColor" stopOpacity="0" />
+                    <stop offset="0.25" stopColor="currentColor" stopOpacity="1" />
+                    <stop offset="0.75" stopColor="currentColor" stopOpacity="1" />
+                    <stop offset="1" stopColor="currentColor" stopOpacity="0" />
+                  </linearGradient>
+                </defs>
+                <g stroke="url(#six-vague-fondu)">
+                  <path
+                    className="v1"
+                    d="M-40 9 C -30 2, -20 2, -10 9 S 10 16, 20 9 S 40 2, 50 9 S 70 16, 80 9 S 100 2, 110 9 S 130 16, 140 9 S 160 2, 170 9"
+                  />
+                  <path
+                    className="v2"
+                    d="M-40 9 C -30 4, -20 4, -10 9 S 10 14, 20 9 S 40 4, 50 9 S 70 14, 80 9 S 100 4, 110 9 S 130 14, 140 9 S 160 4, 170 9"
+                  />
+                  <path
+                    className="v3"
+                    d="M-40 9 C -30 6, -20 6, -10 9 S 10 12, 20 9 S 40 6, 50 9 S 70 12, 80 9 S 100 6, 110 9 S 130 12, 140 9 S 160 6, 170 9"
+                  />
+                </g>
+              </svg>
+            </div>
           </div>
         )}
         {erreur && (
@@ -650,16 +689,12 @@ export function SevenChatPage() {
         {dernierEchec && !occupe && (
           <button
             type="button"
+            className="six-reessayer"
             onClick={() =>
               void envoyer(dernierEchec.texte, dernierEchec.affichage, dernierEchec.document)
             }
           >
             Réessayer le dernier envoi
-          </button>
-        )}
-        {occupe && !lectureDoc && (
-          <button type="button" onClick={() => operation.current?.abort()}>
-            Arrêter
           </button>
         )}
         {documentAReimporter && (
@@ -714,7 +749,20 @@ export function SevenChatPage() {
             disabled={occupe}
           />
           {/* Micro tant que le champ est vide ; dès qu'on écrit, il laisse la place au bouton d'envoi. */}
-          {saisie.trim() && !enregistre ? (
+          {occupe && !lectureDoc && !enregistre ? (
+            <button
+              type="button"
+              className="seven-arreter"
+              aria-label="Arrêter la réponse"
+              title="Arrêter"
+              onClick={() => {
+                arretVolontaire.current = true;
+                operation.current?.abort();
+              }}
+            >
+              <span className="seven-arreter-carre" aria-hidden="true" />
+            </button>
+          ) : saisie.trim() && !enregistre ? (
             <button type="submit" className="seven-envoyer" disabled={occupe} aria-label="Envoyer">
               <Icon name="up" size={18} stroke={2} />
             </button>
