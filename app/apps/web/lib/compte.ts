@@ -353,17 +353,22 @@ export function lireRetourOAuth(adresse: string): RetourOAuth {
   return { type: 'vide' };
 }
 
-/** Plugin natif de l'app iPhone (ios/App/App/SceneDelegate.swift) : fenêtre de connexion du système. */
+/**
+ * Où se fait la connexion Apple ou Google : « web » (navigateur, redirection dans le même onglet),
+ * le plugin natif de l'app iPhone (ios/App/App/SceneDelegate.swift, fenêtre de connexion du système),
+ * « ancienne-app » (build iPhone sans ce plugin) ou null (app Android : fenêtre à part).
+ */
 async function connexionNativeIOS(): Promise<
-  { ouvrir(o: { url: string }): Promise<{ url: string }> } | 'ancienne-app' | null
+  { ouvrir(o: { url: string }): Promise<{ url: string }> } | 'ancienne-app' | 'web' | null
 > {
   try {
     const { Capacitor, registerPlugin } = await import('@capacitor/core');
-    if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'ios') return null;
+    if (!Capacitor.isNativePlatform()) return 'web';
+    if (Capacitor.getPlatform() !== 'ios') return null;
     if (!Capacitor.isPluginAvailable('SixAuth')) return 'ancienne-app';
     return registerPlugin<{ ouvrir(o: { url: string }): Promise<{ url: string }> }>('SixAuth');
   } catch {
-    return null;
+    return 'web';
   }
 }
 
@@ -395,8 +400,9 @@ export function fournisseursActifs(): Promise<FournisseursActifs> {
 /**
  * Connexion en un geste avec Google ou Apple (fournisseurs à activer dans Supabase).
  *
- * La fenêtre du fournisseur s'ouvre à part : l'app reste exactement en place (plus
- * d'écran remplacé par la page du fournisseur).
+ * Navigateur : la page du fournisseur remplace Six, puis revient sur l'accueil, connecté.
+ * App iPhone : fenêtre de connexion du système, qui revient par six://auth.
+ * App Android : fenêtre à part (comportement d'origine).
  */
 export async function connecterAvecFournisseur(
   fournisseur: FournisseurSocial,
@@ -422,8 +428,17 @@ export async function connecterAvecFournisseur(
     const { data, error } = await sb.auth.signInWithOAuth({
       provider: fournisseur,
       options: {
-        redirectTo: natif ? RETOUR_OAUTH_IOS : `${obtenirOrigineOAuth()}/reglages?v=compte`,
-        skipBrowserRedirect: true, // on garde la main : la fenêtre s'ouvre via window.open
+        // Navigateur : retour sur l'accueil, dans le même onglet, déjà connecté. Dans une fenêtre à
+        // part, la session s'ouvrait dans cette fenêtre (parfois un autre navigateur) et l'onglet de
+        // Six restait sur l'écran de connexion.
+        redirectTo:
+          natif === 'web'
+            ? `${obtenirOrigineOAuth()}/`
+            : natif
+              ? RETOUR_OAUTH_IOS
+              : `${obtenirOrigineOAuth()}/reglages?v=compte`,
+        // Navigateur : Supabase change lui-même de page. Apps : on garde la main pour ouvrir la fenêtre.
+        skipBrowserRedirect: natif !== 'web',
       },
     });
     if (error) {
@@ -441,6 +456,10 @@ export async function connecterAvecFournisseur(
         erreur: `La connexion avec ${nom} n’a pas pu s’ouvrir. Vérifie ta connexion, puis réessaie.`,
         info: null,
       };
+    }
+    if (natif === 'web') {
+      // La page du fournisseur remplace Six ; le retour se fait sur l'accueil, connecté.
+      return { erreur: null, info: `Ouverture de ${nom}…` };
     }
     if (natif) {
       const { url } = await natif.ouvrir({ url: data.url });
