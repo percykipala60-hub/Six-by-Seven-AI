@@ -11,6 +11,7 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(SixInterAppPlugin.class);
         registerPlugin(SixThemePlugin.class);
+        registerPlugin(SixAuthPlugin.class);
         super.onCreate(savedInstanceState);
     }
 
@@ -30,6 +31,8 @@ public class MainActivity extends BridgeActivity {
     public void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
+        // Retour six://auth de la connexion Apple ou Google : passé à l'app web.
+        if (SixAuthPlugin.recevoir(intent.getData())) return;
         if ("com.sevenai.six.OPEN_NOTIFICATION_INBOX".equals(intent.getAction())
             && getBridge() != null && getBridge().getWebView() != null) {
             WebView webView = getBridge().getWebView();

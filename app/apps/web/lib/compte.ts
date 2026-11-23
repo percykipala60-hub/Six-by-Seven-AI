@@ -323,8 +323,8 @@ export async function reinitialiserMotDePasse(email: string): Promise<string | n
   return null;
 }
 
-/** Adresse de retour de la connexion Apple ou Google dans l'app iPhone (à autoriser dans Supabase). */
-export const RETOUR_OAUTH_IOS = 'six://auth';
+/** Adresse de retour de la connexion Apple ou Google dans les apps iPhone et Android (autorisée dans Supabase). */
+export const RETOUR_OAUTH_APP = 'six://auth';
 
 export type RetourOAuth =
   | { type: 'jetons'; access_token: string; refresh_token: string }
@@ -355,17 +355,19 @@ export function lireRetourOAuth(adresse: string): RetourOAuth {
 
 /**
  * Où se fait la connexion Apple ou Google : « web » (navigateur, redirection dans le même onglet),
- * le plugin natif de l'app iPhone (ios/App/App/SceneDelegate.swift, fenêtre de connexion du système),
- * « ancienne-app » (build iPhone sans ce plugin) ou null (app Android : fenêtre à part).
+ * le plugin natif SixAuth des apps (iPhone : ios/App/App/SceneDelegate.swift, fenêtre de connexion
+ * du système ; Android : SixAuthPlugin.java, navigateur du téléphone), qui reviennent par six://auth,
+ * « ancienne-app » (build iPhone sans ce plugin) ou null (ancien APK Android : fenêtre à part).
  */
-async function connexionNativeIOS(): Promise<
+async function connexionNative(): Promise<
   { ouvrir(o: { url: string }): Promise<{ url: string }> } | 'ancienne-app' | 'web' | null
 > {
   try {
     const { Capacitor, registerPlugin } = await import('@capacitor/core');
     if (!Capacitor.isNativePlatform()) return 'web';
-    if (Capacitor.getPlatform() !== 'ios') return null;
-    if (!Capacitor.isPluginAvailable('SixAuth')) return 'ancienne-app';
+    if (!Capacitor.isPluginAvailable('SixAuth')) {
+      return Capacitor.getPlatform() === 'ios' ? 'ancienne-app' : null;
+    }
     const plugin = registerPlugin<{ ouvrir(o: { url: string }): Promise<{ url: string }> }>(
       'SixAuth',
     );
@@ -407,8 +409,9 @@ export function fournisseursActifs(): Promise<FournisseursActifs> {
  * Connexion en un geste avec Google ou Apple (fournisseurs à activer dans Supabase).
  *
  * Navigateur : la page du fournisseur remplace Six, puis revient sur l'accueil, connecté.
- * App iPhone : fenêtre de connexion du système, qui revient par six://auth.
- * App Android : fenêtre à part (comportement d'origine).
+ * App iPhone : fenêtre de connexion du système ; app Android : navigateur du téléphone. Les deux
+ * reviennent dans Six par six://auth.
+ * Ancien APK Android (sans le plugin) : fenêtre à part (comportement d'origine).
  */
 export async function connecterAvecFournisseur(
   fournisseur: FournisseurSocial,
@@ -422,7 +425,7 @@ export async function connecterAvecFournisseur(
       info: null,
     };
   }
-  const natif = await connexionNativeIOS();
+  const natif = await connexionNative();
   if (natif === 'ancienne-app') {
     // Build iPhone sans la fenêtre de connexion : Safari ne reviendrait jamais dans l'app.
     return {
@@ -441,7 +444,7 @@ export async function connecterAvecFournisseur(
           natif === 'web'
             ? `${obtenirOrigineOAuth()}/`
             : natif
-              ? RETOUR_OAUTH_IOS
+              ? RETOUR_OAUTH_APP
               : `${obtenirOrigineOAuth()}/reglages?v=compte`,
         // Navigateur : Supabase change lui-même de page. Apps : on garde la main pour ouvrir la fenêtre.
         skipBrowserRedirect: natif !== 'web',
