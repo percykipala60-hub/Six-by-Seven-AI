@@ -25,6 +25,10 @@ export type EtatPremium = {
   offres: OffrePremium[];
   limites: { analyses: number; messages: number };
   paiementDisponible: boolean;
+  /** Paiement MaishaPay ouvert (site). */
+  maishapay?: boolean;
+  /** Achats intégrés Apple ouverts (app iPhone). */
+  apple?: boolean;
   /** Paiement pas encore ouvert : pas de limites, l'entrée Six Premium est cachée. */
   veille: boolean;
 };

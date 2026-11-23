@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { fail, guard, readJson } from '@/lib/http';
 import { PayerBodySchema } from '@/lib/api-schemas';
 import { initierCarte, initierMobile, MaishaPayError } from '@/lib/maishapay';
-import { appelant, nouvelleReference, offre, paiementDisponible, urlPublique } from '@/lib/premium';
+import { appelant, maishapayOuvert, nouvelleReference, offre, urlPublique } from '@/lib/premium';
 import { creerPaiement, majPaiement } from '@/lib/supabase-serveur';
 
 /**
@@ -12,7 +12,7 @@ import { creerPaiement, majPaiement } from '@/lib/supabase-serveur';
 export async function POST(req: Request) {
   const blocked = await guard(req);
   if (blocked) return blocked;
-  if (!paiementDisponible())
+  if (!maishapayOuvert())
     return fail(503, 'Le paiement n’est pas encore ouvert. Réessaie plus tard.');
 
   const a = await appelant(req);

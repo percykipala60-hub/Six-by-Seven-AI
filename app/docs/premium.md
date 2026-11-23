@@ -33,3 +33,23 @@ Ne pas lancer `setup_premium_supabase.sql` pendant la veille : il réserve la co
      M-Pesa et Afrimoney) ;
    - la vérification du statut (`/transaction/rest/v2/check`, envoyée en POST) et le retour après une carte.
 6. Passer `MAISHAPAY_MODE=1` et relancer.
+
+## Achats intégrés Apple (app iPhone)
+
+Dans l'app iPhone, Apple impose son achat intégré pour Six Premium (pas de MaishaPay ni de lien vers le site).
+Le code est prêt : module natif `SixAchat` (StoreKit 2, `apps/web/ios/App/App/SceneDelegate.swift`), route
+`/api/premium/apple` qui vérifie la transaction signée jusqu'au certificat racine d'Apple (`lib/achat-apple.ts`)
+puis prolonge le premium avec `activer_paiement`, une seule fois par transaction (référence `APPLE-<id>`).
+
+Avant d'ouvrir :
+
+1. App Store Connect > Business : mettre à jour l'entité juridique, signer le **contrat relatif aux applications
+   payantes**, ajouter le compte bancaire et les formulaires fiscaux. S'inscrire au **Small Business Program**
+   (commission de 15 % au lieu de 30 %).
+2. App Store Connect > Six > Monétisation : créer deux **abonnements non renouvelables** :
+   `com.sevenai.six.premium.7j` et `com.sevenai.six.premium.30j` (prix, nom affiché, capture d'écran de l'écran
+   Six Premium pour la vérification).
+3. Supabase : lancer `setup_premium_supabase.sql` (le canal `apple` y est autorisé).
+4. Serveur (`deploy/.env`) : `APPLE_ACHATS=oui`. Pendant les essais TestFlight (achats de test Sandbox) :
+   `APPLE_ACHATS_SANDBOX=oui`, à retirer au lancement public, sinon un achat de test donnerait un vrai premium.
+5. Envoyer un nouveau build iOS (TestFlight) : le module `SixAchat` n'est que dans les builds suivants.

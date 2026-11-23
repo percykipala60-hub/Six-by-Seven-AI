@@ -97,7 +97,7 @@ export type Paiement = {
   jours: number;
   montant: number;
   devise: string;
-  canal: 'mobile' | 'carte';
+  canal: 'mobile' | 'carte' | 'apple';
   operateur: string | null;
   statut: StatutPaiement;
   maishapay_id: string | null;

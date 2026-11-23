@@ -31,7 +31,7 @@ create table if not exists public.paiements (
   jours integer not null check (jours > 0),
   montant numeric not null check (montant > 0),
   devise text not null,
-  canal text not null check (canal in ('mobile', 'carte')),
+  canal text not null check (canal in ('mobile', 'carte', 'apple')),
   operateur text,
   statut text not null default 'EN_ATTENTE'
     check (statut in ('EN_ATTENTE', 'REUSSI', 'ECHOUE')),

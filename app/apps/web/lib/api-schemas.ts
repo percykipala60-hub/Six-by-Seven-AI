@@ -80,3 +80,12 @@ export const PayerBodySchema = z.discriminatedUnion('canal', [
     ville: z.string().trim().min(2).max(60),
   }),
 ]);
+
+/** Transaction signée par l'App Store (JWS StoreKit 2), envoyée par l'app iPhone après un achat. */
+export const AchatAppleBodySchema = z.object({
+  jws: z
+    .string()
+    .min(100)
+    .max(20_000)
+    .regex(/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/),
+});

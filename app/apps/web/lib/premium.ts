@@ -1,4 +1,5 @@
 import { clientKey } from './http';
+import { achatsAppleDisponibles } from './achat-apple';
 import { maishapayDisponible, verifierTransaction } from './maishapay';
 import {
   activerPaiement,
@@ -11,7 +12,8 @@ import {
 } from './supabase-serveur';
 
 /**
- * Six Premium : un pass de 7 ou 30 jours payé avec MaishaPay (Mobile Money ou carte), sur le site seulement.
+ * Six Premium : un pass de 7 ou 30 jours, payé avec MaishaPay (Mobile Money ou carte) sur le site, ou par achat
+ * intégré Apple dans l'app iPhone (lib/achat-apple.ts).
  * Le premium lève les limites du jour, rédige avec le meilleur modèle et permet de copier sa mémoire sur le compte.
  */
 
@@ -52,12 +54,23 @@ export const MESSAGE_LIMITE = {
     "Tu as utilisé tes messages gratuits avec Six pour aujourd'hui. Passe à Six Premium (Réglages > Six Premium) ou reviens demain.",
 };
 
+/** Un moyen de paiement au moins est ouvert : MaishaPay (site) ou achats intégrés Apple (app iPhone). */
 export function paiementDisponible(): boolean {
-  return maishapayDisponible() && adminDisponible();
+  return adminDisponible() && (maishapayDisponible() || achatsAppleDisponibles());
+}
+
+/** Paiement MaishaPay ouvert (site seulement). */
+export function maishapayOuvert(): boolean {
+  return adminDisponible() && maishapayDisponible();
+}
+
+/** Achats intégrés Apple ouverts (app iPhone seulement). */
+export function appleOuvert(): boolean {
+  return adminDisponible() && achatsAppleDisponibles();
 }
 
 /**
- * Premium en veille : tant que le paiement n'est pas configuré sur le serveur (clés MaishaPay et clé secrète
+ * Premium en veille : tant qu'aucun paiement n'est configuré sur le serveur (MaishaPay ou Apple, et clé secrète
  * Supabase), personne ne peut payer. On ne limite alors personne : pas de limites du jour, meilleur modèle pour
  * tous, et l'entrée Six Premium est cachée dans l'app. Voir docs/premium.md pour le lancement.
  */

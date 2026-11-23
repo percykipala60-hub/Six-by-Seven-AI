@@ -1,4 +1,5 @@
 import AuthenticationServices
+import StoreKit
 import UIKit
 import Capacitor
 
@@ -37,6 +38,106 @@ private class SixBridgeViewController: CAPBridgeViewController {
         bridge?.registerPluginInstance(SixThemePlugin())
         bridge?.registerPluginInstance(SixSharePlugin())
         bridge?.registerPluginInstance(SixAuthPlugin())
+        bridge?.registerPluginInstance(SixAchatPlugin())
+    }
+}
+
+/// Achats intégrés Apple (StoreKit 2) pour Six Premium. Le natif ne décide jamais du premium : il renvoie à
+/// l'app web la transaction signée par l'App Store (JWS), que le serveur vérifie avant d'activer le premium.
+/// La transaction n'est « terminée » (finish) qu'après l'accord du serveur ; sinon StoreKit la redonne.
+@objc(SixAchatPlugin)
+public class SixAchatPlugin: CAPPlugin, CAPBridgedPlugin {
+    public let identifier = "SixAchatPlugin"
+    public let jsName = "SixAchat"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "produits", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "acheter", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "transactions", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "terminer", returnType: CAPPluginReturnPromise)
+    ]
+
+    /// { ids } : renvoie { produits: [{ id, titre, prix }] } (prix affiché par l'App Store, dans la devise du pays).
+    @objc func produits(_ call: CAPPluginCall) {
+        let ids = (call.getArray("ids") as? [String]) ?? []
+        Task {
+            do {
+                let liste = try await Product.products(for: ids)
+                call.resolve(["produits": liste.map { ["id": $0.id, "titre": $0.displayName, "prix": $0.displayPrice] }])
+            } catch {
+                call.reject("Les offres de l'App Store ne sont pas disponibles.")
+            }
+        }
+    }
+
+    /// { id, compte } : achat. Renvoie { etat: "achete", jws, transactionId } ou { etat: "annule" | "attente" }.
+    /// `compte` (identifiant du compte Six) est attaché à l'achat : le serveur refuse un achat d'un autre compte.
+    @objc func acheter(_ call: CAPPluginCall) {
+        guard let id = call.getString("id"), let compte = call.getString("compte"),
+              let jeton = UUID(uuidString: compte) else {
+            call.reject("Achat impossible : compte inconnu.")
+            return
+        }
+        Task {
+            do {
+                guard let produit = try await Product.products(for: [id]).first else {
+                    call.reject("Cette offre n'est pas disponible.")
+                    return
+                }
+                let resultat = try await produit.purchase(options: [.appAccountToken(jeton)])
+                switch resultat {
+                case .success(let verification):
+                    guard case .verified(let transaction) = verification else {
+                        call.reject("Achat non vérifié par l'App Store.")
+                        return
+                    }
+                    call.resolve([
+                        "etat": "achete",
+                        "jws": verification.jwsRepresentation,
+                        "transactionId": String(transaction.id)
+                    ])
+                case .userCancelled:
+                    call.resolve(["etat": "annule"])
+                case .pending:
+                    call.resolve(["etat": "attente"])
+                @unknown default:
+                    call.resolve(["etat": "annule"])
+                }
+            } catch {
+                call.reject("L'achat n'a pas abouti : \(error.localizedDescription)")
+            }
+        }
+    }
+
+    /// { tous } : transactions à (re)donner au serveur. Par défaut celles pas encore terminées (achat interrompu) ;
+    /// avec tous = true, tout l'historique d'achats (« Restaurer mes achats » sur un nouvel appareil).
+    @objc func transactions(_ call: CAPPluginCall) {
+        let tous = call.getBool("tous") ?? false
+        Task {
+            var liste: [[String: String]] = []
+            let source = tous ? Transaction.all : Transaction.unfinished
+            for await verification in source {
+                if case .verified(let transaction) = verification {
+                    liste.append(["jws": verification.jwsRepresentation, "transactionId": String(transaction.id)])
+                }
+            }
+            call.resolve(["transactions": liste])
+        }
+    }
+
+    /// { transactionId } : marque l'achat comme livré, une fois le premium activé par le serveur.
+    @objc func terminer(_ call: CAPPluginCall) {
+        guard let id = call.getString("transactionId") else {
+            call.reject("Transaction inconnue.")
+            return
+        }
+        Task {
+            for await verification in Transaction.unfinished {
+                if case .verified(let transaction) = verification, String(transaction.id) == id {
+                    await transaction.finish()
+                }
+            }
+            call.resolve()
+        }
     }
 }
 
