@@ -60,6 +60,18 @@ jobs:
             -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO build | tee xcodebuild.log | grep -E 'error:|warning: .*SixRaccourcis|BUILD (SUCCEEDED|FAILED)' || true
           grep -q 'BUILD SUCCEEDED' xcodebuild.log
+      - name: Vérifier les raccourcis Siri (App Intents)
+        working-directory: app/apps/web
+        # Sans le dossier Metadata.appintents dans l'app, iOS ne montre aucune action de Six dans Raccourcis,
+        # AssistiveTouch ou le bouton Action.
+        run: |
+          app=$(find ~/Library/Developer/Xcode/DerivedData -path '*Debug-iphonesimulator/App.app' -maxdepth 6 | head -1)
+          echo "App : $app"
+          ls -la "$app/Metadata.appintents" || { echo "::error::Metadata.appintents absent : les raccourcis de Six ne seront pas visibles"; exit 1; }
+          grep -ao 'RepondreAvecSixIntent\|AnalyserCaptureIntent\|OuvrirSevenAIIntent\|QuoiDireIntent' "$app/Metadata.appintents/extract.actionsdata" | sort -u
+          grep -q 'RepondreAvecSixIntent' "$app/Metadata.appintents/extract.actionsdata" \
+            || { echo "::error::Les actions de Six manquent dans Metadata.appintents"; exit 1; }
+          grep -n 'appintentsmetadataprocessor\|Extract app intents' xcodebuild.log | tail -5 || true
       - name: Journal de compilation
         if: failure()
         uses: actions/upload-artifact@v4
