@@ -465,9 +465,22 @@ function useGrandEcran(): boolean {
   useEffect(() => {
     const mq = window.matchMedia(GRAND_ECRAN);
     const lire = () => setGrand(mq.matches);
+    // Passage du seuil pendant que la fenêtre change de taille : html.bascule anime la barre qui arrive (globals.css).
+    let fin: ReturnType<typeof setTimeout> | undefined;
+    const basculer = () => {
+      const racine = document.documentElement;
+      racine.classList.add('bascule');
+      clearTimeout(fin);
+      fin = setTimeout(() => racine.classList.remove('bascule'), 600);
+      lire();
+    };
     lire();
-    mq.addEventListener('change', lire);
-    return () => mq.removeEventListener('change', lire);
+    mq.addEventListener('change', basculer);
+    return () => {
+      mq.removeEventListener('change', basculer);
+      clearTimeout(fin);
+      document.documentElement.classList.remove('bascule');
+    };
   }, []);
   return grand;
 }
