@@ -144,3 +144,23 @@ lance l'analyse. Les mêmes raccourcis se placent aussi sur le bouton Action, To
 du dossier `ios/`, ou à la demande (Actions > iOS > Run workflow). En cas d'échec, le journal `xcodebuild-log`
 est joint à l'exécution. Il ne produit pas d'app à installer : pour TestFlight et l'App Store, il faut signer avec
 le compte Apple Developer (Xcode sur un Mac, ou un Mac loué).
+
+## 10. Envoi sur TestFlight sans Mac (GitHub Actions)
+
+Déjà fait sur le compte Apple : App Group `group.com.sevenai.six`, App ID `com.sevenai.six.share`, App Group
+activé sur les deux App IDs, fiche « Six : répondre au ton juste » créée dans App Store Connect.
+
+`.github/workflows/testflight.yml` compile, signe (signature automatique, Xcode crée certificats et profils) et
+envoie le build sur TestFlight. Une seule préparation, à faire **soi-même** (la clé est secrète) :
+
+1. App Store Connect > Utilisateurs et accès > Intégrations > App Store Connect API > Clés d'équipe > « + » :
+   nom `GitHub TestFlight`, accès **Admin**. Noter l'**ID de la clé** et l'**ID de l'émetteur** (en haut de la page),
+   puis télécharger le fichier `AuthKey_XXXX.p8` (téléchargeable une seule fois).
+2. GitHub > dépôt > Settings > Secrets and variables > Actions > New repository secret, trois secrets :
+   `APP_STORE_CONNECT_KEY_ID`, `APP_STORE_CONNECT_ISSUER_ID`, `APP_STORE_CONNECT_KEY_P8` (tout le contenu du
+   fichier .p8, lignes BEGIN et END comprises).
+3. Ranger le fichier .p8 hors du dépôt (jamais dans Git, ni dans un chat).
+4. Actions > TestFlight > Run workflow. Le build apparaît dans App Store Connect > TestFlight après le traitement
+   d'Apple ; y ajouter les testeurs (internes d'abord, sans vérification d'Apple).
+
+Le numéro de build est le numéro d'exécution du workflow ; la version affichée (`MARKETING_VERSION`) reste 1.0.

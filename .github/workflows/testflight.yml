@@ -1,0 +1,121 @@
+name: TestFlight
+
+# Compile, signe et envoie l'app iPhone sur TestFlight depuis un Mac de GitHub (aucun Mac dans l'équipe).
+# Lancement à la main seulement : Actions > TestFlight > Run workflow.
+#
+# Signature automatique avec une clé API App Store Connect (rôle Admin) : Xcode crée lui-même les
+# certificats et profils. Secrets à ajouter dans GitHub (Settings > Secrets and variables > Actions) :
+#   APP_STORE_CONNECT_KEY_ID      identifiant de la clé (10 caractères)
+#   APP_STORE_CONNECT_ISSUER_ID   identifiant de l'émetteur (UUID, en haut de la page des clés)
+#   APP_STORE_CONNECT_KEY_P8      contenu complet du fichier AuthKey_XXXX.p8 (de -----BEGIN à END-----)
+# Voir app/docs/app-store.md, section 10.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: testflight
+  cancel-in-progress: false
+
+env:
+  EQUIPE_APPLE: 46Z8362D96
+
+jobs:
+  envoyer:
+    name: Compiler, signer et envoyer sur TestFlight
+    runs-on: macos-15
+    timeout-minutes: 60
+    defaults:
+      run:
+        working-directory: app/apps/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: app/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+        working-directory: app
+
+      - name: Vérifier les secrets
+        env:
+          KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          KEY_P8: ${{ secrets.APP_STORE_CONNECT_KEY_P8 }}
+        run: |
+          manque=0
+          for nom in KEY_ID ISSUER_ID KEY_P8; do
+            if [ -z "${!nom}" ]; then echo "::error::Secret APP_STORE_CONNECT_${nom} manquant"; manque=1; fi
+          done
+          exit $manque
+
+      - name: Clé API (fichier temporaire, effacé à la fin)
+        env:
+          KEY_P8: ${{ secrets.APP_STORE_CONNECT_KEY_P8 }}
+        run: |
+          umask 077
+          printf '%s\n' "$KEY_P8" > "$RUNNER_TEMP/cle-asc.p8"
+
+      - name: Synchroniser Capacitor (app en ligne)
+        env:
+          CAP_SERVER_URL: https://app.sixbysevenai.com
+        run: npx cap sync ios
+
+      - name: Archiver (signature automatique)
+        env:
+          KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: |
+          set -o pipefail
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/Six.xcarchive" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/cle-asc.p8" \
+            -authenticationKeyID "$KEY_ID" -authenticationKeyIssuerID "$ISSUER_ID" \
+            DEVELOPMENT_TEAM="$EQUIPE_APPLE" CODE_SIGN_STYLE=Automatic \
+            CURRENT_PROJECT_VERSION="${{ github.run_number }}" \
+            archive | tee "$RUNNER_TEMP/archive.log" | grep -E 'error:|ARCHIVE (SUCCEEDED|FAILED)' || true
+          grep -q 'ARCHIVE SUCCEEDED' "$RUNNER_TEMP/archive.log"
+
+      - name: Envoyer sur App Store Connect (TestFlight)
+        env:
+          KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: |
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>${EQUIPE_APPLE}</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+          </dict>
+          </plist>
+          PLIST
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/Six.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" -exportPath "$RUNNER_TEMP/export" \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/cle-asc.p8" \
+            -authenticationKeyID "$KEY_ID" -authenticationKeyIssuerID "$ISSUER_ID"
+          echo "Build ${{ github.run_number }} envoyé : il apparaît dans TestFlight après le traitement d'Apple (10 à 30 min)."
+
+      - name: Effacer la clé
+        if: always()
+        run: rm -f "$RUNNER_TEMP/cle-asc.p8"
+
+      - name: Journal d'archivage
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: archive-log
+          path: ${{ runner.temp }}/archive.log
+          retention-days: 7
