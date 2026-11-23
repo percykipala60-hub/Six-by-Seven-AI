@@ -132,6 +132,10 @@ export function AppBar({
     const r = document.documentElement;
     if (grand) r.dataset.panneau = open ? 'ouvert' : 'reduit';
     else delete r.dataset.panneau;
+    // Page sans panneau (Confidentialité, Conditions…) : le contenu ne garde pas le décalage.
+    return () => {
+      delete r.dataset.panneau;
+    };
   }, [grand, open]);
   const [chats, setChats] = useState<ChatSeven[]>([]);
   const [demandeEffacer, demanderEffacer] = useConfirmer();

@@ -46,7 +46,15 @@ function TexteProgressif({ texte, onPas }: { texte: string; onPas?: () => void }
   useEffect(() => {
     onPas?.();
   }, [n, onPas]);
-  return <>{n >= morceaux.length ? texte : morceaux.slice(0, n).join('')}</>;
+  if (n >= morceaux.length) return <>{texte}</>;
+  // Pendant l'écriture : la partie visible est cachée aux lecteurs d'écran, qui lisent la réponse
+  // entière une seule fois (sinon le fil, annoncé à voix haute, répéterait chaque étape).
+  return (
+    <>
+      <span aria-hidden="true">{morceaux.slice(0, n).join('')}</span>
+      <span className="sr">{texte}</span>
+    </>
+  );
 }
 
 function preparerRequete(historique: ChatMessage[], content: string): string {
@@ -236,10 +244,16 @@ export function SevenChatPage() {
   const verrouMicro = useRef(false);
   const [memOn, setMemOn] = useState(false); // mémoire de Six active (gate de conservation de l'historique)
   const [enregistre, setEnregistre] = useState(false); // micro en cours d'enregistrement
-  const fin = useRef<HTMLDivElement>(null);
+  const filRef = useRef<HTMLDivElement>(null);
   const [animee, setAnimee] = useState(-1); // index de la réponse en train de s'écrire
-  const suivreFin = useCallback(() => {
-    fin.current?.scrollIntoView({ block: 'end' });
+  // Le fil suit l'écriture seulement si la personne est déjà en bas : si elle remonte lire, on la
+  // laisse tranquille. On fait défiler le fil lui-même, jamais la page (sur iPhone, faire défiler la
+  // page déplace tout l'écran, clavier ouvert).
+  const suivreFin = useCallback((force = false, doux = false) => {
+    const fil = filRef.current;
+    if (!fil) return;
+    const enBas = fil.scrollHeight - fil.scrollTop - fil.clientHeight < 120;
+    if (force || enBas) fil.scrollTo({ top: fil.scrollHeight, behavior: doux ? 'smooth' : 'auto' });
   }, []);
   const champ = useRef<HTMLInputElement>(null);
   const docInput = useRef<HTMLInputElement>(null);
@@ -262,7 +276,7 @@ export function SevenChatPage() {
       historique.some((message) => message.role === 'user' && message.content.startsWith('📄 ')),
     );
     setMemOn(memoireActive());
-    champ.current?.focus();
+    if (window.matchMedia('(pointer: fine)').matches) champ.current?.focus();
   }, [demandee]);
 
   useEffect(() => {
@@ -329,10 +343,10 @@ export function SevenChatPage() {
     return () => window.removeEventListener('six-memoire', lire);
   }, []);
 
-  // Le fil descend vers la réponse quand elle arrive.
+  // Le fil descend vers la réponse quand elle arrive (et vers la question qu'on vient d'envoyer).
   useEffect(() => {
-    fin.current?.scrollIntoView({ block: 'end', behavior: 'smooth' });
-  }, [messages, occupe]);
+    suivreFin(true, true);
+  }, [messages, occupe, suivreFin]);
 
   function pousser(fil: ChatMessage[]) {
     setMessages(fil);
@@ -599,7 +613,7 @@ export function SevenChatPage() {
           champ.current?.focus();
         }}
       />
-      <div className="seven-fil" aria-live="polite">
+      <div className="seven-fil" ref={filRef} aria-live="polite">
         {messages.length === 0 && !occupe && (
           <div className="seven-vide">
             <span className="six-vide-logo" aria-hidden="true">
@@ -709,7 +723,6 @@ export function SevenChatPage() {
             Mémoire pour garder vos conversations.
           </p>
         )}
-        <div ref={fin} />
       </div>
 
       <form
@@ -746,7 +759,7 @@ export function SevenChatPage() {
             onChange={(e) => setSaisie(e.target.value)}
             placeholder="Demander à Six"
             aria-label="Demander à Six"
-            disabled={occupe}
+            enterKeyHint="send"
           />
           {/* Micro tant que le champ est vide ; dès qu'on écrit, il laisse la place au bouton d'envoi. */}
           {occupe && !lectureDoc && !enregistre ? (
