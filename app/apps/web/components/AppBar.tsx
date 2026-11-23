@@ -457,9 +457,9 @@ export function AppBar({
 
 const CLE_PANNEAU = 'six-panneau';
 const PAR_DEFAUT = 3; // éléments d'historique visibles sous chaque outil avant « Voir plus »
-const GRAND_ECRAN = '(min-width: 900px)';
+const GRAND_ECRAN = '(min-width: 768px)'; // même seuil que la barre verticale (.rail, app/globals.css)
 
-/** Vrai sur grand écran (au moins 900 px de large), suivi en direct quand la fenêtre change de taille. */
+/** Vrai sur grand écran (au moins 768 px de large), suivi en direct quand la fenêtre change de taille. */
 function useGrandEcran(): boolean {
   const [grand, setGrand] = useState(false);
   useEffect(() => {

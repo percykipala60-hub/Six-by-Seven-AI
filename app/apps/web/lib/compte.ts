@@ -467,8 +467,9 @@ export async function connecterAvecFournisseur(
       };
     }
     if (natif === 'web') {
-      // La page du fournisseur remplace Six ; le retour se fait sur l'accueil, connecté.
-      return { erreur: null, info: `Ouverture de ${nom}…` };
+      // La page du fournisseur remplace Six ; le retour se fait sur l'accueil, connecté. Pas de bandeau :
+      // le bouton affiche déjà « Ouverture de … » pendant le chargement.
+      return { erreur: null, info: null };
     }
     if (natif) {
       const { url } = await natif.ouvrir({ url: data.url });

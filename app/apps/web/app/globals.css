@@ -5840,7 +5840,8 @@ body {
 .rail {
   display: none;
 }
-@media (min-width: 900px) {
+/* Barre verticale à partir de 768 px (comme GRAND_ECRAN dans components/AppBar.tsx). */
+@media (min-width: 768px) {
   .rail {
     position: fixed;
     z-index: 25;
@@ -6083,7 +6084,7 @@ body {
 
 /* Colonne d'icônes et panneau qui se fondent dans le décor : pas de bordure ni de bande opaque,
    la vague du fond reste visible derrière ; seul l'élément survolé ou ouvert prend un léger fond. */
-@media (min-width: 900px) {
+@media (min-width: 768px) {
   .rail {
     gap: 6px;
     padding: 12px 0 18px;
@@ -6478,4 +6479,45 @@ html.clavier .app:has(.seven-screen) {
   min-width: 0;
   padding: 10px 22px;
   font-size: 0.95rem;
+}
+
+/* Barre du haut d'un bord à l'autre de l'écran (voir « Barre du haut d'un bord à l'autre » plus haut) : les
+   conteneurs qui empêchent la page de défiler ne coupent qu'en hauteur. En coupant aussi sur les côtés, ils
+   cachaient le menu, les modes et le profil sur grand écran (il ne restait qu'un rectangle vide en haut). */
+/* « html body » : plus prioritaire que les règles qui coupent (regroupées en :is() à la construction). */
+html body .app:has(.screen.home),
+html body .app:has(.screen.seven-screen),
+html.clavier body .app {
+  overflow-x: visible;
+  overflow-y: clip;
+}
+/* L'accueil défile en hauteur, ce qui coupe forcément sur les côtés : sa zone qui défile prend toute la largeur,
+   et la colonne centrée (480 px, 680 px sur grand écran) vient de ses marges intérieures. Sur téléphone, les
+   marges restent celles d'avant. */
+.app:has(.screen.home) {
+  max-width: none;
+}
+.screen.home {
+  --colonne: 480px;
+  padding-left: max(
+    calc(16px + env(safe-area-inset-left, 0px)),
+    calc((100% - var(--colonne)) / 2 + 16px)
+  );
+  padding-right: max(
+    calc(16px + env(safe-area-inset-right, 0px)),
+    calc((100% - var(--colonne)) / 2 + 16px)
+  );
+}
+@media (min-width: 900px) {
+  .screen.home {
+    --colonne: 680px;
+  }
+}
+/* Accueil : la barre du haut touche le haut de l'écran. Sa zone qui défile n'a plus de marge en haut ; la barre,
+   accrochée en haut pendant le défilement, ne pouvait pas remonter au-dessus de cette marge (bande vide de 12 px). */
+.screen.home {
+  padding-top: 0;
+}
+.screen.home > .appbar {
+  margin-top: 0;
 }
