@@ -7,6 +7,10 @@ import { depasse } from '@/lib/quotas';
 
 import { hasChatAI } from '@/lib/ai';
 
+// Calculé à chaque demande : sinon Next fige la réponse au moment de la construction de l'app,
+// quand les clés du serveur (deploy/.env) ne sont pas encore chargées, et l'app se croit en démonstration.
+export const dynamic = 'force-dynamic';
+
 export function GET() {
   return NextResponse.json(
     {
