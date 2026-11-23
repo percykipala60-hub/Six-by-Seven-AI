@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { CompteSync } from '@/components/CompteSync';
 import { PorteCompte } from '@/components/Connexion';
+import { Clavier } from '@/components/Clavier';
 import { Fond } from '@/components/Fond';
 import { NetworkStatus } from '@/components/NetworkStatus';
 import { InterAppLaunchHandler } from '@/components/InterAppNotifications';
@@ -28,6 +29,8 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: 'cover', // la saisie en bas tient compte de l’encoche et de la barre de gestes (safe-area)
+  // Android : le clavier réduit la hauteur de l'écran au lieu de faire glisser la page (le fond reste en place).
+  interactiveWidget: 'resizes-content',
 };
 
 // Applique le thème, la couleur, la police et le fond choisis avant l'affichage, pour éviter un flash.
@@ -44,6 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <Fond />
+        <Clavier />
         <NetworkStatus />
         <InterAppLaunchHandler />
         <ThemeIcon />

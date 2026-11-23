@@ -6316,3 +6316,81 @@ body {
   color: var(--on-accent, #fff);
   box-shadow: 0 6px 18px color-mix(in srgb, var(--accent-b) 28%, transparent);
 }
+
+/* ---------- Chat : réponses de Six en texte libre (sans bulle), messages envoyés en verre ---------- */
+.seven-msg.assistant {
+  align-self: stretch;
+  max-width: 100%;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+.seven-msg.assistant .six-msg-logo {
+  display: none;
+}
+.seven-msg.assistant .seven-bulle {
+  padding: 2px 2px 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  font-size: 15.5px;
+  line-height: 1.65;
+}
+.seven-msg.assistant .seven-pdf {
+  margin-left: -4px;
+}
+.seven-msg.user .seven-bulle {
+  padding: 10px 16px;
+  border: 1px solid color-mix(in srgb, var(--ink) 14%, transparent);
+  border-radius: 20px;
+  border-bottom-right-radius: 20px;
+  background: color-mix(
+    in srgb,
+    var(--accent-b) 14%,
+    color-mix(in srgb, var(--ink) 7%, transparent)
+  );
+  color: var(--ink);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, #fff 8%, transparent),
+    0 6px 20px rgb(0 0 0 / 0.1);
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+}
+.six-attente {
+  padding-left: 2px;
+}
+
+/* ---------- Clavier ouvert (iPhone) : le fond reste immobile, seule la barre de saisie monte ----------
+   Safari fait glisser la page de --vvtop quand le clavier s'ouvre : on décale le fond d'autant pour
+   qu'il paraisse immobile, et on pose les barres de saisie juste au-dessus du clavier. */
+html.clavier .fond-vagues {
+  transform: translate3d(0, var(--vvtop, 0px), 0);
+}
+html.clavier .seven-composer,
+html.clavier .home-foot {
+  position: fixed;
+  z-index: 20;
+  left: 0;
+  right: 0;
+  top: calc(var(--vvtop, 0px) + var(--vvh, 100dvh));
+  bottom: auto;
+  margin: 0;
+  transform: translateY(-100%);
+  padding-bottom: 8px; /* la barre de gestes est sous le clavier */
+}
+html.clavier .seven-mention {
+  display: none; /* place gagnée au-dessus du clavier */
+}
+/* Le contenu ne passe pas sous la barre posée sur le clavier. */
+html.clavier .seven-fil {
+  padding-bottom: 88px;
+}
+html.clavier .screen:has(> .home-foot) {
+  padding-bottom: 140px;
+}
+.seven-msg.assistant .seven-pdf {
+  align-self: flex-start;
+}
