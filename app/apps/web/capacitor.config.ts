@@ -1,4 +1,5 @@
 import type { CapacitorConfig } from '@capacitor/cli';
+import { KeyboardResize } from '@capacitor/keyboard';
 
 const serverUrl = process.env.CAP_SERVER_URL ?? 'https://app.sixbysevenai.com';
 
@@ -18,6 +19,12 @@ const config: CapacitorConfig = {
     allowsLinkPreview: false,
   },
   plugins: {
+    // Clavier comme une appli native : la vue se raccourcit au-dessus du clavier (barre du haut fixe,
+    // contenu recentré, barre de saisie posée sur le clavier) au lieu que toute la page glisse vers le haut.
+    Keyboard: {
+      resize: KeyboardResize.Native,
+      resizeOnFullScreen: true,
+    },
     SplashScreen: {
       launchShowDuration: 3000,
       // true : l'écran de démarrage se ferme seul. Avec false, il faudrait appeler SplashScreen.hide() dans l'app,

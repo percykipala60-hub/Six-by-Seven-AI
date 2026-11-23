@@ -4245,7 +4245,9 @@ body {
 }
 @supports (height: 100lvh) {
   .fond-vagues {
-    height: 100lvh; /* grande hauteur d'écran : la barre d'adresse ne la fait pas varier */
+    /* grande hauteur d'écran : la barre d'adresse ne la fait pas varier ; dans l'app, --fond-h
+       (hauteur de l'écran entier) empêche la vue raccourcie par le clavier de la changer */
+    height: var(--fond-h, 100lvh);
   }
 }
 .fond-vagues canvas {
@@ -6383,10 +6385,15 @@ html.clavier .screen.home {
   overflow-y: auto;
 }
 html.clavier .seven-composer,
-html.clavier .home-foot {
+html.clavier .home-foot,
+html.clavier-natif .seven-composer,
+html.clavier-natif .home-foot {
   padding-bottom: 8px; /* la barre de gestes est sous le clavier */
 }
-html.clavier .seven-mention {
+html.clavier .seven-mention,
+html.clavier-natif .seven-mention,
+html.clavier .home-foot .privacy-line,
+html.clavier-natif .home-foot .privacy-line {
   display: none; /* place gagnée au-dessus du clavier */
 }
 .seven-msg.assistant .seven-pdf {
