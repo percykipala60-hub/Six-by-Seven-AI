@@ -6453,7 +6453,7 @@ html.clavier .app:has(.seven-screen) {
    lignes au lieu d'une rangée coupée. */
 @media (min-width: 900px) {
   .app:has(.screen.home) {
-    max-width: 780px;
+    max-width: 680px;
   }
   .retour-apps {
     flex-wrap: wrap;
@@ -6469,4 +6469,13 @@ html.clavier .app:has(.seven-screen) {
 .fil .six-corps {
   min-width: 0;
   max-width: 100%;
+}
+
+/* « Revenir à ma conversation » et « Nouvelle conversation » : boutons compacts, centrés. */
+.btn.btn-centre {
+  align-self: center;
+  width: auto;
+  min-width: 0;
+  padding: 10px 22px;
+  font-size: 0.95rem;
 }

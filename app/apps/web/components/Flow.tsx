@@ -1757,7 +1757,7 @@ export function Flow() {
                   <p style={{ whiteSpace: 'pre-wrap', userSelect: 'all' }}>{finalText}</p>
                 </div>
                 <button
-                  className="btn primary"
+                  className="btn primary btn-centre"
                   onClick={revenir}
                   aria-expanded={backHint}
                   aria-controls="retour-plateformes"
@@ -1810,7 +1810,7 @@ export function Flow() {
                     )}
                   </section>
                 )}
-                <button className="btn ghost" onClick={reset}>
+                <button className="btn ghost btn-centre" onClick={reset}>
                   Nouvelle conversation
                 </button>
                 <p className="muted small row">
