@@ -27,21 +27,21 @@
     "build:ton-juste": "npm --prefix jeu-du-ton-juste/client run build:six"
   },
   "devDependencies": {
-    "@capacitor/android": "8.5.3",
-    "@capacitor/cli": "8.5.3",
-    "@capacitor/ios": "8.5.3",
+    "@capacitor/android": "8.6.2",
+    "@capacitor/cli": "8.6.2",
+    "@capacitor/ios": "8.6.2",
     "@eslint/js": "10.0.1",
-    "@next/eslint-plugin-next": "16.3.8",
+    "@next/eslint-plugin-next": "16.4.6",
     "@types/node": "22.20.4",
-    "eslint": "10.11.0",
+    "eslint": "10.15.0",
     "eslint-plugin-jsx-a11y": "6.10.2",
     "eslint-plugin-react-hooks": "7.1.1",
-    "globals": "17.13.0",
+    "globals": "17.14.0",
     "husky": "9.1.7",
     "lint-staged": "16.4.0",
-    "prettier": "3.9.9",
+    "prettier": "3.10.1",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.71.0"
+    "typescript-eslint": "8.73.0"
   },
   "lint-staged": {
     "*.{ts,tsx,js,mjs,cjs}": [
