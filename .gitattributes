@@ -3,3 +3,6 @@
 *.png binary
 *.ico binary
 *.woff2 binary
+# Scripts Windows : CRLF, sinon cmd.exe peut mal lire les étiquettes (GOTO, CALL).
+*.bat text eol=crlf
+*.cmd text eol=crlf
