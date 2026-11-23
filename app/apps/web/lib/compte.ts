@@ -366,7 +366,13 @@ async function connexionNativeIOS(): Promise<
     if (!Capacitor.isNativePlatform()) return 'web';
     if (Capacitor.getPlatform() !== 'ios') return null;
     if (!Capacitor.isPluginAvailable('SixAuth')) return 'ancienne-app';
-    return registerPlugin<{ ouvrir(o: { url: string }): Promise<{ url: string }> }>('SixAuth');
+    const plugin = registerPlugin<{ ouvrir(o: { url: string }): Promise<{ url: string }> }>(
+      'SixAuth',
+    );
+    // Jamais le plugin lui-même : c'est un Proxy qui répond à toute méthode, y compris « then ».
+    // Renvoyé par une fonction async, il passerait pour une promesse qui ne se résout jamais
+    // (bouton bloqué sur « Ouverture d'Apple… »).
+    return { ouvrir: (o: { url: string }) => plugin.ouvrir(o) };
   } catch {
     return 'web';
   }
