@@ -252,8 +252,12 @@ export function SevenChatPage() {
   const suivreFin = useCallback((force = false, doux = false) => {
     const fil = filRef.current;
     if (!fil) return;
-    const enBas = fil.scrollHeight - fil.scrollTop - fil.clientHeight < 120;
-    if (force || enBas) fil.scrollTo({ top: fil.scrollHeight, behavior: doux ? 'smooth' : 'auto' });
+    const reste = fil.scrollHeight - fil.scrollTop - fil.clientHeight;
+    if (!force && reste >= 120) return;
+    // Glissement doux pour une nouvelle bulle ; saut direct pour une longue distance (discussion
+    // qu'on ouvre), sinon le glissement est lent ou interrompu et le fil reste en haut.
+    const glisser = doux && reste < fil.clientHeight;
+    fil.scrollTo({ top: fil.scrollHeight, behavior: glisser ? 'smooth' : 'auto' });
   }, []);
   const champ = useRef<HTMLInputElement>(null);
   const docInput = useRef<HTMLInputElement>(null);

@@ -6399,3 +6399,45 @@ html.clavier-natif .home-foot .privacy-line {
 .seven-msg.assistant .seven-pdf {
   align-self: flex-start;
 }
+
+/* ---------- Responsive et Chat : seule la discussion défile ----------
+   La page elle-même ne défile jamais sur ces deux écrans : l'écran tient dans la hauteur visible et
+   seule la discussion (le fil) défile, quand elle est plus longue que l'écran. Le clavier n'a donc
+   plus rien à faire glisser derrière : le fond reste en place. Pas de barre de défilement visible. */
+html:has(.seven-screen),
+html:has(.screen.home),
+html:has(.seven-screen) body,
+html:has(.screen.home) body {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+.app:has(.screen.home),
+.app:has(.seven-screen) {
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+}
+.screen.home {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+/* Élément d'une colonne flexible : sans min-height: 0, l'écran du Chat s'allongeait à la taille de
+   toute la discussion et c'était la page entière qui défilait (barre de défilement à droite). */
+.seven-screen {
+  min-height: 0;
+}
+.seven-fil,
+.screen.home {
+  scrollbar-width: none;
+}
+.seven-fil::-webkit-scrollbar,
+.screen.home::-webkit-scrollbar {
+  display: none;
+}
+/* Clavier ouvert dans le navigateur : la hauteur visible garde la priorité. */
+html.clavier .app:has(.screen.home),
+html.clavier .app:has(.seven-screen) {
+  height: var(--vvh, 100dvh);
+}
