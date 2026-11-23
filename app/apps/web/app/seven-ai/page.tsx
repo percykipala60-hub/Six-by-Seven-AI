@@ -3,9 +3,8 @@ import { Suspense } from 'react';
 import { SevenChatPage } from '@/components/SevenChat';
 
 export const metadata: Metadata = {
-  title: 'Seven AI — Six',
-  description:
-    "Discute avec Seven AI, l'assistant intégré de Six : il connaît l'app sur le bout des doigts et répond à toutes tes questions.",
+  title: 'Discuter — Six',
+  description: 'Discute librement avec Six : questions, documents, messages vocaux.',
   robots: 'noindex, nofollow',
 };
 

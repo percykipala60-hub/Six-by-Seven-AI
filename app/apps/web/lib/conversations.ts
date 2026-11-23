@@ -22,6 +22,21 @@ export interface ConversationGardee {
 }
 
 const KEY = 'six-conversations';
+const EVT = 'six-conversations';
+
+/** Prévient le menu latéral (liste « Réponses ») qu'une conversation a été gardée ou effacée. */
+function annoncer(): void {
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event(EVT));
+}
+
+export function ecouterConversations(fn: () => void): () => void {
+  window.addEventListener(EVT, fn);
+  window.addEventListener('six-memoire', fn);
+  return () => {
+    window.removeEventListener(EVT, fn);
+    window.removeEventListener('six-memoire', fn);
+  };
+}
 const MAX = 50; // garde-fou : au-delà, les plus anciennes sortent
 
 function valide(x: unknown): x is ConversationGardee {
@@ -64,6 +79,7 @@ export function garderConversation(c: ConversationGardee): void {
   } catch {
     /* stockage plein ou bloqué : Six marche, sans garder la conversation */
   }
+  annoncer();
 }
 
 /** Efface une conversation gardée précise. */
@@ -73,6 +89,7 @@ export function effacerConversationGardee(id: string): void {
   } catch {
     /* rien à effacer */
   }
+  annoncer();
 }
 
 /** Efface toutes les conversations gardées (mémoire coupée ou bouton d'effacement). */
@@ -82,4 +99,5 @@ export function effacerConversations(): void {
   } catch {
     /* rien à effacer */
   }
+  annoncer();
 }

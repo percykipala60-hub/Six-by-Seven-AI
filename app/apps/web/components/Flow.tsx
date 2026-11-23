@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState, type ClipboardEvent, type DragEvent } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { anonymize, markMe, restore } from '@/lib/anonymize';
 import {
   guessMe,
@@ -981,6 +982,19 @@ export function Flow() {
     setFinalText(g.reponse);
     setCopied(false);
   }
+
+  // Réponse gardée ouverte depuis le menu latéral (« Réponses ») : /?g=<id>.
+  const params = useSearchParams();
+  const router = useRouter();
+  const gardeeDemandee = params.get('g');
+  useEffect(() => {
+    if (!gardeeDemandee) return;
+    const g = lireConversations().find((c) => c.id === gardeeDemandee);
+    if (g) rouvrirConversation(g);
+    router.replace('/', { scroll: false });
+    // rouvrirConversation ne dépend que des réglages de l'écran : on ne relance que pour une nouvelle demande.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gardeeDemandee]);
 
   function supprimerGardee(id: string) {
     effacerConversationGardee(id);

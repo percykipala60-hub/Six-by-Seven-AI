@@ -5811,3 +5811,184 @@ body {
 .seven-composer .seven-capsule button:disabled {
   opacity: 0.35;
 }
+
+/* Espace « Discuter » : logo Six (le 6) au lieu de la marque Seven AI. */
+.six-vide-logo {
+  display: block;
+  width: 56px;
+  margin: 0 auto 14px;
+}
+.six-vide-logo .logo {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+}
+.six-msg-logo {
+  align-self: flex-end;
+  flex: none;
+}
+.six-msg-logo .logo.sm {
+  width: 22px;
+  height: 22px;
+  border-radius: 7px;
+}
+
+/* ---------- Grand écran (≥ 900 px) : panneau latéral fixe, ouvert ou réduit en colonne d'icônes ----------
+   Sur téléphone et petite tablette, rien ne change : barre du haut et menu glissant. */
+.rail {
+  display: none;
+}
+@media (min-width: 900px) {
+  .rail {
+    position: fixed;
+    z-index: 25;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 64px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 14px 0 16px;
+    border-right: 1px solid color-mix(in srgb, var(--ink) 8%, transparent);
+    background: color-mix(in srgb, var(--bg) 82%, transparent);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+  }
+  .rail-btn {
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    border: 0;
+    border-radius: 11px;
+    background: transparent;
+    color: var(--muted);
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .rail-btn:hover {
+    color: var(--ink);
+    background: color-mix(in srgb, var(--ink) 7%, transparent);
+  }
+  .rail-btn[aria-current='page'] {
+    color: var(--ink);
+    background: color-mix(in srgb, var(--ink) 10%, transparent);
+  }
+  .rail-btn:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 1px;
+  }
+  .rail-sep {
+    width: 24px;
+    height: 1px;
+    margin: 6px 0;
+    background: color-mix(in srgb, var(--ink) 10%, transparent);
+  }
+  .rail-fin {
+    flex: 1;
+  }
+  .rail .avatar {
+    margin: 6px 0 0;
+  }
+
+  /* La barre du haut laisse la place au panneau ; le contenu se décale d'autant. */
+  html[data-panneau] .appbar {
+    display: none;
+  }
+  html[data-panneau] body {
+    padding-left: 64px;
+  }
+  html[data-panneau='ouvert'] body {
+    padding-left: 280px;
+  }
+  html[data-panneau='ouvert'] .rail {
+    display: none;
+  }
+
+  /* Panneau ouvert : le menu reste en place, sans voile ni ombre portée. */
+  html[data-panneau] .drawer-scrim {
+    display: none;
+  }
+  html[data-panneau] .drawer {
+    width: 280px;
+    box-shadow: none;
+    border-right: 1px solid color-mix(in srgb, var(--ink) 8%, transparent);
+    background: color-mix(in srgb, var(--card) 70%, var(--bg));
+  }
+  html[data-panneau='ouvert'] .drawer {
+    transform: none;
+    visibility: visible;
+  }
+  html[data-panneau] .drawer-item {
+    min-height: 40px;
+    font-weight: 500;
+  }
+
+  /* Discuter : colonne de lecture plus large, comme dans les assistants sur ordinateur. */
+  .app:has(.seven-screen) {
+    max-width: 780px;
+  }
+  .seven-capsule {
+    max-width: 740px;
+  }
+}
+
+/* Mention sous la barre de saisie de Discuter. */
+.seven-mention {
+  margin: 8px 0 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.74rem;
+}
+
+/* Discuter : barre de saisie plus fine, et bulles qui apparaissent en douceur. */
+.seven-capsule {
+  gap: 0;
+  padding: 3px 4px;
+  border-radius: 22px;
+}
+.seven-composer .seven-capsule input {
+  padding: 7px 8px;
+  font-size: 14.5px;
+}
+.seven-composer .seven-capsule button {
+  width: 34px;
+  height: 34px;
+}
+.seven-composer {
+  padding-top: 8px;
+  padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+}
+.seven-mention {
+  margin-top: 6px;
+  font-size: 0.7rem;
+}
+@media (min-width: 900px) {
+  .seven-capsule {
+    max-width: 680px;
+  }
+}
+@keyframes seven-apparait {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.seven-msg {
+  animation: seven-apparait 0.28s ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .seven-msg {
+    animation: none;
+  }
+}
+.seven-composer .seven-capsule input[type='text'] {
+  min-height: 0;
+  height: 34px;
+}

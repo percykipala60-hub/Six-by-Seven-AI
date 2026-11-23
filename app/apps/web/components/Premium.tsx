@@ -217,7 +217,7 @@ export function PremiumVue() {
         />
         <LigneInfo
           icon="sparkles"
-          label="Seven AI sans limite"
+          label="Discuter avec Six sans limite"
           sous={
             limites.messages && !etat.veille
               ? `Gratuit : ${limites.messages} messages par jour`

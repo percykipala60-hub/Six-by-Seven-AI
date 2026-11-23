@@ -49,7 +49,7 @@ export const MESSAGE_LIMITE = {
   analyses:
     "Tu as utilisé tes analyses gratuites d'aujourd'hui. Passe à Six Premium (Réglages > Six Premium) ou reviens demain.",
   messages:
-    "Tu as utilisé tes messages gratuits à Seven AI pour aujourd'hui. Passe à Six Premium (Réglages > Six Premium) ou reviens demain.",
+    "Tu as utilisé tes messages gratuits avec Six pour aujourd'hui. Passe à Six Premium (Réglages > Six Premium) ou reviens demain.",
 };
 
 export function paiementDisponible(): boolean {

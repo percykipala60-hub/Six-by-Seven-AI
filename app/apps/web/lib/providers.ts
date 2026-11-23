@@ -75,13 +75,13 @@ export async function topics(situation: Situation, contexte: string): Promise<To
   return { sujets, demo: false };
 }
 
-/** Seven AI : le chatbot intégré. Conversation libre, multi-tours, identité connue du prompt système. */
+/** Six en mode « Discuter » : Conversation libre, multi-tours, identité connue du prompt système. */
 export async function chat(messages: ChatMessage[], premium = true): Promise<ChatResult> {
   const user = messages[messages.length - 1]?.content ?? '';
   const history = messages.slice(0, -1);
   if (!hasChatAI()) return { reponse: demoChat(user), demo: true };
   const reponse = (await callChat(sevenAiSystem(), user, history, 1500, premium)).trim();
-  if (!reponse) throw new ProviderError('La réponse de Seven AI était vide. Réessaie.');
+  if (!reponse) throw new ProviderError('La réponse de Six était vide. Réessaie.');
   return { reponse, demo: false };
 }
 
@@ -92,8 +92,8 @@ function demoChat(question: string): string {
       q,
     );
   if (identite)
-    return "Je suis Seven AI, l'assistant intégré de Six 😊 Six est l'app de la startup Seven.AI : tu y colles une conversation, elle est analysée (noms masqués, arnaques détectées, vrai sens expliqué) et Six te propose trois réponses. Il y a aussi des jeux : Kin Rush, Le jeu du ton juste et Coupe l'arnaque. Pour l'instant, je réponds avec des exemples : mon IA n'est pas encore branchée sur ce serveur.";
-  return "Je suis Seven AI, l'assistant intégré de Six. Mon IA n'est pas encore branchée sur ce serveur : je ne peux pas encore vraiment discuter, mais ça arrive bientôt.";
+    return "Je suis Six, l'assistant de l'app Six, créée par Seven.AI. Dans l'espace Répondre, tu colles une conversation : je masque les noms, je repère les arnaques, j'explique le vrai sens des messages et je te propose trois réponses. Ici, dans Discuter, on parle de tout.";
+  return "Je ne peux pas encore discuter librement sur ce serveur. En attendant, l'espace Répondre t'aide déjà à trouver quoi répondre à un message.";
 }
 
 /* ---------- Faux modèle de démonstration (aucune clé) ---------- */

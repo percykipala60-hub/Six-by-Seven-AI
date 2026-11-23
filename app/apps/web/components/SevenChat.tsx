@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AppBar } from './AppBar';
 import { useConfirmer } from './Confirmer';
 import { Icon } from './Icon';
+import { Logo } from './Logo';
 import { memoireActive } from '@/lib/memoire';
 import { entetesCompte } from '@/lib/premium-client';
 import { CHAT_MAX_BYTES, CHAT_MAX_CONTENT, CHAT_MAX_MESSAGES } from '@/lib/api-schemas';
@@ -19,6 +20,35 @@ const TAILLE_DOC_MAX = 12_000;
 const PAGES_PDF_MAX = 20;
 const MAX_FICHIER = 20 * 1024 * 1024;
 const encoder = new TextEncoder();
+
+/**
+ * Affiche une réponse qui vient d'arriver mot après mot, au lieu d'un bloc qui surgit d'un coup.
+ * Durée bornée (environ 2,5 s même pour un long texte) ; rien d'animé si la personne préfère moins
+ * d'animations. `onPas` est appelé à chaque étape (le fil suit l'écriture).
+ */
+function TexteProgressif({ texte, onPas }: { texte: string; onPas?: () => void }) {
+  const morceaux = useMemo(() => texte.split(/(\s+)/), [texte]);
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      setN(morceaux.length);
+      return;
+    }
+    const pas = Math.max(1, Math.ceil(morceaux.length / 160)); // ~160 étapes au plus
+    const t = setInterval(() => {
+      setN((x) => {
+        const suivant = Math.min(morceaux.length, x + pas);
+        if (suivant >= morceaux.length) clearInterval(t);
+        return suivant;
+      });
+    }, 16);
+    return () => clearInterval(t);
+  }, [morceaux]);
+  useEffect(() => {
+    onPas?.();
+  }, [n, onPas]);
+  return <>{n >= morceaux.length ? texte : morceaux.slice(0, n).join('')}</>;
+}
 
 function preparerRequete(historique: ChatMessage[], content: string): string {
   const dernier: ChatMessage = { role: 'user', content };
@@ -144,8 +174,8 @@ function dicterTexte(signal: AbortSignal): Promise<string> {
 }
 
 /**
- * La page Seven AI : la conversation avec l'assistant intégré de Six, comme une page dédiée
- * de l'app (même modèle que « Quoi dire ? » ou « Espace jeu »). On discute avec Seven AI
+ * L'espace « Discuter » : la conversation libre avec Six, comme une page dédiée
+ * de l'app (même modèle que « Quoi dire ? » ou « Espace jeu »). On discute avec Six
  * comme avec un assistant généraliste ; elle connaît parfaitement son identité et celle de Six.
  * L'historique reste sur l'appareil (localStorage). Trois entrées en plus du texte :
  * import de documents (texte/PDF), messages vocaux (transcription), et ordres de pilotage
@@ -208,6 +238,10 @@ export function SevenChatPage() {
   const [memOn, setMemOn] = useState(false); // mémoire de Six active (gate de conservation de l'historique)
   const [enregistre, setEnregistre] = useState(false); // micro en cours d'enregistrement
   const fin = useRef<HTMLDivElement>(null);
+  const [animee, setAnimee] = useState(-1); // index de la réponse en train de s'écrire
+  const suivreFin = useCallback(() => {
+    fin.current?.scrollIntoView({ block: 'end' });
+  }, []);
   const champ = useRef<HTMLInputElement>(null);
   const docInput = useRef<HTMLInputElement>(null);
   const mediaRecorder = useRef<MediaRecorder | null>(null);
@@ -218,6 +252,7 @@ export function SevenChatPage() {
     operation.current?.abort();
     const chat = demandee ? lireChat(demandee) : undefined;
     chatId.current = chat?.id ?? nouvelId();
+    setAnimee(-1);
     const historique = chat?.messages ?? [];
     setMessages(historique);
     setSaisie('');
@@ -241,7 +276,7 @@ export function SevenChatPage() {
       })
       .catch(() => {
         if (!controleur.signal.aborted)
-          setErreur('Impossible de vérifier la disponibilité de Seven AI.');
+          setErreur('Impossible de vérifier la disponibilité de Six.');
       });
     return () => {
       controleur.abort();
@@ -327,9 +362,11 @@ export function SevenChatPage() {
       const data = (await res.json().catch(() => ({}))) as ChatResult & { error?: string };
       if (!res.ok) throw new Error(data.error ?? 'Erreur inattendue. Réessaie.');
       if (typeof data.reponse !== 'string' || !data.reponse.trim()) {
-        throw new Error('Seven AI a renvoyé une réponse vide. Réessaie.');
+        throw new Error('Six a renvoyé une réponse vide. Réessaie.');
       }
-      pousser([...fil, { role: 'assistant' as const, content: data.reponse }].slice(-MAX_MSG));
+      const suite = [...fil, { role: 'assistant' as const, content: data.reponse }].slice(-MAX_MSG);
+      setAnimee(suite.length - 1); // seule la réponse qui arrive s'écrit progressivement
+      pousser(suite);
       if (document) {
         documentActif.current = document;
         setDocumentAReimporter(false);
@@ -337,9 +374,7 @@ export function SevenChatPage() {
       setSaisie('');
     } catch (e) {
       setDernierEchec({ texte, affichage, document });
-      setErreur(
-        e instanceof Error ? e.message : 'Seven AI ne répond pas pour le moment. Réessaie.',
-      );
+      setErreur(e instanceof Error ? e.message : 'Six ne répond pas pour le moment. Réessaie.');
     } finally {
       setEnAttente('');
       setOccupe(false);
@@ -507,7 +542,7 @@ export function SevenChatPage() {
     setErreur('');
     try {
       const { telechargerPdfSeven } = await import('@/lib/pdf-seven');
-      await telechargerPdfSeven([m], 'Réponse de Seven AI');
+      await telechargerPdfSeven([m], 'Réponse de Six');
     } catch {
       setErreur('Export PDF impossible sur cet appareil. Réessaie.');
     }
@@ -517,7 +552,7 @@ export function SevenChatPage() {
     <main className="screen seven-screen">
       <AppBar
         page="seven-ai"
-        titre="Seven AI"
+        titre="Discuter"
         chatActif={messages.length ? chatId.current : undefined}
         onNouvelle={() => {
           operation.current?.abort();
@@ -536,29 +571,30 @@ export function SevenChatPage() {
       <div className="seven-fil" aria-live="polite">
         {messages.length === 0 && !occupe && (
           <div className="seven-vide">
-            <span className="seven-vide-icone" aria-hidden="true">
-              {/* eslint-disable-next-line @next/next/no-img-element -- logo SVG du site vitrine, next/image n'apporte rien */}
-              <img src="/seven-ai.svg" alt="" className="seven-logo-img" />
+            <span className="six-vide-logo" aria-hidden="true">
+              <Logo label="" />
             </span>
-            <h1>
-              Seven <em>AI</em>
-            </h1>
+            <h1>On discute ?</h1>
             <p>
-              Salut ! Je suis <b>Seven AI</b>, l&apos;assistant intégré de Six. Pose-moi une
-              question, importe un document, envoie un vocal — ou donne-moi un ordre comme « ouvre
-              les réglages » et Six obéit.
+              Pose-moi une question, joins un document ou envoie un vocal. Tu peux aussi me demander
+              d&apos;ouvrir une page, comme « ouvre les réglages ».
             </p>
           </div>
         )}
         {messages.map((m, i) => (
           <div key={i} className={`seven-msg ${m.role}`}>
             {m.role === 'assistant' && (
-              <span className="seven-msg-logo" aria-hidden="true">
-                {/* eslint-disable-next-line @next/next/no-img-element -- marque SVG en 14px, next/image n'apporte rien */}
-                <img src="/seven-ai-mark.svg" alt="" className="seven-logo-img sm" />
+              <span className="six-msg-logo" aria-hidden="true">
+                <Logo label="" small />
               </span>
             )}
-            <div className="seven-bulle">{m.content}</div>
+            <div className="seven-bulle">
+              {i === animee && m.role === 'assistant' ? (
+                <TexteProgressif texte={m.content} onPas={suivreFin} />
+              ) : (
+                m.content
+              )}
+            </div>
             {m.role === 'assistant' && (
               <button
                 type="button"
@@ -579,11 +615,10 @@ export function SevenChatPage() {
         )}
         {occupe && (
           <div className="seven-msg assistant">
-            <span className="seven-msg-logo" aria-hidden="true">
-              {/* eslint-disable-next-line @next/next/no-img-element -- marque SVG en 14px, next/image n'apporte rien */}
-              <img src="/seven-ai-mark.svg" alt="" className="seven-logo-img sm" />
+            <span className="six-msg-logo" aria-hidden="true">
+              <Logo label="" small />
             </span>
-            <div className="seven-bulle seven-reflexion">Seven AI réfléchit…</div>
+            <div className="seven-bulle seven-reflexion">Six réfléchit…</div>
           </div>
         )}
         {erreur && (
@@ -614,7 +649,7 @@ export function SevenChatPage() {
         )}
         {!memOn && (
           <p className="seven-note-demo">
-            Mémoire désactivée : Seven AI oublie tout à chaque visite. Active-la dans Réglages →
+            Mémoire désactivée : Six oublie la discussion à chaque visite. Active-la dans Réglages →
             Mémoire pour garder vos conversations.
           </p>
         )}
@@ -633,13 +668,12 @@ export function SevenChatPage() {
             <button
               type="button"
               className="seven-effacer"
-              aria-label="Effacer la conversation avec Seven AI"
+              aria-label="Effacer cette discussion"
               title="Effacer la conversation"
               onClick={() =>
                 demander({
                   titre: 'Effacer cette discussion ?',
-                  texte:
-                    'Les messages de cette discussion avec Seven AI seront effacés de ce téléphone.',
+                  texte: 'Les messages de cette discussion seront effacés de ce téléphone.',
                   action: 'Effacer',
                   danger: true,
                   onConfirmer: () => {
@@ -681,8 +715,8 @@ export function SevenChatPage() {
             type="text"
             value={saisie}
             onChange={(e) => setSaisie(e.target.value)}
-            placeholder="Écris à Seven AI…"
-            aria-label="Écrire à Seven AI"
+            placeholder="Écris à Six…"
+            aria-label="Écrire à Six"
             disabled={occupe}
           />
           <button
@@ -703,6 +737,7 @@ export function SevenChatPage() {
             <Icon name="up" size={18} />
           </button>
         </div>
+        <p className="seven-mention">Six peut se tromper : vérifie les informations importantes.</p>
       </form>
     </main>
   );

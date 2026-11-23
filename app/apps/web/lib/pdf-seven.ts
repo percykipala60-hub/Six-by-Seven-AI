@@ -2,7 +2,7 @@ import type { jsPDF as JsPdfDoc } from 'jspdf';
 import type { ChatMessage } from '@/lib/types';
 
 /**
- * Export PDF des réponses de Seven AI (généré sur l'appareil, aucun serveur).
+ * Export PDF des réponses de Six (espace Discuter) (généré sur l'appareil, aucun serveur).
  * Mise en page professionnelle : bandeau de marque, bulles de conversation,
  * pagination A4 avec pied de page (source + numérotation).
  */
@@ -58,10 +58,10 @@ function bandeau(doc: DocPdf, titre: string) {
   doc.setTextColor(255, 255, 255);
   doc.setFont(FAMILLE, 'bold');
   doc.setFontSize(17);
-  doc.text('Seven AI', MARGE, 11.5);
+  doc.text('Six', MARGE, 11.5);
   doc.setFont(FAMILLE, 'normal');
   doc.setFontSize(8.5);
-  doc.text('Assistant intégré de Six — Six par Seven.AI', MARGE, 17.5);
+  doc.text('Assistant de l’app Six — Seven.AI', MARGE, 17.5);
   doc.text(dateFr(), PAGE_L - MARGE, 11.5, { align: 'right' });
   doc.setFont(FAMILLE, 'bold');
   doc.setFontSize(13);
@@ -83,7 +83,7 @@ function piedsDePage(doc: DocPdf) {
     doc.setFont(FAMILLE, 'normal');
     doc.setFontSize(8);
     doc.setTextColor(GRIS.r, GRIS.g, GRIS.b);
-    doc.text('Document généré par Seven AI — Six par Seven.AI', MARGE, PAGE_H - 10.5);
+    doc.text('Document généré par Six — Seven.AI', MARGE, PAGE_H - 10.5);
     doc.text(`Page ${i} / ${total}`, PAGE_L - MARGE, PAGE_H - 10.5, { align: 'right' });
   }
 }
@@ -107,7 +107,7 @@ function hauteurBloc(doc: DocPdf, contenu: string): number {
 /** Construit le PDF et renvoie le document (jsPDF est chargé à la demande). */
 export async function construirePdfSeven(
   messages: ChatMessage[],
-  titre = 'Conversation avec Seven AI',
+  titre = 'Conversation avec Six',
 ): Promise<DocPdf> {
   const { jsPDF } = await import('jspdf');
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
@@ -128,7 +128,7 @@ export async function construirePdfSeven(
     doc.setFontSize(8.5);
     if (estSeven) doc.setTextColor(MARQUE.r, MARQUE.g, MARQUE.b);
     else doc.setTextColor(GRIS.r, GRIS.g, GRIS.b);
-    doc.text(estSeven ? 'SEVEN AI' : 'TOI', MARGE, y);
+    doc.text(estSeven ? 'SIX' : 'TOI', MARGE, y);
     const hBulle = h - 5;
     const haut = estSeven ? FOND_SEVEN : FOND_USER;
     doc.setFillColor(haut.r, haut.g, haut.b);
@@ -147,7 +147,7 @@ export async function construirePdfSeven(
 /** Construit le PDF et déclenche le téléchargement dans le navigateur. */
 export async function telechargerPdfSeven(
   messages: ChatMessage[],
-  titre = 'Conversation avec Seven AI',
+  titre = 'Conversation avec Six',
 ): Promise<void> {
   const doc = await construirePdfSeven(messages, titre);
   doc.save(`seven-ai-${new Date().toISOString().slice(0, 10)}.pdf`);

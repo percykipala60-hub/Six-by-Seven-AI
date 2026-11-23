@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { construirePdfSeven, nettoyerTextePdf } from '@/lib/pdf-seven';
 
-describe('export PDF Seven AI', () => {
+describe('export PDF des discussions avec Six', () => {
   it('nettoie ce que les polices PDF ne supportent pas (œ, emoji, tirets longs)', () => {
     expect(nettoyerTextePdf('cœur et Œuvre 🎉 — « test »')).toBe('coeur et Oeuvre - « test »');
     expect(nettoyerTextePdf('Réponse  avec   espaces')).toBe('Réponse avec espaces');
@@ -39,8 +39,8 @@ describe('export PDF Seven AI', () => {
         const contenu = await page.getTextContent();
         texte += contenu.items.map((it) => ('str' in it ? it.str : '')).join(' ') + '\n';
       }
-      expect(texte).toContain('Seven AI');
-      expect(texte).toContain('SEVEN AI');
+      expect(texte).toContain('Document généré par Six');
+      expect(texte).toContain('SIX');
       expect(texte).toContain('répondre juste');
       expect(texte).toContain('Page 1 /');
     },
