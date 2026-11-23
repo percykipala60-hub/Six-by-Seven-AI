@@ -6363,33 +6363,41 @@ body {
   padding-left: 2px;
 }
 
-/* ---------- Clavier ouvert (iPhone) : le fond reste immobile, seule la barre de saisie monte ----------
-   Safari fait glisser la page de --vvtop quand le clavier s'ouvre : on décale le fond d'autant pour
-   qu'il paraisse immobile, et on pose les barres de saisie juste au-dessus du clavier. */
+/* ---------- Clavier ouvert (iPhone) : l'écran se cale sur la partie visible au-dessus du clavier ----------
+   Comme une appli de discussion : l'écran entier (barre du haut, fil, barre de saisie) prend la hauteur
+   visible (--vvh) et se pose sur la zone que Safari montre (--vvtop). La barre de saisie, dernière de
+   la colonne, tombe pile sur le clavier ; le fil se raccourcit et garde ses derniers messages en vue.
+   Le fond est décalé d'autant pour rester immobile. Plus rien ne défile derrière. */
+html.clavier,
+html.clavier body {
+  height: 100%;
+  overflow: hidden;
+}
 html.clavier .fond-vagues {
   transform: translate3d(0, var(--vvtop, 0px), 0);
 }
-html.clavier .seven-composer,
-html.clavier .home-foot {
+html.clavier .app {
   position: fixed;
-  z-index: 20;
   left: 0;
   right: 0;
-  top: calc(var(--vvtop, 0px) + var(--vvh, 100dvh));
-  bottom: auto;
-  margin: 0;
-  transform: translateY(-100%);
+  top: var(--vvtop, 0px);
+  height: var(--vvh, 100dvh);
+  min-height: 0;
+  overflow: hidden;
+}
+html.clavier .seven-screen {
+  height: 100%;
+}
+html.clavier .screen.home {
+  min-height: 0;
+  overflow-y: auto;
+}
+html.clavier .seven-composer,
+html.clavier .home-foot {
   padding-bottom: 8px; /* la barre de gestes est sous le clavier */
 }
 html.clavier .seven-mention {
   display: none; /* place gagnée au-dessus du clavier */
-}
-/* Le contenu ne passe pas sous la barre posée sur le clavier. */
-html.clavier .seven-fil {
-  padding-bottom: 88px;
-}
-html.clavier .screen:has(> .home-foot) {
-  padding-bottom: 140px;
 }
 .seven-msg.assistant .seven-pdf {
   align-self: flex-start;
