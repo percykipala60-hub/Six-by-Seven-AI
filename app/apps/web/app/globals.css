@@ -6479,3 +6479,35 @@ html.clavier .app:has(.seven-screen) {
   padding: 10px 22px;
   font-size: 0.95rem;
 }
+
+/* Barre du haut d'un bord à l'autre de l'écran (voir « Barre du haut d'un bord à l'autre » plus haut) : les
+   conteneurs qui empêchent la page de défiler ne coupent qu'en hauteur. En coupant aussi sur les côtés, ils
+   cachaient le menu, les modes et le profil sur grand écran (il ne restait qu'un rectangle vide en haut). */
+.app:has(.screen.home),
+.app:has(.seven-screen),
+html.clavier .app {
+  overflow-x: visible;
+  overflow-y: clip;
+}
+/* L'accueil défile en hauteur, ce qui coupe forcément sur les côtés : sa zone qui défile prend toute la largeur,
+   et la colonne centrée (480 px, 680 px sur grand écran) vient de ses marges intérieures. Sur téléphone, les
+   marges restent celles d'avant. */
+.app:has(.screen.home) {
+  max-width: none;
+}
+.screen.home {
+  --colonne: 480px;
+  padding-left: max(
+    calc(16px + env(safe-area-inset-left, 0px)),
+    calc((100% - var(--colonne)) / 2 + 16px)
+  );
+  padding-right: max(
+    calc(16px + env(safe-area-inset-right, 0px)),
+    calc((100% - var(--colonne)) / 2 + 16px)
+  );
+}
+@media (min-width: 900px) {
+  .screen.home {
+    --colonne: 680px;
+  }
+}
