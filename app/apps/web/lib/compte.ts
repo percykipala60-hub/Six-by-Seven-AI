@@ -323,6 +323,50 @@ export async function reinitialiserMotDePasse(email: string): Promise<string | n
   return null;
 }
 
+/** Adresse de retour de la connexion Apple ou Google dans l'app iPhone (à autoriser dans Supabase). */
+export const RETOUR_OAUTH_IOS = 'six://auth';
+
+export type RetourOAuth =
+  | { type: 'jetons'; access_token: string; refresh_token: string }
+  | { type: 'code'; code: string }
+  | { type: 'erreur'; message: string }
+  | { type: 'vide' };
+
+/**
+ * Lit l'adresse six://auth… renvoyée par Supabase : jetons dans le fragment (#access_token=…),
+ * code (?code=…) ou erreur (?error_description=… ou #error_description=…).
+ */
+export function lireRetourOAuth(adresse: string): RetourOAuth {
+  const i = adresse.indexOf('#');
+  const q = adresse.indexOf('?');
+  const fragment = new URLSearchParams(i >= 0 ? adresse.slice(i + 1) : '');
+  const requete = new URLSearchParams(q >= 0 ? adresse.slice(q + 1, i > q ? i : undefined) : '');
+  const lire = (cle: string) => fragment.get(cle) ?? requete.get(cle);
+
+  const erreur = lire('error_description') ?? lire('error');
+  if (erreur) return { type: 'erreur', message: erreur };
+  const access_token = lire('access_token');
+  const refresh_token = lire('refresh_token');
+  if (access_token && refresh_token) return { type: 'jetons', access_token, refresh_token };
+  const code = lire('code');
+  if (code) return { type: 'code', code };
+  return { type: 'vide' };
+}
+
+/** Plugin natif de l'app iPhone (ios/App/App/SceneDelegate.swift) : fenêtre de connexion du système. */
+async function connexionNativeIOS(): Promise<
+  { ouvrir(o: { url: string }): Promise<{ url: string }> } | 'ancienne-app' | null
+> {
+  try {
+    const { Capacitor, registerPlugin } = await import('@capacitor/core');
+    if (!Capacitor.isNativePlatform() || Capacitor.getPlatform() !== 'ios') return null;
+    if (!Capacitor.isPluginAvailable('SixAuth')) return 'ancienne-app';
+    return registerPlugin<{ ouvrir(o: { url: string }): Promise<{ url: string }> }>('SixAuth');
+  } catch {
+    return null;
+  }
+}
+
 export type FournisseursActifs = Record<FournisseurSocial, boolean>;
 
 let actifs: Promise<FournisseursActifs> | null = null;
@@ -366,11 +410,19 @@ export async function connecterAvecFournisseur(
       info: null,
     };
   }
+  const natif = await connexionNativeIOS();
+  if (natif === 'ancienne-app') {
+    // Build iPhone sans la fenêtre de connexion : Safari ne reviendrait jamais dans l'app.
+    return {
+      erreur: `La connexion avec ${nom} demande la dernière version de Six. Mets l'app à jour, ou utilise ton adresse e-mail.`,
+      info: null,
+    };
+  }
   try {
     const { data, error } = await sb.auth.signInWithOAuth({
       provider: fournisseur,
       options: {
-        redirectTo: `${obtenirOrigineOAuth()}/reglages?v=compte`,
+        redirectTo: natif ? RETOUR_OAUTH_IOS : `${obtenirOrigineOAuth()}/reglages?v=compte`,
         skipBrowserRedirect: true, // on garde la main : la fenêtre s'ouvre via window.open
       },
     });
@@ -389,6 +441,27 @@ export async function connecterAvecFournisseur(
         erreur: `La connexion avec ${nom} n’a pas pu s’ouvrir. Vérifie ta connexion, puis réessaie.`,
         info: null,
       };
+    }
+    if (natif) {
+      const { url } = await natif.ouvrir({ url: data.url });
+      if (!url) return { erreur: null, info: null }; // fenêtre fermée par la personne
+      const retour = lireRetourOAuth(url);
+      const { error: erreurSession } =
+        retour.type === 'jetons'
+          ? await sb.auth.setSession({
+              access_token: retour.access_token,
+              refresh_token: retour.refresh_token,
+            })
+          : retour.type === 'code'
+            ? await sb.auth.exchangeCodeForSession(retour.code)
+            : { error: { message: retour.type === 'erreur' ? retour.message : 'vide' } };
+      if (erreurSession) {
+        return {
+          erreur: `La connexion avec ${nom} n’a pas abouti. Réessaie, ou utilise ton adresse e-mail.`,
+          info: null,
+        };
+      }
+      return { erreur: null, info: null };
     }
     // Sans « noopener » dans les options : avec lui, window.open renvoie toujours null et la
     // fenêtre passerait pour bloquée. On coupe le lien vers l'app juste après.

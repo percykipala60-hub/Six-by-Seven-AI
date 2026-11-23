@@ -1,3 +1,4 @@
+import AuthenticationServices
 import UIKit
 import Capacitor
 
@@ -35,6 +36,55 @@ private class SixBridgeViewController: CAPBridgeViewController {
     override func capacitorDidLoad() {
         bridge?.registerPluginInstance(SixThemePlugin())
         bridge?.registerPluginInstance(SixSharePlugin())
+        bridge?.registerPluginInstance(SixAuthPlugin())
+    }
+}
+
+/// Connexion avec Apple ou Google dans l'app iPhone. Dans la WebView, window.open envoie la page du
+/// fournisseur dans Safari, qui revient ensuite sur le site et jamais dans l'app. Ici, la fenêtre de
+/// connexion du système (ASWebAuthenticationSession) s'ouvre par-dessus Six et se referme d'elle-même
+/// dès que Supabase renvoie vers six://auth : l'app web reçoit alors l'adresse de retour avec la session.
+@objc(SixAuthPlugin)
+public class SixAuthPlugin: CAPPlugin, CAPBridgedPlugin, ASWebAuthenticationPresentationContextProviding {
+    public let identifier = "SixAuthPlugin"
+    public let jsName = "SixAuth"
+    public let pluginMethods: [CAPPluginMethod] = [
+        CAPPluginMethod(name: "ouvrir", returnType: CAPPluginReturnPromise)
+    ]
+
+    /// Gardée en vie le temps de la connexion (sinon la fenêtre se ferme aussitôt).
+    private var session: ASWebAuthenticationSession?
+
+    /// { url } : page de connexion du fournisseur (https). Renvoie { url } : l'adresse six://auth… de retour,
+    /// ou une chaîne vide si la personne a fermé la fenêtre.
+    @objc func ouvrir(_ call: CAPPluginCall) {
+        guard let texte = call.getString("url"), let url = URL(string: texte), url.scheme == "https" else {
+            call.reject("Adresse de connexion invalide.")
+            return
+        }
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            let connexion = ASWebAuthenticationSession(url: url, callbackURLScheme: "six") { [weak self] retour, erreur in
+                self?.session = nil
+                if let retour {
+                    call.resolve(["url": retour.absoluteString])
+                } else if let erreur = erreur as? ASWebAuthenticationSessionError, erreur.code == .canceledLogin {
+                    call.resolve(["url": ""])
+                } else {
+                    call.reject(erreur?.localizedDescription ?? "Connexion interrompue.")
+                }
+            }
+            connexion.presentationContextProvider = self
+            self.session = connexion
+            if !connexion.start() {
+                self.session = nil
+                call.reject("La fenêtre de connexion n'a pas pu s'ouvrir.")
+            }
+        }
+    }
+
+    public func presentationAnchor(for session: ASWebAuthenticationSession) -> ASPresentationAnchor {
+        bridge?.viewController?.view.window ?? ASPresentationAnchor()
     }
 }
 

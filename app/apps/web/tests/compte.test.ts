@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { lireIdentifiant, salutation } from '@/lib/compte';
+import { lireIdentifiant, lireRetourOAuth, salutation } from '@/lib/compte';
 import { fusionner } from '@/lib/memoire';
 
 describe('lireIdentifiant', () => {
@@ -112,5 +112,33 @@ describe('salutation', () => {
     expect(a(18)).toBe('Bonsoir');
     expect(a(22)).toBe('Bonsoir');
     expect(a(23)).toBe('Bonne nuit');
+  });
+});
+
+describe('lireRetourOAuth (connexion Apple ou Google dans l’app iPhone)', () => {
+  it('lit les jetons du fragment six://auth#…', () => {
+    expect(
+      lireRetourOAuth(
+        'six://auth#access_token=a1&expires_in=3600&refresh_token=r1&token_type=bearer',
+      ),
+    ).toEqual({ type: 'jetons', access_token: 'a1', refresh_token: 'r1' });
+  });
+
+  it('lit un code PKCE', () => {
+    expect(lireRetourOAuth('six://auth?code=c0de')).toEqual({ type: 'code', code: 'c0de' });
+  });
+
+  it('remonte l’erreur du fournisseur', () => {
+    expect(
+      lireRetourOAuth('six://auth?error=access_denied&error_description=Refus%C3%A9#'),
+    ).toEqual({ type: 'erreur', message: 'Refusé' });
+    expect(lireRetourOAuth('six://auth#error=server_error')).toEqual({
+      type: 'erreur',
+      message: 'server_error',
+    });
+  });
+
+  it('renvoie « vide » sans jetons ni code', () => {
+    expect(lireRetourOAuth('six://auth')).toEqual({ type: 'vide' });
   });
 });
