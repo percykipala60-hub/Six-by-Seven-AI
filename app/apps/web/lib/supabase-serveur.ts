@@ -97,16 +97,13 @@ export type Paiement = {
   jours: number;
   montant: number;
   devise: string;
-  canal: 'mobile' | 'carte' | 'apple';
+  canal: 'apple';
   operateur: string | null;
   statut: StatutPaiement;
-  maishapay_id: string | null;
   cree: string;
 };
 
-export async function creerPaiement(
-  p: Omit<Paiement, 'statut' | 'maishapay_id' | 'cree'>,
-): Promise<void> {
+export async function creerPaiement(p: Omit<Paiement, 'statut' | 'cree'>): Promise<void> {
   await rest('paiements', {
     method: 'POST',
     headers: { prefer: 'return=minimal' },
@@ -117,18 +114,6 @@ export async function creerPaiement(
 export async function lirePaiement(reference: string): Promise<Paiement | null> {
   const lignes = await rest(`paiements?select=*&reference=eq.${encodeURIComponent(reference)}`);
   return Array.isArray(lignes) && lignes[0] ? (lignes[0] as Paiement) : null;
-}
-
-/** Met à jour un paiement encore en attente (un paiement réussi n'est plus jamais modifié ici). */
-export async function majPaiement(
-  reference: string,
-  champs: Partial<Pick<Paiement, 'statut' | 'maishapay_id'>>,
-): Promise<void> {
-  await rest(`paiements?reference=eq.${encodeURIComponent(reference)}&statut=eq.EN_ATTENTE`, {
-    method: 'PATCH',
-    headers: { prefer: 'return=minimal' },
-    body: JSON.stringify({ ...champs, maj: new Date().toISOString() }),
-  });
 }
 
 /** Passe le paiement à REUSSI et prolonge le premium, une seule fois (fonction SQL activer_paiement). */

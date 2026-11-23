@@ -1,16 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Icon } from './Icon';
 import { Groupe, LigneChoix, LigneInfo } from './Liste';
-import {
-  dansAppNative,
-  dateFin,
-  entetesCompte,
-  lireEtatPremium,
-  prix,
-  type EtatPremium,
-} from '@/lib/premium-client';
+import { dansAppNative, dateFin, lireEtatPremium, type EtatPremium } from '@/lib/premium-client';
 import {
   acheterApple,
   achatsAppleSurCetAppareil,
@@ -20,45 +13,11 @@ import {
 } from '@/lib/achat-apple-client';
 
 /**
- * Réglages > Six Premium. Pass de 7 ou 30 jours payé avec MaishaPay (Mobile Money ou carte) sur le site, ou
- * par achat intégré Apple dans l'app iPhone (règles de l'App Store : pas d'autre moyen de paiement proposé dans
- * l'app). Dans l'app Android, l'achat n'est pas proposé : le premium acheté ailleurs s'y active par le compte.
+ * Réglages > Six Premium. Pass de 7 ou 30 jours acheté par achat intégré Apple dans l'app iPhone.
+ * Ailleurs (Android, navigateur), l'achat n'est pas proposé : le premium acheté sur iPhone s'y active par le compte.
  */
 
-type Canal = 'mobile' | 'carte';
-type Operateur = 'airtel' | 'orange' | 'mpesa' | 'afrimoney';
-type Attente = { reference: string; canal: Canal } | null;
-
-const OPERATEURS: { id: Operateur; label: string }[] = [
-  { id: 'airtel', label: 'Airtel Money' },
-  { id: 'orange', label: 'Orange Money' },
-  { id: 'mpesa', label: 'M-Pesa (Vodacom)' },
-  { id: 'afrimoney', label: 'Afrimoney (Africell)' },
-];
-
-const CLE_ATTENTE = 'six-premium-attente';
-const INTERVALLE_MS = 5_000;
-const ATTENTE_MAX_MS = 4 * 60_000;
-
 export const EVT_PREMIUM = 'six-premium';
-
-function lireAttente(): Attente {
-  try {
-    const v = JSON.parse(sessionStorage.getItem(CLE_ATTENTE) ?? 'null') as Attente;
-    return v && typeof v.reference === 'string' ? v : null;
-  } catch {
-    return null;
-  }
-}
-
-function garderAttente(a: Attente) {
-  try {
-    if (a) sessionStorage.setItem(CLE_ATTENTE, JSON.stringify(a));
-    else sessionStorage.removeItem(CLE_ATTENTE);
-  } catch {
-    /* stockage bloqué */
-  }
-}
 
 export function PremiumVue() {
   const [etat, setEtat] = useState<EtatPremium | null>(null);
@@ -67,18 +26,9 @@ export function PremiumVue() {
   const [appleIci, setAppleIci] = useState(false);
   const [prixA, setPrixA] = useState<Partial<Record<'7j' | '30j', string>>>({});
   const [offre, setOffre] = useState<'7j' | '30j'>('30j');
-  const [canal, setCanal] = useState<Canal>('mobile');
-  const [operateur, setOperateur] = useState<Operateur>('airtel');
-  const [telephone, setTelephone] = useState('+243');
-  const [reseau, setReseau] = useState<'VISA' | 'MASTERCARD'>('VISA');
-  const [prenom, setPrenom] = useState('');
-  const [nom, setNom] = useState('');
-  const [ville, setVille] = useState('Kinshasa');
   const [busy, setBusy] = useState(false);
-  const [attente, setAttente] = useState<Attente>(null);
   const [erreur, setErreur] = useState('');
   const [info, setInfo] = useState('');
-  const debutAttente = useRef(0);
 
   const recharger = useCallback(async () => {
     const e = await lireEtatPremium();
@@ -102,110 +52,7 @@ export function PremiumVue() {
         }
       });
     });
-    // Retour de la page de paiement par carte (…?v=premium&ref=SIX-…) ou paiement Mobile Money en cours.
-    const ref = new URLSearchParams(window.location.search).get('ref');
-    const enCours = lireAttente();
-    const a: Attente =
-      ref && /^SIX-[A-Z0-9-]+$/.test(ref) ? { reference: ref, canal: 'carte' } : enCours;
-    if (a) {
-      debutAttente.current = Date.now();
-      setAttente(a);
-    }
   }, [recharger]);
-
-  // Tant qu'un paiement est en attente, le serveur le vérifie auprès de MaishaPay toutes les 5 secondes.
-  useEffect(() => {
-    if (!attente) return;
-    let fini = false;
-    let minuterie: ReturnType<typeof setTimeout>;
-    const verifier = async () => {
-      try {
-        const res = await fetch(
-          `/api/premium/paiement?ref=${encodeURIComponent(attente.reference)}`,
-          { headers: await entetesCompte(), cache: 'no-store' },
-        );
-        const d = (await res.json().catch(() => ({}))) as {
-          statut?: string;
-          jusquA?: string | null;
-          error?: string;
-        };
-        if (fini) return;
-        if (res.status === 404 || res.status === 400) {
-          setErreur(d.error ?? 'Paiement introuvable.');
-          return terminer();
-        }
-        if (d.statut === 'REUSSI') {
-          setInfo(`Merci ! Six Premium est actif jusqu’au ${dateFin(d.jusquA ?? null)}.`);
-          window.dispatchEvent(new Event(EVT_PREMIUM));
-          void recharger();
-          return terminer();
-        }
-        if (d.statut === 'ECHOUE') {
-          setErreur(
-            'Le paiement n’a pas abouti. Aucun montant n’a été pris pour le premium. Tu peux réessayer.',
-          );
-          return terminer();
-        }
-      } catch {
-        /* pas de réseau : on réessaie au prochain tour */
-      }
-      if (Date.now() - debutAttente.current > ATTENTE_MAX_MS) {
-        setErreur(
-          'Toujours pas de confirmation. Si tu as validé le paiement, rouvre cette page dans quelques minutes : le premium s’activera tout seul.',
-        );
-        return terminer();
-      }
-      minuterie = setTimeout(() => void verifier(), INTERVALLE_MS);
-    };
-    const terminer = () => {
-      fini = true;
-      garderAttente(null);
-      setAttente(null);
-      if (window.location.search.includes('ref='))
-        window.history.replaceState(null, '', '/reglages?v=premium');
-    };
-    minuterie = setTimeout(() => void verifier(), attente.canal === 'carte' ? 0 : INTERVALLE_MS);
-    return () => {
-      fini = true;
-      clearTimeout(minuterie);
-    };
-  }, [attente, recharger]);
-
-  async function payer(e: FormEvent) {
-    e.preventDefault();
-    setErreur('');
-    setInfo('');
-    setBusy(true);
-    try {
-      const corps =
-        canal === 'mobile'
-          ? { canal, offre, operateur, telephone }
-          : { canal, offre, reseau, prenom, nom, telephone, ville };
-      const res = await fetch('/api/premium/payer', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', ...(await entetesCompte()) },
-        body: JSON.stringify(corps),
-      });
-      const d = (await res.json().catch(() => ({}))) as {
-        reference?: string;
-        pagePaiement?: string;
-        error?: string;
-      };
-      if (!res.ok || !d.reference) throw new Error(d.error ?? 'Le paiement n’a pas pu être lancé.');
-      const a = { reference: d.reference, canal };
-      garderAttente(a);
-      if (canal === 'carte' && d.pagePaiement?.startsWith('https://')) {
-        window.location.assign(d.pagePaiement); // page sécurisée de MaishaPay, puis retour ici
-        return;
-      }
-      debutAttente.current = Date.now();
-      setAttente(a);
-    } catch (err) {
-      setErreur(err instanceof Error ? err.message : 'Erreur inattendue. Réessaie.');
-    } finally {
-      setBusy(false);
-    }
-  }
 
   function issueAchat(r: ResultatAchat | null, restauration = false) {
     if (!r) {
@@ -245,7 +92,6 @@ export function PremiumVue() {
   if (!etat) return <p className="lg-pied">Pas de réseau. Réessaie dans un instant.</p>;
 
   const limites = etat.limites;
-  const choisie = etat.offres.find((o) => o.id === offre);
 
   return (
     <>
@@ -301,26 +147,7 @@ export function PremiumVue() {
         </div>
       )}
 
-      {attente ? (
-        <Groupe titre="Paiement en cours">
-          <div className="lg-bloc" role="status" aria-live="polite">
-            {attente.canal === 'mobile' ? (
-              <>
-                <p>
-                  Une demande de paiement arrive sur ton téléphone. Valide-la avec ton code PIN,
-                  dans le menu de ton opérateur.
-                </p>
-                <p className="lg-sous">
-                  Ne donne jamais ton code PIN à quelqu’un, même s’il dit venir de Six ou de ton
-                  opérateur.
-                </p>
-              </>
-            ) : (
-              <p>Six vérifie ton paiement par carte…</p>
-            )}
-          </div>
-        </Groupe>
-      ) : natif && appleIci && etat.apple && etat.connecte ? (
+      {natif && appleIci && etat.apple && etat.connecte ? (
         <>
           <Groupe titre="Choisis ton pass">
             <div role="radiogroup" aria-label="Pass" className="lg-contenu">
@@ -366,145 +193,11 @@ export function PremiumVue() {
         </p>
       ) : !etat.connecte ? (
         <p className="lg-pied">Connecte-toi pour passer à Six Premium.</p>
-      ) : !(etat.maishapay ?? etat.paiementDisponible) ? (
-        <p className="lg-pied">Le paiement ouvre bientôt.</p>
       ) : (
-        <form onSubmit={payer}>
-          <Groupe titre="Choisis ton pass">
-            <div role="radiogroup" aria-label="Pass" className="lg-contenu">
-              {etat.offres.map((o) => (
-                <LigneChoix
-                  key={o.id}
-                  label={o.jours === 7 ? '7 jours' : '30 jours'}
-                  sous={prix(o)}
-                  choisi={offre === o.id}
-                  onClick={() => setOffre(o.id)}
-                />
-              ))}
-            </div>
-          </Groupe>
-
-          <Groupe titre="Payer avec">
-            <div role="radiogroup" aria-label="Moyen de paiement" className="lg-contenu">
-              <LigneChoix
-                label="Mobile Money"
-                sous="Airtel, Orange, M-Pesa, Afrimoney"
-                choisi={canal === 'mobile'}
-                onClick={() => setCanal('mobile')}
-              />
-              <LigneChoix
-                label="Carte bancaire"
-                sous="Visa ou Mastercard"
-                choisi={canal === 'carte'}
-                onClick={() => setCanal('carte')}
-              />
-            </div>
-          </Groupe>
-
-          {canal === 'mobile' ? (
-            <Groupe titre="Ton compte Mobile Money">
-              <div role="radiogroup" aria-label="Opérateur" className="lg-contenu">
-                {OPERATEURS.map((o) => (
-                  <LigneChoix
-                    key={o.id}
-                    label={o.label}
-                    choisi={operateur === o.id}
-                    onClick={() => setOperateur(o.id)}
-                  />
-                ))}
-              </div>
-              <div className="lg-bloc">
-                <label htmlFor="premium-tel" className="set-label">
-                  Numéro Mobile Money (avec +243)
-                </label>
-                <input
-                  id="premium-tel"
-                  type="tel"
-                  inputMode="tel"
-                  autoComplete="tel"
-                  value={telephone}
-                  onChange={(e) => setTelephone(e.target.value)}
-                  required
-                />
-              </div>
-            </Groupe>
-          ) : (
-            <Groupe
-              titre="Titulaire de la carte"
-              pied="Tu saisiras ta carte sur la page sécurisée de MaishaPay. Six ne voit jamais ton numéro de carte."
-            >
-              <div role="radiogroup" aria-label="Type de carte" className="lg-contenu">
-                <LigneChoix
-                  label="Visa"
-                  choisi={reseau === 'VISA'}
-                  onClick={() => setReseau('VISA')}
-                />
-                <LigneChoix
-                  label="Mastercard"
-                  choisi={reseau === 'MASTERCARD'}
-                  onClick={() => setReseau('MASTERCARD')}
-                />
-              </div>
-              <div className="lg-bloc">
-                <label htmlFor="premium-prenom" className="set-label">
-                  Prénom
-                </label>
-                <input
-                  id="premium-prenom"
-                  type="text"
-                  autoComplete="given-name"
-                  value={prenom}
-                  onChange={(e) => setPrenom(e.target.value)}
-                  required
-                />
-                <label htmlFor="premium-nom" className="set-label">
-                  Nom
-                </label>
-                <input
-                  id="premium-nom"
-                  type="text"
-                  autoComplete="family-name"
-                  value={nom}
-                  onChange={(e) => setNom(e.target.value)}
-                  required
-                />
-                <label htmlFor="premium-tel-carte" className="set-label">
-                  Téléphone (avec +243)
-                </label>
-                <input
-                  id="premium-tel-carte"
-                  type="tel"
-                  inputMode="tel"
-                  autoComplete="tel"
-                  value={telephone}
-                  onChange={(e) => setTelephone(e.target.value)}
-                  required
-                />
-                <label htmlFor="premium-ville" className="set-label">
-                  Ville
-                </label>
-                <input
-                  id="premium-ville"
-                  type="text"
-                  autoComplete="address-level2"
-                  value={ville}
-                  onChange={(e) => setVille(e.target.value)}
-                  required
-                />
-              </div>
-            </Groupe>
-          )}
-
-          <div className="lg-bloc">
-            <button className="btn primary" type="submit" disabled={busy || !choisie}>
-              {busy ? 'Lancement du paiement…' : `Payer ${choisie ? prix(choisie) : ''}`}
-            </button>
-            <p className="lg-sous">
-              Paiement traité par MaishaPay. En payant, tu acceptes les conditions d’utilisation de
-              Six.
-            </p>
-          </div>
-        </form>
+        <p className="lg-pied">
+          Six Premium s’achète dans l’app iPhone. Un premium actif sur ton compte s’active ici
+          automatiquement.
+        </p>
       )}
     </>
   );
