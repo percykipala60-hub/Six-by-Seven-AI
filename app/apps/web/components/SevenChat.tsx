@@ -117,7 +117,7 @@ interface ReconnaissanceVocale {
   interimResults: boolean;
   maxAlternatives: number;
   onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
-  onerror: (() => void) | null;
+  onerror: ((e: { error?: string }) => void) | null;
   onend: (() => void) | null;
   start: () => void;
   stop: () => void;
@@ -136,6 +136,61 @@ function constructeurReconnaissance(): ConstructeurReconnaissance | null {
 
 export function dicteeDisponible(): boolean {
   return constructeurReconnaissance() !== null;
+}
+
+/** Erreur de micro dont le message s'affiche tel quel. */
+class ErreurMicro extends Error {}
+
+const MESSAGE_PAS_DE_MICRO =
+  'Aucun micro détecté sur cet appareil. Branche un micro ou écris ton message.';
+
+async function plateforme(): Promise<'ios' | 'android' | 'web'> {
+  try {
+    const { Capacitor } = await import('@capacitor/core');
+    const p = Capacitor.getPlatform();
+    return p === 'ios' || p === 'android' ? p : 'web';
+  } catch {
+    return 'web';
+  }
+}
+
+/** Où réactiver le micro après un refus, selon l'appareil. */
+async function messageMicroRefuse(): Promise<string> {
+  const p = await plateforme();
+  if (p === 'ios')
+    return 'Accès au micro refusé. Ouvre Réglages > Six, active Micro et Reconnaissance vocale, puis réessaie.';
+  if (p === 'android')
+    return 'Accès au micro refusé. Ouvre Paramètres > Applications > Six > Autorisations, active Micro, puis réessaie.';
+  return 'Accès au micro refusé. Autorise le micro pour ce site : clique sur l’icône 🔒 (ou ℹ️) à gauche de l’adresse, puis autorise le microphone.';
+}
+
+/**
+ * Demande l'accès au micro au moment du clic : la fenêtre d'autorisation du navigateur, d'iOS ou d'Android s'ouvre
+ * si l'accès n'a pas encore été donné. Le micro est relâché aussitôt (la dictée le reprend juste après).
+ */
+async function demanderAccesMicro(): Promise<void> {
+  if (!window.isSecureContext || typeof navigator.mediaDevices?.getUserMedia !== 'function') return;
+  try {
+    const flux = await navigator.mediaDevices.getUserMedia({ audio: true });
+    flux.getTracks().forEach((piste) => piste.stop());
+  } catch (e) {
+    const nom = e instanceof DOMException ? e.name : '';
+    if (nom === 'NotAllowedError' || nom === 'SecurityError')
+      throw new ErreurMicro(await messageMicroRefuse());
+    if (nom === 'NotFoundError' || nom === 'OverconstrainedError')
+      throw new ErreurMicro(MESSAGE_PAS_DE_MICRO);
+    // Autre souci : on laisse la dictée essayer quand même.
+  }
+}
+
+/** Message à afficher quand la dictée échoue ('' : arrêtée par la personne, rien à dire). */
+async function messageErreurDictee(e: unknown): Promise<string> {
+  if (e instanceof ErreurMicro) return e.message;
+  const m = e instanceof Error ? e.message : '';
+  if (m === 'Dictée arrêtée.') return '';
+  if (m === 'refus') return messageMicroRefuse();
+  if (m === 'dictée vide') return 'Je n’ai rien entendu. Réessaie en parlant juste après le clic.';
+  return 'La dictée a échoué. Réessaie, ou écris ton message.';
 }
 
 /** Écoute le micro et résout avec le texte dicté (une phrase, français). */
@@ -162,9 +217,15 @@ function dicterTexte(signal: AbortSignal): Promise<string> {
       reject(new Error('Dictée arrêtée.'));
     };
     signal.addEventListener('abort', arreter, { once: true });
-    rec.onerror = () => {
+    rec.onerror = (e) => {
       signal.removeEventListener('abort', arreter);
-      reject(new Error('erreur dictée'));
+      const code = e?.error ?? '';
+      if (code === 'not-allowed' || code === 'service-not-allowed') reject(new Error('refus'));
+      else if (code === 'no-speech') reject(new Error('dictée vide'));
+      else if (code === 'audio-capture') reject(new ErreurMicro(MESSAGE_PAS_DE_MICRO));
+      else if (code === 'network')
+        reject(new ErreurMicro('La dictée a besoin d’Internet. Vérifie ta connexion et réessaie.'));
+      else reject(new Error('erreur dictée'));
     };
     rec.onend = () => {
       signal.removeEventListener('abort', arreter);
@@ -476,15 +537,18 @@ export function SevenChatPage() {
     setErreur('');
     if (transcription !== true) {
       if (!dicteeDisponible()) {
-        setErreur('La transcription est indisponible et ce navigateur ne propose pas la dictée.');
+        setErreur(
+          'La dictée vocale n’est pas encore disponible sur cet appareil. Écris ton message en attendant.',
+        );
         return;
       }
       verrouMicro.current = true;
       setOccupe(true);
       try {
+        await demanderAccesMicro();
         setSaisie(await dictee());
-      } catch {
-        setErreur('La dictée a échoué. Vérifie l’accès au micro et réessaie.');
+      } catch (e) {
+        setErreur(await messageErreurDictee(e));
       } finally {
         verrouMicro.current = false;
         setOccupe(false);
@@ -537,11 +601,9 @@ export function SevenChatPage() {
       flux?.getTracks().forEach((piste) => piste.stop());
       const nom = e instanceof DOMException ? e.name : '';
       if (nom === 'NotAllowedError' || nom === 'SecurityError')
-        setErreur(
-          'Accès au micro refusé. Autorise le micro pour ce site : clique sur l’icône 🔒 (ou ℹ️) à gauche de l’adresse, puis autorise le microphone.',
-        );
+        setErreur(await messageMicroRefuse());
       else if (nom === 'NotFoundError' || nom === 'OverconstrainedError')
-        setErreur('Aucun micro détecté sur cet appareil. Branche un micro ou écris ton message.');
+        setErreur(MESSAGE_PAS_DE_MICRO);
       else setErreur('Le micro n’a pas répondu. Réessaie, ou écris ton message en attendant.');
     } finally {
       verrouMicro.current = false;
@@ -572,10 +634,8 @@ export function SevenChatPage() {
           const texte = await dictee();
           if (texte.trim()) setSaisie(texte.trim());
           return;
-        } catch {
-          setErreur(
-            'La dictée navigateur a échoué. Autorise le micro puis réessaie, ou écris ton message.',
-          );
+        } catch (err) {
+          setErreur(await messageErreurDictee(err));
           return;
         } finally {
           setOccupe(false);

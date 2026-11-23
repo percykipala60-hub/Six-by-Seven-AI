@@ -34,7 +34,9 @@
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Six utilise le micro seulement quand tu dictes un message à Seven AI.</string>
+	<string>Six utilise le micro seulement quand tu dictes un message dans le Chat.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Six transforme ta voix en texte seulement quand tu dictes un message dans le Chat.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Six utilise l’appareil photo seulement si tu prends en photo une conversation à analyser.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
