@@ -5,7 +5,6 @@ import {
   limitesGratuites,
   offres,
   appleOuvert,
-  maishapayOuvert,
   paiementDisponible,
   premiumEnVeille,
 } from '@/lib/premium';
@@ -22,7 +21,6 @@ export async function GET(req: Request) {
       offres: offres(),
       limites: limitesGratuites(),
       paiementDisponible: paiementDisponible(),
-      maishapay: maishapayOuvert(),
       apple: appleOuvert(),
       veille: premiumEnVeille(),
     },

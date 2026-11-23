@@ -1,19 +1,14 @@
 import { clientKey } from './http';
 import { achatsAppleDisponibles } from './achat-apple';
-import { maishapayDisponible, verifierTransaction } from './maishapay';
 import {
-  activerPaiement,
   adminDisponible,
   finPremium,
-  lirePaiement,
-  majPaiement,
   utilisateurDeRequete,
   type Utilisateur,
 } from './supabase-serveur';
 
 /**
- * Six Premium : un pass de 7 ou 30 jours, payé avec MaishaPay (Mobile Money ou carte) sur le site, ou par achat
- * intégré Apple dans l'app iPhone (lib/achat-apple.ts).
+ * Six Premium : un pass de 7 ou 30 jours, acheté par achat intégré Apple dans l'app iPhone (lib/achat-apple.ts).
  * Le premium lève les limites du jour, rédige avec le meilleur modèle et permet de copier sa mémoire sur le compte.
  */
 
@@ -54,14 +49,9 @@ export const MESSAGE_LIMITE = {
     "Tu as utilisé tes messages gratuits avec Six pour aujourd'hui. Passe à Six Premium (Réglages > Six Premium) ou reviens demain.",
 };
 
-/** Un moyen de paiement au moins est ouvert : MaishaPay (site) ou achats intégrés Apple (app iPhone). */
+/** Un moyen de paiement est ouvert : les achats intégrés Apple (app iPhone) et la clé secrète Supabase. */
 export function paiementDisponible(): boolean {
-  return adminDisponible() && (maishapayDisponible() || achatsAppleDisponibles());
-}
-
-/** Paiement MaishaPay ouvert (site seulement). */
-export function maishapayOuvert(): boolean {
-  return adminDisponible() && maishapayDisponible();
+  return adminDisponible() && achatsAppleDisponibles();
 }
 
 /** Achats intégrés Apple ouverts (app iPhone seulement). */
@@ -70,17 +60,12 @@ export function appleOuvert(): boolean {
 }
 
 /**
- * Premium en veille : tant qu'aucun paiement n'est configuré sur le serveur (MaishaPay ou Apple, et clé secrète
+ * Premium en veille : tant qu'aucun paiement n'est configuré sur le serveur (achats Apple et clé secrète
  * Supabase), personne ne peut payer. On ne limite alors personne : pas de limites du jour, meilleur modèle pour
  * tous, et l'entrée Six Premium est cachée dans l'app. Voir docs/premium.md pour le lancement.
  */
 export function premiumEnVeille(): boolean {
   return !paiementDisponible();
-}
-
-/** Adresse publique de l'app, pour les retours de MaishaPay (jamais lue depuis la requête). */
-export function urlPublique(): string {
-  return (env('PREMIUM_URL_PUBLIQUE') || 'https://app.sixbysevenai.com').replace(/\/$/, '');
 }
 
 export type Appelant = {
@@ -113,34 +98,3 @@ export async function appelant(req: Request): Promise<Appelant> {
     cle: utilisateur ? `u:${utilisateur.id}` : `ip:${clientKey(req)}`,
   };
 }
-
-/**
- * Vérifie un paiement auprès de MaishaPay et active le premium s'il a réussi.
- * Peut être appelée plusieurs fois (notification, retour de carte, l'app qui demande) : le premium n'est
- * prolongé qu'une fois par paiement, grâce à la fonction SQL activer_paiement.
- */
-export async function confirmerPaiement(
-  reference: string,
-): Promise<'REUSSI' | 'ECHOUE' | 'EN_ATTENTE' | 'INCONNU'> {
-  const p = await lirePaiement(reference);
-  if (!p) return 'INCONNU';
-  if (p.statut !== 'EN_ATTENTE') return p.statut;
-  const statut = await verifierTransaction(reference);
-  if (statut === 'REUSSI') await activerPaiement(reference);
-  else if (statut === 'ECHOUE') await majPaiement(reference, { statut: 'ECHOUE' });
-  else if (Date.now() - new Date(p.cree).getTime() > 60 * 60_000) {
-    // Toujours en attente après une heure : l'invite a expiré (15 min chez MaishaPay).
-    await majPaiement(reference, { statut: 'ECHOUE' });
-    return 'ECHOUE';
-  }
-  return statut;
-}
-
-/** Référence unique de paiement, envoyée à MaishaPay (64 caractères au plus). */
-export function nouvelleReference(): string {
-  const octets = crypto.getRandomValues(new Uint8Array(9));
-  const alea = Array.from(octets, (o) => o.toString(16).padStart(2, '0')).join('');
-  return `SIX-${Date.now().toString(36).toUpperCase()}-${alea.toUpperCase()}`;
-}
-
-export const REFERENCE_VALIDE = /^SIX-[A-Z0-9]{6,12}-[A-F0-9]{18}$/;

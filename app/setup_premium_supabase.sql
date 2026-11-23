@@ -1,5 +1,5 @@
 -- ============================================================
--- SIX — PREMIUM ET PAIEMENTS (MaishaPay)
+-- SIX — PREMIUM ET PAIEMENTS (achats intégrés Apple)
 -- À exécuter dans Supabase : SQL Editor -> New Query -> Run
 -- (Après setup_complet_supabase.sql. Ce script ne supprime aucune donnée et peut être relancé.)
 -- ============================================================
