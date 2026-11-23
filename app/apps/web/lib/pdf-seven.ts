@@ -2,7 +2,7 @@ import type { jsPDF as JsPdfDoc } from 'jspdf';
 import type { ChatMessage } from '@/lib/types';
 
 /**
- * Export PDF des réponses de Six (espace Discuter) (généré sur l'appareil, aucun serveur).
+ * Export PDF des réponses de Six (espace Chat) (généré sur l'appareil, aucun serveur).
  * Mise en page professionnelle : bandeau de marque, bulles de conversation,
  * pagination A4 avec pied de page (source + numérotation).
  */

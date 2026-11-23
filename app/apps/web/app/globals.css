@@ -5992,3 +5992,89 @@ body {
   min-height: 0;
   height: 34px;
 }
+
+/* Menu : bouton « Effacer » à côté du titre de chaque discussion ou réponse.
+   Visible au survol sur ordinateur, toujours visible (discret) sur écran tactile. */
+.drawer-chat-ligne {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border-radius: 10px;
+}
+.drawer-chat-ligne .drawer-chat {
+  flex: 1;
+  min-width: 0;
+  padding-right: 38px;
+}
+.drawer-chat-effacer {
+  position: absolute;
+  right: 4px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 0.15s,
+    color 0.15s,
+    background 0.15s;
+}
+.drawer-chat-ligne:hover .drawer-chat-effacer,
+.drawer-chat-ligne:focus-within .drawer-chat-effacer,
+.drawer-chat-ligne[data-actif] .drawer-chat-effacer {
+  opacity: 1;
+}
+.drawer-chat-effacer:hover {
+  color: var(--danger, #e5484d);
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+}
+@media (hover: none) {
+  .drawer-chat-effacer {
+    opacity: 0.7;
+  }
+}
+
+/* Menu : l'historique de chaque outil juste sous lui, en retrait, avec un fin trait de rattachement. */
+.drawer-sous {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin: 0 0 6px 23px;
+  padding-left: 10px;
+  border-left: 1px solid color-mix(in srgb, var(--ink) 12%, transparent);
+}
+.drawer-sous .drawer-chat {
+  padding-top: 7px;
+  padding-bottom: 7px;
+  font-size: 0.88rem;
+  color: color-mix(in srgb, var(--ink) 82%, transparent);
+}
+.drawer-sous .drawer-chat[aria-current='page'] {
+  color: var(--ink);
+}
+/* Réglages et confidentialité poussés en bas du menu, au-dessus du profil. */
+.drawer-bas {
+  margin-top: auto;
+  padding-top: 10px;
+}
+.drawer-voir-plus {
+  align-self: flex-start;
+  margin: 2px 0 0;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.drawer-voir-plus:hover {
+  color: var(--ink);
+  background: color-mix(in srgb, var(--ink) 6%, transparent);
+}

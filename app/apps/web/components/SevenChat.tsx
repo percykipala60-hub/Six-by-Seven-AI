@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AppBar } from './AppBar';
-import { useConfirmer } from './Confirmer';
 import { Icon } from './Icon';
 import { Logo } from './Logo';
 import { memoireActive } from '@/lib/memoire';
@@ -11,7 +10,7 @@ import { entetesCompte } from '@/lib/premium-client';
 import { CHAT_MAX_BYTES, CHAT_MAX_CONTENT, CHAT_MAX_MESSAGES } from '@/lib/api-schemas';
 import { detecterOrdre } from '@/lib/seven-ordres';
 import type { ChatMessage, ChatResult } from '@/lib/types';
-import { MAX_MSG, effacerChat, garderChat, lireChat, nouvelId } from '@/lib/seven-chats';
+import { MAX_MSG, ecouterChats, garderChat, lireChat, nouvelId } from '@/lib/seven-chats';
 
 // Les discussions sont gardées sur l'appareil (lib/seven-chats), tant que la mémoire de Six est active.
 // Un document importé (texte ou PDF) est envoyé dans le message : on le borne pour
@@ -174,7 +173,7 @@ function dicterTexte(signal: AbortSignal): Promise<string> {
 }
 
 /**
- * L'espace « Discuter » : la conversation libre avec Six, comme une page dédiée
+ * L'espace « Chat » : la conversation libre avec Six, comme une page dédiée
  * de l'app (même modèle que « Quoi dire ? » ou « Espace jeu »). On discute avec Six
  * comme avec un assistant généraliste ; elle connaît parfaitement son identité et celle de Six.
  * L'historique reste sur l'appareil (localStorage). Trois entrées en plus du texte :
@@ -186,7 +185,6 @@ export function SevenChatPage() {
   const params = useSearchParams();
   const demandee = params.get('c') ?? ''; // discussion ouverte depuis le menu ; vide : nouvelle discussion
   const chatId = useRef('');
-  const [demande, demander] = useConfirmer();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [saisie, setSaisie] = useState('');
   const [occupe, setOccupe] = useState(false);
@@ -289,6 +287,30 @@ export function SevenChatPage() {
       }
     };
   }, []);
+
+  // Discussion ouverte effacée depuis le menu : l'écran repart sur une discussion vide.
+  // (Le nombre de messages est lu dans une référence : aucun effet de bord pendant le rendu.)
+  const nbMessages = useRef(0);
+  useEffect(() => {
+    nbMessages.current = messages.length;
+  }, [messages]);
+  useEffect(
+    () =>
+      ecouterChats(() => {
+        const id = chatId.current;
+        // Mémoire coupée : rien n'est gardé, donc une discussion absente de la liste n'a pas été effacée.
+        if (!id || nbMessages.current === 0 || !memoireActive() || lireChat(id)) return;
+        operation.current?.abort();
+        chatId.current = nouvelId();
+        documentActif.current = '';
+        setMessages([]);
+        setDocumentAReimporter(false);
+        setDernierEchec(undefined);
+        setErreur('');
+        if (window.location.search.includes('c=')) router.replace('/seven-ai');
+      }),
+    [router],
+  );
 
   // Si la mémoire est coupée ou réactivée ailleurs (Réglages), l'écran suit.
   useEffect(() => {
@@ -552,7 +574,7 @@ export function SevenChatPage() {
     <main className="screen seven-screen">
       <AppBar
         page="seven-ai"
-        titre="Discuter"
+        titre="Chat"
         chatActif={messages.length ? chatId.current : undefined}
         onNouvelle={() => {
           operation.current?.abort();
@@ -567,7 +589,6 @@ export function SevenChatPage() {
           champ.current?.focus();
         }}
       />
-      {demande}
       <div className="seven-fil" aria-live="polite">
         {messages.length === 0 && !occupe && (
           <div className="seven-vide">
@@ -664,33 +685,6 @@ export function SevenChatPage() {
         }}
       >
         <div className="seven-capsule">
-          {messages.length > 0 && !occupe && (
-            <button
-              type="button"
-              className="seven-effacer"
-              aria-label="Effacer cette discussion"
-              title="Effacer la conversation"
-              onClick={() =>
-                demander({
-                  titre: 'Effacer cette discussion ?',
-                  texte: 'Les messages de cette discussion seront effacés de ce téléphone.',
-                  action: 'Effacer',
-                  danger: true,
-                  onConfirmer: () => {
-                    effacerChat(chatId.current);
-                    chatId.current = nouvelId();
-                    if (demandee) router.replace('/seven-ai');
-                    setMessages([]);
-                    setDernierEchec(undefined);
-                    documentActif.current = '';
-                    setDocumentAReimporter(false);
-                  },
-                })
-              }
-            >
-              <Icon name="trash" size={18} />
-            </button>
-          )}
           <button
             type="button"
             className="seven-doc"

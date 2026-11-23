@@ -75,7 +75,7 @@ export async function topics(situation: Situation, contexte: string): Promise<To
   return { sujets, demo: false };
 }
 
-/** Six en mode « Discuter » : Conversation libre, multi-tours, identité connue du prompt système. */
+/** Six en mode « Chat » : Conversation libre, multi-tours, identité connue du prompt système. */
 export async function chat(messages: ChatMessage[], premium = true): Promise<ChatResult> {
   const user = messages[messages.length - 1]?.content ?? '';
   const history = messages.slice(0, -1);
@@ -92,8 +92,8 @@ function demoChat(question: string): string {
       q,
     );
   if (identite)
-    return "Je suis Six, l'assistant de l'app Six, créée par Seven.AI. Dans l'espace Répondre, tu colles une conversation : je masque les noms, je repère les arnaques, j'explique le vrai sens des messages et je te propose trois réponses. Ici, dans Discuter, on parle de tout.";
-  return "Je ne peux pas encore discuter librement sur ce serveur. En attendant, l'espace Répondre t'aide déjà à trouver quoi répondre à un message.";
+    return "Je suis Six, l'assistant de l'app Six, créée par Seven.AI. Dans l'espace Responsive, tu colles une conversation : je masque les noms, je repère les arnaques, j'explique le vrai sens des messages et je te propose trois réponses. Ici, dans le Chat, on parle de tout.";
+  return "Je ne peux pas encore discuter librement sur ce serveur. En attendant, l'espace Responsive t'aide déjà à trouver quoi répondre à un message.";
 }
 
 /* ---------- Faux modèle de démonstration (aucune clé) ---------- */

@@ -3,7 +3,7 @@ import { Suspense } from 'react';
 import { SevenChatPage } from '@/components/SevenChat';
 
 export const metadata: Metadata = {
-  title: 'Discuter — Six',
+  title: 'Chat — Six',
   description: 'Discute librement avec Six : questions, documents, messages vocaux.',
   robots: 'noindex, nofollow',
 };
