@@ -5840,7 +5840,8 @@ body {
 .rail {
   display: none;
 }
-@media (min-width: 900px) {
+/* Barre verticale à partir de 768 px (comme GRAND_ECRAN dans components/AppBar.tsx). */
+@media (min-width: 768px) {
   .rail {
     position: fixed;
     z-index: 25;
@@ -6083,7 +6084,7 @@ body {
 
 /* Colonne d'icônes et panneau qui se fondent dans le décor : pas de bordure ni de bande opaque,
    la vague du fond reste visible derrière ; seul l'élément survolé ou ouvert prend un léger fond. */
-@media (min-width: 900px) {
+@media (min-width: 768px) {
   .rail {
     gap: 6px;
     padding: 12px 0 18px;
@@ -6511,4 +6512,12 @@ html.clavier body .app {
   .screen.home {
     --colonne: 680px;
   }
+}
+/* Accueil : la barre du haut touche le haut de l'écran. Sa zone qui défile n'a plus de marge en haut ; la barre,
+   accrochée en haut pendant le défilement, ne pouvait pas remonter au-dessus de cette marge (bande vide de 12 px). */
+.screen.home {
+  padding-top: 0;
+}
+.screen.home > .appbar {
+  margin-top: 0;
 }
