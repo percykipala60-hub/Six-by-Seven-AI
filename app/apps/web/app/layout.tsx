@@ -29,7 +29,7 @@ export const viewport: Viewport = {
 
 // Applique le thème, la couleur, la police et le fond choisis avant l'affichage, pour éviter un flash.
 // Contenu fixe, sans donnée utilisateur ; les anciens noms de couleur sont convertis au passage.
-const THEME_SCRIPT = `try{var t=localStorage.getItem("six-theme"),a=localStorage.getItem("six-accent"),M=${JSON.stringify(ANCIENS_ACCENTS)},f=localStorage.getItem("six-font"),fd=localStorage.getItem("six-fond"),r=document.documentElement;if(t==="light"||t==="dark")r.dataset.theme=t;if(a&&M[a]){a=M[a];localStorage.setItem("six-accent",a)}if(a&&a!=="bleu")r.dataset.accent=a;if(f==="times"||f==="georgia"||f==="calibri")r.dataset.font=f;if(fd==="aurore"||fd==="points"||fd==="uni")r.dataset.fond=fd}catch(e){}`;
+const THEME_SCRIPT = `try{var t=localStorage.getItem("six-theme"),a=localStorage.getItem("six-accent"),M=${JSON.stringify(ANCIENS_ACCENTS)},f=localStorage.getItem("six-font"),fd=localStorage.getItem("six-fond"),r=document.documentElement;if(t==="light"||t==="dark")r.dataset.theme=t;if(a&&M[a]){a=M[a];localStorage.setItem("six-accent",a)}if(a&&a!=="bleu")r.dataset.accent=a;if(a==="rose")r.dataset.theme="light";if(f==="times"||f==="georgia"||f==="calibri")r.dataset.font=f;if(fd==="aurore"||fd==="points"||fd==="uni")r.dataset.fond=fd}catch(e){}`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

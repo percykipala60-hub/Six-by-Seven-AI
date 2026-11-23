@@ -255,13 +255,14 @@
   --icon-ink: #ffffff;
   --icon-accent: #ffe1e5;
 }
+/* Rose : toujours clair et pâle (le mode clair est forcé, voir appliquerMode dans lib/theme-ids.ts). */
 :root[data-accent='rose'] {
-  --bg: #fdf4f8;
+  --bg: #fff8fb;
   --card: #ffffff;
-  --panel2: #f9e6ef;
+  --panel2: #fdf0f5;
   --ink: #2a1520;
   --muted: #6b5060;
-  --line: #f1d6e3;
+  --line: #f6e1ea;
   --brand: #be185d;
   --accent-a: #9d174d;
   --accent-b: #be185d;
@@ -474,15 +475,6 @@
     --line: #40262d;
     --brand: #ff6b7a;
   }
-  :root:not([data-theme='light'])[data-accent='rose'] {
-    --bg: #1a1015;
-    --card: #24161e;
-    --panel2: #301d28;
-    --ink: #f8eef3;
-    --muted: #c4a7b6;
-    --line: #3d2633;
-    --brand: #f472b6;
-  }
   :root:not([data-theme='light'])[data-accent='violet'] {
     --bg: #14111d;
     --card: #1d1929;
@@ -646,15 +638,6 @@
   --muted: #c9a6ac;
   --line: #40262d;
   --brand: #ff6b7a;
-}
-:root[data-theme='dark'][data-accent='rose'] {
-  --bg: #1a1015;
-  --card: #24161e;
-  --panel2: #301d28;
-  --ink: #f8eef3;
-  --muted: #c4a7b6;
-  --line: #3d2633;
-  --brand: #f472b6;
 }
 :root[data-theme='dark'][data-accent='violet'] {
   --bg: #14111d;

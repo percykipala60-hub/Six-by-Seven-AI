@@ -36,3 +36,16 @@ export function lireAccent(): string {
 export function nomIconeNative(accent: string): string {
   return Object.entries(ANCIENS_ACCENTS).find(([, nouveau]) => nouveau === accent)?.[0] ?? accent;
 }
+
+/** Couleurs qui gardent toujours le mode clair, même si le téléphone ou les Réglages sont en sombre. */
+export const TOUJOURS_CLAIR = new Set(['rose']);
+
+/**
+ * Applique le mode (clair, sombre, auto) en tenant compte de la couleur : une couleur « toujours claire »
+ * force le mode clair, sans changer le choix enregistré (il revient si on change de couleur).
+ */
+export function appliquerMode(root: HTMLElement, mode: 'light' | 'dark' | 'auto', accent: string) {
+  if (TOUJOURS_CLAIR.has(accent)) root.dataset.theme = 'light';
+  else if (mode === 'auto') delete root.dataset.theme;
+  else root.dataset.theme = mode;
+}

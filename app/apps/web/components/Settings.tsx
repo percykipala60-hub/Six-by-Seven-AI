@@ -13,7 +13,7 @@ import {
 } from '@/lib/memoire';
 import { effacerConversations, lireConversations } from '@/lib/conversations';
 import { applyThemeIcon, hasNativeThemeIconError } from '@/lib/theme-icon';
-import { lireAccent } from '@/lib/theme-ids';
+import { appliquerMode, lireAccent, TOUJOURS_CLAIR } from '@/lib/theme-ids';
 import { LIEN_CONDITIONS, LIEN_CONFIDENTIALITE } from '@/lib/liens';
 import { FONDS, fondValide, type FondId } from './Fond';
 import themeColors from '@/lib/theme-colors.json';
@@ -737,14 +737,8 @@ export function Settings() {
 
   function applyTheme(t: Theme) {
     setTheme(t);
-    const root = document.documentElement;
-    if (t === 'auto') {
-      delete root.dataset.theme;
-      write('six-theme', null);
-    } else {
-      root.dataset.theme = t;
-      write('six-theme', t);
-    }
+    appliquerMode(document.documentElement, t, accent);
+    write('six-theme', t === 'auto' ? null : t);
     if (t !== theme) applyThemeIcon();
   }
 
@@ -759,6 +753,7 @@ export function Settings() {
       root.dataset.accent = a;
       write('six-accent', a);
     }
+    appliquerMode(root, theme, a); // le Rose reste toujours clair
     void applyThemeIcon(); // toute l'app change : barre du téléphone, favicon et icône native
   }
 
@@ -796,7 +791,14 @@ export function Settings() {
               <p className="apercu-in">On dit quoi pour samedi ?</p>
               <p className="apercu-out">Je serai là samedi chez Maman !</p>
             </div>
-            <Groupe titre="Apparence">
+            <Groupe
+              titre="Apparence"
+              pied={
+                TOUJOURS_CLAIR.has(accent)
+                  ? 'Le thème Rose reste toujours clair. Ton choix revient si tu changes de couleur.'
+                  : undefined
+              }
+            >
               <div className="modes" role="radiogroup" aria-label="Apparence">
                 {(['light', 'dark', 'auto'] as const).map((m) => (
                   <button
@@ -1024,7 +1026,7 @@ export function Settings() {
       id: 'theme',
       icon: 'palette',
       label: 'Thème',
-      sous: `${couleur}, ${MODES[theme].toLowerCase()}, fond ${FONDS.find((f) => f.id === fond)?.label.toLowerCase()}`,
+      sous: `${couleur}, ${TOUJOURS_CLAIR.has(accent) ? 'toujours clair' : MODES[theme].toLowerCase()}, fond ${FONDS.find((f) => f.id === fond)?.label.toLowerCase()}`,
       cles: 'couleur clair sombre apparence ambiance',
     },
     {
