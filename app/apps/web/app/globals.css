@@ -6306,3 +6306,13 @@ body {
     font-size: 16px;
   }
 }
+
+/* Chat : le message envoyé à Six prend les couleurs du thème choisi (le même dégradé que la pastille
+   du profil et l'icône de l'app). Ces deux teintes sont assez soutenues pour que le texte blanc reste
+   lisible dans tous les thèmes, clairs comme sombres (le --brand des thèmes sombres est trop pâle). */
+.seven-msg.user .seven-bulle {
+  background: linear-gradient(135deg, var(--accent-a), var(--accent-b));
+  border-color: transparent;
+  color: var(--on-accent, #fff);
+  box-shadow: 0 6px 18px color-mix(in srgb, var(--accent-b) 28%, transparent);
+}
