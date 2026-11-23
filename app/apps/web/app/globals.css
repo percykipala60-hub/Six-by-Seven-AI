@@ -270,16 +270,17 @@
   --icon-ink: #fff5f9;
   --icon-accent: #ff6fae;
 }
+/* Rouge : un rouge brique adouci, moins vif, en clair comme en sombre. */
 :root[data-accent='rouge'] {
-  --bg: #fff5f5;
+  --bg: #fcf8f7;
   --card: #ffffff;
-  --panel2: #ffe7e8;
-  --ink: #2a1014;
-  --muted: #68464b;
-  --line: #f2d2d5;
-  --brand: #9b1c2c;
-  --accent-a: #9b1c2c;
-  --accent-b: #c22c3f;
+  --panel2: #f6ecea;
+  --ink: #2a1a1b;
+  --muted: #6a5052;
+  --line: #ecdcd9;
+  --brand: #93404a;
+  --accent-a: #8c3b45;
+  --accent-b: #a5545d;
   --icon-bg: #300b12;
   --icon-ink: #fff5f5;
   --icon-accent: #ff4d5e;
@@ -467,13 +468,13 @@
     --brand: #ff5a6e;
   }
   :root:not([data-theme='light'])[data-accent='rouge'] {
-    --bg: #1a0f11;
-    --card: #25151a;
-    --panel2: #321c22;
-    --ink: #f9eef0;
-    --muted: #c9a6ac;
-    --line: #40262d;
-    --brand: #ff6b7a;
+    --bg: #171213;
+    --card: #211a1b;
+    --panel2: #2b2223;
+    --ink: #f3ecec;
+    --muted: #bfaeae;
+    --line: #382c2d;
+    --brand: #d98a91;
   }
   :root:not([data-theme='light'])[data-accent='violet'] {
     --bg: #14111d;
@@ -631,13 +632,13 @@
   --brand: #ff5a6e;
 }
 :root[data-theme='dark'][data-accent='rouge'] {
-  --bg: #1a0f11;
-  --card: #25151a;
-  --panel2: #321c22;
-  --ink: #f9eef0;
-  --muted: #c9a6ac;
-  --line: #40262d;
-  --brand: #ff6b7a;
+  --bg: #171213;
+  --card: #211a1b;
+  --panel2: #2b2223;
+  --ink: #f3ecec;
+  --muted: #bfaeae;
+  --line: #382c2d;
+  --brand: #d98a91;
 }
 :root[data-theme='dark'][data-accent='violet'] {
   --bg: #14111d;
