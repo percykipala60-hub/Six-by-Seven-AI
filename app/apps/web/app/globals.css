@@ -6521,3 +6521,27 @@ html.clavier body .app {
 .screen.home > .appbar {
   margin-top: 0;
 }
+
+/* Barre verticale (à partir de 768 px) : le contenu commence après elle (64 px, ou 280 px panneau ouvert). La barre
+   de saisie du Chat s'étire d'un bord à l'autre de cette zone, pas de toute la fenêtre : sinon elle passait sous la
+   barre verticale et débordait à droite. La capsule garde une marge nette de chaque côté. */
+@media (min-width: 768px) {
+  html[data-panneau] {
+    --decalage: 64px;
+  }
+  html[data-panneau='ouvert'] {
+    --decalage: 280px;
+  }
+  .seven-capsule {
+    max-width: min(740px, calc(100% - 32px));
+  }
+}
+.seven-composer {
+  margin-left: calc(50% - (100vw - var(--decalage, 0px)) / 2);
+  margin-right: calc(50% - (100vw - var(--decalage, 0px)) / 2);
+}
+@media (min-width: 900px) {
+  .seven-capsule {
+    max-width: min(680px, calc(100% - 32px));
+  }
+}
