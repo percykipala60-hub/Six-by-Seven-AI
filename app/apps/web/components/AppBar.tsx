@@ -495,14 +495,15 @@ function Rail({
   const nouvelleLabel = page === 'seven-ai' ? 'Nouvelle discussion' : 'Nouvelle conversation';
   return (
     <nav className="rail" aria-label="Navigation">
+      {/* Logo Six en tête : un appui ouvre le panneau complet. */}
       <button
         type="button"
-        className="rail-btn"
+        className="rail-logo"
         onClick={onPanneau}
         aria-label="Ouvrir le panneau"
         title="Ouvrir le panneau"
       >
-        <Icon name="panneau" size={20} stroke={1.75} />
+        <Logo label="" small />
       </button>
       {(page === 'seven-ai' || page === 'accueil') && onNouvelle ? (
         <button
@@ -519,7 +520,6 @@ function Rail({
           <Icon name="nouvelle" size={20} stroke={1.75} />
         </Link>
       )}
-      <span className="rail-sep" aria-hidden="true" />
       {lien('/', 'accueil', 'repondre', 'Responsive')}
       {lien('/seven-ai', 'seven-ai', 'discuter', 'Chat')}
       <span className="rail-fin" aria-hidden="true" />
