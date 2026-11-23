@@ -24,6 +24,9 @@ export const viewport: Viewport = {
   ],
   width: 'device-width',
   initialScale: 1,
+  // L'app s'affiche comme une appli : pas de zoom au pincement ni au double appui.
+  maximumScale: 1,
+  userScalable: false,
   viewportFit: 'cover', // la saisie en bas tient compte de l’encoche et de la barre de gestes (safe-area)
 };
 
