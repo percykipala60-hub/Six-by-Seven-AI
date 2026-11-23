@@ -25,7 +25,7 @@ env:
 jobs:
   envoyer:
     name: Compiler, signer et envoyer sur TestFlight
-    runs-on: macos-15
+    runs-on: macos-26
     timeout-minutes: 60
     defaults:
       run:
