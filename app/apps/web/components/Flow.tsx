@@ -1155,17 +1155,10 @@ export function Flow() {
       : 'analyse';
 
   // Fin : l'app où partira la réponse, connue si l'utilisateur l'a choisie (réseau) ou s'il a importé un export.
-  const appli = canal ? EXPORTS[canal] : undefined;
+  // « Revenir à ma conversation » ne quitte pas Six : il présente les plateformes où coller la
+  // réponse (déjà copiée). La personne choisit elle-même l'app de sa conversation.
   function revenir() {
-    setBackHint(true);
-    window.close(); // ferme Six s'il a été ouvert par un partage (Android)
-    // Sinon (iPhone, app ouverte à la main) : on rouvre la messagerie, la réponse est déjà copiée.
-    if (appli?.lien) {
-      const lien = appli.lien;
-      window.setTimeout(() => {
-        if (!document.hidden) window.location.href = lien;
-      }, 250);
-    }
+    setBackHint((v) => !v);
   }
 
   return (
@@ -1763,13 +1756,18 @@ export function Flow() {
                 <div className="card">
                   <p style={{ whiteSpace: 'pre-wrap', userSelect: 'all' }}>{finalText}</p>
                 </div>
-                <button className="btn primary" onClick={revenir}>
-                  {appli ? `Revenir à ${appli.label}` : 'Revenir à ma conversation'}
+                <button
+                  className="btn primary"
+                  onClick={revenir}
+                  aria-expanded={backHint}
+                  aria-controls="retour-plateformes"
+                >
+                  Revenir à ma conversation
                 </button>
-                {backHint && !appli && (
-                  <div className="stack">
+                {backHint && (
+                  <div className="stack" id="retour-plateformes">
                     <p className="muted small">
-                      Ouvre l&apos;app de ta conversation, puis colle la réponse et envoie-la :
+                      Choisis l&apos;app de ta conversation, puis colle la réponse et envoie-la :
                     </p>
                     <AppsRow label="Revenir dans ton app" />
                   </div>

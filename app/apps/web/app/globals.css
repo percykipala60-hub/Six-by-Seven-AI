@@ -6441,3 +6441,32 @@ html.clavier .app:has(.screen.home),
 html.clavier .app:has(.seven-screen) {
   height: var(--vvh, 100dvh);
 }
+
+/* Responsive : l'écran défile seulement en hauteur. La rangée d'apps dépasse volontairement sur
+   les côtés : sans ce réglage, elle rendait l'écran défilable de côté et le texte se retrouvait
+   coupé à gauche. */
+.screen.home {
+  overflow-x: clip;
+}
+/* Grands écrans : la colonne de Responsive s'élargit comme celle du Chat (plus de largeur de
+   téléphone au milieu d'un écran d'ordinateur), et les apps de retour tiennent sur une ou deux
+   lignes au lieu d'une rangée coupée. */
+@media (min-width: 900px) {
+  .app:has(.screen.home) {
+    max-width: 780px;
+  }
+  .retour-apps {
+    flex-wrap: wrap;
+    overflow: visible;
+    margin: 0;
+    padding: 2px 0 4px;
+    -webkit-mask-image: none;
+    mask-image: none;
+  }
+}
+/* Le bloc de réponse ne dépasse jamais la colonne : la rangée d'apps (large) l'élargissait et
+   coupait le texte au bord de l'écran ; elle défile maintenant dans sa propre ligne. */
+.fil .six-corps {
+  min-width: 0;
+  max-width: 100%;
+}
