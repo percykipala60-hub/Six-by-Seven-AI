@@ -6508,11 +6508,6 @@ html.clavier body .app {
     calc((100% - var(--colonne)) / 2 + 16px)
   );
 }
-@media (min-width: 900px) {
-  .screen.home {
-    --colonne: 680px;
-  }
-}
 /* Accueil : la barre du haut touche le haut de l'écran. Sa zone qui défile n'a plus de marge en haut ; la barre,
    accrochée en haut pendant le défilement, ne pouvait pas remonter au-dessus de cette marge (bande vide de 12 px). */
 .screen.home {
@@ -6532,16 +6527,64 @@ html.clavier body .app {
   html[data-panneau='ouvert'] {
     --decalage: 280px;
   }
-  .seven-capsule {
-    max-width: min(740px, calc(100% - 32px));
-  }
 }
 .seven-composer {
   margin-left: calc(50% - (100vw - var(--decalage, 0px)) / 2);
   margin-right: calc(50% - (100vw - var(--decalage, 0px)) / 2);
 }
-@media (min-width: 900px) {
+
+/* Élargissement progressif : à partir de 768 px, les colonnes s'élargissent petit à petit avec la fenêtre au lieu de
+   sauter d'une largeur à l'autre (accueil : 480 → 680 px, Chat : 480 → 780 px, atteints vers 1100 px). La capsule de
+   saisie suit la colonne et garde 16 px de marge de chaque côté. Remplace les paliers de 900 px plus haut. */
+@media (min-width: 768px) {
+  .screen.home {
+    --colonne: clamp(480px, calc(480px + (100vw - 768px) * 0.6), 680px);
+  }
+  html {
+    --colonne-chat: clamp(480px, calc(480px + (100vw - 768px) * 0.9), 780px);
+  }
+  .app:has(.seven-screen) {
+    max-width: var(--colonne-chat);
+  }
   .seven-capsule {
-    max-width: min(680px, calc(100% - 32px));
+    max-width: min(680px, calc(var(--colonne-chat) - 32px), calc(100% - 32px));
+  }
+}
+
+/* Bascule entre la barre du haut (téléphone) et la barre verticale (à partir de 768 px) : html.bascule est posé
+   quelques instants par components/AppBar.tsx quand la fenêtre passe le seuil. La barre qui arrive glisse en fondu,
+   le contenu et les colonnes se décalent en douceur. Rien ne bouge à l'ouverture d'une page. */
+@keyframes six-rail-entre {
+  from {
+    opacity: 0;
+    transform: translateX(-18px);
+  }
+}
+@keyframes six-barre-entre {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+}
+html.bascule .rail {
+  animation: six-rail-entre 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+html.bascule .appbar {
+  animation: six-barre-entre 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+html.bascule body {
+  transition: padding-left 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+html.bascule .app {
+  transition: max-width 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  html.bascule .rail,
+  html.bascule .appbar {
+    animation: none;
+  }
+  html.bascule body,
+  html.bascule .app {
+    transition: none;
   }
 }
