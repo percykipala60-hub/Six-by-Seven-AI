@@ -6483,9 +6483,10 @@ html.clavier .app:has(.seven-screen) {
 /* Barre du haut d'un bord à l'autre de l'écran (voir « Barre du haut d'un bord à l'autre » plus haut) : les
    conteneurs qui empêchent la page de défiler ne coupent qu'en hauteur. En coupant aussi sur les côtés, ils
    cachaient le menu, les modes et le profil sur grand écran (il ne restait qu'un rectangle vide en haut). */
-.app:has(.screen.home),
-.app:has(.seven-screen),
-html.clavier .app {
+/* « html body » : plus prioritaire que les règles qui coupent (regroupées en :is() à la construction). */
+html body .app:has(.screen.home),
+html body .app:has(.screen.seven-screen),
+html.clavier body .app {
   overflow-x: visible;
   overflow-y: clip;
 }
