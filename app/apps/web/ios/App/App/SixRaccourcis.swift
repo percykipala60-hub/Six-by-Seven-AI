@@ -227,11 +227,15 @@ struct SixRaccourcisVue: View {
                         .foregroundColor(.secondary)
                 }
                 Section(
-                    header: Text("Capture d'écran en un geste"),
+                    header: Text("Un toucher pour répondre, deux pour une capture"),
                     footer: Text("Six lit la capture sur ton téléphone. Rien n'est envoyé avant que tu lances l'analyse.")
                 ) {
-                    Text("Dans l'app Raccourcis : + > « Prendre une capture d'écran », puis « Analyser une capture avec Six ». Place ensuite ce raccourci sur le bouton Action, sur le double toucher d'AssistiveTouch ou sur Toucher le dos (Accessibilité > Toucher).")
+                    Etape(numero: 1, texte: "App Raccourcis > + : ajoute « Répondre avec Six ». Nomme ce raccourci « Six – Répondre ».")
+                    Etape(numero: 2, texte: "Nouveau raccourci : « Prendre une capture d'écran », puis « Analyser une capture avec Six ». Nomme-le « Six – Capture ».")
+                    Etape(numero: 3, texte: "Réglages > Accessibilité > Toucher > AssistiveTouch : active-le, puis Simple toucher > « Six – Répondre » et Toucher deux fois > « Six – Capture ».")
+                    Text("Un toucher sur la pastille ouvre Six avec le message copié ; deux touchers capturent l'écran (la pastille n'apparaît pas sur la capture) et l'ouvrent dans Six. Les mêmes raccourcis vont aussi sur le bouton Action ou sur Toucher le dos.")
                         .font(.footnote)
+                        .foregroundColor(.secondary)
                 }
                 Section(header: Text("Ajouter les raccourcis")) {
                     if #available(iOS 17.0, *) {
@@ -249,7 +253,7 @@ struct SixRaccourcisVue: View {
                     Ligne(icone: "lock.fill", titre: "Écran verrouillé et Centre de contrôle",
                           texte: "Touche longue sur l'écran verrouillé > Personnaliser, ou Centre de contrôle > Ajouter une commande (iOS 18)")
                     Ligne(icone: "circle.circle", titre: "AssistiveTouch",
-                          texte: "Réglages > Accessibilité > Toucher > AssistiveTouch > Simple toucher > Six")
+                          texte: "Simple toucher : Six – Répondre ; Toucher deux fois : Six – Capture")
                 }
                 Section(header: Text("Liens"), footer: Text("Utilisables dans un raccourci « Ouvrir l'URL ».")) {
                     Text("six://repondre").font(.system(.body, design: .monospaced))
@@ -263,6 +267,22 @@ struct SixRaccourcisVue: View {
                     Button("OK", action: fermer)
                 }
             }
+        }
+    }
+
+    private struct Etape: View {
+        let numero: Int
+        let texte: String
+
+        var body: some View {
+            HStack(alignment: .top, spacing: 12) {
+                Text("\(numero)")
+                    .font(.footnote.bold())
+                    .frame(width: 22, height: 22)
+                    .background(Circle().fill(Color.accentColor.opacity(0.15)))
+                Text(texte).font(.footnote)
+            }
+            .padding(.vertical, 2)
         }
     }
 

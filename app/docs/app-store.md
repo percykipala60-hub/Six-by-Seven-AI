@@ -122,17 +122,21 @@ Un pass numérique utilisé dans l'app doit être vendu par l'achat intégré d'
 l'app. Le choix actuel : aucun achat ni lien vers le paiement dans l'app iPhone ; un premium acheté sur le site
 s'active par le compte (règle 3.1.3(b) des services multiplateformes). À revoir avec le lancement du premium.
 
-## 8. Capture d'écran en un geste
+## 8. Un toucher pour répondre, deux pour une capture (AssistiveTouch)
 
-iOS ne laisse pas une app réagir à un double toucher sur son icône, ni capturer l'écran d'une autre app. Six
-propose donc l'action **« Analyser une capture avec Six »**, à utiliser dans un raccourci de deux étapes :
+iOS ne laisse pas une app réagir à un toucher sur son icône, ni capturer l'écran d'une autre app. On passe donc par
+la pastille AssistiveTouch et deux raccourcis, créés une fois par l'utilisateur (l'écran « Siri et raccourcis » de Six
+les décrit) :
 
-1. App Raccourcis > + > « Prendre une capture d'écran » ;
-2. puis « Analyser une capture avec Six ».
+1. App Raccourcis > + > « Répondre avec Six » ; nommer ce raccourci « Six – Répondre ».
+2. Nouveau raccourci : « Prendre une capture d'écran », puis « Analyser une capture avec Six » ; le nommer
+   « Six – Capture ».
+3. Réglages > Accessibilité > Toucher > AssistiveTouch : l'activer, puis **Simple toucher** > « Six – Répondre » et
+   **Toucher deux fois** > « Six – Capture ».
 
-Ce raccourci se place sur le bouton Action, le double toucher d'AssistiveTouch, Toucher le dos (Accessibilité >
-Toucher) ou le Centre de contrôle. Six s'ouvre et lit la capture sur le téléphone (comme une capture importée) ;
-rien n'est envoyé avant que l'utilisateur lance l'analyse.
+Un toucher sur la pastille ouvre Six avec le message copié ; deux touchers capturent l'écran (la pastille n'apparaît
+pas sur la capture) et l'ouvrent dans Six, qui la lit sur le téléphone. Rien n'est envoyé avant que l'utilisateur
+lance l'analyse. Les mêmes raccourcis se placent aussi sur le bouton Action, Toucher le dos ou le Centre de contrôle.
 
 ## 9. Compilation automatique (GitHub Actions)
 
