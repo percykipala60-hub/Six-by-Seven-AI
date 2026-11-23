@@ -46,9 +46,12 @@ Avant d'ouvrir :
 1. App Store Connect > Business : mettre à jour l'entité juridique, signer le **contrat relatif aux applications
    payantes**, ajouter le compte bancaire et les formulaires fiscaux. S'inscrire au **Small Business Program**
    (commission de 15 % au lieu de 30 %).
-2. App Store Connect > Six > Monétisation : créer deux **abonnements non renouvelables** :
-   `com.sevenai.six.premium.7j` et `com.sevenai.six.premium.30j` (prix, nom affiché, capture d'écran de l'écran
-   Six Premium pour la vérification).
+2. App Store Connect > Six > Achats intégrés : **fait le 23 novembre 2026**, deux achats **consommables**
+   `com.sevenai.six.premium.7j` (2,99 $) et `com.sevenai.six.premium.30j` (6,99 $), nom et description en français.
+   (Le type « abonnement non renouvelable » n'était pas proposé, contrat payant pas encore actif.) Reste, pour la
+   vérification d'Apple : une capture d'écran de l'écran Six Premium de l'app iPhone, et les envoyer avec le
+   prochain build soumis à l'App Store. Le premium étant gardé sur le compte Six, il se retrouve sur tous les
+   appareils ; « Restaurer mes achats » ne revoit pas les consommables déjà terminés, ce qui est normal.
 3. Supabase : lancer `setup_premium_supabase.sql` (le canal `apple` y est autorisé).
 4. Serveur (`deploy/.env`) : `APPLE_ACHATS=oui`. Pendant les essais TestFlight (achats de test Sandbox) :
    `APPLE_ACHATS_SANDBOX=oui`, à retirer au lancement public, sinon un achat de test donnerait un vrai premium.

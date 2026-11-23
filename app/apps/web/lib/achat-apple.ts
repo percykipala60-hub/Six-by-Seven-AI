@@ -26,7 +26,7 @@ at+qIxUCMG1mihDK1A3UT82NQz60imOlM27jbdoXt2QfyFMm+YhidDkLF1vLUagM
 
 export const BUNDLE_ID_APPLE = 'com.sevenai.six';
 
-/** Produits à créer dans App Store Connect (abonnements non renouvelables), avec l'offre qu'ils activent. */
+/** Produits d'App Store Connect (achats consommables : un pass s'achète autant de fois qu'on veut), avec l'offre qu'ils activent. */
 export const PRODUITS_APPLE: Record<string, OffreId> = {
   'com.sevenai.six.premium.7j': '7j',
   'com.sevenai.six.premium.30j': '30j',
