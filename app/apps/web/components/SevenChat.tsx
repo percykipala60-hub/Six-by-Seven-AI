@@ -693,7 +693,7 @@ export function SevenChatPage() {
             disabled={occupe || enregistre}
             onClick={() => docInput.current?.click()}
           >
-            <Icon name="clip" size={18} />
+            <Icon name="plus" size={22} stroke={1.75} />
           </button>
           <input
             ref={docInput}
@@ -709,27 +709,27 @@ export function SevenChatPage() {
             type="text"
             value={saisie}
             onChange={(e) => setSaisie(e.target.value)}
-            placeholder="Écris à Six…"
-            aria-label="Écrire à Six"
+            placeholder="Demander à Six"
+            aria-label="Demander à Six"
             disabled={occupe}
           />
-          <button
-            type="button"
-            className={`seven-mic${enregistre ? ' rec' : ''}`}
-            aria-label={enregistre ? 'Arrêter le message vocal' : 'Envoyer un message vocal'}
-            title={enregistre ? 'Terminer le vocal' : 'Message vocal'}
-            disabled={occupe && !enregistre}
-            onClick={() => void basculerMicro()}
-          >
-            <Icon name={enregistre ? 'x' : 'mic'} size={18} />
-          </button>
-          <button
-            type="submit"
-            disabled={occupe || enregistre || !saisie.trim()}
-            aria-label="Envoyer"
-          >
-            <Icon name="up" size={18} />
-          </button>
+          {/* Micro tant que le champ est vide ; dès qu'on écrit, il laisse la place au bouton d'envoi. */}
+          {saisie.trim() && !enregistre ? (
+            <button type="submit" className="seven-envoyer" disabled={occupe} aria-label="Envoyer">
+              <Icon name="up" size={18} stroke={2} />
+            </button>
+          ) : (
+            <button
+              type="button"
+              className={`seven-mic${enregistre ? ' rec' : ''}`}
+              aria-label={enregistre ? 'Arrêter le message vocal' : 'Envoyer un message vocal'}
+              title={enregistre ? 'Terminer le vocal' : 'Message vocal'}
+              disabled={occupe && !enregistre}
+              onClick={() => void basculerMicro()}
+            >
+              <Icon name={enregistre ? 'x' : 'mic'} size={20} stroke={1.75} />
+            </button>
+          )}
         </div>
         <p className="seven-mention">Six peut se tromper : vérifie les informations importantes.</p>
       </form>

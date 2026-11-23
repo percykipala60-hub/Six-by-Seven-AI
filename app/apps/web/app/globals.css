@@ -6126,3 +6126,37 @@ body {
   outline: none;
   box-shadow: none;
 }
+
+/* Barre du Chat : capsule pleine et arrondie, sans bordure ; « + » à gauche, micro à droite
+   (remplacé par le bouton d'envoi dès qu'on écrit). */
+.seven-capsule {
+  gap: 2px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 8%, var(--bg));
+  box-shadow: none;
+}
+.seven-capsule:focus-within {
+  background: color-mix(in srgb, var(--ink) 10%, var(--bg));
+}
+.seven-composer .seven-capsule input[type='text'] {
+  height: 40px;
+  padding: 0 8px;
+  font-size: 15px;
+}
+.seven-composer .seven-capsule button {
+  width: 40px;
+  height: 40px;
+  color: var(--ink);
+}
+.seven-composer .seven-capsule button.seven-envoyer {
+  width: 36px;
+  height: 36px;
+  margin-right: 2px;
+  background: var(--ink);
+  color: var(--bg);
+}
+.seven-composer .seven-capsule button.seven-envoyer:disabled {
+  opacity: 0.4;
+}
