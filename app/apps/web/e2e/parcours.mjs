@@ -27,7 +27,7 @@ try {
   await page.waitForSelector('#conv', { timeout: 15000 }).catch(() => {});
   r.verifier('Accueil affiché', (await page.locator('#conv').count()) === 1);
   await page.getByRole('button', { name: 'Importer' }).click(); // le « + » de la barre de saisie ouvre la feuille d'import
-  await page.getByRole('button', { name: 'Export de conversation' }).click();
+  await page.getByRole('button', { name: "Fichier d'export" }).click();
   r.verifier('Bouton Ouvrir WhatsApp', (await page.locator('a[href="whatsapp://"]').count()) === 1);
   // Le mode d'emploi est replié par défaut : on l'ouvre, puis on vérifie les étapes de l'app choisie.
   await page.getByRole('button', { name: 'Comment ça marche' }).click();
@@ -35,8 +35,11 @@ try {
 
   // Import d'un export (choix du fichier à la main)
   await page.locator('input[type=file][accept*=".zip"]').first().setInputFiles(fichier);
-  await page.waitForSelector('text=Voici ce qui', { timeout: 15000 });
-  const masque = await page.locator('.convo').innerText();
+  // La conversation part tout de suite, masquée et repliée (« Texte envoyé, masqué ») : on la déplie pour la relire.
+  await page.waitForSelector('text=Texte envoyé, masqué', { timeout: 15000 });
+  await page.locator('.envoi .envoi-tete').click();
+  await page.waitForSelector('.envoi .convo', { timeout: 5000 });
+  const masque = await page.locator('.envoi .convo').innerText();
   r.verifier(
     "Noms, numéro et e-mail masqués à l'écran",
     !DONNEES_PERSONNELLES.test(masque),
