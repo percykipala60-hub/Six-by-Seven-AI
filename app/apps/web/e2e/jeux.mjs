@@ -4,15 +4,14 @@ const r = rapport();
 const { browser, page } = await ouvrir();
 
 try {
+  // Les jeux ne sont plus dans le menu (choix produit) ; leurs pages restent ouvertes par leur adresse.
   await page.goto(BASE + '/');
   await page.getByRole('button', { name: 'Ouvrir le menu' }).click();
-
-  const espaceJeu = page.getByRole('link', { name: 'Espace jeu' });
   r.verifier(
-    'Espace jeu est visible dans le menu',
-    (await espaceJeu.getAttribute('href')) === '/espace-jeu',
+    "Espace jeu n'est plus dans le menu",
+    (await page.getByRole('link', { name: 'Espace jeu' }).count()) === 0,
   );
-  await espaceJeu.click();
+  await page.goto(BASE + '/espace-jeu');
   await page.waitForURL('**/espace-jeu');
 
   const kinRush = page.getByRole('link', { name: 'Kin Rush' });
