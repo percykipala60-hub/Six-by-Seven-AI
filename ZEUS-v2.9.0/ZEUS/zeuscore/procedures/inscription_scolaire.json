@@ -1,0 +1,49 @@
+{
+  "id": "inscription_scolaire",
+  "name": "Inscription scolaire ou universitaire",
+  "keywords": [
+    "inscription",
+    "ecole",
+    "universite",
+    "scolaire",
+    "rentree"
+  ],
+  "description": "Dossier d'inscription d'un élève ou d'un étudiant.",
+  "required": [
+    {
+      "type": "acte_naissance",
+      "label": "Acte de naissance de l'élève"
+    },
+    {
+      "type": "bulletin",
+      "label": "Derniers bulletins ou relevés de notes"
+    },
+    {
+      "type": "photo_identite",
+      "label": "Photo d'identité"
+    },
+    {
+      "type": "recu_paiement",
+      "label": "Reçu des frais d'inscription"
+    }
+  ],
+  "optional": [
+    {
+      "type": "diplome",
+      "label": "Diplôme ou attestation de réussite"
+    },
+    {
+      "type": "certificat_medical",
+      "label": "Certificat médical"
+    }
+  ],
+  "fields": [
+    "nom",
+    "prenoms",
+    "date_naissance",
+    "classe_ou_filiere",
+    "nom_parent",
+    "telephone_parent"
+  ],
+  "sla_days": 10
+}

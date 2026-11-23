@@ -1,0 +1,5 @@
+# ZEUS fonctionne SANS ces paquets. Ils ajoutent des capacités :
+pypdf          # meilleure lecture des PDF
+playwright     # navigateur piloté (puis : python -m playwright install chromium)
+pyautogui      # clavier/souris de l'ordinateur sur Mac/Linux (Windows fonctionne déjà sans)
+pillow         # captures réduites et annotées (repères numérotés) pour les modèles qui voient

@@ -1,0 +1,113 @@
+{
+  "owner": {
+    "name": "Daniella",
+    "telegram_ids": [],
+    "whatsapp_numbers": [
+      "+243XXXXXXXXX"
+    ],
+    "emails": [],
+    "city": "Kinshasa",
+    "phone_numbers": [
+      "+243XXXXXXXXX"
+    ]
+  },
+  "assistant": {
+    "name": "ZEUS",
+    "language": "fr",
+    "personality": "calme, rapide, loyal, direct, avec une pointe d'humour quand c'est approprié"
+  },
+  "models": [
+    {
+      "id": "local",
+      "provider": "ollama",
+      "base_url": "http://localhost:11434",
+      "model": "qwen3:8b",
+      "context": 16384,
+      "think": false
+    },
+    {
+      "id": "claude",
+      "provider": "anthropic",
+      "api_key": "env:ANTHROPIC_API_KEY",
+      "model": "claude-sonnet-5-5",
+      "vision": true
+    },
+    {
+      "id": "groq",
+      "provider": "groq",
+      "api_key": "env:GROQ_API_KEY",
+      "model": "NOM-DU-MODELE-GROQ"
+    }
+  ],
+  "routing": {
+    "default": "local",
+    "fast": "local",
+    "vision": "claude",
+    "fallback": [
+      "claude",
+      "groq"
+    ]
+  },
+  "security": {
+    "autonomy": "equilibre",
+    "confirm_payments": true,
+    "approval_timeout": 600,
+    "always_allow": []
+  },
+  "web": {
+    "host": "127.0.0.1",
+    "port": 7777
+  },
+  "telegram": {
+    "enabled": false,
+    "bot_token": "env:TELEGRAM_BOT_TOKEN",
+    "allow_external": false
+  },
+  "sms": {
+    "enabled": false,
+    "allow_external": true,
+    "max_per_hour": 6,
+    "max_chars": 459,
+    "notify_owner": false
+  },
+  "phone": {
+    "country_code": "243",
+    "adb_path": "",
+    "serial": "",
+    "watch_seconds": 20
+  },
+  "voice": {
+    "stt": {
+      "base_url": "https://api.groq.com/openai/v1",
+      "api_key": "env:GROQ_API_KEY",
+      "model": "whisper-large-v3-turbo"
+    },
+    "wake_word": "zeus"
+  },
+  "guichet": {
+    "enabled": true,
+    "organisation": "Mairie de …",
+    "auto_relance": false,
+    "relance_hours": 48,
+    "max_relances": 3
+  },
+  "mcp_servers": {},
+  "mcp_server": {
+    "toolsets": [
+      "phone",
+      "dossiers",
+      "computer",
+      "browser"
+    ],
+    "tools": [
+      "web_search",
+      "fetch_url",
+      "read_file",
+      "list_dir",
+      "remember",
+      "recall"
+    ],
+    "allow_tasks": true,
+    "approval": "host"
+  }
+}

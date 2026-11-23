@@ -1,0 +1,49 @@
+{
+  "id": "passeport",
+  "name": "Demande de passeport",
+  "keywords": [
+    "passeport",
+    "passport"
+  ],
+  "description": "Première demande ou renouvellement de passeport.",
+  "required": [
+    {
+      "type": "acte_naissance",
+      "label": "Acte de naissance"
+    },
+    {
+      "type": "piece_identite",
+      "label": "Pièce d'identité",
+      "note": "carte d'électeur ou carte d'identité valide"
+    },
+    {
+      "type": "photo_identite",
+      "label": "Photo d'identité récente",
+      "note": "fond clair, visage dégagé"
+    },
+    {
+      "type": "justificatif_domicile",
+      "label": "Justificatif de domicile de moins de 3 mois",
+      "max_age_days": 92
+    },
+    {
+      "type": "recu_paiement",
+      "label": "Reçu de paiement des frais"
+    }
+  ],
+  "optional": [
+    {
+      "type": "certificat_nationalite",
+      "label": "Certificat de nationalité"
+    }
+  ],
+  "fields": [
+    "nom",
+    "prenoms",
+    "date_naissance",
+    "lieu_naissance",
+    "profession",
+    "adresse"
+  ],
+  "sla_days": 30
+}

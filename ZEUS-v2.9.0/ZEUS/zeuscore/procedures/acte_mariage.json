@@ -1,0 +1,43 @@
+{
+  "id": "acte_mariage",
+  "name": "Dossier de mariage civil",
+  "keywords": [
+    "mariage",
+    "se marier",
+    "acte de mariage"
+  ],
+  "description": "Constitution du dossier de mariage à l'état civil.",
+  "required": [
+    {
+      "type": "acte_naissance",
+      "label": "Actes de naissance des deux futurs époux",
+      "count": 2
+    },
+    {
+      "type": "piece_identite",
+      "label": "Pièces d'identité des deux futurs époux",
+      "count": 2
+    },
+    {
+      "type": "justificatif_domicile",
+      "label": "Certificat de résidence"
+    },
+    {
+      "type": "recu_paiement",
+      "label": "Reçu de paiement des frais"
+    }
+  ],
+  "optional": [
+    {
+      "type": "certificat_medical",
+      "label": "Certificat médical prénuptial"
+    }
+  ],
+  "fields": [
+    "nom_epoux",
+    "nom_epouse",
+    "date_souhaitee",
+    "temoins"
+  ],
+  "sla_days": 30
+}

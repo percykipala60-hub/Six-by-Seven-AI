@@ -1,0 +1,40 @@
+{
+  "id": "carte_identite",
+  "name": "Carte nationale d'identité",
+  "keywords": [
+    "carte d'identite",
+    "carte nationale",
+    "cni",
+    "carte d'electeur"
+  ],
+  "description": "Demande ou renouvellement de la carte d'identité.",
+  "required": [
+    {
+      "type": "acte_naissance",
+      "label": "Acte de naissance"
+    },
+    {
+      "type": "photo_identite",
+      "label": "Photo d'identité"
+    },
+    {
+      "type": "justificatif_domicile",
+      "label": "Justificatif de domicile de moins de 3 mois",
+      "max_age_days": 92
+    }
+  ],
+  "optional": [
+    {
+      "type": "certificat_nationalite",
+      "label": "Certificat de nationalité"
+    }
+  ],
+  "fields": [
+    "nom",
+    "prenoms",
+    "date_naissance",
+    "lieu_naissance",
+    "adresse"
+  ],
+  "sla_days": 21
+}

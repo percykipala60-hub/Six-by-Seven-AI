@@ -1,0 +1,41 @@
+{
+  "id": "permis_construire",
+  "name": "Permis de construire",
+  "keywords": [
+    "permis de construire",
+    "construction",
+    "batir",
+    "autorisation de batir"
+  ],
+  "description": "Autorisation de bâtir.",
+  "required": [
+    {
+      "type": "titre_propriete",
+      "label": "Titre de propriété ou certificat d'enregistrement"
+    },
+    {
+      "type": "plan",
+      "label": "Plans de la construction"
+    },
+    {
+      "type": "piece_identite",
+      "label": "Pièce d'identité du demandeur"
+    },
+    {
+      "type": "recu_paiement",
+      "label": "Reçu de paiement des frais"
+    }
+  ],
+  "optional": [
+    {
+      "type": "formulaire",
+      "label": "Formulaire de demande signé"
+    }
+  ],
+  "fields": [
+    "adresse_parcelle",
+    "superficie",
+    "nature_travaux"
+  ],
+  "sla_days": 45
+}
