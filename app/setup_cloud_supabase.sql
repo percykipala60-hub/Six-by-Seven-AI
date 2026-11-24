@@ -1,5 +1,6 @@
 -- Cloud de Six : partager un élément (une discussion) avec d'autres personnes, par lien.
--- À exécuter une fois dans Supabase (SQL Editor), après setup_premium_supabase.sql (fonction premium_actif).
+-- À exécuter dans Supabase (SQL Editor) : autonome, ne supprime aucune donnée et peut être relancé.
+-- Il crée au besoin la table premium et la fonction premium_actif, à l'identique de setup_premium_supabase.sql.
 --
 -- Règles :
 -- - créer un partage demande un abonnement Premium actif (comme la copie de la mémoire sur le compte) ;
@@ -8,6 +9,36 @@
 --   lisible en entier (personne ne peut lister les partages des autres) ;
 -- - un partage expire (30 jours par défaut) ; son contenu est borné (200 Ko).
 
+-- 0. Premium (si setup_premium_supabase.sql n'a pas encore été exécuté) : lu par les règles du Cloud.
+create table if not exists public.premium (
+  user_id uuid primary key references auth.users (id) on delete cascade,
+  jusqu_a timestamptz not null,
+  maj timestamptz not null default now()
+);
+
+alter table public.premium enable row level security;
+revoke all on table public.premium from anon, authenticated;
+grant select on table public.premium to authenticated;
+
+drop policy if exists "Chaque compte lit son premium" on public.premium;
+create policy "Chaque compte lit son premium"
+  on public.premium for select to authenticated
+  using (auth.uid() = user_id);
+
+create or replace function public.premium_actif(p_user uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+  select exists (select 1 from public.premium where user_id = p_user and jusqu_a > now());
+$$;
+
+revoke all on function public.premium_actif(uuid) from public, anon;
+grant execute on function public.premium_actif(uuid) to authenticated, service_role;
+
+-- 1. Partages
 create table if not exists public.partages (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
