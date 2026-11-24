@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import { Icon } from './Icon';
 import {
   LIBELLE_TYPE,
+  iconeArtefact,
   retrouver,
   type Artefact,
   type ArtefactExtrait,
@@ -39,7 +40,7 @@ export function CarteArtefact({
       title="Ouvrir dans le panneau"
     >
       <span className="artefact-icone" aria-hidden="true">
-        <Icon name={artefact.type === 'code' || artefact.type === 'html' ? 'type' : 'file'} />
+        <Icon name={iconeArtefact(artefact.type)} />
       </span>
       <span className="grow">
         <b>{artefact.titre}</b>

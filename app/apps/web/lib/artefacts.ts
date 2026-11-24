@@ -13,7 +13,7 @@
 import { memoireActive } from './memoire';
 import { noterSuppression } from './projets';
 
-export type TypeArtefact = 'document' | 'code' | 'html' | 'tableau';
+export type TypeArtefact = 'document' | 'code' | 'html' | 'tableau' | 'presentation';
 export type VersionArtefact = { contenu: string; t: number };
 export type Artefact = {
   id: string;
@@ -50,12 +50,18 @@ const MAX_ARTEFACTS = 100;
 /** Un bloc de code sans balise devient un artefact à partir de ce nombre de lignes. */
 export const LIGNES_CODE_ARTEFACT = 15;
 
-const TYPES: TypeArtefact[] = ['document', 'code', 'html', 'tableau'];
+const TYPES: TypeArtefact[] = ['document', 'code', 'html', 'tableau', 'presentation'];
+/** Icône d'un artefact (components/Icon.tsx). */
+export function iconeArtefact(type: TypeArtefact): 'type' | 'file' | 'image' {
+  return type === 'code' || type === 'html' ? 'type' : type === 'presentation' ? 'image' : 'file';
+}
+
 export const LIBELLE_TYPE: Record<TypeArtefact, string> = {
   document: 'Document',
   code: 'Code',
   html: 'Page HTML',
   tableau: 'Tableau',
+  presentation: 'Présentation',
 };
 
 /* ---------- Lecture d'une réponse ---------- */
@@ -173,7 +179,7 @@ export function curerArtefact(o: unknown): Artefact | null {
   const a = o as Record<string, unknown>;
   const id = str(a.id, 60);
   const chat = str(a.chat, 40);
-  const type = str(a.type, 10) as TypeArtefact;
+  const type = str(a.type, 20) as TypeArtefact;
   if (!/^[\w:-]+$/.test(id) || !chat || !TYPES.includes(type)) return null;
   const maj = nombre(a.maj, 0);
   const versions = (Array.isArray(a.versions) ? a.versions : [])
@@ -418,19 +424,23 @@ export function nomFichier(a: Pick<Artefact, 'titre' | 'type' | 'langage'>): str
       .replace(/^[-.]+|[-.]+$/g, '')
       .slice(0, 60) || 'artefact';
   const ext =
-    a.type === 'html'
-      ? 'html'
-      : a.type === 'tableau'
-        ? a.langage === 'markdown' || a.langage === 'md'
-          ? 'md'
-          : 'csv'
-        : a.type === 'document'
-          ? 'md'
-          : (EXTENSIONS[a.langage ?? ''] ?? 'txt');
+    a.type === 'presentation'
+      ? 'pptx'
+      : a.type === 'html'
+        ? 'html'
+        : a.type === 'tableau'
+          ? a.langage === 'markdown' || a.langage === 'md'
+            ? 'md'
+            : 'csv'
+          : a.type === 'document'
+            ? 'md'
+            : (EXTENSIONS[a.langage ?? ''] ?? 'txt');
   return `${base}.${ext}`;
 }
 
 export function typeMime(a: Pick<Artefact, 'type'>): string {
+  if (a.type === 'presentation')
+    return 'application/vnd.openxmlformats-officedocument.presentationml.presentation';
   if (a.type === 'html') return 'text/html;charset=utf-8';
   if (a.type === 'tableau') return 'text/csv;charset=utf-8';
   if (a.type === 'document') return 'text/markdown;charset=utf-8';

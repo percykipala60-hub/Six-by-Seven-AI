@@ -1,9 +1,12 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { Diapositives } from './Diapositives';
 import { Icon } from './Icon';
+import { THEMES, lirePresentation } from '@/lib/presentation';
 import {
   LIBELLE_TYPE,
+  iconeArtefact,
   blocsDocument,
   lireTableau,
   nomFichier,
@@ -37,6 +40,14 @@ export default function ArtefactPanneau({
     setSource(false);
   }, [artefact.id, versionInitiale, dernier]);
   const contenu = artefact.versions[Math.min(version, dernier)]?.contenu ?? '';
+  // Présentation : diapositives lues dans le JSON de Six ; le thème se change ici (aperçu et fichier .pptx).
+  const presentation = useMemo(
+    () => (artefact.type === 'presentation' ? lirePresentation(contenu) : null),
+    [artefact.type, contenu],
+  );
+  const [theme, setTheme] = useState('');
+  useEffect(() => setTheme(presentation?.theme ?? ''), [presentation]);
+  const [export_, setExport] = useState<'' | 'encours' | 'erreur'>('');
 
   useEffect(() => {
     const html = document.documentElement;
@@ -60,7 +71,23 @@ export default function ArtefactPanneau({
     }
   }
 
+  async function telechargerPresentation() {
+    if (!presentation) return;
+    setExport('encours');
+    try {
+      const { telechargerPptx } = await import('@/lib/pptx');
+      await telechargerPptx(presentation, nomFichier(artefact), theme);
+      setExport('');
+    } catch {
+      setExport('erreur');
+    }
+  }
+
   function telecharger() {
+    if (presentation) {
+      void telechargerPresentation();
+      return;
+    }
     const url = URL.createObjectURL(new Blob([contenu], { type: typeMime(artefact) }));
     const a = document.createElement('a');
     a.href = url;
@@ -71,7 +98,10 @@ export default function ArtefactPanneau({
     setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
-  const apercu = artefact.type === 'html' || artefact.type === 'tableau';
+  const apercu =
+    artefact.type === 'html' ||
+    artefact.type === 'tableau' ||
+    (artefact.type === 'presentation' && presentation !== null);
   return (
     <aside
       ref={panneau}
@@ -81,7 +111,7 @@ export default function ArtefactPanneau({
     >
       <div className="artefact-tete">
         <span className="artefact-icone" aria-hidden="true">
-          <Icon name={artefact.type === 'code' || artefact.type === 'html' ? 'type' : 'file'} />
+          <Icon name={iconeArtefact(artefact.type)} />
         </span>
         <div className="grow">
           <h2 className="artefact-titre" title={artefact.titre}>
@@ -136,7 +166,11 @@ export default function ArtefactPanneau({
               aria-pressed={!source}
               onClick={() => setSource(false)}
             >
-              {artefact.type === 'html' ? 'Aperçu' : 'Tableau'}
+              {artefact.type === 'html'
+                ? 'Aperçu'
+                : artefact.type === 'presentation'
+                  ? 'Diapositives'
+                  : 'Tableau'}
             </button>
             <button
               type="button"
@@ -147,6 +181,18 @@ export default function ArtefactPanneau({
               {artefact.type === 'html' ? 'Code' : 'Texte'}
             </button>
           </div>
+        )}
+        {presentation && !source && (
+          <label className="artefact-theme">
+            <span className="sr">Thème de la présentation</span>
+            <select value={theme} onChange={(e) => setTheme(e.target.value)}>
+              {THEMES.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.nom}
+                </option>
+              ))}
+            </select>
+          </label>
         )}
         <span className="grow" />
         <button
@@ -162,14 +208,22 @@ export default function ArtefactPanneau({
           type="button"
           className="volet-action"
           aria-label={`Télécharger (${nomFichier(artefact)})`}
-          title="Télécharger"
+          title={presentation ? 'Télécharger en PowerPoint (.pptx)' : 'Télécharger'}
+          disabled={export_ === 'encours'}
           onClick={telecharger}
         >
           <Icon name="down" size={17} />
         </button>
       </div>
+      {export_ === 'erreur' && (
+        <p role="alert" className="seven-erreur artefact-alerte">
+          Le fichier PowerPoint n’a pas pu être créé. Réessaie.
+        </p>
+      )}
       <div className="artefact-corps">
-        {artefact.type === 'html' && !source ? (
+        {presentation && !source ? (
+          <Diapositives presentation={presentation} theme={theme || presentation.theme} />
+        ) : artefact.type === 'html' && !source ? (
           <iframe
             className="artefact-cadre"
             title={`Aperçu : ${artefact.titre}`}

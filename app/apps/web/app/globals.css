@@ -8197,3 +8197,73 @@ div.seven-outils-ligne:not(.seven-outils-flottants) {
   gap: 6px;
   color: var(--muted);
 }
+
+/* ---------- Présentations (components/Diapositives.tsx) : diapositives 16:9 dessinées comme le .pptx ---------- */
+.artefact-theme select {
+  max-width: 150px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0 28px 0 10px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+}
+.artefact-alerte {
+  margin: 8px 12px 0;
+}
+.diapos {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+  padding: 14px 14px 28px;
+  list-style: none;
+  background: var(--panel2);
+}
+.diapo-cadre {
+  position: relative;
+}
+.diapo {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 6px;
+  box-shadow: var(--sh-1);
+  container-type: inline-size;
+}
+.diapo-el {
+  position: absolute;
+  box-sizing: border-box;
+}
+.diapo-arrondi {
+  border-radius: 2.4cqw;
+}
+.diapo-ellipse {
+  border-radius: 50%;
+}
+.diapo-losange {
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+.diapo-texte {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  line-height: 1.18;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.diapo-texte ul {
+  margin: 0;
+  padding-left: 1.2em;
+}
+.diapo-texte li + li {
+  margin-top: 0.45em;
+}
+.diapo-numero {
+  position: absolute;
+  right: 6px;
+  bottom: -2px;
+  transform: translateY(100%);
+  color: var(--muted);
+  font-size: 0.7rem;
+}
