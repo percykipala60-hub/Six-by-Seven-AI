@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self'"
+    />
+    <title>Espaces</title>
+    <link rel="stylesheet" href="menu.css" />
+  </head>
+  <body>
+    <!-- Menu des espaces de Six (ouvert depuis la barre du haut, voir menu.js). -->
+    <div class="menu" role="menu" aria-label="Espaces">
+      <button class="espace" role="menuitemradio" data-chemin="/chat">
+        <span class="icone">
+          <svg viewBox="0 0 24 24"><path d="M7.9 20A9 9 0 1 0 4 16.1L2 22Z" /></svg>
+        </span>
+        <span class="texte">
+          <span class="nom">Chat</span>
+          <span class="role">Discuter librement avec Six</span>
+        </span>
+        <svg class="coche" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+      </button>
+      <button class="espace" role="menuitemradio" data-chemin="/cosinus">
+        <span class="icone">
+          <svg viewBox="0 0 24 24">
+            <path
+              d="M4 8h16v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1zM9 8V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3M4 13h16M11 13v2h2v-2"
+            />
+          </svg>
+        </span>
+        <span class="texte">
+          <span class="nom">Cosinus</span>
+          <span class="role">Six travaille pour vous : rapports, recherches, fichiers</span>
+        </span>
+        <svg class="coche" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+      </button>
+      <button class="espace" role="menuitemradio" data-chemin="/responsive">
+        <span class="icone">
+          <svg viewBox="0 0 24 24">
+            <path
+              d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2zM18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"
+            />
+          </svg>
+        </span>
+        <span class="texte">
+          <span class="nom">Responsive</span>
+          <span class="role">Comprendre une conversation et y répondre</span>
+        </span>
+        <svg class="coche" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+      </button>
+    </div>
+    <script src="menu.js"></script>
+  </body>
+</html>

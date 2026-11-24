@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { AppBar } from './AppBar';
 import { Icon } from './Icon';
 import { BoutonPartager } from './BoutonPartager';
+import { estBureau } from '@/lib/plateforme';
 import { Logo } from './Logo';
 import { PiecesJointes } from './PiecesJointes';
 import {
@@ -328,14 +329,23 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   const [attentePieces, setAttentePieces] = useState<PieceAffichee[]>([]);
   // Téléphone : pas de navigateur (trop encombrant), seulement les fichiers.
   const [telephone, setTelephone] = useState(false);
+  // Le navigateur n'existe que dans l'app de bureau (comme Cowork : le web et le téléphone n'ont pas de
+  // navigateur intégré) ; ailleurs, le volet de Cosinus n'a que les fichiers.
+  const [bureau, setBureau] = useState(false);
+  const sansNavigateur = telephone || !bureau;
   useEffect(() => {
+    const surBureau = estBureau();
+    setBureau(surBureau);
     const mq = window.matchMedia(GRAND_VOLET);
     const lireTaille = () => {
       setTelephone(!mq.matches);
-      if (!mq.matches) setVoletBrut((v) => (v === 'navigateur' ? null : v));
+      if (!mq.matches || !surBureau) setVoletBrut((v) => (v === 'navigateur' ? null : v));
     };
     lireTaille();
-    if (mq.matches && sixtouch) setVoletBrut(lireReglagesVolet().onglet);
+    if (mq.matches && sixtouch) {
+      const onglet = lireReglagesVolet().onglet;
+      setVoletBrut(onglet === 'navigateur' && !surBureau ? 'fichiers' : onglet);
+    }
     mq.addEventListener('change', lireTaille);
     return () => mq.removeEventListener('change', lireTaille);
   }, [sixtouch]);
@@ -433,7 +443,8 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
               'six-navigateur-agent',
               JSON.stringify({ session: o.session, url: o.url }),
             );
-            setVoletBrut('navigateur');
+            // Seule l'app de bureau montre ce que Six fait dans le navigateur.
+            if (estBureau()) setVoletBrut('navigateur');
             window.dispatchEvent(new Event('six-navigateur-agent'));
           }
           if (o.type === 'etape' && o.texte) {
@@ -961,7 +972,9 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       {(sixtouch || messages.length > 0) && (
         <div className="seven-outils-flottants seven-outils-ligne">
           {messages.length > 0 && <div className="volet-boutons">{partage}</div>}
-          {sixtouch && <BoutonsVolet ouvert={volet} onBasculer={basculerVolet} />}
+          {sixtouch && (
+            <BoutonsVolet ouvert={volet} onBasculer={basculerVolet} telephone={sansNavigateur} />
+          )}
         </div>
       )}
       {sixtouch && volet && (
@@ -972,7 +985,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
           messages={messages}
           onExporter={(m) => void exporterMessage(m)}
           onJoindre={(fichiers) => void importerFichiers(fichiers)}
-          telephone={telephone}
+          telephone={sansNavigateur}
           onAnnoter={(description, capture) =>
             // Chaque repère remplace la capture précédente dans la barre (une seule capture, toujours à jour).
             void pieceCapture(description, capture).then((piece) =>

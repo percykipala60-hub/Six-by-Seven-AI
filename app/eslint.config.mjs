@@ -89,7 +89,7 @@ export default tseslint.config(
   },
   {
     // Barre du haut de l'app de bureau : page web locale (barre.html).
-    files: ['apps/bureau/barre.js'],
+    files: ['apps/bureau/barre.js', 'apps/bureau/menu.js'],
     languageOptions: { sourceType: 'script', globals: { ...globals.browser } },
   },
 );

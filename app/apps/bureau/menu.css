@@ -1,0 +1,117 @@
+/* Menu des espaces : carte arrondie aux couleurs du thème de Six (envoyées par main.cjs). */
+:root {
+  --fond: #11141c;
+  --texte: #e8ecf5;
+  --doux: #9aa3b5;
+  --marque: #4d7cfe;
+}
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  background: transparent;
+  overflow: hidden;
+  font:
+    13px/1.3 -apple-system,
+    'Segoe UI',
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+  user-select: none;
+}
+.menu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 6px;
+  padding: 6px;
+  border: 1px solid color-mix(in srgb, var(--texte) 12%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--fond) 96%, var(--texte));
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.35);
+  animation: apparait 0.12s ease-out;
+}
+.espace {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--texte);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.espace:hover,
+.espace:focus-visible {
+  outline: none;
+  background: color-mix(in srgb, var(--texte) 8%, transparent);
+}
+.icone {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  color: var(--marque);
+  background: color-mix(in srgb, var(--marque) 15%, transparent);
+}
+.espace[aria-checked='true'] .icone {
+  color: #fff;
+  background: var(--marque);
+}
+.texte {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.nom {
+  font-size: 13.5px;
+  font-weight: 700;
+}
+.role {
+  overflow: hidden;
+  color: var(--doux);
+  font-size: 12px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.coche {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--marque);
+  visibility: hidden;
+}
+.espace[aria-checked='true'] .coche {
+  visibility: visible;
+}
+@keyframes apparait {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .menu {
+    animation: none;
+  }
+}

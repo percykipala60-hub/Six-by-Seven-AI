@@ -307,22 +307,72 @@ function commandeBarre(evenement, c) {
       if (c.onglet === 'navigateur' || c.onglet === 'fichiers')
         versApp({ type: 'volet', onglet: c.onglet });
       break;
-    case 'menu-espaces': {
-      const actuel = cheminApp();
-      Menu.buildFromTemplate(
-        ESPACES.map((e) => ({
-          label: e.label,
-          type: 'radio',
-          checked: actuel.startsWith(e.chemin),
-          click: () => versApp({ type: 'aller', chemin: e.chemin }),
-        })),
-      ).popup({ window: fenetre, x: borne(c.x, 0, 4000), y: borne(c.y, 0, BARRE + 8) });
+    case 'menu-espaces':
+      ouvrirMenuEspaces(borne(c.x, 0, 4000), borne(c.y, 0, BARRE + 8));
       break;
-    }
     case 'etat':
       void etatBarre();
       break;
   }
+}
+
+// ---------- Menu des espaces (menu.html) ----------
+
+/** @type {BrowserWindow | null} */
+let menu = null;
+const MENU_LARGEUR = 400;
+const MENU_HAUTEUR = 3 * 54 + 2 * 2 + 12 + 12 + 2;
+
+/** Petite fenêtre sans bord, posée sous le nom de l'espace ; se ferme dès qu'on clique ailleurs. */
+function ouvrirMenuEspaces(x, y) {
+  if (!fenetre) return;
+  if (menu) {
+    menu.close();
+    return;
+  }
+  const zone = fenetre.getContentBounds();
+  menu = new BrowserWindow({
+    parent: fenetre,
+    x: zone.x + x - 6,
+    y: zone.y + y - 6,
+    width: MENU_LARGEUR,
+    height: MENU_HAUTEUR,
+    frame: false,
+    transparent: true,
+    resizable: false,
+    movable: false,
+    minimizable: false,
+    maximizable: false,
+    skipTaskbar: true,
+    show: false,
+    hasShadow: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'menu-preload.cjs'),
+      sandbox: true,
+      contextIsolation: true,
+      nodeIntegration: false,
+      webviewTag: false,
+    },
+  });
+  const m = menu;
+  m.webContents.on('will-navigate', (e) => e.preventDefault());
+  m.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  m.on('blur', () => m.close());
+  m.on('closed', () => {
+    if (menu === m) menu = null;
+  });
+  m.webContents.once('did-finish-load', () => {
+    m.webContents.send('six:menu-etat', { actuel: cheminApp(), theme });
+    m.show();
+  });
+  void m.loadFile(path.join(__dirname, 'menu.html'));
+}
+
+function choixMenu(evenement, chemin) {
+  if (!menu || evenement.sender !== menu.webContents) return;
+  if (typeof chemin === 'string' && ESPACES.some((e) => e.chemin === chemin))
+    versApp({ type: 'aller', chemin });
+  menu.close();
 }
 
 function placerAppli() {
@@ -435,6 +485,7 @@ else {
     preparerSessionNavigateur();
     ipcMain.handle('six:navigateur', piloter);
     ipcMain.handle('six:barre', commandeBarre);
+    ipcMain.handle('six:menu', choixMenu);
     // L'app signale à la barre l'état de Cosinus (volet ouvert).
     ipcMain.handle('six:app-etat', (evenement, e) => {
       if (!depuisApp(evenement) || !e || typeof e !== 'object') return;
