@@ -9,7 +9,7 @@ import type { Decor, Diapositive, Theme } from './presentation';
 
 export type Forme = {
   genre: 'forme';
-  forme: 'rect' | 'arrondi' | 'ellipse' | 'losange' | 'ligne';
+  forme: 'rect' | 'arrondi' | 'ellipse' | 'losange' | 'hexagone' | 'ligne';
   x: number;
   y: number;
   w: number;
@@ -66,6 +66,15 @@ function cercle(cx: number, cy: number, d: number, o: Partial<Forme>): Forme {
 }
 
 /* ---------- Décors propres à chaque thème ---------- */
+
+/** Grille de petits points (décor), coin haut gauche en (x, y). */
+function grille(x: number, y: number, colonnes: number, lignes: number, couleur: string): Forme[] {
+  const points: Forme[] = [];
+  for (let r = 0; r < lignes; r++)
+    for (let c = 0; c < colonnes; c++)
+      points.push(cercle(x + c * 1.8, y + r * 3.2, 0.6, { fond: couleur }));
+  return points;
+}
 
 function decor(t: Theme, d: Diapositive): Element[] {
   const fort = estForte(d);
@@ -168,6 +177,135 @@ function decor(t: Theme, d: Diapositive): Element[] {
             forme('rect', 0, 96, 100, 4, { fond: t.accent }),
             forme('ligne', 40, 21, 20, 0, { contour: t.accent2, epaisseur: 1 }),
           ],
+    sauge: () =>
+      fort
+        ? [
+            forme('rect', 58, 0, 42, 100, { fond: t.accent2 }),
+            forme('rect', 64, 22, 30, 56, { contour: t.fond, epaisseur: 1.5 }),
+          ]
+        : [
+            forme('rect', 0, 0, 100, 3, { fond: t.accent2 }),
+            forme('rect', 92, 8, 3, 3 * RAPPORT, { contour: t.accent, epaisseur: 1 }),
+          ],
+    poudre: () =>
+      fort
+        ? [
+            cercle(78, 40, 30, { fond: t.doux }),
+            cercle(86, 66, 18, { fond: t.accent2, transparence: 30 }),
+          ]
+        : [
+            forme('ligne', MARGE, 92, 100 - 2 * MARGE - 5, 0, {
+              contour: t.accent2,
+              epaisseur: 0.75,
+            }),
+            cercle(95, 92, 2.4, { fond: t.accent }),
+          ],
+    arches: () => [
+      forme('rect', 0, fort ? 30 : 8, fort ? 3.5 : 1.6, fort ? 36 : 12, { fond: t.accent2 }),
+      ...[0, 1, 2, 3].map((k) =>
+        cercle(fort ? 86 : 97, fort ? 96 : 4, (fort ? 34 : 16) - k * (fort ? 7 : 3.5), {
+          contour: t.accent2,
+          epaisseur: 1,
+        }),
+      ),
+      ...(fort ? grille(94, 8, 1, 10, t.accent2) : []),
+    ],
+    graphite: () =>
+      fort
+        ? [
+            forme('rect', 0, 0, 34, 100, { fond: t.doux }),
+            ...[0, 1, 2, 3].map((k) =>
+              forme('ligne', 4 + k * 7, 0, 10, 100, { contour: t.accent2, epaisseur: 0.75 }),
+            ),
+            forme('rect', 0, 84, 100, 16, { fond: t.accent }),
+          ]
+        : [
+            forme('rect', 0, 6, 1.2, 10, { fond: t.accent }),
+            forme('rect', 0, 94, 100, 6, { fond: t.accent }),
+          ],
+    diagonale: () =>
+      fort
+        ? [
+            forme('losange', 50, -70, 110, 240, { fond: t.accent }),
+            forme('hexagone', 70, 26, 20, 20 * RAPPORT, { fond: t.doux }),
+          ]
+        : [
+            forme('hexagone', 91, -6, 12, 12 * RAPPORT, { fond: t.accent }),
+            forme('hexagone', 2, 88, 5, 5 * RAPPORT, { contour: t.accent2, epaisseur: 1 }),
+          ],
+    traits: () =>
+      fort
+        ? [
+            forme('ligne', 12, 16, 76, 0, { contour: t.encreFort, epaisseur: 1.5 }),
+            forme('ligne', 56, 84, 32, 0, { contour: t.encreFort, epaisseur: 1.5 }),
+          ]
+        : [
+            forme('rect', 0, 0, 100, 3, { fond: t.accent }),
+            forme('rect', MARGE, 5, 6, 0.8, { fond: t.accent2 }),
+          ],
+    cartes: () =>
+      fort
+        ? [
+            forme('rect', 3, 5, 94, 90, { contour: t.accent, epaisseur: 1.5 }),
+            forme('rect', 60, 14, 32, 72, { fond: t.accent2 }),
+          ]
+        : [forme('rect', 3, 5, 94, 90, { contour: t.accent2, epaisseur: 0.75 })],
+    or: () =>
+      fort
+        ? [
+            cercle(84, 30, 54, { contour: t.accent, epaisseur: 3 }),
+            cercle(92, 60, 26, { contour: t.accent2, epaisseur: 1.5 }),
+          ]
+        : [
+            forme('rect', 96.5, 0, 3.5, 100, { fond: t.encre }),
+            forme('rect', MARGE, 5, 5, 0.8, { fond: t.accent }),
+          ],
+    marine: () =>
+      fort
+        ? [forme('arrondi', 56, 10, 40, 80, { fond: t.accent2, transparence: 55 })]
+        : [
+            forme('rect', 0, 90, 18, 10, { fond: t.accent }),
+            forme('ligne', 20, 95, 74, 0, { contour: t.accent2, epaisseur: 0.75 }),
+          ],
+    anneaux: () =>
+      fort
+        ? [
+            cercle(80, 50, 40, { contour: t.accent2, epaisseur: 6 }),
+            cercle(80, 50, 30, { contour: t.accent, epaisseur: 3 }),
+            cercle(80, 50, 18, { fond: t.doux }),
+          ]
+        : [
+            cercle(0, 100, 18, { contour: t.accent2, epaisseur: 4 }),
+            cercle(0, 100, 10, { contour: t.accent, epaisseur: 2 }),
+          ],
+    emeraude: () =>
+      fort
+        ? [
+            forme('losange', 60, 14, 36, 36 * RAPPORT, { fond: t.accent2 }),
+            forme('losange', 80, 62, 16, 16 * RAPPORT, { fond: t.doux }),
+          ]
+        : [
+            forme('rect', 0, 0, 100, 2.5, { fond: t.accent }),
+            cercle(97, 96, 4, { fond: t.accent2 }),
+          ],
+    foret: () =>
+      fort
+        ? [
+            forme('rect', 0, 0, 3, 100, { fond: t.accent }),
+            forme('arrondi', 60, 8, 34, 84, { fond: t.doux }),
+            ...grille(4, 6, 4, 4, t.accent2),
+          ]
+        : [cercle(100, 0, 18, { fond: t.accent }), ...grille(2, 84, 4, 4, t.accent2)],
+    prestige: () =>
+      fort
+        ? [
+            forme('rect', 0, 86, 100, 14, { fond: t.accent2 }),
+            forme('rect', MARGE, 18, 10, 1, { fond: t.accent2 }),
+          ]
+        : [
+            forme('rect', 0, 0, 100, 1.5, { fond: t.accent2 }),
+            forme('rect', 0, 96, 100, 4, { fond: t.accent }),
+          ],
   };
   return deco[t.decor]();
 }
@@ -186,7 +324,23 @@ const LIBRE_FORT: Record<Decor, number> = {
   cadre: 94,
   losanges: 62,
   bandeau: 94,
+  sauge: 56,
+  poudre: 62,
+  arches: 70,
+  graphite: 94,
+  diagonale: 52,
+  traits: 94,
+  cartes: 56,
+  or: 56,
+  marine: 54,
+  anneaux: 56,
+  emeraude: 58,
+  foret: 56,
+  prestige: 94,
 };
+
+/** Début (en %) du texte des diapositives titre et fin, quand le décor occupe la gauche. */
+const DEBUT_FORT: Partial<Record<Decor, number>> = { graphite: 40, cartes: 9 };
 
 export function poserDiapositive(t: Theme, d: Diapositive, i: number): DiapoPosee {
   const fort = estForte(d);
@@ -228,10 +382,10 @@ export function poserDiapositive(t: Theme, d: Diapositive, i: number): DiapoPose
     case 'fin': {
       const centre = t.decor === 'cadre' || t.decor === 'points' || t.decor === 'acier';
       const bas = t.decor === 'bandeau';
-      const x0 = centre ? 12 : MARGE + (t.decor === 'ardoise' ? 8 : 0);
+      const x0 = centre ? 12 : (DEBUT_FORT[t.decor] ?? MARGE + (t.decor === 'ardoise' ? 8 : 0));
       els.push(
         texte({
-          x: centre ? 12 : MARGE + (t.decor === 'ardoise' ? 8 : 0),
+          x: x0,
           y: bas ? 20 : d.type === 'fin' ? 30 : 24,
           w: centre ? 76 : borne(x0, 58),
           h: 30,
@@ -249,7 +403,7 @@ export function poserDiapositive(t: Theme, d: Diapositive, i: number): DiapoPose
       if (sous)
         els.push(
           texte({
-            x: centre ? 12 : MARGE + (t.decor === 'ardoise' ? 8 : 0),
+            x: x0,
             y: bas ? 66 : 56,
             w: centre ? 76 : borne(x0, 52),
             h: 12,
@@ -262,7 +416,7 @@ export function poserDiapositive(t: Theme, d: Diapositive, i: number): DiapoPose
       if (d.auteur)
         els.push(
           texte({
-            x: centre ? 12 : MARGE + (t.decor === 'ardoise' ? 8 : 0),
+            x: x0,
             y: bas ? 80 : 76,
             w: centre ? 76 : borne(x0, 52),
             h: 6,

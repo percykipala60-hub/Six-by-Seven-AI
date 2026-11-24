@@ -108,8 +108,9 @@ describe('mise en page', () => {
   const p = lirePresentation(JSON.stringify(EXEMPLE));
   if (!p) throw new Error('exemple illisible');
 
-  it('pose chaque diapositive dans chacun des dix thèmes', () => {
-    expect(THEMES).toHaveLength(10);
+  it('pose chaque diapositive dans chacun des vingt-trois thèmes', () => {
+    expect(THEMES).toHaveLength(23);
+    expect(new Set(THEMES.map((t) => t.id)).size).toBe(23);
     for (const t of THEMES) {
       p.diapositives.forEach((d, i) => {
         const posee = poserDiapositive(t, d, i);

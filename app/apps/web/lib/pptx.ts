@@ -28,9 +28,11 @@ function dessiner(diapo: Diapo, e: Element) {
           ? 'ellipse'
           : e.forme === 'losange'
             ? 'diamond'
-            : e.forme === 'ligne'
-              ? 'line'
-              : 'rect';
+            : e.forme === 'hexagone'
+              ? 'hexagon'
+              : e.forme === 'ligne'
+                ? 'line'
+                : 'rect';
     diapo.addShape(type, {
       x: px(e.x),
       y: py(e.y),

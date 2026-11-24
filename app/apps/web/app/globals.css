@@ -8244,6 +8244,9 @@ div.seven-outils-ligne:not(.seven-outils-flottants) {
 .diapo-losange {
   clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
 }
+.diapo-hexagone {
+  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+}
 .diapo-texte {
   display: flex;
   flex-direction: column;

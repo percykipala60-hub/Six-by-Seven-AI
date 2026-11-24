@@ -3,8 +3,9 @@
  * met en page dans un thème (lib/presentation-mise-en-page.ts), les montre dans le panneau et les exporte en .pptx
  * (lib/pptx.ts). Une seule mise en page sert à l'aperçu et au fichier : ce qu'on voit est ce qu'on télécharge.
  *
- * Les dix thèmes sont des créations de Six inspirées de styles courants (éditorial sombre, minimal ardoise, vagues
- * bleues, sépia, lilas, aquarelle, acier, académique, losanges prune, bordeaux classique).
+ * Les vingt-trois thèmes sont des créations de Six inspirées de styles courants (éditorial sombre, minimal, vagues,
+ * sépia, lilas, aquarelle, acier, académique, losanges, bordeaux, sauge, rose poudré, sable, graphite, hexagones,
+ * corporate, olive, noir et or, marine, cercles, émeraude, forêt, prestige).
  */
 
 export type TypeDiapo =
@@ -53,7 +54,20 @@ export type IdTheme =
   | 'acier'
   | 'academique'
   | 'prune'
-  | 'bordeaux';
+  | 'bordeaux'
+  | 'sauge'
+  | 'poudre'
+  | 'sable'
+  | 'graphite'
+  | 'hexagone'
+  | 'corporate'
+  | 'olive'
+  | 'juridique'
+  | 'marine'
+  | 'cercles'
+  | 'emeraude'
+  | 'foret'
+  | 'prestige';
 
 /** Décor propre au thème (formes dessinées par la mise en page). */
 export type Decor =
@@ -66,7 +80,20 @@ export type Decor =
   | 'acier'
   | 'cadre'
   | 'losanges'
-  | 'bandeau';
+  | 'bandeau'
+  | 'anneaux'
+  | 'arches'
+  | 'cartes'
+  | 'diagonale'
+  | 'emeraude'
+  | 'foret'
+  | 'graphite'
+  | 'marine'
+  | 'or'
+  | 'poudre'
+  | 'prestige'
+  | 'sauge'
+  | 'traits';
 
 export type Theme = {
   id: IdTheme;
@@ -250,6 +277,214 @@ export const THEMES: Theme[] = [
     policeCorps: 'Georgia',
     majuscules: true,
     decor: 'bandeau',
+  },
+  {
+    id: 'sauge',
+    nom: 'Sauge',
+    fond: '#FFFFFF',
+    fondFort: null,
+    encre: '#33402F',
+    encreFort: '#33402F',
+    accent: '#7F9A74',
+    accent2: '#C9D6C0',
+    doux: '#EEF3EA',
+    discret: '#66735F',
+    policeTitre: 'Arial',
+    policeCorps: 'Arial',
+    majuscules: true,
+    decor: 'sauge',
+  },
+  {
+    id: 'poudre',
+    nom: 'Rose poudré',
+    fond: '#FFFFFF',
+    fondFort: null,
+    encre: '#3B3333',
+    encreFort: '#3B3333',
+    accent: '#B98E88',
+    accent2: '#D9C5C1',
+    doux: '#F4ECEA',
+    discret: '#7A6E6C',
+    policeTitre: 'Arial',
+    policeCorps: 'Arial',
+    majuscules: false,
+    decor: 'poudre',
+  },
+  {
+    id: 'sable',
+    nom: 'Sable et arches',
+    fond: '#FFFFFF',
+    fondFort: null,
+    encre: '#1E1A14',
+    encreFort: '#1E1A14',
+    accent: '#B89C72',
+    accent2: '#D9C3A0',
+    doux: '#F3EBDD',
+    discret: '#6A5F50',
+    policeTitre: 'Arial Black',
+    policeCorps: 'Arial',
+    majuscules: false,
+    decor: 'arches',
+  },
+  {
+    id: 'graphite',
+    nom: 'Graphite',
+    fond: '#FFFFFF',
+    fondFort: null,
+    encre: '#2F3035',
+    encreFort: '#2F3035',
+    accent: '#3A3A3F',
+    accent2: '#A7A8AD',
+    doux: '#ECECEE',
+    discret: '#6B6C72',
+    policeTitre: 'Arial',
+    policeCorps: 'Arial',
+    majuscules: true,
+    decor: 'graphite',
+  },
+  {
+    id: 'hexagone',
+    nom: 'Hexagones marine',
+    fond: '#FFFFFF',
+    fondFort: null,
+    encre: '#16224D',
+    encreFort: '#16224D',
+    accent: '#22337A',
+    accent2: '#7F8FC4',
+    doux: '#E8ECF7',
+    discret: '#55608A',
+    policeTitre: 'Arial',
+    policeCorps: 'Arial',
+    majuscules: false,
+    decor: 'diagonale',
+  },
+  {
+    id: 'corporate',
+    nom: 'Corporate gris',
+    fond: '#FFFFFF',
+    fondFort: '#3D3D3D',
+    encre: '#2B2B2B',
+    encreFort: '#FFFFFF',
+    accent: '#3D3D3D',
+    accent2: '#9A9A9A',
+    doux: '#EFEFEF',
+    discret: '#6E6E6E',
+    policeTitre: 'Arial',
+    policeCorps: 'Arial',
+    majuscules: false,
+    decor: 'traits',
+  },
+  {
+    id: 'olive',
+    nom: 'Olive vintage',
+    fond: '#F4EFE1',
+    fondFort: null,
+    encre: '#3B3A2A',
+    encreFort: '#3B3A2A',
+    accent: '#7E9470',
+    accent2: '#B9C7A9',
+    doux: '#E6E6D2',
+    discret: '#6C6B57',
+    policeTitre: 'Georgia',
+    policeCorps: 'Georgia',
+    majuscules: true,
+    decor: 'cartes',
+  },
+  {
+    id: 'juridique',
+    nom: 'Noir et or',
+    fond: '#FFFFFF',
+    fondFort: '#1C1D24',
+    encre: '#1C1D24',
+    encreFort: '#F3EEE2',
+    accent: '#BFA77A',
+    accent2: '#8C7A52',
+    doux: '#F2EEE6',
+    discret: '#5D5E66',
+    policeTitre: 'Georgia',
+    policeCorps: 'Arial',
+    majuscules: false,
+    decor: 'or',
+  },
+  {
+    id: 'marine',
+    nom: 'Marine',
+    fond: '#F7F4EE',
+    fondFort: '#1E2A47',
+    encre: '#1E2A47',
+    encreFort: '#F7F4EE',
+    accent: '#1E2A47',
+    accent2: '#8A9BB8',
+    doux: '#E4E8F0',
+    discret: '#55607A',
+    policeTitre: 'Impact',
+    policeCorps: 'Arial',
+    majuscules: true,
+    decor: 'marine',
+  },
+  {
+    id: 'cercles',
+    nom: 'Cercles bleus',
+    fond: '#FFFFFF',
+    fondFort: null,
+    encre: '#1D2F45',
+    encreFort: '#1D2F45',
+    accent: '#2E5A8A',
+    accent2: '#9FB4CC',
+    doux: '#E6EDF5',
+    discret: '#58697C',
+    policeTitre: 'Arial',
+    policeCorps: 'Arial',
+    majuscules: false,
+    decor: 'anneaux',
+  },
+  {
+    id: 'emeraude',
+    nom: 'Émeraude',
+    fond: '#FFFFFF',
+    fondFort: '#1F4D3F',
+    encre: '#17352C',
+    encreFort: '#FFFFFF',
+    accent: '#1F4D3F',
+    accent2: '#6FA88E',
+    doux: '#E4EFE9',
+    discret: '#557066',
+    policeTitre: 'Arial Black',
+    policeCorps: 'Arial',
+    majuscules: true,
+    decor: 'emeraude',
+  },
+  {
+    id: 'foret',
+    nom: 'Forêt',
+    fond: '#FFFFFF',
+    fondFort: null,
+    encre: '#173322',
+    encreFort: '#173322',
+    accent: '#1E6B3A',
+    accent2: '#9CC5A8',
+    doux: '#E3F0E7',
+    discret: '#4F6A58',
+    policeTitre: 'Arial Black',
+    policeCorps: 'Arial',
+    majuscules: true,
+    decor: 'foret',
+  },
+  {
+    id: 'prestige',
+    nom: 'Prestige or',
+    fond: '#FFFFFF',
+    fondFort: '#0E1E3A',
+    encre: '#0E1E3A',
+    encreFort: '#FFFFFF',
+    accent: '#0E1E3A',
+    accent2: '#D4A93C',
+    doux: '#EEF1F6',
+    discret: '#4E5A70',
+    policeTitre: 'Arial Black',
+    policeCorps: 'Arial',
+    majuscules: true,
+    decor: 'prestige',
   },
 ];
 
