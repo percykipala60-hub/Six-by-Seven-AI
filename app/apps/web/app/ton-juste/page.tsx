@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
 import { GameShell } from '@/components/GameShell';
+import { PRODUIT } from '@/lib/marque';
 
 export const metadata: Metadata = {
   title: 'Le jeu du ton juste — Six',
-  description:
-    'Trouve les mots justes dans 15 situations de la vie de tous les jours. Un jeu Six by Seven.AI.',
+  description: `Trouve les mots justes dans 15 situations de la vie de tous les jours. Un jeu ${PRODUIT}.`,
   robots: 'noindex, nofollow',
 };
 

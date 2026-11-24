@@ -157,7 +157,7 @@ function effacerDiscussionsSeven(): void {
 }
 
 /**
- * Réunit deux mémoires (ce téléphone et le compte) : rien n'est perdu, la version la plus récente d'une note gagne.
+ * Réunit deux mémoires (cet appareil et le compte) : rien n'est perdu, la version la plus récente d'une note gagne.
  * Limite connue : un suivi marqué fait sur un seul appareil peut revenir de l'autre.
  */
 export function fusionner(a: unknown, b: unknown): Memoire {
@@ -177,7 +177,7 @@ export function fusionner(a: unknown, b: unknown): Memoire {
   return curer({ choix, contacts: [...contacts.values()].sort((p, q) => p.vu - q.vu), suivis });
 }
 
-/** Remplace la mémoire de ce téléphone (après une synchronisation avec le compte). */
+/** Remplace la mémoire de cet appareil (après une synchronisation avec le compte). */
 export function remplacerMemoire(m: unknown): void {
   ecrire(curer(m));
 }

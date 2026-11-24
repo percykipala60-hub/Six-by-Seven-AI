@@ -1,0 +1,14 @@
+{
+  "name": "@six/bureau",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Six by Seven.AI — application de bureau (Electron) : l'app Six avec un vrai navigateur dans Cosinus.",
+  "main": "main.cjs",
+  "scripts": {
+    "start": "electron .",
+    "typecheck": "node --check main.cjs && node --check preload.cjs"
+  },
+  "devDependencies": {
+    "electron": "45.3.4"
+  }
+}

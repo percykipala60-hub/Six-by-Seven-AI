@@ -5,7 +5,9 @@ import { usePathname } from 'next/navigation';
 import {
   CONNEXION_DISPONIBLE,
   MDP_MIN_INSCRIPTION,
+  annulerConnexionBureau,
   connecterAvecFournisseur,
+  dansAppBureau,
   connecterParMotDePasse,
   demarrerCompte,
   ecouterCompte,
@@ -211,9 +213,6 @@ export function FormulaireConnexion() {
     } else {
       setMotDePasse('');
       setConfirmationMdp('');
-      setInfo(
-        'Compte créé. Ta mémoire reste sur ce téléphone, sauf si tu choisis de la copier sur ton compte.',
-      );
     }
   }
 
@@ -246,18 +245,12 @@ export function FormulaireConnexion() {
     setBusy(false);
     if (err) setErreur(err);
     else {
-      const inscription = etapeCode.type === 'inscription';
       setEtapeCode(null);
       setCodeOtp('');
       setEmail('');
       setMotDePasse('');
       setConfirmationMdp('');
       setMode('connexion');
-      setInfo(
-        inscription
-          ? 'Adresse confirmée, ton compte est prêt. Ta mémoire reste sur ce téléphone, sauf si tu choisis de la copier sur ton compte.'
-          : 'Ravi de te revoir !',
-      );
     }
   }
 
@@ -296,7 +289,7 @@ export function FormulaireConnexion() {
               ? 'Dernière étape : confirme que cette adresse est bien la tienne.'
               : 'Pour ta sécurité, chaque connexion se confirme avec un code reçu par e-mail.'
             : mode === 'inscription'
-              ? 'Un compte suffit pour utiliser Six. Ta mémoire reste sur ce téléphone, sauf si tu choisis de la copier sur ton compte.'
+              ? 'Un compte suffit pour utiliser Six. Ta mémoire reste sur cet appareil, sauf si tu choisis de la copier sur ton compte.'
               : mode === 'oubli'
                 ? 'On t’enverra un lien sécurisé pour choisir un nouveau mot de passe.'
                 : 'Connecte-toi ou crée ton compte pour commencer.'}
@@ -335,6 +328,14 @@ export function FormulaireConnexion() {
                 </button>
               )}
             </div>
+            {socialBusy && dansAppBureau() && (
+              <div className="auth-attente-navigateur">
+                <p>Termine la connexion dans ton navigateur : Six reprend ici tout seul ensuite.</p>
+                <button type="button" className="auth-lien" onClick={annulerConnexionBureau}>
+                  Annuler
+                </button>
+              </div>
+            )}
             <div className="auth-divider" role="separator">
               <span>ou par e-mail</span>
             </div>
@@ -732,7 +733,15 @@ export function FormulaireConnexion() {
 }
 
 // Pages lisibles sans compte : les textes légaux (liés depuis le formulaire d'inscription).
-const PAGES_PUBLIQUES = ['/conditions', '/confidentialite', '/mentions'];
+// Sans compte aussi : le retour de connexion (il sert justement à se connecter) et les partages du Cloud (lus par
+// des personnes qui n'ont pas forcément de compte).
+const PAGES_PUBLIQUES = [
+  '/conditions',
+  '/confidentialite',
+  '/mentions',
+  '/connexion/retour',
+  '/partage',
+];
 
 /**
  * Le compte est obligatoire : tant que la personne n'est pas connectée, l'app affiche l'écran de connexion

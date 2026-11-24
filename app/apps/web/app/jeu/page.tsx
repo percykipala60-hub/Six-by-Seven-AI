@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import { GameShell } from '@/components/GameShell';
+import { PRODUIT } from '@/lib/marque';
 
 export const metadata: Metadata = {
   title: 'Kin Rush — Six',
-  description: 'Course de moto-taxi à travers Kinshasa. Un jeu Six by Seven.AI.',
+  description: `Course de moto-taxi à travers Kinshasa. Un jeu ${PRODUIT}.`,
   robots: 'noindex, nofollow',
 };
 

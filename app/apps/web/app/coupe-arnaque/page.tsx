@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
 import { GameShell } from '@/components/GameShell';
+import { PRODUIT } from '@/lib/marque';
 
 export const metadata: Metadata = {
   title: "Coupe l'arnaque — Six",
-  description:
-    'Enquête sur des messages piégés et apprends à reconnaître les arnaques dans un jeu Six by Seven.AI.',
+  description: `Enquête sur des messages piégés et apprends à reconnaître les arnaques dans un jeu ${PRODUIT}.`,
   robots: 'noindex, nofollow',
 };
 

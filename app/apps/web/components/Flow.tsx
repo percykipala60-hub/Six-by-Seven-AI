@@ -350,7 +350,7 @@ async function copyText(text: string): Promise<boolean> {
 
 // Ce que Six fait pendant qu'il réfléchit (composant Reflexion) : des phrases sur le travail, pas une barre de progression.
 const PHASES_LIRE = [
-  'Je masque les noms sur ton téléphone…',
+  'Je masque les noms sur ton appareil…',
   'Je lis la conversation…',
   "Je cherche ce que l'autre veut dire…",
   "Je vérifie s'il y a une arnaque…",
@@ -543,9 +543,9 @@ export function Flow() {
     const action = new URLSearchParams(window.location.search).get('action');
     if (action === 'whatsapp') {
       setStep('whatsapp');
-      window.history.replaceState(null, '', '/');
+      window.history.replaceState(null, '', '/responsive');
     } else if (action) {
-      window.history.replaceState(null, '', '/');
+      window.history.replaceState(null, '', '/responsive');
     }
   }, []);
 
@@ -606,7 +606,7 @@ export function Flow() {
       prepare(
         read,
         false,
-        `Lu sur ${files.length > 1 ? `tes ${files.length} captures, dans l'ordre` : 'ta capture'}, sur ton téléphone. « Moi » = tes messages, « Autre » = l'autre personne.`,
+        `Lu sur ${files.length > 1 ? `tes ${files.length} captures, dans l'ordre` : 'ta capture'}, sur ton appareil. « Moi » = tes messages, « Autre » = l'autre personne.`,
       );
     } catch (e) {
       setError(
@@ -991,7 +991,7 @@ export function Flow() {
     if (!gardeeDemandee) return;
     const g = lireConversations().find((c) => c.id === gardeeDemandee);
     if (g) rouvrirConversation(g);
-    router.replace('/', { scroll: false });
+    router.replace('/responsive', { scroll: false });
     // rouvrirConversation ne dépend que des réglages de l'écran : on ne relance que pour une nouvelle demande.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gardeeDemandee]);
@@ -1060,7 +1060,7 @@ export function Flow() {
           <p className="muted small">
             {ex.fichier
               ? `${ex.label} sait exporter la discussion : Six lit le fichier et garde les derniers messages.`
-              : `${ex.label} ne fournit pas de fichier d'export. Six lit la capture sur ton téléphone, elle n'est jamais envoyée.`}
+              : `${ex.label} ne fournit pas de fichier d'export. Six lit la capture sur ton appareil, elle n'est jamais envoyée.`}
           </p>
           <button className="link" aria-expanded={tuto} onClick={() => setTuto((v) => !v)}>
             <Icon name="bulb" size={16} /> {tuto ? "Masquer le mode d'emploi" : 'Comment ça marche'}
@@ -1280,7 +1280,7 @@ export function Flow() {
                         ))}
                       </div>
                       <p className="muted small">
-                        Ce nom reste sur ton téléphone : l&apos;IA voit seulement « Moi ».
+                        Ce nom reste sur ton appareil : l&apos;IA voit seulement « Moi ».
                       </p>
                     </div>
                   )}
@@ -1432,7 +1432,7 @@ export function Flow() {
                           placeholder="Ex : mon petit frère, on se tutoie, il aime plaisanter"
                         />
                         <p className="muted small">
-                          Gardé sur ton téléphone pour les prochaines fois. Envoyé avec ta demande,
+                          Gardé sur ton appareil pour les prochaines fois. Envoyé avec ta demande,
                           nom masqué.
                         </p>
                       </details>
@@ -1704,7 +1704,7 @@ export function Flow() {
                             <span className="lg-txt">
                               <span className="lg-label">Remettre les vrais noms</span>
                               <span className="lg-sous">
-                                Dans la réponse copiée, sur ton téléphone
+                                Dans la réponse copiée, sur ton appareil
                               </span>
                             </span>
                             <input
@@ -1875,7 +1875,7 @@ export function Flow() {
                 </div>
               ))}
             </div>
-            <p className="lg-pied">Gardées sur ce téléphone tant que tu les conserves.</p>
+            <p className="lg-pied">Gardées sur cet appareil tant que tu les conserves.</p>
           </section>
         )}
       </div>
@@ -1907,7 +1907,7 @@ export function Flow() {
               <Icon name="image" size={22} stroke={1.75} />
               <span className="attach-txt">
                 <span>Captures d&apos;écran</span>
-                <span className="attach-sous">Lues sur ton téléphone, jamais envoyées</span>
+                <span className="attach-sous">Lues sur ton appareil, jamais envoyées</span>
               </span>
             </button>
             <button
@@ -1974,7 +1974,7 @@ export function Flow() {
           onChange={(e) => addShots(e.target.files)}
         />
         <p className="privacy-line">
-          <Icon name="lock" size={13} /> Masqué sur ton téléphone
+          <Icon name="lock" size={13} /> Masqué sur ton appareil
           {memoOn ? ', gardé ici seulement' : ", rien n'est gardé"}
           {!actif && raw.length > 0 && <span>({raw.length} caractères)</span>}
         </p>

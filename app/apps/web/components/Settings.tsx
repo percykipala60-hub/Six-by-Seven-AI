@@ -29,12 +29,11 @@ import {
   ecrirePrenom,
   enRecuperation,
   lireCompte,
-  autoriserSync,
   oublierMemoireDuCompte,
-  syncAutorisee,
   type Compte,
 } from '@/lib/compte';
 import { AppBar } from './AppBar';
+import { ReglagesSixTouch } from './ReglagesSixTouch';
 import { AvatarContenu } from './AvatarContenu';
 import { CodeOtp } from './Connexion';
 import { useConfirmer } from './Confirmer';
@@ -42,6 +41,7 @@ import { Icon, type IconName } from './Icon';
 import { InterAppNotifications, InterAppOnboarding } from './InterAppNotifications';
 import { Raccourcis } from './Raccourcis';
 import { EVT_PREMIUM, PremiumVue } from './Premium';
+import { CloudSix } from './CloudSix';
 import { lireEtatPremium } from '@/lib/premium-client';
 import { ouvrirRaccourcisIOS, surIPhoneNatif } from '@/lib/raccourcis-ios';
 import {
@@ -72,8 +72,8 @@ const AMBIANCES: Tuile[] = themeColors.ambiances;
 const POLICES = [
   {
     id: 'systeme',
-    label: 'Police du téléphone',
-    court: 'Téléphone',
+    label: 'Police de l’appareil',
+    court: 'Appareil',
     family: 'var(--font-systeme)',
   },
   {
@@ -136,10 +136,11 @@ function MemoireSix() {
     <>
       {demande}
       <Groupe
+        titre="Mémoire sur cet appareil"
         pied={
           on
-            ? "Six apprend de tes choix pour écrire comme toi et se souvient de tes contacts. Tout reste sur ce téléphone ; ce qu'il apprend est oublié après 90 jours."
-            : 'Six oublie tout à chaque conversation. Rien n’est gardé sur ce téléphone.'
+            ? "Six apprend de tes choix pour écrire comme toi et se souvient de tes contacts. Tout reste sur cet appareil ; ce qu'il apprend est oublié après 90 jours."
+            : 'Six oublie tout à chaque conversation. Rien n’est gardé sur cet appareil.'
         }
       >
         <LigneInterrupteur
@@ -153,7 +154,7 @@ function MemoireSix() {
               demander({
                 titre: 'Couper la mémoire ?',
                 texte:
-                  "Six oubliera ce qu'il a appris, tes notes sur tes contacts et tes conversations gardées sur ce téléphone. On ne peut pas revenir en arrière.",
+                  "Six oubliera ce qu'il a appris, tes notes sur tes contacts et tes conversations gardées sur cet appareil. On ne peut pas revenir en arrière.",
                 action: 'Couper et tout effacer',
                 danger: true,
                 onConfirmer: () => activerMemoire(false),
@@ -212,7 +213,7 @@ function MemoireSix() {
             )}
           </Groupe>
           <Groupe
-            titre="Sur ce téléphone"
+            titre="Sur cet appareil"
             pied="Tes conversations terminées restent ici tant que tu les gardes. Tu peux aussi les effacer une par une depuis l’accueil."
           >
             <LigneInfo icon="chat" label="Conversations gardées" valeur={nbConv} />
@@ -226,7 +227,7 @@ function MemoireSix() {
                 onClick={() =>
                   demander({
                     titre: 'Effacer les conversations gardées ?',
-                    texte: `${nbConv} conversation${nbConv > 1 ? 's' : ''} et leurs réponses seront effacées de ce téléphone. On ne peut pas revenir en arrière.`,
+                    texte: `${nbConv} conversation${nbConv > 1 ? 's' : ''} et leurs réponses seront effacées de cet appareil. On ne peut pas revenir en arrière.`,
                     action: 'Effacer',
                     danger: true,
                     onConfirmer: () => {
@@ -267,16 +268,18 @@ type Vue =
   | 'memoire'
   | 'compte'
   | 'notifications'
-  | 'raccourcis';
+  | 'raccourcis'
+  | 'sixtouch';
 const TITRES: Record<Exclude<Vue, ''>, string> = {
   premium: 'Six Premium',
   theme: 'Thème',
   police: 'Police',
   style: "Mon style d'écriture",
-  memoire: 'Mémoire',
+  memoire: 'Cloud',
   compte: 'Compte',
   notifications: 'Notifications des apps',
   raccourcis: 'Bulle et clavier',
+  sixtouch: 'Cosinus',
 };
 const MODES: Record<Theme, string> = { auto: 'Auto', light: 'Clair', dark: 'Sombre' };
 
@@ -287,13 +290,6 @@ const MODES: Record<Theme, string> = { auto: 'Auto', light: 'Clair', dark: 'Somb
  */
 function CompteVue() {
   const [demande, demander] = useConfirmer();
-  const [sync, setSync] = useState(false);
-  // La copie de la mémoire sur le compte est réservée à Six Premium (règle aussi appliquée par Supabase).
-  const [premium, setPremium] = useState<boolean | null>(null);
-  useEffect(() => {
-    // En veille (paiement pas encore ouvert), la copie reste ouverte à tous.
-    void lireEtatPremium().then((e) => setPremium(e ? e.premium || e.veille : null));
-  }, []);
   const [c, setC] = useState<Compte>({ statut: 'invite', prenom: '' });
   const [prenom, setPrenom] = useState('');
 
@@ -327,20 +323,12 @@ function CompteVue() {
   const [busy, setBusy] = useState(false);
   const [erreur, setErreur] = useState('');
   const [info, setInfo] = useState('');
-  const [statsMemoire, setStatsMemoire] = useState({ habitudes: 0, contacts: 0, suivis: 0 });
 
   useEffect(() => {
     const lire = () => {
       const x = lireCompte();
       setC(x);
-      setSync(syncAutorisee());
       setPrenom(x.prenom);
-      const m = lireMemoire();
-      setStatsMemoire({
-        habitudes: m.choix.length,
-        contacts: m.contacts.length,
-        suivis: m.suivis.length,
-      });
     };
     lire();
     return ecouterCompte(lire);
@@ -369,7 +357,6 @@ function CompteVue() {
       setConfirmationNouveau('');
       setShowPwdChange(false);
       setRecuperation(false);
-      setInfo('Mot de passe enregistré. Il fonctionne dès maintenant sur tous tes appareils.');
     }
   }
 
@@ -408,7 +395,7 @@ function CompteVue() {
         pied={
           c.statut === 'connecte'
             ? 'Ton prénom est gardé sur ton compte, pour que Six te salue sur tous tes appareils.'
-            : 'Gardé sur ce téléphone seulement.'
+            : 'Gardé sur cet appareil seulement.'
         }
       >
         <div className="lg-ligne lg-statique lg-saisie">
@@ -431,49 +418,6 @@ function CompteVue() {
       {c.statut === 'connecte' ? (
         <>
           {demande}
-          <Groupe
-            titre="Mémoire et compte"
-            pied={
-              premium === false && !sync
-                ? 'Avec Six Premium, ta mémoire te suit sur tes autres appareils (Réglages > Six Premium). Sans premium, elle reste sur ce téléphone.'
-                : sync
-                  ? 'Tes habitudes, tes notes sur tes contacts et tes suivis te suivent sur tes autres appareils. Jamais tes conversations.'
-                  : 'Désactivé : ta mémoire reste sur ce téléphone. Active-le pour la retrouver sur tes autres appareils.'
-            }
-          >
-            <LigneInterrupteur
-              id="memoire-sync"
-              icon="refresh"
-              label="Copier ma mémoire sur mon compte"
-              checked={sync}
-              disabled={busy || (!sync && premium === false)}
-              onChange={async (on) => {
-                if (on) {
-                  setBusy(true);
-                  const err = await autoriserSync(true);
-                  setBusy(false);
-                  setErreur(err ?? '');
-                  setInfo(err ? '' : 'Ta mémoire est maintenant copiée sur ton compte.');
-                  return;
-                }
-                demander({
-                  titre: 'Arrêter la copie sur ton compte ?',
-                  texte:
-                    'La copie de ta mémoire gardée sur ton compte sera effacée. Celle de ce téléphone ne change pas.',
-                  action: 'Arrêter et effacer la copie',
-                  danger: true,
-                  onConfirmer: async () => {
-                    const err = await autoriserSync(false);
-                    setErreur(err ?? '');
-                    setInfo(err ? '' : 'La copie sur ton compte a été effacée.');
-                  },
-                });
-              }}
-            />
-            <LigneInfo icon="memoire" label="Habitudes apprises" valeur={statsMemoire.habitudes} />
-            <LigneInfo icon="user" label="Contacts notés" valeur={statsMemoire.contacts} />
-            <LigneInfo icon="bell" label="Rappels" valeur={statsMemoire.suivis} />
-          </Groupe>
 
           {info && (
             <div className="auth-alert-succes" role="status">
@@ -602,13 +546,12 @@ function CompteVue() {
                 demander({
                   titre: 'Effacer la mémoire partout ?',
                   texte:
-                    'Ta mémoire sera effacée de ton compte et de ce téléphone : habitudes, notes sur tes contacts et suivis. On ne peut pas revenir en arrière.',
+                    'Ta mémoire sera effacée de ton compte et de cet appareil : habitudes, notes sur tes contacts et suivis. On ne peut pas revenir en arrière.',
                   action: 'Tout effacer',
                   danger: true,
                   onConfirmer: async () => {
                     const err = await oublierMemoireDuCompte();
                     setErreur(err ?? '');
-                    setInfo(err ? '' : 'Mémoire effacée du compte et de ce téléphone.');
                   },
                 })
               }
@@ -622,7 +565,7 @@ function CompteVue() {
                 demander({
                   titre: 'Se déconnecter ?',
                   texte:
-                    'Ta mémoire reste sur ce téléphone. Tu pourras te reconnecter à tout moment avec ton adresse e-mail.',
+                    'Ta mémoire reste sur cet appareil. Tu pourras te reconnecter à tout moment avec ton adresse e-mail.',
                   action: 'Se déconnecter',
                   onConfirmer: async () => {
                     await deconnecter();
@@ -638,7 +581,7 @@ function CompteVue() {
           <b>Connexion</b>
           <p className="muted small">
             La connexion n&apos;est pas configurée sur cette version. Tu utilises Six en invité :
-            tout reste sur ce téléphone.
+            tout reste sur cet appareil.
           </p>
         </div>
       ) : null}
@@ -652,6 +595,15 @@ export function Settings() {
   // Sous-page courante (« ?v=theme » etc.) lue depuis l'URL dans un effet, sans useSearchParams :
   // plus de re-render de secours côté client (source intermittente d'hydratation #418).
   const [vue, setVue] = useState<Vue>('');
+  // Grand écran : sections à gauche, section ouverte à droite (comme les réglages d'un ordinateur).
+  const [grand, setGrand] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 900px)');
+    const lire = () => setGrand(mq.matches);
+    lire();
+    mq.addEventListener('change', lire);
+    return () => mq.removeEventListener('change', lire);
+  }, []);
   useEffect(() => {
     const lireUrl = () => {
       const v = new URLSearchParams(window.location.search).get('v') ?? '';
@@ -668,7 +620,6 @@ export function Settings() {
   const [style, setStyle] = useState<UserStyle>(DEFAULT_STYLE);
   const [expr, setExpr] = useState('');
   const [themeIconError, setThemeIconError] = useState(false);
-  const [memOn, setMemOn] = useState(false);
   const [compte, setCompte] = useState<Compte>({ statut: 'invite', prenom: '' });
   const [recherche, setRecherche] = useState('');
   const [premium, setPremium] = useState(false);
@@ -702,7 +653,6 @@ export function Settings() {
     const iconError = () => setThemeIconError(true);
     window.addEventListener('six-theme-icon-error', iconError);
     const lire = () => {
-      setMemOn(memoireActive());
       setCompte(lireCompte());
     };
     lire();
@@ -781,218 +731,231 @@ export function Settings() {
     }
   }
 
-  if (vue) {
-    return (
-      <main className="screen sub lg-page">
-        <EnteteSousPage titre={TITRES[vue]} onRetour={retour} />
-        {vue === 'theme' && (
-          <>
-            <div className="apercu" aria-label="Aperçu du thème">
-              <p className="apercu-in">On dit quoi pour samedi ?</p>
-              <p className="apercu-out">Je serai là samedi chez Maman !</p>
-            </div>
-            <Groupe
-              titre="Apparence"
-              pied={
-                TOUJOURS_CLAIR.has(accent)
-                  ? 'Le thème Rose reste toujours clair. Ton choix revient si tu changes de couleur.'
-                  : undefined
-              }
-            >
-              <div className="modes" role="radiogroup" aria-label="Apparence">
-                {(['light', 'dark', 'auto'] as const).map((m) => (
-                  <button
-                    key={m}
-                    type="button"
-                    role="radio"
-                    aria-checked={theme === m}
-                    className="mode"
-                    onClick={() => applyTheme(m)}
-                  >
-                    <span className={`mode-ecran mode-${m}`} aria-hidden="true">
-                      <i />
-                      <i />
-                      <i />
-                    </span>
-                    <span className="mode-nom">{MODES[m]}</span>
-                    <span className="mode-coche" aria-hidden="true">
-                      {theme === m && <Icon name="check" size={13} stroke={3} />}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </Groupe>
-            <Groupe titre="Fond">
-              <div className="modes fonds" role="radiogroup" aria-label="Fond">
-                {FONDS.map((f) => (
-                  <button
-                    key={f.id}
-                    type="button"
-                    role="radio"
-                    aria-checked={fond === f.id}
-                    className="mode"
-                    onClick={() => applyFond(f.id)}
-                  >
-                    <span className={`mode-ecran fond-apercu apercu-${f.id}`} aria-hidden="true" />
-                    <span className="mode-nom">{f.label}</span>
-                    <span className="mode-coche" aria-hidden="true">
-                      {fond === f.id && <Icon name="check" size={13} stroke={3} />}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </Groupe>
-            <Groupe titre="Couleur">
-              <Pastilles liste={ACCENTS} choisi={accent} onChoisir={applyAccent} />
-            </Groupe>
-            <Groupe
-              titre="Ambiances"
-              pied={
-                themeIconError
-                  ? "Six n'a pas pu changer son icône. Relance l'application puis réessaie."
-                  : "La couleur change toute l'app : fonds, boutons et icône. Ce réglage reste sur ce téléphone."
-              }
-            >
-              <Pastilles liste={AMBIANCES} choisi={accent} onChoisir={applyAccent} />
-            </Groupe>
-          </>
-        )}
-        {vue === 'police' && (
-          <Groupe pied="Si ton téléphone n’a pas la police, Six affiche la plus proche.">
-            <div role="radiogroup" aria-label="Police" className="lg-contenu">
-              {POLICES.map((p) => (
-                <LigneChoix
-                  key={p.id}
-                  label={<span style={{ fontFamily: p.family }}>{p.label}</span>}
-                  choisi={police === p.id}
-                  onClick={() => applyPolice(p.id)}
-                />
+  // Contenu d'une section : sous-page sur téléphone, panneau de droite sur grand écran.
+  const contenuVue = (vue: Exclude<Vue, ''>) => (
+    <>
+      {vue === 'theme' && (
+        <>
+          <div className="apercu" aria-label="Aperçu du thème">
+            <p className="apercu-in">On dit quoi pour samedi ?</p>
+            <p className="apercu-out">Je serai là samedi chez Maman !</p>
+          </div>
+          <Groupe
+            titre="Apparence"
+            pied={
+              TOUJOURS_CLAIR.has(accent)
+                ? 'Le thème Rose reste toujours clair. Ton choix revient si tu changes de couleur.'
+                : undefined
+            }
+          >
+            <div className="modes" role="radiogroup" aria-label="Apparence">
+              {(['light', 'dark', 'auto'] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  role="radio"
+                  aria-checked={theme === m}
+                  className="mode"
+                  onClick={() => applyTheme(m)}
+                >
+                  <span className={`mode-ecran mode-${m}`} aria-hidden="true">
+                    <i />
+                    <i />
+                    <i />
+                  </span>
+                  <span className="mode-nom">{MODES[m]}</span>
+                  <span className="mode-coche" aria-hidden="true">
+                    {theme === m && <Icon name="check" size={13} stroke={3} />}
+                  </span>
+                </button>
               ))}
             </div>
           </Groupe>
-        )}
-        {vue === 'style' && (
-          <>
-            <Groupe
-              titre="Ta façon d’écrire"
-              pied="Six s’en sert pour écrire comme toi. Ce réglage reste sur ce téléphone."
-            >
-              <div className="lg-bloc">
-                <label htmlFor="deco" className="lg-label">
-                  Registre
-                </label>
-                <input
-                  id="deco"
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={style.decontracte}
-                  onChange={(e) => updateStyle({ ...style, decontracte: Number(e.target.value) })}
-                />
-                <div className="ends" aria-hidden="true">
-                  <span>Formel</span>
-                  <span>Décontracté</span>
-                </div>
-              </div>
-              <div className="lg-bloc">
-                <label htmlFor="det" className="lg-label">
-                  Longueur
-                </label>
-                <input
-                  id="det"
-                  type="range"
-                  min={0}
-                  max={100}
-                  value={style.detaille}
-                  onChange={(e) => updateStyle({ ...style, detaille: Number(e.target.value) })}
-                />
-                <div className="ends" aria-hidden="true">
-                  <span>Bref</span>
-                  <span>Détaillé</span>
-                </div>
-              </div>
-              <LigneInterrupteur
-                id="emojis"
-                label="Emojis"
-                checked={style.emojis}
-                onChange={(on) => updateStyle({ ...style, emojis: on })}
-              />
-            </Groupe>
-            <Groupe titre="Tes expressions" pied="Jusqu’à 5 expressions que tu utilises souvent.">
-              {style.expressions.map((x) => (
-                <LigneInfo
-                  key={x}
-                  label={`« ${x} »`}
-                  valeur={
-                    <BoutonTexte
-                      label={`Retirer ${x}`}
-                      onClick={() =>
-                        updateStyle({
-                          ...style,
-                          expressions: style.expressions.filter((e) => e !== x),
-                        })
-                      }
-                    >
-                      Retirer
-                    </BoutonTexte>
-                  }
-                />
-              ))}
-              {style.expressions.length < 5 && (
-                <form
-                  className="lg-ligne lg-statique lg-saisie"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const val = expr.trim().slice(0, 40);
-                    if (val && !style.expressions.includes(val))
-                      updateStyle({ ...style, expressions: [...style.expressions, val] });
-                    setExpr('');
-                  }}
+          <Groupe titre="Fond">
+            <div className="modes fonds" role="radiogroup" aria-label="Fond">
+              {FONDS.map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={fond === f.id}
+                  className="mode"
+                  onClick={() => applyFond(f.id)}
                 >
-                  <label className="sr" htmlFor="expr">
-                    Ajouter une expression
-                  </label>
-                  <input
-                    id="expr"
-                    type="text"
-                    value={expr}
-                    maxLength={40}
-                    onChange={(e) => setExpr(e.target.value)}
-                    placeholder="Ajouter, ex. : Pas de souci"
-                  />
-                  <button type="submit" className="lg-ajout" disabled={!expr.trim()}>
-                    Ajouter
-                  </button>
-                </form>
-              )}
-            </Groupe>
-            <Groupe>
-              <Ligne
-                danger
-                label="Effacer mon style"
-                onClick={() =>
-                  demander({
-                    titre: 'Effacer ton style ?',
-                    texte:
-                      'Ton registre, ta longueur préférée et tes expressions reviendront aux réglages de départ.',
-                    action: 'Effacer',
-                    danger: true,
-                    onConfirmer: () => {
-                      clearStyle();
-                      setStyle(DEFAULT_STYLE);
-                    },
-                  })
+                  <span className={`mode-ecran fond-apercu apercu-${f.id}`} aria-hidden="true" />
+                  <span className="mode-nom">{f.label}</span>
+                  <span className="mode-coche" aria-hidden="true">
+                    {fond === f.id && <Icon name="check" size={13} stroke={3} />}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </Groupe>
+          <Groupe titre="Couleur">
+            <Pastilles liste={ACCENTS} choisi={accent} onChoisir={applyAccent} />
+          </Groupe>
+          <Groupe
+            titre="Ambiances"
+            pied={
+              themeIconError
+                ? "Six n'a pas pu changer son icône. Relance l'application puis réessaie."
+                : "La couleur change toute l'app : fonds, boutons et icône. Ce réglage reste sur cet appareil."
+            }
+          >
+            <Pastilles liste={AMBIANCES} choisi={accent} onChoisir={applyAccent} />
+          </Groupe>
+        </>
+      )}
+      {vue === 'police' && (
+        <Groupe pied="Si ton appareil n’a pas la police, Six affiche la plus proche.">
+          <div role="radiogroup" aria-label="Police" className="lg-contenu">
+            {POLICES.map((p) => (
+              <LigneChoix
+                key={p.id}
+                label={<span style={{ fontFamily: p.family }}>{p.label}</span>}
+                choisi={police === p.id}
+                onClick={() => applyPolice(p.id)}
+              />
+            ))}
+          </div>
+        </Groupe>
+      )}
+      {vue === 'style' && (
+        <>
+          <Groupe
+            titre="Ta façon d’écrire"
+            pied="Six s’en sert pour écrire comme toi. Ce réglage reste sur cet appareil."
+          >
+            <div className="lg-bloc">
+              <label htmlFor="deco" className="lg-label">
+                Registre
+              </label>
+              <input
+                id="deco"
+                type="range"
+                min={0}
+                max={100}
+                value={style.decontracte}
+                onChange={(e) => updateStyle({ ...style, decontracte: Number(e.target.value) })}
+              />
+              <div className="ends" aria-hidden="true">
+                <span>Formel</span>
+                <span>Décontracté</span>
+              </div>
+            </div>
+            <div className="lg-bloc">
+              <label htmlFor="det" className="lg-label">
+                Longueur
+              </label>
+              <input
+                id="det"
+                type="range"
+                min={0}
+                max={100}
+                value={style.detaille}
+                onChange={(e) => updateStyle({ ...style, detaille: Number(e.target.value) })}
+              />
+              <div className="ends" aria-hidden="true">
+                <span>Bref</span>
+                <span>Détaillé</span>
+              </div>
+            </div>
+            <LigneInterrupteur
+              id="emojis"
+              label="Emojis"
+              checked={style.emojis}
+              onChange={(on) => updateStyle({ ...style, emojis: on })}
+            />
+          </Groupe>
+          <Groupe titre="Tes expressions" pied="Jusqu’à 5 expressions que tu utilises souvent.">
+            {style.expressions.map((x) => (
+              <LigneInfo
+                key={x}
+                label={`« ${x} »`}
+                valeur={
+                  <BoutonTexte
+                    label={`Retirer ${x}`}
+                    onClick={() =>
+                      updateStyle({
+                        ...style,
+                        expressions: style.expressions.filter((e) => e !== x),
+                      })
+                    }
+                  >
+                    Retirer
+                  </BoutonTexte>
                 }
               />
-            </Groupe>
-            {demande}
-          </>
-        )}
-        {vue === 'memoire' && <MemoireSix />}
-        {vue === 'premium' && <PremiumVue />}
-        {vue === 'compte' && <CompteVue />}
-        {vue === 'notifications' && <InterAppNotifications />}
-        {vue === 'raccourcis' && <Raccourcis />}
+            ))}
+            {style.expressions.length < 5 && (
+              <form
+                className="lg-ligne lg-statique lg-saisie"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const val = expr.trim().slice(0, 40);
+                  if (val && !style.expressions.includes(val))
+                    updateStyle({ ...style, expressions: [...style.expressions, val] });
+                  setExpr('');
+                }}
+              >
+                <label className="sr" htmlFor="expr">
+                  Ajouter une expression
+                </label>
+                <input
+                  id="expr"
+                  type="text"
+                  value={expr}
+                  maxLength={40}
+                  onChange={(e) => setExpr(e.target.value)}
+                  placeholder="Ajouter, ex. : Pas de souci"
+                />
+                <button type="submit" className="lg-ajout" disabled={!expr.trim()}>
+                  Ajouter
+                </button>
+              </form>
+            )}
+          </Groupe>
+          <Groupe>
+            <Ligne
+              danger
+              label="Effacer mon style"
+              onClick={() =>
+                demander({
+                  titre: 'Effacer ton style ?',
+                  texte:
+                    'Ton registre, ta longueur préférée et tes expressions reviendront aux réglages de départ.',
+                  action: 'Effacer',
+                  danger: true,
+                  onConfirmer: () => {
+                    clearStyle();
+                    setStyle(DEFAULT_STYLE);
+                  },
+                })
+              }
+            />
+          </Groupe>
+          {demande}
+        </>
+      )}
+      {vue === 'memoire' && (
+        <>
+          <CloudSix onPremium={() => ouvrir('premium')} />
+          <MemoireSix />
+        </>
+      )}
+      {vue === 'premium' && <PremiumVue />}
+      {vue === 'compte' && <CompteVue />}
+      {vue === 'notifications' && <InterAppNotifications />}
+      {vue === 'raccourcis' && <Raccourcis />}
+      {vue === 'sixtouch' && <ReglagesSixTouch />}
+    </>
+  );
+
+  if (vue && !grand) {
+    return (
+      <main className="screen sub lg-page">
+        <EnteteSousPage titre={TITRES[vue]} onRetour={retour} />
+        {contenuVue(vue)}
       </main>
     );
   }
@@ -1044,11 +1007,18 @@ export function Settings() {
       cles: 'registre longueur emoji expressions ton',
     },
     {
+      id: 'sixtouch',
+      icon: 'sixtouch',
+      label: 'Cosinus',
+      sous: 'Espace de travail, navigateur',
+      cles: 'cosinus sixtouch navigateur historique espace dossier agent fichiers',
+    },
+    {
       id: 'memoire',
-      icon: 'memoire',
-      label: 'Mémoire',
-      sous: memOn ? 'Activée, gardée sur ce téléphone' : 'Désactivée',
-      cles: 'contacts conversations gardées habitudes effacer',
+      icon: 'cloud',
+      label: 'Cloud',
+      sous: 'Synchronisation, partages et mémoire de Six',
+      cles: 'cloud mémoire synchroniser partager partages appareils contacts conversations gardées habitudes effacer premium',
     },
     {
       id: 'raccourcis',
@@ -1099,6 +1069,97 @@ export function Settings() {
   const q = normaliser(recherche.trim());
   const correspond = (e: (typeof entrees)[number]) =>
     !q || normaliser(`${e.label} ${e.sous ?? ''} ${e.cles}`).includes(q);
+  if (grand) {
+    const actif: Exclude<Vue, ''> = vue || 'compte';
+    return (
+      <>
+        <AppBar page="reglages" titre="" />
+        <main className="screen settings reglages-grand">
+          <nav className="reglages-menu" aria-label="Sections des réglages">
+            <h1 className="reglages-menu-titre">Réglages</h1>
+            <div className="lg-recherche">
+              <Icon name="search" size={16} />
+              <input
+                type="search"
+                value={recherche}
+                onChange={(e) => setRecherche(e.target.value)}
+                placeholder="Rechercher"
+                aria-label="Rechercher un réglage"
+              />
+            </div>
+            {!q && (
+              <button
+                type="button"
+                className="reglages-entree reglages-profil"
+                aria-current={actif === 'compte' ? 'page' : undefined}
+                onClick={() => ouvrir('compte')}
+              >
+                <span className="avatar lg-avatar" aria-hidden="true">
+                  <AvatarContenu c={compte} taille={22} trait={1.75} />
+                </span>
+                <span className="reglages-entree-txt">{compte.prenom || 'Invité'}</span>
+              </button>
+            )}
+            {entrees.filter(correspond).map((e) =>
+              e.href ? (
+                <a
+                  key={e.id}
+                  className="reglages-entree"
+                  href={e.href}
+                  target={e.externe ? '_blank' : undefined}
+                  rel={e.externe ? 'noopener noreferrer' : undefined}
+                >
+                  <Icon name={e.icon} size={18} />
+                  <span className="reglages-entree-txt">{e.label}</span>
+                  {e.externe && <Icon name="up" size={13} />}
+                </a>
+              ) : (
+                <button
+                  key={e.id}
+                  type="button"
+                  className="reglages-entree"
+                  aria-current={actif === e.id ? 'page' : undefined}
+                  onClick={() => (e.action ? e.action() : ouvrir(e.id as Vue))}
+                >
+                  <Icon name={e.icon} size={18} />
+                  <span className="reglages-entree-txt">{e.label}</span>
+                </button>
+              ),
+            )}
+            {q && !entrees.some(correspond) && (
+              <p className="lg-pied">Aucun réglage ne correspond.</p>
+            )}
+            {compte.statut === 'connecte' && (
+              <button
+                type="button"
+                className="reglages-entree danger"
+                onClick={() =>
+                  demander({
+                    titre: 'Se déconnecter ?',
+                    texte:
+                      'Ta mémoire reste sur cet appareil. Tu pourras te reconnecter à tout moment avec ton adresse e-mail.',
+                    action: 'Se déconnecter',
+                    onConfirmer: () => deconnecter(),
+                  })
+                }
+              >
+                <Icon name="logout" size={18} />
+                <span className="reglages-entree-txt">Se déconnecter</span>
+              </button>
+            )}
+          </nav>
+          <section className="reglages-contenu" aria-labelledby="reglages-titre">
+            <h2 id="reglages-titre" className="reglages-contenu-titre">
+              {TITRES[actif]}
+            </h2>
+            {contenuVue(actif)}
+          </section>
+          {demande}
+        </main>
+      </>
+    );
+  }
+
   return (
     <>
       <AppBar page="reglages" titre="" />
@@ -1126,7 +1187,7 @@ export function Settings() {
                 <span className="lg-sous">
                   {compte.statut === 'connecte'
                     ? compte.identifiant
-                    : 'Mode invité, tout reste sur ce téléphone'}
+                    : 'Mode invité, tout reste sur cet appareil'}
                 </span>
               </span>
             </button>
@@ -1171,7 +1232,7 @@ export function Settings() {
                 demander({
                   titre: 'Se déconnecter ?',
                   texte:
-                    'Ta mémoire reste sur ce téléphone. Tu pourras te reconnecter à tout moment avec ton adresse e-mail.',
+                    'Ta mémoire reste sur cet appareil. Tu pourras te reconnecter à tout moment avec ton adresse e-mail.',
                   action: 'Se déconnecter',
                   onConfirmer: () => deconnecter(),
                 })

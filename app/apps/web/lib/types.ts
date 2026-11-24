@@ -87,9 +87,22 @@ export interface RepliesInput {
   canal?: Canal;
 }
 
+/** Pièce jointe montrée dans le Chat (carré d'aperçu) : jamais envoyée telle quelle au serveur. */
+export interface PieceAffichee {
+  genre: 'capture' | 'image' | 'video' | 'document';
+  nom: string;
+  /** Petite image JPEG (data URL) : la capture, l'image, la première image de la vidéo. */
+  apercu?: string;
+}
+
 export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
+  /** Pièces jointes du message, pour l'affichage seulement (retirées avant l'envoi au serveur). */
+  pieces?: PieceAffichee[];
+  /** Cosinus : ce que l'agent a fait (« Six lit … ») et les fichiers qu'il a enregistrés. Affichage seulement. */
+  etapes?: string[];
+  fichiers?: string[];
 }
 
 export interface ChatResult {

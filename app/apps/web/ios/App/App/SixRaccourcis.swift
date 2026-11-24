@@ -19,8 +19,8 @@ enum SixDestination: String, CaseIterable {
     /// Page de l'app web à ouvrir.
     var route: String {
         switch self {
-        case .repondre: return "/"
-        case .sevenAI: return "/seven-ai"
+        case .repondre: return "/responsive"
+        case .sevenAI: return "/chat"
         case .sujets: return "/sujets"
         case .jeux: return "/espace-jeu"
         }

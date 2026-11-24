@@ -89,7 +89,7 @@ export function InterAppOnboarding({ connected }: { connected: boolean }) {
       </b>
       <p className="muted small">
         Sur Android, tu choisis les apps et autorises séparément l&apos;accès aux notifications et
-        la bulle flottante. Les messages restent sur ce téléphone et ne sont jamais envoyés à
+        la bulle flottante. Les messages restent sur cet appareil et ne sont jamais envoyés à
         l&apos;IA sans ton action.
       </p>
       {error && (
@@ -209,7 +209,7 @@ export function InterAppNotifications() {
     }
     try {
       sessionStorage.setItem('six-notification-draft', draft);
-      router.push('/');
+      router.push('/responsive');
     } catch {
       setError(
         "Six n'a pas pu préparer ce message sur cet appareil. Le texte n'a pas été transmis.",
@@ -336,8 +336,23 @@ export function InterAppNotifications() {
   );
 }
 
-/** Pages que les raccourcis iPhone (App Intents, liens six://) peuvent ouvrir. */
-const PAGES_RACCOURCIS = new Set(['/', '/seven-ai', '/sujets', '/espace-jeu']);
+/**
+ * Pages que les raccourcis iPhone (App Intents, liens six://) peuvent ouvrir. Les anciennes adresses restent
+ * comprises, car l'app iPhone déjà installée les envoie encore : « / » voulait dire Responsive, « /seven-ai » le Chat.
+ */
+const PAGES_RACCOURCIS: Record<string, string> = {
+  '/': '/responsive',
+  '/responsive': '/responsive',
+  '/seven-ai': '/chat',
+  '/chat': '/chat',
+  '/sixtouch': '/cosinus',
+  '/cosinus': '/cosinus',
+  '/sujets': '/sujets',
+  '/espace-jeu': '/espace-jeu',
+};
+
+/** Un message partagé ou une capture à analyser s'ouvre dans Responsive (l'app démarre sur le Chat). */
+const RESPONSIVE = '/responsive';
 
 export function InterAppLaunchHandler() {
   const router = useRouter();
@@ -358,16 +373,19 @@ export function InterAppLaunchHandler() {
           if (active && text) {
             sessionStorage.setItem('six-notification-draft', text);
             window.dispatchEvent(new Event('six-shared-draft'));
+            if (window.location.pathname !== RESPONSIVE) router.push(RESPONSIVE);
           }
           // Capture d'écran du raccourci « Analyser une capture avec Six » : lue ensuite sur le téléphone.
           const capture = await share.consumeSharedCapture?.().catch(() => null);
-          if (active && capture?.data) deposerCapture(capture.data, capture.type);
+          if (active && capture?.data && deposerCapture(capture.data, capture.type)) {
+            if (window.location.pathname !== RESPONSIVE) router.push(RESPONSIVE);
+          }
           // Raccourci (Siri, bouton Action…) ou lien six:// : ouvre la page demandée, parmi celles connues.
           const { route } = (await share.consumePendingRoute?.().catch(() => null)) ?? {
             route: '',
           };
-          if (active && PAGES_RACCOURCIS.has(route) && route !== window.location.pathname)
-            router.push(route);
+          const cible = PAGES_RACCOURCIS[route];
+          if (active && cible && cible !== window.location.pathname) router.push(cible);
         } catch {
           // Le plugin n'existe que dans l'application iOS native.
         }

@@ -5,9 +5,18 @@ import type { ChatMessage } from './types';
  * Discussions avec Seven AI, gardées sur l'appareil (jamais envoyées sur le compte).
  * Comme avant, rien n'est gardé quand la mémoire de Six est coupée.
  * Le menu latéral les liste (« Nouvelle discussion », puis les plus récentes) et l'écran
- * Seven AI ouvre celle demandée par l'adresse (`/seven-ai?c=<id>`).
+ * Seven AI ouvre celle demandée par l'adresse (`/chat?c=<id>`).
  */
-export type ChatSeven = { id: string; titre: string; maj: number; messages: ChatMessage[] };
+/** Espace de la discussion : « chat » (discussion libre) ou « sixtouch » (travail avec l'agent). */
+export type ModeChat = 'chat' | 'sixtouch';
+export type ChatSeven = {
+  id: string;
+  titre: string;
+  maj: number;
+  messages: ChatMessage[];
+  /** Absent pour les discussions d'avant Cosinus : ce sont des discussions du Chat. */
+  mode?: ModeChat;
+};
 
 const CLE = 'seven-ai-chats';
 const ANCIENNE_CLE = 'seven-ai-chat'; // une seule discussion, avant la liste
@@ -90,13 +99,14 @@ export function lireChat(id: string): ChatSeven | undefined {
 }
 
 /** Enregistre (ou met à jour) une discussion et la remonte en tête de liste. */
-export function garderChat(id: string, messages: ChatMessage[]): void {
+export function garderChat(id: string, messages: ChatMessage[], mode: ModeChat = 'chat'): void {
   if (!memoireActive() || messages.length === 0) return;
   const chat: ChatSeven = {
     id,
     titre: titreDe(messages),
     maj: Date.now(),
     messages: messages.slice(-MAX_MSG),
+    ...(mode === 'sixtouch' ? { mode } : {}),
   };
   ecrire([chat, ...lireChats().filter((c) => c.id !== id)]);
 }

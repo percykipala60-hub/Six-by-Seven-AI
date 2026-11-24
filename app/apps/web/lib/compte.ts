@@ -157,6 +157,18 @@ function obtenirRedirectUrl(): string {
     : 'https://app.sixbysevenai.com';
 }
 
+/**
+ * Site qui sert la page /connexion/retour : celui de l'app de bureau (serveur local en http, ou site en ligne),
+ * sinon le site public. L'app Android tourne sur https://localhost, qui n'existe pas dans le navigateur du téléphone.
+ */
+function originePageRetour(): string {
+  const origin = typeof window !== 'undefined' ? window.location.origin : '';
+  return /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) ||
+    (origin.startsWith('https://') && !origin.startsWith('https://localhost'))
+    ? origin
+    : 'https://app.sixbysevenai.com';
+}
+
 function obtenirOrigineOAuth(): string {
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
   return origin.startsWith('http') ? origin : 'https://app.sixbysevenai.com';
@@ -359,9 +371,89 @@ export function lireRetourOAuth(adresse: string): RetourOAuth {
  * du système ; Android : SixAuthPlugin.java, navigateur du téléphone), qui reviennent par six://auth,
  * « ancienne-app » (build iPhone sans ce plugin) ou null (ancien APK Android : fenêtre à part).
  */
-async function connexionNative(): Promise<
-  { ouvrir(o: { url: string }): Promise<{ url: string }> } | 'ancienne-app' | 'web' | null
-> {
+/**
+ * App de bureau : ouvre la connexion dans le navigateur de l'ordinateur, puis attend son retour par deux chemins :
+ * le relais du serveur local (la page /connexion/retour y dépose ce que Supabase a donné : rien à cliquer) ou, en
+ * secours, le lien six://auth (bouton de la page). Le premier arrivé gagne ; l'app revient au premier plan.
+ */
+async function connexionBureau(
+  bureau: { ouvrir(url: string): Promise<{ url: string }>; premierPlan?(): Promise<void> },
+  url: string,
+): Promise<{ url: string }> {
+  const r = await fetch('/api/connexion/relais', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ action: 'attendre' }),
+  }).catch(() => null);
+  const id = r?.ok ? ((await r.json()) as { id?: string }).id : undefined;
+  let fini = false;
+  // « Annuler » (annulerConnexionBureau) libère l'attente.
+  const parAnnulation = new Promise<{ url: string }>((resoudre) => {
+    annulerAttente = () => resoudre({ url: '' });
+  });
+  const parRelais = new Promise<{ url: string }>((resoudre) => {
+    if (!id) return;
+    const fin = Date.now() + 10 * 60_000;
+    const tour = async () => {
+      if (fini) return;
+      if (Date.now() > fin) return resoudre({ url: '' }); // abandon : le bouton se libère
+      const rep = await fetch(`/api/connexion/relais?id=${encodeURIComponent(id)}`, {
+        cache: 'no-store',
+      }).catch(() => null);
+      if (rep?.status === 200) {
+        const { retour } = (await rep.json()) as { retour: string };
+        return resoudre({ url: `${RETOUR_OAUTH_APP}${retour}` });
+      }
+      if (rep?.status === 410) return resoudre({ url: '' });
+      setTimeout(() => void tour(), 1000);
+    };
+    void tour();
+  });
+  // Le lien six:// ne compte que s'il apporte quelque chose (une adresse vide = abandon ou refus).
+  const parLien = bureau
+    .ouvrir(url)
+    .then((x) => (x.url ? x : new Promise<{ url: string }>(() => {})));
+  const resultat = await Promise.race([parRelais, parLien, parAnnulation]);
+  fini = true;
+  annulerAttente = null;
+  if (resultat.url) void bureau.premierPlan?.();
+  return resultat;
+}
+
+let annulerAttente: (() => void) | null = null;
+
+/** App de bureau : abandonne la connexion qui attend le retour du navigateur. */
+export function annulerConnexionBureau(): void {
+  annulerAttente?.();
+}
+
+/** Six tourne dans l'app de bureau (la connexion Google ou Apple se fait dans le navigateur de l'ordinateur). */
+export function dansAppBureau(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    Boolean((window as unknown as { sixBureau?: { connexion?: unknown } }).sixBureau?.connexion)
+  );
+}
+
+type ConnexionNative = {
+  ouvrir(o: { url: string }): Promise<{ url: string }>;
+  /** La connexion se termine dans le navigateur (Android, app de bureau) : retour par la page /connexion/retour. */
+  parNavigateur: boolean;
+};
+
+async function connexionNative(): Promise<ConnexionNative | 'ancienne-app' | 'web' | null> {
+  // App de bureau (apps/bureau) : la connexion s'ouvre dans le navigateur de l'ordinateur.
+  const bureau = (
+    window as unknown as {
+      sixBureau?: {
+        connexion?: {
+          ouvrir(url: string): Promise<{ url: string }>;
+          premierPlan?(): Promise<void>;
+        };
+      };
+    }
+  ).sixBureau?.connexion;
+  if (bureau) return { ouvrir: (o) => connexionBureau(bureau, o.url), parNavigateur: true };
   try {
     const { Capacitor, registerPlugin } = await import('@capacitor/core');
     if (!Capacitor.isNativePlatform()) return 'web';
@@ -374,7 +466,10 @@ async function connexionNative(): Promise<
     // Jamais le plugin lui-même : c'est un Proxy qui répond à toute méthode, y compris « then ».
     // Renvoyé par une fonction async, il passerait pour une promesse qui ne se résout jamais
     // (bouton bloqué sur « Ouverture d'Apple… »).
-    return { ouvrir: (o: { url: string }) => plugin.ouvrir(o) };
+    return {
+      ouvrir: (o: { url: string }) => plugin.ouvrir(o),
+      parNavigateur: Capacitor.getPlatform() === 'android',
+    };
   } catch {
     return 'web';
   }
@@ -440,11 +535,15 @@ export async function connecterAvecFournisseur(
         // Navigateur : retour sur l'accueil, dans le même onglet, déjà connecté. Dans une fenêtre à
         // part, la session s'ouvrait dans cette fenêtre (parfois un autre navigateur) et l'onglet de
         // Six restait sur l'écran de connexion.
+        // Android et app de bureau : la connexion finit dans le navigateur, sur la page /connexion/retour, qui
+        // renvoie automatiquement dans l'app (bouton « Ouvrir dans l'app Six » si le navigateur attend un geste).
         redirectTo:
           natif === 'web'
             ? `${obtenirOrigineOAuth()}/`
             : natif
-              ? RETOUR_OAUTH_APP
+              ? natif.parNavigateur
+                ? `${originePageRetour()}/connexion/retour`
+                : RETOUR_OAUTH_APP
               : `${obtenirOrigineOAuth()}/reglages?v=compte`,
         // Navigateur : Supabase change lui-même de page. Apps : on garde la main pour ouvrir la fenêtre.
         skipBrowserRedirect: natif !== 'web',
@@ -623,7 +722,7 @@ export async function verifierCode(
   return error ? messageErreur(error, id) : null;
 }
 
-/** Déconnexion : la mémoire reste sur ce téléphone, elle n'est simplement plus synchronisée. */
+/** Déconnexion : la mémoire reste sur cet appareil, elle n'est simplement plus synchronisée. */
 export async function deconnecter(): Promise<void> {
   const sb = await supabase();
   await sb?.auth.signOut();
@@ -666,7 +765,7 @@ export async function autoriserSync(on: boolean): Promise<string | null> {
     if (on) localStorage.setItem(SYNC, '1');
     else localStorage.removeItem(SYNC);
   } catch {
-    return "Six n'a pas pu enregistrer ton choix sur ce téléphone.";
+    return "Six n'a pas pu enregistrer ton choix sur cet appareil.";
   }
   annoncer();
   const sb = await supabase();
@@ -716,6 +815,8 @@ async function synchroniser(sb: SupabaseClient, userId: string) {
  * et, si la personne l'a autorisé, fusionne la mémoire à la connexion puis renvoie chaque changement au compte
  * (regroupés sur 1,5 s).
  */
+const synchronises = new Set<string>();
+
 export async function demarrerCompte(): Promise<void> {
   if (demarre) return;
   demarre = true;
@@ -764,10 +865,16 @@ export async function demarrerCompte(): Promise<void> {
     }
     annoncer();
     // Pas d'appel à Supabase directement dans ce rappel (verrou de session) : on laisse la main d'abord.
+    // Supabase réannonce SIGNED_IN à chaque retour sur l'onglet : la fusion complète n'a lieu qu'une fois par
+    // compte et par ouverture de l'app (les changements suivants partent par « six-memoire » ci-dessous).
     if (session?.user && (evenement === 'SIGNED_IN' || evenement === 'INITIAL_SESSION')) {
       const id = session.user.id;
-      setTimeout(() => void synchroniser(sb, id), 0);
+      if (!synchronises.has(id)) {
+        synchronises.add(id);
+        setTimeout(() => void synchroniser(sb, id), 0);
+      }
     }
+    if (evenement === 'SIGNED_OUT') synchronises.clear();
   });
 
   window.addEventListener('six-memoire', () => {

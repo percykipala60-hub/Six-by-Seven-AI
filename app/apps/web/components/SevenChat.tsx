@@ -4,13 +4,40 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AppBar } from './AppBar';
 import { Icon } from './Icon';
+import { BoutonPartager } from './BoutonPartager';
 import { Logo } from './Logo';
+import { PiecesJointes } from './PiecesJointes';
+import {
+  BoutonsVolet,
+  GRAND_VOLET,
+  Volet,
+  garderOngletVolet,
+  lireReglagesVolet,
+  type OngletVolet,
+} from './Volet';
 import { memoireActive } from '@/lib/memoire';
 import { entetesCompte } from '@/lib/premium-client';
 import { CHAT_MAX_BYTES, CHAT_MAX_CONTENT, CHAT_MAX_MESSAGES } from '@/lib/api-schemas';
 import { detecterOrdre } from '@/lib/seven-ordres';
-import type { ChatMessage, ChatResult } from '@/lib/types';
-import { MAX_MSG, ecouterChats, garderChat, lireChat, nouvelId } from '@/lib/seven-chats';
+import type { ChatMessage, ChatResult, PieceAffichee } from '@/lib/types';
+import {
+  ICONE_PIECE,
+  IMAGES_MAX,
+  lireImage,
+  lireVideo,
+  pieceCapture,
+  versAffichage,
+  type Piece,
+} from '@/lib/pieces-jointes';
+import {
+  titreDe,
+  MAX_MSG,
+  ecouterChats,
+  garderChat,
+  lireChat,
+  nouvelId,
+  type ModeChat,
+} from '@/lib/seven-chats';
 
 // Les discussions sont gardées sur l'appareil (lib/seven-chats), tant que la mémoire de Six est active.
 // Un document importé (texte ou PDF) est envoyé dans le message : on le borne pour
@@ -18,6 +45,10 @@ import { MAX_MSG, ecouterChats, garderChat, lireChat, nouvelId } from '@/lib/sev
 const TAILLE_DOC_MAX = 12_000;
 const PAGES_PDF_MAX = 20;
 const MAX_FICHIER = 20 * 1024 * 1024;
+const MAX_VIDEO = 500 * 1024 * 1024; // lue sur l'appareil, seules quelques images partent
+// Document joint sans question : Six dit en bref ce qu'il a compris, sans reproduire le fichier.
+const CONSIGNE_DOCUMENT =
+  '— Consigne de réponse : en 6 lignes maximum, dis-moi en BREF et clairement ce que tu as compris de ce document : sa nature, son sujet et 3 à 4 points clés en puces. Ne reproduis surtout pas son contenu.';
 const encoder = new TextEncoder();
 
 /**
@@ -59,7 +90,9 @@ function TexteProgressif({ texte, onPas }: { texte: string; onPas?: () => void }
 
 function preparerRequete(historique: ChatMessage[], content: string): string {
   const dernier: ChatMessage = { role: 'user', content };
-  const serialiser = (messages: ChatMessage[]) => JSON.stringify({ messages });
+  // Les aperçus des pièces jointes restent sur l'appareil : seuls le rôle et le texte partent au serveur.
+  const serialiser = (messages: ChatMessage[]) =>
+    JSON.stringify({ messages: messages.map(({ role, content }) => ({ role, content })) });
   let corps = serialiser([dernier]);
   if (content.length > CHAT_MAX_CONTENT || encoder.encode(corps).length > CHAT_MAX_BYTES) {
     throw new Error('Le message est trop long. Raccourcis-le avant de réessayer.');
@@ -249,8 +282,71 @@ function dicterTexte(signal: AbortSignal): Promise<string> {
  * import de documents (texte/PDF), messages vocaux (transcription), et ordres de pilotage
  * (« ouvre les réglages ») que Six exécute directement.
  */
-export function SevenChatPage() {
+/**
+ * Écran de discussion, en deux espaces :
+ * - « chat » (/chat) : discussion libre avec Six, sans navigateur ni fichiers ;
+ * - « sixtouch » (/cosinus) : Six travaille pour toi (agent) ; seul espace avec le volet navigateur et fichiers.
+ */
+export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   const router = useRouter();
+  const sixtouch = mode === 'sixtouch';
+  const base = sixtouch ? '/cosinus' : '/chat';
+  // Volet d'outils à droite (navigateur, fichiers). Son onglet ouvert est gardé sur l'appareil : sur grand écran,
+  // on le retrouve en revenant dans le Chat (sur téléphone il s'ouvrirait en plein écran, donc on ne le rouvre pas).
+  const [volet, setVoletBrut] = useState<OngletVolet | null>(null);
+  const setVolet = useCallback((onglet: OngletVolet | null) => {
+    setVoletBrut(onglet);
+    garderOngletVolet(onglet);
+  }, []);
+  const basculerVolet = useCallback(
+    (onglet: OngletVolet) => setVolet(volet === onglet ? null : onglet),
+    [volet, setVolet],
+  );
+  const fermerVolet = useCallback(() => setVolet(null), [setVolet]);
+  // App de bureau : les boutons Navigateur et Fichiers de la barre du haut ouvrent ou ferment le volet de Cosinus,
+  // et la barre montre lequel est ouvert.
+  useEffect(() => {
+    if (!sixtouch) return;
+    const commande = (e: Event) => {
+      const d = (e as CustomEvent<{ type?: string; onglet?: string }>).detail;
+      if (d?.type === 'volet' && (d.onglet === 'navigateur' || d.onglet === 'fichiers'))
+        basculerVolet(d.onglet);
+    };
+    window.addEventListener('six-bureau', commande);
+    return () => window.removeEventListener('six-bureau', commande);
+  }, [sixtouch, basculerVolet]);
+  useEffect(() => {
+    const pont = (window as unknown as { sixBureau?: { signaler?: (e: object) => void } })
+      .sixBureau;
+    pont?.signaler?.({ volet: sixtouch ? volet : null, cosinus: sixtouch });
+    return () => pont?.signaler?.({ volet: null, cosinus: false });
+  }, [volet, sixtouch]);
+  // Cosinus : étapes de l'agent reçues pendant la tâche en cours.
+  const [etapesEnCours, setEtapesEnCours] = useState<string[]>([]);
+  // Pièces jointes en attente dans la barre (carrés) : images, vidéos, documents, capture du navigateur.
+  const [pieces, setPieces] = useState<Piece[]>([]);
+  const [attentePieces, setAttentePieces] = useState<PieceAffichee[]>([]);
+  // Téléphone : pas de navigateur (trop encombrant), seulement les fichiers.
+  const [telephone, setTelephone] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia(GRAND_VOLET);
+    const lireTaille = () => {
+      setTelephone(!mq.matches);
+      if (!mq.matches) setVoletBrut((v) => (v === 'navigateur' ? null : v));
+    };
+    lireTaille();
+    if (mq.matches && sixtouch) setVoletBrut(lireReglagesVolet().onglet);
+    mq.addEventListener('change', lireTaille);
+    return () => mq.removeEventListener('change', lireTaille);
+  }, [sixtouch]);
+  useEffect(() => {
+    const html = document.documentElement;
+    if (volet) html.dataset.volet = 'ouvert';
+    else delete html.dataset.volet;
+    return () => {
+      delete html.dataset.volet;
+    };
+  }, [volet]);
   const params = useSearchParams();
   const demandee = params.get('c') ?? ''; // discussion ouverte depuis le menu ; vide : nouvelle discussion
   const chatId = useRef('');
@@ -263,6 +359,7 @@ export function SevenChatPage() {
     texte: string;
     affichage?: string;
     document?: string;
+    jointes?: Piece[];
   }>();
   const documentActif = useRef('');
   const [documentAReimporter, setDocumentAReimporter] = useState(false);
@@ -279,6 +376,81 @@ export function SevenChatPage() {
       const response = await fetch(url, { ...init, signal: controleur.signal });
       const body = await response.text();
       return new Response(body, { status: response.status, headers: response.headers });
+    } catch (error) {
+      if (controleur.signal.aborted)
+        throw new Error('Demande interrompue ou délai dépassé. Tu peux réessayer.', {
+          cause: error,
+        });
+      throw error;
+    } finally {
+      clearTimeout(delai);
+      if (operation.current === controleur) operation.current = null;
+    }
+  }
+
+  /**
+   * Cosinus : la réponse de l'agent arrive en flux (une ligne JSON par étape, puis la fin). Chaque étape s'affiche
+   * dès qu'elle arrive. Une tâche d'agent peut durer plusieurs minutes : délai de 5 minutes.
+   */
+  async function requeteAgent(
+    url: string,
+    init: RequestInit,
+  ): Promise<ChatResult & { etapes?: string[]; fichiers?: string[] }> {
+    const controleur = new AbortController();
+    operation.current = controleur;
+    const delai = setTimeout(() => controleur.abort(new Error('Délai dépassé. Réessaie.')), 300000);
+    try {
+      const res = await fetch(url, { ...init, signal: controleur.signal });
+      if (!(res.headers.get('content-type') ?? '').includes('ndjson')) {
+        const data = (await res.json().catch(() => ({}))) as ChatResult & { error?: string };
+        if (!res.ok) throw new Error(data.error ?? 'Erreur inattendue. Réessaie.');
+        return data;
+      }
+      const lecteur = res.body?.getReader();
+      if (!lecteur) throw new Error('Réponse vide. Réessaie.');
+      const decodeur = new TextDecoder();
+      let reste = '';
+      for (;;) {
+        const { done, value } = await lecteur.read();
+        if (done) break;
+        reste += decodeur.decode(value, { stream: true });
+        const lignes = reste.split('\n');
+        reste = lignes.pop() ?? '';
+        for (const ligne of lignes) {
+          if (!ligne.trim()) continue;
+          const o = JSON.parse(ligne) as {
+            type: string;
+            texte?: string;
+            reponse?: string;
+            etapes?: string[];
+            fichiers?: string[];
+            error?: string;
+            session?: string;
+            url?: string;
+          };
+          if (o.type === 'navigateur' && o.session && o.url) {
+            sessionStorage.setItem(
+              'six-navigateur-agent',
+              JSON.stringify({ session: o.session, url: o.url }),
+            );
+            setVoletBrut('navigateur');
+            window.dispatchEvent(new Event('six-navigateur-agent'));
+          }
+          if (o.type === 'etape' && o.texte) {
+            const t = o.texte;
+            setEtapesEnCours((e) => [...e, t]);
+          } else if (o.type === 'erreur')
+            throw new Error(o.error ?? 'Erreur inattendue. Réessaie.');
+          else if (o.type === 'fin')
+            return {
+              reponse: o.reponse ?? '',
+              demo: false,
+              etapes: o.etapes,
+              fichiers: o.fichiers,
+            };
+        }
+      }
+      throw new Error('La tâche s’est interrompue avant la fin. Réessaie.');
     } catch (error) {
       if (controleur.signal.aborted)
         throw new Error('Demande interrompue ou délai dépassé. Tu peux réessayer.', {
@@ -387,9 +559,9 @@ export function SevenChatPage() {
         setDocumentAReimporter(false);
         setDernierEchec(undefined);
         setErreur('');
-        if (window.location.search.includes('c=')) router.replace('/seven-ai');
+        if (window.location.search.includes('c=')) router.replace(base);
       }),
-    [router],
+    [router, base],
   );
 
   // Si la mémoire est coupée ou réactivée ailleurs (Réglages), l'écran suit.
@@ -415,69 +587,153 @@ export function SevenChatPage() {
 
   function pousser(fil: ChatMessage[]) {
     setMessages(fil);
-    garderChat(chatId.current, fil);
+    garderChat(chatId.current, fil, mode);
   }
 
-  async function envoyer(texte: string, affichage?: string, document?: string) {
-    if (occupe || enregistre || !texte.trim()) return;
+  /**
+   * Envoie un message. « jointes » : les pièces de la barre (par défaut celles en attente). Les documents partent
+   * avec la question (ou, sans question, avec une consigne de résumé bref) ; les images (photos, images d'une vidéo,
+   * capture du navigateur) partent à côté du texte, avec leur description (repères, instants de la vidéo).
+   */
+  async function envoyer(
+    texte: string,
+    affichage?: string,
+    document?: string,
+    jointes: Piece[] = affichage ? [] : pieces,
+  ) {
+    if (occupe || enregistre) return;
+    const docs = jointes.filter((p) => p.genre === 'document');
+    const visuels = jointes.filter((p) => p.genre !== 'document');
+    const images = visuels.flatMap((p) => p.images);
+    const question = texte.trim();
+    if (!question && !jointes.length) return;
+    if (images.length > IMAGES_MAX) {
+      setErreur(
+        `Six lit ${IMAGES_MAX} images au plus par message (ici ${images.length}). Retire une pièce jointe.`,
+      );
+      return;
+    }
     // Les ordres de navigation (« ouvre les réglages ») restent permis même sans le document.
-    if (documentAReimporter && !affichage && !detecterOrdre(texte)) {
+    if (documentAReimporter && !affichage && !docs.length && !detecterOrdre(texte)) {
       setErreur(
         'Réimporte le document pour continuer cette conversation, ou efface le fil pour commencer une nouvelle discussion.',
       );
       return;
     }
-    // « affichage » (optionnel) : ce qu'on montre dans la bulle et qu'on garde dans l'historique.
-    // « texte » : ce qui part vers l'IA. Pour un document importé, la bulle reste courte
-    // (« 📄 nom du fichier ») pendant que l'IA reçoit le contenu complet avec sa consigne.
-    const visible = (affichage ?? texte).trim();
-    const fil = [...messages, { role: 'user' as const, content: visible }].slice(-MAX_MSG);
+    // Ce qui part vers l'IA : la question, les documents complets, la description des images.
+    let pourIA = question;
+    let docEnvoye = document;
+    if (docs.length) {
+      docEnvoye = docs.map((d) => `[Document importé : ${d.nom}]\n\n${d.texte ?? ''}`).join('\n\n');
+      pourIA = `${docEnvoye}\n\n${question ? `Ma demande : ${question}` : CONSIGNE_DOCUMENT}`;
+    }
+    if (visuels.length) {
+      const contextes = visuels.map((p) => p.contexte).filter(Boolean);
+      pourIA = [
+        pourIA || "Regarde ce que je t'envoie et dis-moi ce que tu en comprends.",
+        ...contextes,
+      ]
+        .join('\n\n')
+        .trim();
+    }
+    // Ce qu'on montre dans la bulle (et garde dans l'historique) : la question, sinon le nom des pièces.
+    const etiquettes = jointes.map((p) => `${ICONE_PIECE[p.genre]} ${p.nom}`).join(', ');
+    const visible = (affichage ?? (question || etiquettes)).trim();
+    const affichees = jointes.map(versAffichage);
+    const fil = [
+      ...messages,
+      {
+        role: 'user' as const,
+        content: visible,
+        ...(affichees.length ? { pieces: affichees } : {}),
+      },
+    ].slice(-MAX_MSG);
     setDernierEchec(undefined);
     setOccupe(true);
     setErreur('');
     setEnAttente(visible); // la question s'affiche tout de suite, en attendant la réponse
+    setAttentePieces(affichees);
     setSaisie(''); // et quitte la barre, comme dans les autres assistants (« Réessayer » la garde en cas d'échec)
+    if (!affichage) setPieces([]);
     arretVolontaire.current = false;
 
     // Pilotage : un ordre (« ouvre les réglages ») navigue directement, sans appel à l'IA.
-    // Un document importé ne doit jamais déclencher un ordre : on le saute (affichage présent).
-    const ordre = affichage ? null : detecterOrdre(texte);
+    // Un message avec document ou pièce jointe ne doit jamais déclencher un ordre.
+    const ordre = affichage || jointes.length ? null : detecterOrdre(texte);
     if (ordre) {
       pousser([...fil, { role: 'assistant' as const, content: ordre.reponse }].slice(-MAX_MSG));
       setSaisie('');
       setEnAttente('');
+      setAttentePieces([]);
       setOccupe(false);
       router.push(ordre.cible);
       return;
     }
 
     try {
-      const question = texte.trim();
-      const contexteDoc = affichage ? '' : documentActif.current;
-      const corps = preparerRequete(
+      // Un document déjà importé plus tôt dans la discussion sert de référence aux questions suivantes.
+      const contexteDoc = affichage || docs.length ? '' : documentActif.current;
+      const texteSeul = preparerRequete(
         messages,
-        contexteDoc ? question + '\n\nDocument de référence :\n' + contexteDoc : question,
+        contexteDoc ? pourIA + '\n\nDocument de référence :\n' + contexteDoc : pourIA,
       );
-      const res = await requete('/api/chat', {
+      // Cosinus : le serveur donne à Six ses consignes d'agent de travail.
+      const corps =
+        images.length || sixtouch
+          ? JSON.stringify({
+              ...(JSON.parse(texteSeul) as object),
+              ...(sixtouch
+                ? {
+                    mode: 'sixtouch',
+                    navigateurSession: JSON.parse(
+                      sessionStorage.getItem('six-navigateur-agent') || '{}',
+                    ).session,
+                  }
+                : {}),
+              ...(images.length
+                ? {
+                    images: images.map((d) => ({
+                      type: 'image/jpeg',
+                      data: d.slice(d.indexOf(',') + 1),
+                    })),
+                  }
+                : {}),
+            })
+          : texteSeul;
+      const initEnvoi: RequestInit = {
         method: 'POST',
         headers: { 'content-type': 'application/json', ...(await entetesCompte()) },
         body: corps,
-      });
-      const data = (await res.json().catch(() => ({}))) as ChatResult & { error?: string };
-      if (!res.ok) throw new Error(data.error ?? 'Erreur inattendue. Réessaie.');
+      };
+      setEtapesEnCours([]);
+      let data: ChatResult & { error?: string; etapes?: string[]; fichiers?: string[] };
+      if (sixtouch) data = await requeteAgent('/api/chat', initEnvoi);
+      else {
+        const res = await requete('/api/chat', initEnvoi);
+        data = (await res.json().catch(() => ({}))) as ChatResult & { error?: string };
+        if (!res.ok) throw new Error(data.error ?? 'Erreur inattendue. Réessaie.');
+      }
       if (typeof data.reponse !== 'string' || !data.reponse.trim()) {
         throw new Error('Six a renvoyé une réponse vide. Réessaie.');
       }
-      const suite = [...fil, { role: 'assistant' as const, content: data.reponse }].slice(-MAX_MSG);
+      const reponseSix: ChatMessage = {
+        role: 'assistant',
+        content: data.reponse,
+        ...(data.etapes?.length ? { etapes: data.etapes } : {}),
+        ...(data.fichiers?.length ? { fichiers: data.fichiers } : {}),
+      };
+      // Un fichier vient d'être enregistré par l'agent : l'onglet Fichiers se met à jour.
+      if (data.fichiers?.length) window.dispatchEvent(new Event('six-espace-maj'));
+      const suite = [...fil, reponseSix].slice(-MAX_MSG);
       setAnimee(suite.length - 1); // seule la réponse qui arrive s'écrit progressivement
       pousser(suite);
-      if (document) {
-        documentActif.current = document;
+      if (docEnvoye) {
+        documentActif.current = docEnvoye;
         setDocumentAReimporter(false);
       }
       setSaisie('');
     } catch (e) {
-      setDernierEchec({ texte, affichage, document });
+      setDernierEchec({ texte, affichage, document, jointes });
       // Arrêt demandé par la personne : pas de message d'erreur, juste « Réessayer ».
       setErreur(
         arretVolontaire.current
@@ -488,43 +744,55 @@ export function SevenChatPage() {
       );
     } finally {
       setEnAttente('');
+      setAttentePieces([]);
       setOccupe(false);
     }
   }
 
-  // — Import de document (texte ou PDF) : contenu complet envoyé à l'IA, bulle d'affichage courte. —
-  async function importerDoc(fichier: File | undefined) {
-    if (!fichier || occupe) return;
+  // — Pièces jointes (bouton +) : préparées sur l'appareil, puis montrées en carrés dans la barre. Elles partent avec
+  // le prochain message. Images réduites, vidéos découpées en images, documents lus (texte ou PDF). —
+  async function importerFichiers(liste: FileList | File[] | null) {
+    const fichiers = Array.from(liste ?? []);
+    if (!fichiers.length || occupe) return;
     setOccupe(true);
     setLectureDoc(true);
     setErreur('');
-    try {
-      if (fichier.size > MAX_FICHIER) throw new Error('Le fichier dépasse 20 Mo.');
-      const estPdf = fichier.type === 'application/pdf' || /\.pdf$/i.test(fichier.name);
-      let texte = estPdf ? await extrairePdf(fichier) : await fichier.text();
-      if (!texte.trim()) throw new Error('Ce fichier ne contient pas de texte lisible.');
-      while (encoder.encode(JSON.stringify(texte)).length > TAILLE_DOC_MAX)
-        texte = `${texte.slice(0, Math.floor(texte.length * 0.8))}\n\n[… document tronqué]`;
-      // L'IA reçoit le contenu + la consigne ; la bulle affichée reste « 📄 nom du fichier ».
-      // Consigne : dire en BREF ce qu'elle a compris — jamais reproduire le fichier.
-      const document = `[Document importé : ${fichier.name}]\n\n${texte}`;
-      setLectureDoc(false); // lecture finie : l'envoi qui suit peut être arrêté
-      await envoyer(
-        `${document}\n\n— Consigne de réponse : en 6 lignes maximum, dis-moi en BREF et clairement ce que tu as compris de ce document : sa nature, son sujet et 3 à 4 points clés en puces. Ne reproduis surtout pas son contenu.`,
-        `📄 ${fichier.name}`,
-        document,
-      );
-    } catch (e) {
-      setErreur(
-        e instanceof Error
-          ? `Lecture de « ${fichier.name} » impossible : ${e.message}`
-          : 'Lecture du document impossible. Réessaie.',
-      );
-    } finally {
-      setLectureDoc(false);
-      setOccupe(false);
-      if (docInput.current) docInput.current.value = '';
+    const nouvelles: Piece[] = [];
+    for (const fichier of fichiers) {
+      try {
+        const estVideo =
+          fichier.type.startsWith('video/') ||
+          /\.(mp4|mov|m4v|webm|mkv|avi|3gp)$/i.test(fichier.name);
+        const estImage = fichier.type.startsWith('image/');
+        if (fichier.size > (estVideo ? MAX_VIDEO : MAX_FICHIER))
+          throw new Error(`le fichier dépasse ${estVideo ? '500' : '20'} Mo.`);
+        if (estImage) nouvelles.push(await lireImage(fichier));
+        else if (estVideo) nouvelles.push(await lireVideo(fichier));
+        else {
+          const estPdf = fichier.type === 'application/pdf' || /\.pdf$/i.test(fichier.name);
+          let texte = estPdf ? await extrairePdf(fichier) : await fichier.text();
+          if (!texte.trim()) throw new Error('ce fichier ne contient pas de texte lisible.');
+          while (encoder.encode(JSON.stringify(texte)).length > TAILLE_DOC_MAX)
+            texte = `${texte.slice(0, Math.floor(texte.length * 0.8))}\n\n[… document tronqué]`;
+          nouvelles.push({
+            id: nouvelId(),
+            genre: 'document',
+            nom: fichier.name,
+            texte,
+            images: [],
+          });
+        }
+      } catch (e) {
+        setErreur(
+          `Lecture de « ${fichier.name} » impossible : ${e instanceof Error ? e.message : 'réessaie.'}`,
+        );
+      }
     }
+    setPieces((p) => [...p, ...nouvelles]);
+    setLectureDoc(false);
+    setOccupe(false);
+    if (docInput.current) docInput.current.value = '';
+    champ.current?.focus();
   }
 
   // — Message vocal : enregistrement navigateur, transcription serveur, envoi auto. —
@@ -658,11 +926,16 @@ export function SevenChatPage() {
     }
   }
 
+  // Partager la discussion par le Cloud (Six Premium).
+  const partage = (
+    <BoutonPartager titre={titreDe(messages)} messages={messages} onErreur={setErreur} />
+  );
+
   return (
     <main className="screen seven-screen">
       <AppBar
-        page="seven-ai"
-        titre="Chat"
+        page={sixtouch ? 'sixtouch' : 'seven-ai'}
+        titre={sixtouch ? 'Cosinus' : 'Chat'}
         chatActif={messages.length ? chatId.current : undefined}
         onNouvelle={() => {
           operation.current?.abort();
@@ -673,21 +946,67 @@ export function SevenChatPage() {
           setDernierEchec(undefined);
           documentActif.current = '';
           setDocumentAReimporter(false);
-          if (demandee) router.replace('/seven-ai');
+          if (demandee) router.replace(base);
           champ.current?.focus();
         }}
+        outils={
+          sixtouch || messages.length ? (
+            <div className="seven-outils-ligne">
+              {messages.length > 0 && partage}
+              {sixtouch && <BoutonsVolet ouvert={volet} onBasculer={basculerVolet} telephone />}
+            </div>
+          ) : undefined
+        }
       />
+      {(sixtouch || messages.length > 0) && (
+        <div className="seven-outils-flottants seven-outils-ligne">
+          {messages.length > 0 && <div className="volet-boutons">{partage}</div>}
+          {sixtouch && <BoutonsVolet ouvert={volet} onBasculer={basculerVolet} />}
+        </div>
+      )}
+      {sixtouch && volet && (
+        <Volet
+          onglet={volet}
+          onOnglet={setVolet}
+          onFermer={fermerVolet}
+          messages={messages}
+          onExporter={(m) => void exporterMessage(m)}
+          onJoindre={(fichiers) => void importerFichiers(fichiers)}
+          telephone={telephone}
+          onAnnoter={(description, capture) =>
+            // Chaque repère remplace la capture précédente dans la barre (une seule capture, toujours à jour).
+            void pieceCapture(description, capture).then((piece) =>
+              setPieces((p) => [...p.filter((x) => x.genre !== 'capture'), piece]),
+            )
+          }
+        />
+      )}
       <div className="seven-fil" ref={filRef} aria-live="polite">
         {messages.length === 0 && !occupe && (
           <div className="seven-vide">
             <span className="six-vide-logo" aria-hidden="true">
               <Logo label="" />
             </span>
-            <h1>On discute ?</h1>
-            <p>
-              Pose-moi une question, joins un document ou envoie un vocal. Tu peux aussi me demander
-              d&apos;ouvrir une page, comme « ouvre les réglages ».
-            </p>
+            {sixtouch ? (
+              <>
+                <h1>On se met au travail ?</h1>
+                <p>
+                  Donne-moi une tâche : un rapport, une recherche, l&apos;analyse d&apos;un
+                  document, d&apos;une image ou d&apos;une vidéo.{' '}
+                  {telephone
+                    ? 'Tes fichiers sont en haut à droite.'
+                    : 'Le navigateur et les fichiers sont en haut à droite.'}
+                </p>
+              </>
+            ) : (
+              <>
+                <h1>On discute ?</h1>
+                <p>
+                  Pose-moi une question, joins un document ou envoie un vocal. Tu peux aussi me
+                  demander d&apos;ouvrir une page, comme « ouvre les réglages ».
+                </p>
+              </>
+            )}
           </div>
         )}
         {messages.map((m, i) => (
@@ -696,6 +1015,19 @@ export function SevenChatPage() {
               <span className="six-msg-logo" aria-hidden="true">
                 <Logo label="" small />
               </span>
+            )}
+            {m.pieces && <PiecesJointes pieces={m.pieces} petit />}
+            {m.etapes && m.etapes.length > 0 && (
+              <details className="six-etapes">
+                <summary>
+                  {m.etapes.length} étape{m.etapes.length > 1 ? 's' : ''} de travail
+                </summary>
+                <ol>
+                  {m.etapes.map((e, k) => (
+                    <li key={k}>{e}</li>
+                  ))}
+                </ol>
+              </details>
             )}
             <div className="seven-bulle">
               {i === animee && m.role === 'assistant' ? (
@@ -715,10 +1047,27 @@ export function SevenChatPage() {
                 <Icon name="down" size={15} />
               </button>
             )}
+            {m.fichiers && m.fichiers.length > 0 && (
+              <div className="six-fichiers-crees">
+                {m.fichiers.map((f) => (
+                  <button
+                    key={f}
+                    type="button"
+                    className="six-fichier-cree"
+                    title="Voir dans les fichiers"
+                    onClick={() => setVolet('fichiers')}
+                  >
+                    <Icon name="file" size={14} stroke={1.8} />
+                    <span>{f}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         ))}
         {enAttente && (
           <div className="seven-msg user">
+            <PiecesJointes pieces={attentePieces} petit />
             <div className="seven-bulle">{enAttente}</div>
           </div>
         )}
@@ -729,7 +1078,11 @@ export function SevenChatPage() {
             </span>
             <div className="six-attente" role="status">
               <span className="six-attente-texte">
-                {lectureDoc ? 'Six lit ton document…' : 'Six prépare sa réponse…'}
+                {lectureDoc
+                  ? 'Six lit ton document…'
+                  : sixtouch
+                    ? (etapesEnCours.at(-1) ?? 'Six réfléchit à la tâche…')
+                    : 'Six prépare sa réponse…'}
               </span>
               {/* Mini vague : trois voiles qui ondulent en décalé, fondus aux deux bouts (comme la vague du fond). */}
               <svg className="six-attente-vague" viewBox="0 0 120 18" aria-hidden="true">
@@ -769,7 +1122,12 @@ export function SevenChatPage() {
             type="button"
             className="six-reessayer"
             onClick={() =>
-              void envoyer(dernierEchec.texte, dernierEchec.affichage, dernierEchec.document)
+              void envoyer(
+                dernierEchec.texte,
+                dernierEchec.affichage,
+                dernierEchec.document,
+                dernierEchec.jointes,
+              )
             }
           >
             Réessayer le dernier envoi
@@ -800,8 +1158,8 @@ export function SevenChatPage() {
           <button
             type="button"
             className="seven-doc"
-            aria-label="Importer un document (texte ou PDF)"
-            title="Importer un document"
+            aria-label="Joindre des fichiers (images, vidéos, PDF, texte)"
+            title="Joindre des fichiers"
             disabled={occupe || enregistre}
             onClick={() => docInput.current?.click()}
           >
@@ -810,11 +1168,16 @@ export function SevenChatPage() {
           <input
             ref={docInput}
             type="file"
-            accept=".txt,.md,.csv,.json,.log,.pdf"
+            accept=".txt,.md,.csv,.json,.log,.pdf,image/*,video/*"
+            multiple
             className="seven-doc-input"
             aria-hidden="true"
             tabIndex={-1}
-            onChange={(e) => void importerDoc(e.target.files?.[0])}
+            onChange={(e) => void importerFichiers(e.target.files)}
+          />
+          <PiecesJointes
+            pieces={pieces}
+            onRetirer={(i) => setPieces((p) => p.filter((_, j) => j !== i))}
           />
           <input
             ref={champ}
@@ -839,7 +1202,7 @@ export function SevenChatPage() {
             >
               <span className="seven-arreter-carre" aria-hidden="true" />
             </button>
-          ) : saisie.trim() && !enregistre ? (
+          ) : (saisie.trim() || pieces.length) && !enregistre ? (
             <button type="submit" className="seven-envoyer" disabled={occupe} aria-label="Envoyer">
               <Icon name="up" size={18} stroke={2} />
             </button>

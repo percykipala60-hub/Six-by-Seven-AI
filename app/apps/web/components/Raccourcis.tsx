@@ -136,7 +136,7 @@ function Comment() {
       <h2 className="lg-titre">Confidentialité</h2>
       <p className="lg-pied">
         Six ne lit le message copié qu’au moment où tu touches la bulle ou le bouton du clavier. Il
-        est masqué sur ton téléphone avant l’envoi, et rien n’est envoyé sans ton geste.
+        est masqué sur ton appareil avant l’envoi, et rien n’est envoyé sans ton geste.
       </p>
     </section>
   );

@@ -42,7 +42,33 @@ export const CHAT_MAX_MESSAGES = 40;
 export const CHAT_MAX_CONTENT = 20_000;
 export const CHAT_MAX_BYTES = 20_000;
 
+/**
+ * Images jointes au dernier message du Chat (JPEG compressés côté app, en base64) : une capture du navigateur de Six,
+ * ou les images extraites d'une vidéo. 8 images au plus, 3 Mo en tout.
+ */
+export const CHAT_IMAGE_MAX = 1_500_000;
+export const CHAT_IMAGES_MAX = 8;
+export const CHAT_IMAGES_TOTAL_MAX = 3_000_000;
+export const CHAT_MAX_BYTES_AVEC_IMAGE = CHAT_MAX_BYTES + CHAT_IMAGES_TOTAL_MAX + 2_000;
+export const ImageJointeSchema = z.object({
+  type: z.enum(['image/jpeg', 'image/png']),
+  data: z
+    .string()
+    .min(100)
+    .max(CHAT_IMAGE_MAX)
+    .regex(/^[A-Za-z0-9+/]+={0,2}$/),
+});
+export type ImageJointe = z.infer<typeof ImageJointeSchema>;
+
 export const ChatBodySchema = z.object({
+  navigateurSession: z.string().uuid().optional(),
+  /** Espace de la discussion : absent = Chat ; « sixtouch » = consignes d'agent de travail. */
+  mode: z.enum(['chat', 'sixtouch']).optional(),
+  images: z
+    .array(ImageJointeSchema)
+    .max(CHAT_IMAGES_MAX)
+    .refine((l) => l.reduce((n, i) => n + i.data.length, 0) <= CHAT_IMAGES_TOTAL_MAX)
+    .optional(),
   messages: z
     .array(
       z.object({

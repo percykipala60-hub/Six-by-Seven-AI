@@ -1,0 +1,128 @@
+/* Barre du haut de l'app de bureau : couleurs reprises du thème de Six (envoyées par main.cjs). */
+:root {
+  --fond: #11141c;
+  --texte: #e8ecf5;
+  --doux: #9aa3b5;
+  --survol: color-mix(in srgb, var(--texte) 9%, transparent);
+  --actif: color-mix(in srgb, var(--texte) 15%, transparent);
+  --marque: #4d7cfe;
+}
+* {
+  box-sizing: border-box;
+}
+[hidden] {
+  display: none !important;
+}
+html,
+body {
+  margin: 0;
+  height: 40px;
+  overflow: hidden;
+  background: var(--fond);
+  color: var(--texte);
+  font:
+    13px/1 -apple-system,
+    'Segoe UI',
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+  user-select: none;
+}
+.barre {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 0 0 8px;
+  -webkit-app-region: drag;
+}
+.groupe {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+.vide {
+  flex: 1;
+  height: 100%;
+}
+.controles {
+  /* Place des boutons Windows (réduire, agrandir, fermer) dessinés par le système. */
+  flex: none;
+  width: 140px;
+  height: 100%;
+}
+button {
+  -webkit-app-region: no-drag;
+  font: inherit;
+  color: inherit;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+.bouton {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 30px;
+  border-radius: 8px;
+  color: var(--doux);
+}
+.bouton:hover:not(:disabled) {
+  background: var(--survol);
+  color: var(--texte);
+}
+.bouton:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.bouton[aria-pressed='true'] {
+  background: var(--actif);
+  color: var(--texte);
+}
+svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.espace {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 30px;
+  margin-left: 6px;
+  padding: 0 8px 0 6px;
+  border-radius: 8px;
+}
+.espace:hover {
+  background: var(--survol);
+}
+.espace img {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+}
+.espace img:not([src]) {
+  display: none;
+}
+.nom {
+  font-weight: 700;
+  font-size: 13.5px;
+}
+.nom-espace {
+  color: var(--doux);
+  font-size: 13px;
+}
+.nom-espace:not(:empty)::before {
+  content: '·';
+  margin-right: 8px;
+}
+.chevron {
+  width: 14px;
+  height: 14px;
+  color: var(--doux);
+}

@@ -16,6 +16,14 @@ const config = {
   agentRules: false, // Next ne génère plus AGENTS.md/CLAUDE.md dans le dossier
   // Build autonome seulement pour Docker (NEXT_OUTPUT=standalone).
   ...(process.env.NEXT_OUTPUT === 'standalone' ? { output: 'standalone' as const } : {}),
+  // Le Chat s'appelait /seven-ai, Cosinus s'appelait SixTouch (/sixtouch) : les anciens liens (raccourcis iPhone,
+  // favoris) y mènent toujours.
+  async redirects() {
+    return [
+      { source: '/seven-ai', destination: '/chat', permanent: true },
+      { source: '/sixtouch', destination: '/cosinus', permanent: true },
+    ];
+  },
   async headers() {
     return [
       {

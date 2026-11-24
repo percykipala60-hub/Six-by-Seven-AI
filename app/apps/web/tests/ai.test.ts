@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { ProviderError, activeProviders, callAI, hasAI } from '@/lib/ai';
+import { ProviderError, activeProviders, callAI, callChat, hasAI } from '@/lib/ai';
 import { analyze } from '@/lib/providers';
 
 const json = (body: unknown, status = 200) =>
@@ -29,6 +29,8 @@ beforeEach(() => {
     'OPENAI_MODEL_ANALYSE',
     'OPENAI_MODEL_REDACTION',
     'AI_PROVIDERS',
+    'IA_LOCALE_MODELE',
+    'IA_LOCALE_URL',
   ]) {
     vi.stubEnv(k, '');
   }
@@ -178,5 +180,29 @@ describe("fournisseurs d'IA", () => {
       ),
     );
     expect(await callAI('analyse', 'sys', 'user', 100)).toBe('réponse openai');
+  });
+});
+
+describe('IA locale (Ollama)', () => {
+  it("répond seule quand ni Claude ni OpenAI n'ont de clé, avec les images et sans « réflexion »", async () => {
+    vi.stubEnv('IA_LOCALE_MODELE', 'qwen3.5:9b');
+    const fetchMock = vi.fn(async (_url: string, _init?: RequestInit) =>
+      json({ message: { role: 'assistant', content: 'réponse locale' } }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+    expect(hasAI()).toBe(true);
+    const r = await callChat('sys', 'Que vois-tu ?', [], 200, true, [
+      { type: 'image/jpeg', data: 'A'.repeat(120) },
+    ]);
+    expect(r).toBe('réponse locale');
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('http://127.0.0.1:11434/api/chat');
+    const corps = JSON.parse(String(init?.body));
+    expect(corps).toMatchObject({ model: 'qwen3.5:9b', stream: false, think: false });
+    expect(corps.messages.at(-1)).toMatchObject({ role: 'user', images: ['A'.repeat(120)] });
+  });
+
+  it("n'est pas utilisée si elle n'est pas configurée", () => {
+    expect(hasAI()).toBe(false);
   });
 });

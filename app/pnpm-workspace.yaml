@@ -4,6 +4,7 @@ packages:
   - 'kin-rush-app'
 
 onlyBuiltDependencies:
+  - electron
   - esbuild
   - sharp
   - unrs-resolver

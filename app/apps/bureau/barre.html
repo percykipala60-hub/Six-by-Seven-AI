@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self'; img-src * data:"
+    />
+    <title>Six</title>
+    <link rel="stylesheet" href="barre.css" />
+  </head>
+  <body>
+    <!-- Barre du haut de l'app de bureau (voir barre.js) : la fenêtre se déplace en la tirant. -->
+    <header class="barre">
+      <div class="groupe">
+        <button
+          id="retour"
+          class="bouton"
+          title="Précédent (Alt+←)"
+          aria-label="Précédent"
+          disabled
+        >
+          <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" /></svg>
+        </button>
+        <button id="avant" class="bouton" title="Suivant (Alt+→)" aria-label="Suivant" disabled>
+          <svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" /></svg>
+        </button>
+        <button id="recharger" class="bouton" title="Recharger (Ctrl+R)" aria-label="Recharger">
+          <svg viewBox="0 0 24 24">
+            <path d="M20 11a8 8 0 0 0-14-4L4 9M4 4v5h5M4 13a8 8 0 0 0 14 4l2-2M20 20v-5h-5" />
+          </svg>
+        </button>
+      </div>
+      <button id="espace" class="espace" title="Changer d'espace" aria-haspopup="menu">
+        <img id="logo" alt="" />
+        <span class="nom">Six</span>
+        <span id="nom-espace" class="nom-espace"></span>
+        <svg class="chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" /></svg>
+      </button>
+      <div class="vide"></div>
+      <div class="groupe">
+        <button
+          id="navigateur"
+          class="bouton volet"
+          title="Navigateur"
+          aria-label="Navigateur"
+          aria-pressed="false"
+          hidden
+        >
+          <svg viewBox="0 0 24 24">
+            <path
+              d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM3 12h18M12 3c2.5 2.7 3.7 5.7 3.7 9s-1.2 6.3-3.7 9c-2.5-2.7-3.7-5.7-3.7-9S9.5 5.7 12 3z"
+            />
+          </svg>
+        </button>
+        <button
+          id="fichiers"
+          class="bouton volet"
+          title="Fichiers"
+          aria-label="Fichiers"
+          aria-pressed="false"
+          hidden
+        >
+          <svg viewBox="0 0 24 24">
+            <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+          </svg>
+        </button>
+        <button id="reglages" class="bouton" title="Réglages" aria-label="Réglages">
+          <svg viewBox="0 0 24 24">
+            <path d="M21 4h-7M10 4H3M21 12h-9M8 12H3M21 20h-5M12 20H3M14 2v4M8 10v4M16 18v4" />
+          </svg>
+        </button>
+      </div>
+      <div class="controles" aria-hidden="true"></div>
+    </header>
+    <script src="barre.js"></script>
+  </body>
+</html>

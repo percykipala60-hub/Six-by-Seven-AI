@@ -60,7 +60,6 @@ export function PremiumVue() {
       return;
     }
     if (r.etat === 'actif') {
-      setInfo(`Merci ! Six Premium est actif jusqu’au ${dateFin(r.jusquA)}.`);
       window.dispatchEvent(new Event(EVT_PREMIUM));
       void recharger();
     } else if (r.etat === 'attente') {

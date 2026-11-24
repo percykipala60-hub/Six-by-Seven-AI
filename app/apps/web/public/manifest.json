@@ -3,7 +3,7 @@
   "short_name": "Six",
   "description": "Colle une conversation : Six la comprend et te propose trois réponses. Tu choisis, tu envoies.",
   "lang": "fr",
-  "start_url": "/",
+  "start_url": "/chat",
   "scope": "/",
   "display": "standalone",
   "background_color": "#12151c",

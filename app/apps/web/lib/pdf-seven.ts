@@ -1,5 +1,6 @@
 import type { jsPDF as JsPdfDoc } from 'jspdf';
 import type { ChatMessage } from '@/lib/types';
+import { PRODUIT, SIGNATURE } from '@/lib/marque';
 
 /**
  * Export PDF des réponses de Six (espace Chat) (généré sur l'appareil, aucun serveur).
@@ -61,7 +62,7 @@ function bandeau(doc: DocPdf, titre: string) {
   doc.text('Six', MARGE, 11.5);
   doc.setFont(FAMILLE, 'normal');
   doc.setFontSize(8.5);
-  doc.text('Assistant de l’app Six — Seven.AI', MARGE, 17.5);
+  doc.text(`Assistant de l’app ${PRODUIT}`, MARGE, 17.5);
   doc.text(dateFr(), PAGE_L - MARGE, 11.5, { align: 'right' });
   doc.setFont(FAMILLE, 'bold');
   doc.setFontSize(13);
@@ -83,7 +84,7 @@ function piedsDePage(doc: DocPdf) {
     doc.setFont(FAMILLE, 'normal');
     doc.setFontSize(8);
     doc.setTextColor(GRIS.r, GRIS.g, GRIS.b);
-    doc.text('Document généré par Six — Seven.AI', MARGE, PAGE_H - 10.5);
+    doc.text(`Document généré par ${SIGNATURE}`, MARGE, PAGE_H - 10.5);
     doc.text(`Page ${i} / ${total}`, PAGE_L - MARGE, PAGE_H - 10.5, { align: 'right' });
   }
 }

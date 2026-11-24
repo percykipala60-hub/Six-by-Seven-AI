@@ -28,6 +28,7 @@ type Page =
   | 'accueil'
   | 'sujets'
   | 'seven-ai'
+  | 'sixtouch'
   | 'reglages'
   | 'confidentialite'
   | 'espace-jeu'
@@ -61,11 +62,11 @@ export function Avatar({ size = 36 }: { size?: number }) {
  * Passage d'un geste entre les deux espaces : Responsive (comprendre un message, choisir quoi
  * répondre) et Chat (discussion libre avec Six). Deux icônes côte à côte, celle de l'espace ouvert en relief.
  */
-function ChoixMode({ actif }: { actif: 'six' | 'seven' }) {
+function ChoixMode({ actif }: { actif: 'six' | 'seven' | 'sixtouch' }) {
   return (
     <nav className="choix-mode" aria-label="Espace">
       <Link
-        href="/"
+        href="/responsive"
         className="choix-mode-btn"
         aria-current={actif === 'six' ? 'page' : undefined}
         aria-label="Responsive : trouver quoi répondre à une conversation"
@@ -74,13 +75,22 @@ function ChoixMode({ actif }: { actif: 'six' | 'seven' }) {
         <Icon name="repondre" size={18} stroke={1.75} />
       </Link>
       <Link
-        href="/seven-ai"
+        href="/chat"
         className="choix-mode-btn"
         aria-current={actif === 'seven' ? 'page' : undefined}
         aria-label="Chat avec Six"
         title="Chat"
       >
         <Icon name="discuter" size={18} stroke={1.75} />
+      </Link>
+      <Link
+        href="/cosinus"
+        className="choix-mode-btn"
+        aria-current={actif === 'sixtouch' ? 'page' : undefined}
+        aria-label="Cosinus : Six travaille pour toi (navigateur, fichiers)"
+        title="Cosinus"
+      >
+        <Icon name="sixtouch" size={18} stroke={1.75} />
       </Link>
     </nav>
   );
@@ -92,10 +102,13 @@ export function AppBar({
   titre,
   onNouvelle,
   chatActif,
+  outils,
 }: {
   page: Page;
   titre?: string;
   onNouvelle?: () => void;
+  /** Boutons propres à la page, à droite de la barre, avant le profil (Chat : volet d'outils). */
+  outils?: ReactNode;
   /** Chat : discussion ouverte, en relief dans la liste du menu. */
   chatActif?: string;
 }) {
@@ -142,6 +155,9 @@ export function AppBar({
   // Trois éléments visibles par défaut sous chaque outil ; « Voir plus » déplie toute la liste.
   const [plusReponses, setPlusReponses] = useState(false);
   const [plusChats, setPlusChats] = useState(false);
+  const [plusSixTouch, setPlusSixTouch] = useState(false);
+  const chatsChat = chats.filter((c) => c.mode !== 'sixtouch');
+  const chatsSixTouch = chats.filter((c) => c.mode === 'sixtouch');
   const [reponses, setReponses] = useState<ConversationGardee[]>([]);
   useEffect(() => {
     const lire = () => setChats(lireChats());
@@ -265,13 +281,16 @@ export function AppBar({
         >
           <Icon name="menu" size={24} stroke={2.2} />
         </button>
-        {page === 'accueil' || page === 'seven-ai' ? (
+        {page === 'accueil' || page === 'seven-ai' || page === 'sixtouch' ? (
           <span className="appbar-title">
-            <ChoixMode actif={page === 'accueil' ? 'six' : 'seven'} />
+            <ChoixMode
+              actif={page === 'accueil' ? 'six' : page === 'sixtouch' ? 'sixtouch' : 'seven'}
+            />
           </span>
         ) : (
           <span className="appbar-title">{titre ?? 'Six'}</span>
         )}
+        {outils}
         <Avatar />
       </header>
       <Rail page={page} onPanneau={() => setOpen(true)} onNouvelle={onNouvelle} />
@@ -308,7 +327,7 @@ export function AppBar({
             <Icon name={grand ? 'panneau' : 'x'} />
           </button>
         </div>
-        {page === 'seven-ai' ? (
+        {page === 'seven-ai' || page === 'sixtouch' ? (
           <button
             className="drawer-item drawer-new"
             onClick={() => {
@@ -329,14 +348,14 @@ export function AppBar({
             <Icon name="nouvelle" /> Nouvelle conversation
           </button>
         ) : (
-          <Link href="/" className="drawer-item drawer-new" onClick={apresLien}>
+          <Link href="/responsive" className="drawer-item drawer-new" onClick={apresLien}>
             <Icon name="nouvelle" /> Nouvelle conversation
           </Link>
         )}
         {/* Chaque outil, avec juste dessous son propre historique : Responsive → réponses gardées,
             Chat → discussions avec Six. Réglages et confidentialité restent en bas. */}
         <nav aria-label="Navigation principale" className="drawer-nav">
-          {item('/', 'accueil', <Icon name="repondre" />, 'Responsive')}
+          {item('/responsive', 'accueil', <Icon name="repondre" />, 'Responsive')}
           {reponses.length > 0 && (
             <div className="drawer-sous" role="group" aria-label="Réponses gardées">
               {(plusReponses ? reponses : reponses.slice(0, PAR_DEFAUT)).map((g) => {
@@ -344,7 +363,7 @@ export function AppBar({
                 return (
                   <div className="drawer-chat-ligne" key={g.id}>
                     <Link
-                      href={`/?g=${encodeURIComponent(g.id)}`}
+                      href={`/responsive?g=${encodeURIComponent(g.id)}`}
                       className="drawer-chat"
                       onClick={apresLien}
                       title={titre}
@@ -359,7 +378,7 @@ export function AppBar({
                       onClick={() =>
                         demanderEffacer({
                           titre: 'Effacer cette réponse ?',
-                          texte: 'Elle sera effacée de ce téléphone.',
+                          texte: 'Elle sera effacée de cet appareil.',
                           action: 'Effacer',
                           danger: true,
                           onConfirmer: () => effacerConversationGardee(g.id),
@@ -383,17 +402,17 @@ export function AppBar({
               )}
             </div>
           )}
-          {item('/seven-ai', 'seven-ai', <Icon name="discuter" />, 'Chat')}
-          {chats.length > 0 && (
+          {item('/chat', 'seven-ai', <Icon name="discuter" />, 'Chat')}
+          {chatsChat.length > 0 && (
             <div className="drawer-sous" role="group" aria-label="Discussions avec Six">
-              {(plusChats ? chats : chats.slice(0, PAR_DEFAUT)).map((c) => (
+              {(plusChats ? chatsChat : chatsChat.slice(0, PAR_DEFAUT)).map((c) => (
                 <div
                   className="drawer-chat-ligne"
                   key={c.id}
                   data-actif={page === 'seven-ai' && c.id === chatActif ? '' : undefined}
                 >
                   <Link
-                    href={`/seven-ai?c=${encodeURIComponent(c.id)}`}
+                    href={`/chat?c=${encodeURIComponent(c.id)}`}
                     className="drawer-chat"
                     aria-current={page === 'seven-ai' && c.id === chatActif ? 'page' : undefined}
                     onClick={apresLien}
@@ -409,7 +428,7 @@ export function AppBar({
                     onClick={() =>
                       demanderEffacer({
                         titre: 'Effacer cette discussion ?',
-                        texte: `« ${c.titre} » sera effacée de ce téléphone.`,
+                        texte: `« ${c.titre} » sera effacée de cet appareil.`,
                         action: 'Effacer',
                         danger: true,
                         onConfirmer: () => effacerChat(c.id),
@@ -420,14 +439,63 @@ export function AppBar({
                   </button>
                 </div>
               ))}
-              {chats.length > PAR_DEFAUT && (
+              {chatsChat.length > PAR_DEFAUT && (
                 <button
                   type="button"
                   className="drawer-voir-plus"
                   aria-expanded={plusChats}
                   onClick={() => setPlusChats((v) => !v)}
                 >
-                  {plusChats ? 'Voir moins' : `Voir plus (${chats.length - PAR_DEFAUT})`}
+                  {plusChats ? 'Voir moins' : `Voir plus (${chatsChat.length - PAR_DEFAUT})`}
+                </button>
+              )}
+            </div>
+          )}
+          {item('/cosinus', 'sixtouch', <Icon name="sixtouch" />, 'Cosinus')}
+          {chatsSixTouch.length > 0 && (
+            <div className="drawer-sous" role="group" aria-label="Travaux avec Six">
+              {(plusSixTouch ? chatsSixTouch : chatsSixTouch.slice(0, PAR_DEFAUT)).map((c) => (
+                <div
+                  className="drawer-chat-ligne"
+                  key={c.id}
+                  data-actif={page === 'sixtouch' && c.id === chatActif ? '' : undefined}
+                >
+                  <Link
+                    href={`/cosinus?c=${encodeURIComponent(c.id)}`}
+                    className="drawer-chat"
+                    aria-current={page === 'sixtouch' && c.id === chatActif ? 'page' : undefined}
+                    onClick={apresLien}
+                    title={c.titre}
+                  >
+                    {c.titre}
+                  </Link>
+                  <button
+                    type="button"
+                    className="drawer-chat-effacer"
+                    aria-label={`Effacer la discussion « ${c.titre} »`}
+                    title="Effacer"
+                    onClick={() =>
+                      demanderEffacer({
+                        titre: 'Effacer cette discussion ?',
+                        texte: `« ${c.titre} » sera effacée de cet appareil.`,
+                        action: 'Effacer',
+                        danger: true,
+                        onConfirmer: () => effacerChat(c.id),
+                      })
+                    }
+                  >
+                    <Icon name="trash" size={15} stroke={1.75} />
+                  </button>
+                </div>
+              ))}
+              {chatsSixTouch.length > PAR_DEFAUT && (
+                <button
+                  type="button"
+                  className="drawer-voir-plus"
+                  aria-expanded={plusSixTouch}
+                  onClick={() => setPlusSixTouch((v) => !v)}
+                >
+                  {plusSixTouch ? 'Voir moins' : `Voir plus (${chatsSixTouch.length - PAR_DEFAUT})`}
                 </button>
               )}
             </div>
@@ -509,7 +577,8 @@ function Rail({
       <Icon name={icon} size={20} stroke={1.75} />
     </Link>
   );
-  const nouvelleLabel = page === 'seven-ai' ? 'Nouvelle discussion' : 'Nouvelle conversation';
+  const nouvelleLabel =
+    page === 'seven-ai' || page === 'sixtouch' ? 'Nouvelle discussion' : 'Nouvelle conversation';
   return (
     <nav className="rail" aria-label="Navigation">
       {/* Logo Six en tête : un appui ouvre le panneau complet. */}
@@ -522,7 +591,7 @@ function Rail({
       >
         <Logo label="" small />
       </button>
-      {(page === 'seven-ai' || page === 'accueil') && onNouvelle ? (
+      {(page === 'seven-ai' || page === 'sixtouch' || page === 'accueil') && onNouvelle ? (
         <button
           type="button"
           className="rail-btn"
@@ -533,12 +602,18 @@ function Rail({
           <Icon name="nouvelle" size={20} stroke={1.75} />
         </button>
       ) : (
-        <Link href="/" className="rail-btn" aria-label={nouvelleLabel} title={nouvelleLabel}>
+        <Link
+          href="/responsive"
+          className="rail-btn"
+          aria-label={nouvelleLabel}
+          title={nouvelleLabel}
+        >
           <Icon name="nouvelle" size={20} stroke={1.75} />
         </Link>
       )}
-      {lien('/', 'accueil', 'repondre', 'Responsive')}
-      {lien('/seven-ai', 'seven-ai', 'discuter', 'Chat')}
+      {lien('/responsive', 'accueil', 'repondre', 'Responsive')}
+      {lien('/chat', 'seven-ai', 'discuter', 'Chat')}
+      {lien('/cosinus', 'sixtouch', 'sixtouch', 'Cosinus')}
       <span className="rail-fin" aria-hidden="true" />
       {lien('/reglages', 'reglages', 'sliders', 'Réglages')}
       <Avatar size={32} />

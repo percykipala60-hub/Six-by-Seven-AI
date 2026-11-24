@@ -24,6 +24,7 @@
     "essai-ia": "pnpm --filter @six/api essai-ia",
     "banc": "pnpm --filter @six/api banc",
     "verifier": "node scripts/verifier-demarrage.mjs",
+    "bureau": "corepack pnpm --filter @six/bureau start",
     "build:ton-juste": "npm --prefix jeu-du-ton-juste/client run build:six"
   },
   "devDependencies": {

@@ -21,6 +21,8 @@ interface Destination {
 
 // Ordre de test : du plus spécifique au plus général (« jeu du ton juste » avant « jeux »).
 const DESTINATIONS: Destination[] = [
+  { mots: /cosinus|six ?touch/i, cible: '/cosinus', nom: 'Cosinus' },
+  { mots: /responsive/i, cible: '/responsive', nom: 'Responsive' },
   { mots: /ton juste/, cible: '/ton-juste', nom: 'le jeu du ton juste' },
   { mots: /kin[- ]?rush|kinshasa/i, cible: '/jeu', nom: 'Kin Rush' },
   { mots: /arnaque/, cible: '/coupe-arnaque', nom: 'Coupe l’arnaque' },

@@ -81,4 +81,15 @@ export default tseslint.config(
     files: ['apps/web/integration/**/*.ts'],
     rules: { 'no-console': 'off' },
   },
+  {
+    // Application de bureau : processus Electron en CommonJS (require est la seule façon de charger electron ici).
+    files: ['apps/bureau/**/*.cjs'],
+    languageOptions: { sourceType: 'commonjs', globals: { ...globals.node } },
+    rules: { '@typescript-eslint/no-require-imports': 'off' },
+  },
+  {
+    // Barre du haut de l'app de bureau : page web locale (barre.html).
+    files: ['apps/bureau/barre.js'],
+    languageOptions: { sourceType: 'script', globals: { ...globals.browser } },
+  },
 );

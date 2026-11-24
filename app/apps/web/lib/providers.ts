@@ -1,4 +1,6 @@
 import { ProviderError, callAI, callChat, hasChatAI, hasAI } from './ai';
+import type { ImageJointe } from './api-schemas';
+import { corrigerIdentite } from './identite';
 import {
   analysisPrompt,
   adjustPrompt,
@@ -22,6 +24,7 @@ import type {
   Ton,
   TopicsResult,
 } from './types';
+import { ENTREPRISE, PRODUIT } from './marque';
 
 export { ProviderError };
 
@@ -76,13 +79,27 @@ export async function topics(situation: Situation, contexte: string): Promise<To
 }
 
 /** Six en mode « Chat » : Conversation libre, multi-tours, identité connue du prompt système. */
-export async function chat(messages: ChatMessage[], premium = true): Promise<ChatResult> {
+export async function chat(
+  messages: ChatMessage[],
+  premium = true,
+  images?: ImageJointe[],
+  mode: 'chat' | 'sixtouch' = 'chat',
+): Promise<ChatResult> {
   const user = messages[messages.length - 1]?.content ?? '';
   const history = messages.slice(0, -1);
   if (!hasChatAI()) return { reponse: demoChat(user), demo: true };
-  const reponse = (await callChat(sevenAiSystem(), user, history, 1500, premium)).trim();
+  const reponse = (
+    await callChat(
+      sevenAiSystem(mode),
+      user,
+      history,
+      mode === 'sixtouch' ? 4000 : 1500, // un rapport demande plus de place qu'une réponse de discussion
+      premium,
+      images,
+    )
+  ).trim();
   if (!reponse) throw new ProviderError('La réponse de Six était vide. Réessaie.');
-  return { reponse, demo: false };
+  return { reponse: corrigerIdentite(reponse), demo: false };
 }
 
 function demoChat(question: string): string {
@@ -92,7 +109,7 @@ function demoChat(question: string): string {
       q,
     );
   if (identite)
-    return "Je suis Six, l'assistant de l'app Six, créée par Seven.AI. Dans l'espace Responsive, tu colles une conversation : je masque les noms, je repère les arnaques, j'explique le vrai sens des messages et je te propose trois réponses. Ici, dans le Chat, on parle de tout.";
+    return `Je suis ${PRODUIT}, l'assistant de l'app ${PRODUIT}, créée par ${ENTREPRISE}. Dans l'espace Responsive, tu colles une conversation : je masque les noms, je repère les arnaques, j'explique le vrai sens des messages et je te propose trois réponses. Ici, dans le Chat, on parle de tout.`;
   return "Je ne peux pas encore discuter librement sur ce serveur. En attendant, l'espace Responsive t'aide déjà à trouver quoi répondre à un message.";
 }
 

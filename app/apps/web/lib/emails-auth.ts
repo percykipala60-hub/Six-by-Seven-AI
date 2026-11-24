@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
+import { ENTREPRISE, PRODUIT } from '@/lib/marque';
 
 /**
  * E-mails de connexion de Six, envoyés par l'app elle-même (« Send Email Hook » de Supabase) :
@@ -81,20 +82,46 @@ export function signatureValide(
 
 /* ---------- Contenu des e-mails ---------- */
 
-const CADRE =
-  "font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;max-width:480px;margin:0 auto;padding:32px 24px;color:#111;line-height:1.55;font-size:15px";
+/*
+ * Ton : vouvoiement, phrases courtes et claires, une seule action par e-mail. Les e-mails de code ne contiennent
+ * aucun lien (on n'apprend pas aux gens à cliquer sur des liens reçus) ; seul l'e-mail de réinitialisation en a un.
+ */
 
-function page(contenu: string, piedDePage: string): string {
-  return `<div style="${CADRE}"><p style="font-size:18px;font-weight:600;margin:0 0 24px">Six</p>${contenu}<p style="font-size:13px;color:#777;margin:32px 0 0">${piedDePage}</p></div>`;
-}
+const POLICE = "-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
 
 const echapper = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
-function blocCode(code: string): string {
-  return `<p style="font-size:30px;font-weight:600;letter-spacing:6px;margin:0 0 20px">${echapper(code)}</p>`;
+const p = (texte: string) =>
+  `<p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#1f2430">${texte}</p>`;
+
+function page(titre: string, contenu: string, securite: string): string {
+  return (
+    `<div style="background:#f3f5fa;padding:32px 12px;font-family:${POLICE}">` +
+    `<div style="max-width:520px;margin:0 auto;background:#ffffff;border-radius:16px;padding:32px 28px;border:1px solid #e3e7f0">` +
+    `<p style="margin:0 0 28px;font-size:14px;font-weight:700;letter-spacing:0.02em;color:#0f1a3a">${PRODUIT}</p>` +
+    `<h1 style="margin:0 0 20px;font-size:22px;line-height:1.3;color:#0f1a3a">${titre}</h1>` +
+    p('Bonjour,') +
+    contenu +
+    `<p style="margin:28px 0 0;padding-top:20px;border-top:1px solid #e3e7f0;font-size:13px;line-height:1.55;color:#5b6375">${securite}</p>` +
+    `</div>` +
+    `<p style="max-width:520px;margin:16px auto 0;font-size:12px;line-height:1.5;color:#8a91a3;text-align:center">` +
+    `Cet e-mail a été envoyé automatiquement par ${PRODUIT} (${ENTREPRISE}). Merci de ne pas y répondre.</p>` +
+    `</div>`
+  );
 }
 
-const p = (texte: string) => `<p style="margin:0 0 20px">${texte}</p>`;
+function blocCode(code: string): string {
+  return (
+    `<p style="margin:4px 0 20px;padding:16px;border-radius:12px;background:#f3f5fa;text-align:center;` +
+    `font-size:30px;font-weight:700;letter-spacing:8px;color:#0f1a3a">${echapper(code)}</p>`
+  );
+}
+
+const VALIDITE_CODE = p(
+  'Ce code est valable 10 minutes et ne peut être utilisé qu’une seule fois.',
+);
+const CONFIDENTIEL =
+  'Pour votre sécurité, ne communiquez ce code à personne. Six ne vous le demandera jamais par message ou par téléphone.';
 
 /** Lien de vérification Supabase (réinitialisation du mot de passe). */
 function lienVerification(
@@ -117,53 +144,55 @@ export function composerEmail(
   switch (d.email_action_type) {
     case 'signup':
       return {
-        objet: 'Bienvenue sur Six',
+        objet: 'Confirmez votre adresse e-mail',
         html: page(
+          'Confirmez votre adresse e-mail',
           p(
-            "Bienvenue. Ton compte n'est pas encore actif : confirme d'abord que cette adresse est bien la tienne.",
+            'Merci d’avoir créé votre compte Six. Pour l’activer, saisissez le code de vérification suivant dans l’application :',
           ) +
-            '<p style="margin:0 0 8px">Entre ce code dans l\'app :</p>' +
             blocCode(d.token) +
-            p("Il ne sert qu'une fois et expire dans 10 minutes. Ne le donne à personne.") +
-            p(
-              'Six t’aide à comprendre un message et à choisir quoi répondre. Tes conversations restent sur ton téléphone, sauf si tu choisis de les garder sur ton compte.',
-            ),
-          "Tu n'as pas créé de compte ? Ignore cet e-mail : sans ce code, rien ne sera activé.",
+            VALIDITE_CODE,
+          `${CONFIDENTIEL} Si vous n’êtes pas à l’origine de cette inscription, vous pouvez ignorer cet e-mail : aucun compte ne sera activé.`,
         ),
       };
     case 'magiclink':
     case 'email':
       return {
-        objet: 'Ton code de connexion Six',
+        objet: 'Votre code de connexion',
         html: page(
-          '<p style="margin:0 0 8px">Voici ton code pour terminer ta connexion :</p>' +
+          'Votre code de connexion',
+          p('Pour terminer votre connexion à Six, saisissez le code suivant dans l’application :') +
             blocCode(d.token) +
-            p(
-              "Entre-le dans l'app. Il ne sert qu'une fois et expire dans 10 minutes. Ne le donne à personne : Six ne te le demandera jamais par message ou par téléphone.",
-            ),
-          "Ce n'est pas toi ? Quelqu'un connaît peut-être ton mot de passe : change-le dès que possible dans Réglages, Compte.",
+            VALIDITE_CODE,
+          `${CONFIDENTIEL} Si vous n’avez pas essayé de vous connecter, nous vous recommandons de modifier votre mot de passe dans Réglages, rubrique Compte.`,
         ),
       };
     case 'reauthentication':
       return {
-        objet: 'Code pour changer ton mot de passe Six',
+        objet: 'Confirmez la modification de votre mot de passe',
         html: page(
-          '<p style="margin:0 0 8px">Voici ton code pour changer le mot de passe de ton compte :</p>' +
+          'Confirmez la modification de votre mot de passe',
+          p(
+            'Vous avez demandé à modifier le mot de passe de votre compte Six. Pour confirmer, saisissez le code suivant dans l’application :',
+          ) +
             blocCode(d.token) +
-            p(
-              "Entre-le dans l'app avec ton mot de passe actuel. Il ne sert qu'une fois et expire dans 10 minutes. Ne le donne à personne.",
-            ),
-          "Ce n'est pas toi ? Ne fais rien : sans ce code et sans ton mot de passe actuel, personne ne peut le changer.",
+            VALIDITE_CODE,
+          `${CONFIDENTIEL} Si vous n’êtes pas à l’origine de cette demande, ignorez cet e-mail : votre mot de passe ne sera pas modifié.`,
         ),
       };
     case 'recovery':
       return {
-        objet: 'Changer ton mot de passe Six',
+        objet: 'Réinitialisation de votre mot de passe',
         html: page(
-          p('Tu as demandé à changer le mot de passe de ton compte.') +
-            `<p style="margin:0 0 20px"><a href="${echapper(lienVerification(urlSupabase, d, 'recovery'))}" style="color:#111;font-weight:600">Choisir un nouveau mot de passe</a></p>` +
-            p("Ce lien ne sert qu'une fois et expire dans 10 minutes."),
-          "Tu n'as rien demandé ? Ignore cet e-mail, ton mot de passe actuel reste valable.",
+          'Réinitialisez votre mot de passe',
+          p(
+            'Nous avons reçu une demande de réinitialisation du mot de passe de votre compte Six. Pour choisir un nouveau mot de passe, utilisez le bouton ci-dessous :',
+          ) +
+            `<p style="margin:4px 0 20px"><a href="${echapper(lienVerification(urlSupabase, d, 'recovery'))}" ` +
+            `style="display:inline-block;padding:12px 22px;border-radius:10px;background:#0f1a3a;color:#ffffff;` +
+            `font-weight:700;font-size:15px;text-decoration:none">Choisir un nouveau mot de passe</a></p>` +
+            p('Ce lien est valable 10 minutes et ne peut être utilisé qu’une seule fois.'),
+          'Si vous n’avez pas demandé cette réinitialisation, ignorez cet e-mail : votre mot de passe actuel reste inchangé.',
         ),
       };
     default:
@@ -183,7 +212,7 @@ export async function envoyerParResend(
     method: 'POST',
     headers: { Authorization: `Bearer ${cle}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      from: process.env.EMAIL_EXPEDITEUR || 'Six by Seven AI <noreply@sixbysevenai.com>',
+      from: process.env.EMAIL_EXPEDITEUR || `${PRODUIT} <noreply@sixbysevenai.com>`,
       to: [a],
       subject: objet,
       html,

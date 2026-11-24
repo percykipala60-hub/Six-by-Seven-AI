@@ -4,13 +4,15 @@ import { CompteSync } from '@/components/CompteSync';
 import { PorteCompte } from '@/components/Connexion';
 import { Clavier } from '@/components/Clavier';
 import { Fond } from '@/components/Fond';
+import { PontBureau } from '@/components/PontBureau';
 import { NetworkStatus } from '@/components/NetworkStatus';
 import { InterAppLaunchHandler } from '@/components/InterAppNotifications';
 import { ThemeIcon } from '@/components/ThemeIcon';
 import { ANCIENS_ACCENTS } from '@/lib/theme-ids';
+import { PRODUIT } from '@/lib/marque';
 
 export const metadata: Metadata = {
-  title: 'Six — Seven.AI',
+  title: PRODUIT,
   description:
     'Colle une conversation. Six la comprend et te propose trois réponses. Tu choisis, tu envoies.',
   icons: { icon: '/icon-192.png', apple: '/icon-192.png' },
@@ -52,6 +54,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <InterAppLaunchHandler />
         <ThemeIcon />
         <CompteSync />
+        <PontBureau />
         <PorteCompte>{children}</PorteCompte>
       </body>
     </html>

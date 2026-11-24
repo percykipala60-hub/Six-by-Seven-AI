@@ -199,7 +199,7 @@ export function Rapide() {
       )}
       {erreur && <p className="rapide-aide">{erreur}</p>}
       <p className="rapide-pied">
-        <Icon name="lock" size={12} /> Masqué sur ton téléphone avant l’envoi
+        <Icon name="lock" size={12} /> Masqué sur ton appareil avant l’envoi
       </p>
     </main>
   );

@@ -6588,3 +6588,1233 @@ html.bascule .app {
     transition: none;
   }
 }
+
+/* ---------- Volet d'outils du Chat (components/Volet.tsx) : navigateur et fichiers, à droite ----------
+   Téléphone : plein écran ; boutons dans la barre du haut.
+   768 px et plus : le volet se place À CÔTÉ de la discussion (body padding-right = --volet), jamais par-dessus.
+   Sa largeur (--volet-largeur) se règle en tirant son bord gauche ; la colonne et la barre de saisie se recalculent
+   sur la place qui reste, comme pour la barre verticale à gauche (--decalage). */
+html {
+  --volet: 0px;
+}
+.volet-boutons {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: none;
+}
+.volet-bouton {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+.volet-bouton:hover {
+  background: var(--panel2);
+  color: var(--ink);
+}
+.volet-bouton[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--brand) 16%, transparent);
+  color: var(--brand);
+}
+.seven-outils-flottants {
+  display: none;
+}
+@media (min-width: 768px) {
+  .seven-outils-flottants {
+    display: block;
+    position: fixed;
+    z-index: 24;
+    top: calc(10px + env(safe-area-inset-top, 0px));
+    right: calc(var(--volet) + 12px);
+    padding: 3px;
+    border: 1px solid var(--line);
+    border-radius: 13px;
+    background: color-mix(in srgb, var(--card) 82%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: right 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+
+@keyframes six-volet-entre {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+.volet {
+  position: fixed;
+  z-index: 40;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
+    env(safe-area-inset-bottom, 0px) 0;
+  border-left: 1px solid var(--line);
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: -12px 0 32px rgb(0 0 0 / 0.14);
+  animation: six-volet-entre 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@media (min-width: 768px) {
+  html[data-volet] {
+    --volet: var(--volet-largeur, 440px);
+  }
+  .volet {
+    width: var(--volet);
+    box-shadow: none;
+  }
+  html[data-volet] body {
+    padding-right: var(--volet);
+  }
+  html:has(.seven-screen) body {
+    transition: padding-right 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  html {
+    --colonne-chat: clamp(480px, calc(480px + (100vw - var(--volet) - 768px) * 0.9), 780px);
+  }
+}
+/* Pendant qu'on tire le bord du volet : tout suit la souris sans animation, et la page affichée dans le navigateur
+   ne capte pas le pointeur (sinon le glisser s'arrête dès qu'on passe dessus). */
+html.volet-glisse,
+html.volet-glisse * {
+  cursor: col-resize !important;
+  user-select: none;
+}
+html.volet-glisse body,
+html.volet-glisse .seven-outils-flottants,
+html.volet-glisse .app {
+  transition: none !important;
+}
+html.volet-glisse .volet-cadre {
+  pointer-events: none;
+}
+.volet-poignee {
+  display: none;
+}
+@media (min-width: 768px) {
+  .volet-poignee {
+    position: absolute;
+    z-index: 2;
+    top: 0;
+    bottom: 0;
+    left: -5px;
+    width: 10px;
+    display: block;
+    cursor: col-resize;
+    touch-action: none;
+  }
+  .volet-poignee::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 4px;
+    width: 2px;
+    background: transparent;
+    transition: background 0.15s;
+  }
+  .volet-poignee:hover::after,
+  .volet-poignee:focus-visible::after,
+  html.volet-glisse .volet-poignee::after {
+    background: var(--brand);
+  }
+  .volet-poignee:focus-visible {
+    outline: none;
+  }
+}
+.seven-composer {
+  margin-left: calc(50% - (100vw - var(--decalage, 0px) - var(--volet)) / 2);
+  margin-right: calc(50% - (100vw - var(--decalage, 0px) - var(--volet)) / 2);
+}
+
+.volet-tete {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 40px;
+  padding: 4px 6px 4px 8px;
+}
+.volet-onglets {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+}
+.volet-onglet {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.84rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.volet-onglet:hover {
+  color: var(--ink);
+}
+.volet-onglet[aria-selected='true'] {
+  background: var(--panel2);
+  color: var(--ink);
+}
+.volet-action {
+  width: 30px;
+  height: 30px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+.volet-action[aria-pressed='true'] {
+  background: var(--panel2);
+  color: var(--ink);
+}
+.volet-action:hover:not(:disabled):not(.inactif) {
+  background: var(--panel2);
+  color: var(--ink);
+}
+.volet-action:disabled,
+.volet-action.inactif {
+  opacity: 0.35;
+  cursor: default;
+  pointer-events: none;
+}
+.volet-agrandir {
+  display: none;
+}
+@media (min-width: 768px) {
+  .volet-agrandir {
+    display: grid;
+  }
+}
+.volet-suivant svg {
+  transform: scaleX(-1);
+}
+.volet-a-part svg {
+  transform: rotate(45deg);
+}
+.volet-corps {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.volet-barre {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  padding: 0 6px 5px;
+  border-bottom: 1px solid var(--line);
+}
+.volet-adresse {
+  flex: 1;
+  min-width: 0;
+  height: 30px;
+  margin: 0 3px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9rem;
+}
+.volet-adresse:focus {
+  outline: 2px solid color-mix(in srgb, var(--brand) 55%, transparent);
+  outline-offset: 0;
+}
+.volet-cadre {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  border: 0;
+  background: #fff;
+}
+.volet-defile {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 8px 10px 16px;
+}
+.volet-defile .volet-liste {
+  padding: 0;
+}
+.volet-rien {
+  margin: 16px 6px;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+.volet-liste h3 {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.volet-effacer {
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  cursor: pointer;
+}
+.volet-effacer:hover {
+  background: var(--panel2);
+  color: var(--ink);
+}
+.volet-vide {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 24px 24px;
+  overflow-y: auto;
+  color: var(--muted);
+  text-align: center;
+}
+.volet-vide p {
+  margin: 12px 0 0;
+  color: var(--ink);
+  font-weight: 600;
+}
+.volet-vide .volet-vide-sous {
+  max-width: 320px;
+  margin-top: 6px;
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 0.88rem;
+}
+.volet-vide .volet-liste {
+  align-self: stretch;
+  margin-top: 28px;
+  text-align: left;
+}
+.volet-fichiers {
+  overflow-y: auto;
+  padding-bottom: 16px;
+}
+.volet-liste {
+  padding: 8px 10px 0;
+}
+.volet-liste h3 {
+  margin: 8px 6px 6px;
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.volet-ligne {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 4px 6px 4px 10px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9rem;
+  text-align: left;
+  cursor: pointer;
+}
+.volet-ligne > svg {
+  flex: none;
+  color: var(--muted);
+}
+.volet-ligne:hover {
+  background: var(--panel2);
+}
+.volet-ligne > span,
+.volet-ligne-texte {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.volet-ligne-texte {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.volet-apercu {
+  padding: 10px 16px;
+}
+.volet-retour {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+.volet-retour:hover {
+  background: var(--panel2);
+  color: var(--ink);
+}
+.volet-apercu h3 {
+  margin: 10px 0;
+  font-size: 1rem;
+  overflow-wrap: anywhere;
+}
+.volet-apercu pre {
+  margin: 0;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+@media (prefers-reduced-motion: reduce) {
+  .volet {
+    animation: none;
+  }
+  html:has(.seven-screen) body,
+  .seven-outils-flottants {
+    transition: none;
+  }
+}
+/* Barre d'adresse du volet : plus fine que les champs de saisie de l'app (48 px pour le tactile), pour laisser la
+   place à la page ; un peu plus haute sur téléphone pour rester facile à toucher. */
+.volet-adresse {
+  min-height: 0;
+}
+@media (max-width: 767px) {
+  .volet-adresse {
+    height: 36px;
+  }
+  .volet-action {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+/* Volet sans ligne d'onglets ni croix (les boutons du haut font office d'onglets) : la barre d'adresse est la première
+   ligne. Sur téléphone, le volet (fichiers seulement) s'ouvre sous la barre du haut, qui reste visible pour le
+   refermer. */
+.volet-barre {
+  padding: 6px 6px 6px 8px;
+}
+.volet .volet-adresse {
+  min-height: 0;
+}
+.volet-fichiers {
+  padding-top: 6px;
+}
+@media (max-width: 767px) {
+  .volet {
+    top: calc(56px + env(safe-area-inset-top, 0px));
+    padding-top: 0;
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    box-shadow: none;
+  }
+}
+
+/* Annoter la page pour Six : une surface transparente posée sur la page, et une barre d'outils flottante en bas. */
+.volet-scene {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+.annot-surface {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  cursor: crosshair;
+  touch-action: none;
+  background: color-mix(in srgb, var(--brand) 5%, transparent);
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--brand) 55%, transparent);
+}
+.annot-surface.outil-texte {
+  cursor: text;
+}
+.annot-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.annot-svg rect,
+.annot-svg polyline {
+  fill: none;
+  stroke: #ff5a36;
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.annot-svg rect {
+  fill: rgb(255 90 54 / 0.08);
+}
+.annot-num {
+  position: absolute;
+  min-width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  padding: 0 5px;
+  border: 2px solid #fff;
+  border-radius: 11px;
+  background: #ff5a36;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.3);
+}
+.annot-cadre {
+  transform: translate(-40%, -40%);
+}
+.annot-note {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transform: translate(-11px, -50%);
+  cursor: auto;
+}
+.annot-note .annot-num {
+  position: static;
+  transform: none;
+}
+.annot-note input {
+  width: 170px;
+  height: 30px;
+  min-height: 0;
+  padding: 0 10px;
+  border: 1px solid #ff5a36;
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.85rem;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.25);
+}
+.annot-barre {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  bottom: 14px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  max-width: calc(100% - 20px);
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.3);
+  transform: translateX(-50%);
+}
+.annot-sep {
+  width: 1px;
+  height: 20px;
+  margin: 0 4px;
+  background: var(--line);
+}
+.annot-envoyer {
+  height: 30px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--brand);
+  color: var(--on-accent);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.annot-envoyer:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* ---------- Pièces jointes en carrés (components/PiecesJointes.tsx) ----------
+   Dans la barre de saisie : une rangée de carrés au-dessus du champ, chacun avec sa croix. Dans les bulles : les mêmes
+   carrés, plus petits, au-dessus du texte. Image, capture et vidéo montrent leur image ; un document montre son type
+   et son nom. */
+.seven-capsule {
+  flex-wrap: wrap;
+}
+.seven-capsule > .pieces {
+  order: -1;
+  flex: 1 0 100%;
+  padding: 6px 4px 6px;
+}
+.seven-capsule:has(> .pieces) {
+  border-radius: 22px;
+}
+.pieces {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.piece {
+  position: relative;
+  flex: none;
+  width: 96px;
+  height: 96px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel2);
+}
+.pieces.petit .piece {
+  width: 76px;
+  height: 76px;
+  border-radius: 10px;
+}
+.piece img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.piece-fiche {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  height: 100%;
+  padding: 6px;
+  color: var(--muted);
+  text-align: center;
+}
+.piece-ext {
+  color: var(--brand);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+}
+.piece-nom {
+  display: -webkit-box;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 0.66rem;
+  line-height: 1.15;
+  word-break: break-all;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.piece-badge {
+  position: absolute;
+  left: 5px;
+  bottom: 5px;
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 0.6);
+  color: #fff;
+}
+.piece-retirer,
+.seven-composer .seven-capsule .piece-retirer {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 20px;
+  height: 20px;
+  min-height: 0;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 0.65);
+  color: #fff;
+  cursor: pointer;
+}
+.seven-msg.user:has(> .pieces) {
+  flex-direction: column;
+  align-items: flex-end;
+}
+.seven-msg.user > .pieces {
+  justify-content: flex-end;
+}
+
+/* Repères : pendant la prise d'une capture, la barre d'outils et le voile disparaissent de l'image. */
+.annot-barre.cache {
+  visibility: hidden;
+}
+.annot-surface.prise {
+  background: transparent;
+  box-shadow: none;
+}
+.annot-etat {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0 6px 0 4px;
+  color: var(--ok);
+  font-size: 0.76rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.annot-echec {
+  position: absolute;
+  z-index: 2;
+  left: 50%;
+  top: 10px;
+  max-width: calc(100% - 24px);
+  margin: 0;
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--warn);
+  font-size: 0.78rem;
+  box-shadow: 0 4px 14px rgb(0 0 0 / 0.25);
+  transform: translateX(-50%);
+}
+.volet-apercu-image {
+  display: block;
+  max-width: 100%;
+  border-radius: 10px;
+}
+
+/* Espace de travail de Cosinus (onglet Fichiers) : dossier, taille des fichiers, message court après une action. */
+.volet-dossier {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 6px 6px;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.volet-dossier span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  direction: rtl; /* garde la fin du chemin visible */
+  text-align: left;
+}
+.volet-taille {
+  flex: none;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+.volet-info {
+  margin: 4px 10px 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--brand) 12%, transparent);
+  color: var(--ink);
+  font-size: 0.82rem;
+}
+.volet-rien-discussion {
+  margin: 14px 16px;
+}
+
+/* Cosinus : étapes de travail de l'agent (repliées au-dessus de la réponse) et fichiers qu'il a enregistrés. */
+.six-etapes {
+  max-width: 100%;
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+.six-etapes summary {
+  width: fit-content;
+  padding: 3px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  cursor: pointer;
+  list-style: none;
+}
+.six-etapes summary::-webkit-details-marker {
+  display: none;
+}
+.six-etapes summary::before {
+  content: '▸ ';
+}
+.six-etapes[open] summary::before {
+  content: '▾ ';
+}
+.six-etapes ol {
+  margin: 8px 0 0;
+  padding-left: 22px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.six-fichiers-crees {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+.six-fichier-cree {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 6px 10px;
+  border: 1px solid color-mix(in srgb, var(--brand) 40%, var(--line));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--brand) 10%, transparent);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.six-fichier-cree span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Réglages sur grand écran (components/Settings.tsx) : sections à gauche, section ouverte à droite. */
+.app:has(.reglages-grand) {
+  max-width: none;
+}
+.screen.reglages-grand {
+  display: grid;
+  grid-template-columns: minmax(220px, 270px) minmax(0, 1fr);
+  gap: clamp(24px, 4vw, 64px);
+  width: 100%;
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 24px clamp(16px, 3vw, 40px) 48px;
+  align-items: start;
+}
+.reglages-menu {
+  position: sticky;
+  top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  padding-right: 4px;
+}
+.reglages-menu-titre {
+  margin: 4px 10px 12px;
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+.reglages-menu .lg-recherche {
+  margin: 0 0 12px;
+}
+.reglages-entree {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.95rem;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.reglages-entree > svg {
+  flex: none;
+  color: var(--muted);
+}
+.reglages-entree:hover {
+  background: var(--panel2);
+}
+.reglages-entree[aria-current='page'] {
+  background: color-mix(in srgb, var(--ink) 9%, transparent);
+  font-weight: 600;
+}
+.reglages-entree[aria-current='page'] > svg {
+  color: var(--ink);
+}
+.reglages-entree.danger,
+.reglages-entree.danger > svg {
+  color: var(--bad);
+}
+.reglages-entree-txt {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.reglages-profil {
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+.reglages-contenu {
+  min-width: 0;
+  max-width: 760px;
+}
+.reglages-contenu-titre {
+  margin: 4px 0 20px;
+  font-size: 1.9rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+/* L'avatar de la page Réglages fait 64 px (.lg-avatar, !important) : petit dans la colonne de gauche. */
+.reglages-profil .avatar.lg-avatar {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px;
+  flex: none;
+}
+
+/* Navigateur de Cosinus : version lecture des sites qui refusent l'affichage intégré (components/Volet.tsx). */
+.volet-lecture {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 14px 18px 32px;
+  background: var(--card);
+  color: var(--ink);
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+.volet-lecture h1 {
+  margin: 6px 0 14px;
+  font-size: 1.35rem;
+  line-height: 1.25;
+}
+.volet-lecture h2 {
+  margin: 18px 0 8px;
+  font-size: 1.12rem;
+}
+.volet-lecture h3 {
+  margin: 14px 0 6px;
+  font-size: 1rem;
+}
+.volet-lecture p {
+  margin: 0 0 10px;
+}
+.volet-lecture .volet-lecture-li {
+  margin: 0 0 6px;
+  padding-left: 8px;
+}
+.volet-lecture-note {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--brand) 12%, transparent);
+  font-size: 0.82rem;
+}
+.volet-lecture .volet-liste {
+  padding: 16px 0 0;
+}
+.volet-verif {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  z-index: 2;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--muted);
+  font-size: 0.75rem;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.2);
+}
+
+/* Navigateur complet du volet (components/NavigateurComplet.tsx) : image de la page qui tourne dans Edge sur
+   l'ordinateur ; la zone prend le clavier pour le transmettre à la page. */
+.volet-complet {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: #fff;
+  outline: none;
+  cursor: default;
+}
+.volet-complet:focus-visible {
+  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--brand) 55%, transparent);
+}
+.volet-complet canvas {
+  display: block;
+  max-width: none;
+  user-select: none;
+}
+/* Chargement : un trait fin qui court en haut de la page, sans message. */
+.volet-complet-charge {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  overflow: hidden;
+  pointer-events: none;
+}
+.volet-complet-charge::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 35%;
+  background: var(--brand);
+  animation: volet-charge 1.1s ease-in-out infinite;
+}
+@keyframes volet-charge {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .volet-complet-charge::after {
+    animation: none;
+    width: 100%;
+    opacity: 0.6;
+  }
+}
+
+/* Application de bureau : la zone où l'app de bureau pose son navigateur natif (components/NavigateurNatif.tsx). */
+.volet-natif {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  background: #fff;
+}
+
+/* Page d'après connexion (/connexion/retour) : un message centré sur le fond de Six (vagues), sans cadre. */
+.retour-connexion {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: 32px 16px;
+  text-align: center;
+}
+.retour-marque {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 44px;
+  color: var(--ink);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+.retour-marque .six-logo {
+  font-size: 1.6rem;
+}
+.retour-etat {
+  display: grid;
+  place-items: center;
+  width: 68px;
+  height: 68px;
+  margin-bottom: 22px;
+  border-radius: 50%;
+  color: #fff;
+  background: color-mix(in srgb, var(--brand) 85%, transparent);
+  box-shadow: 0 0 0 10px color-mix(in srgb, var(--brand) 14%, transparent);
+  animation: retour-apparait 0.45s ease-out both;
+}
+.retour-erreur {
+  background: color-mix(in srgb, #d64545 85%, transparent);
+  box-shadow: 0 0 0 10px color-mix(in srgb, #d64545 14%, transparent);
+}
+.retour-envoi,
+.retour-lien.retour-etat {
+  background: transparent;
+}
+.retour-point {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--brand);
+  animation: retour-pulse 1.1s ease-in-out infinite;
+}
+.retour-connexion h1 {
+  margin: 0 0 10px;
+  color: var(--ink);
+  font-size: clamp(1.6rem, 5vw, 2.1rem);
+  line-height: 1.2;
+  letter-spacing: -0.025em;
+}
+.retour-connexion p {
+  max-width: 420px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 1rem;
+  line-height: 1.55;
+}
+a.retour-lien {
+  margin-top: 26px;
+  color: var(--brand);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+a.retour-lien:hover {
+  text-decoration: underline;
+}
+@keyframes retour-apparait {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+}
+@keyframes retour-pulse {
+  50% {
+    transform: scale(1.6);
+    opacity: 0.45;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .retour-etat,
+  .retour-point {
+    animation: none;
+  }
+}
+
+/* App de bureau : connexion Google ou Apple en cours dans le navigateur de l'ordinateur. */
+.auth-attente-navigateur {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.4;
+}
+.auth-attente-navigateur p {
+  margin: 0;
+}
+.auth-lien {
+  flex: none;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  color: var(--brand);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.auth-lien:hover {
+  background: var(--panel2);
+}
+
+/* Discussion partagée depuis le Cloud (/partage/<id>) : lecture seule, sur le fond de Six. */
+.partage {
+  position: relative;
+  z-index: 1;
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 28px 16px 64px;
+}
+.partage-tete {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 36px;
+  color: var(--ink);
+  font-weight: 700;
+}
+.partage-tete .six-logo {
+  font-size: 1.5rem;
+}
+.partage h1 {
+  margin: 0 0 8px;
+  color: var(--ink);
+  font-size: clamp(1.5rem, 4.5vw, 2rem);
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+.partage-info {
+  margin: 0 0 28px;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.partage-fil {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.partage-message p {
+  margin: 4px 0 0;
+  color: var(--ink);
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.partage-user p {
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--brand) 12%, transparent);
+}
+.partage-auteur {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+.partage-absent {
+  padding-top: 12vh;
+  text-align: center;
+}
+
+/* Boutons du haut d'une discussion (partager, volets) côte à côte. */
+.seven-outils-ligne {
+  align-items: center;
+  gap: 4px;
+}
+.seven-outils-flottants.seven-outils-ligne {
+  gap: 2px;
+}
+@media (min-width: 768px) {
+  .seven-outils-flottants.seven-outils-ligne {
+    display: flex;
+  }
+}
+div.seven-outils-ligne:not(.seven-outils-flottants) {
+  display: flex;
+}
