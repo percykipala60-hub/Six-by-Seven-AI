@@ -1,6 +1,7 @@
 import { appelAgent } from '@/lib/ai';
 import type { ProjetBody } from '@/lib/api-schemas';
 import { contexteProjetSystem, sevenAiSystem } from '@/lib/prompt';
+import { consignesSite } from '@/lib/styles-site';
 import type { ChatMessage } from '@/lib/types';
 import { ficheStyle } from './memoire-documents';
 import { definitionsOutils, executerOutil, libelleEtape, type ContexteOutils } from './outils';
@@ -164,7 +165,8 @@ export async function executerAgent({
 ${style}
 Respecte ce style dans les documents que tu rédiges (plan, numérotation, ton, longueur des phrases), sauf si la personne demande autre chose.`
       : '') +
-    contexteProjetSystem(projet);
+    contexteProjetSystem(projet) +
+    consignesSite(question);
   const messages: MessageAgent[] = [
     ...historique.map((m) => ({ role: m.role, content: m.content }) as MessageAgent),
     { role: 'user', content: question, ...(images?.length ? { images } : {}) },

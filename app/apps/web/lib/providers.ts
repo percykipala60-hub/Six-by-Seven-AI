@@ -1,6 +1,7 @@
 import { ProviderError, callAI, callChat, hasChatAI, hasAI } from './ai';
 import type { ImageJointe, ProjetBody } from './api-schemas';
 import { corrigerIdentite } from './identite';
+import { consignesSite, demandeLivrableLong } from './styles-site';
 import {
   analysisPrompt,
   adjustPrompt,
@@ -92,10 +93,11 @@ export async function chat(
   if (!hasChatAI()) return { reponse: demoChat(user), demo: true };
   const reponse = (
     await callChat(
-      sevenAiSystem(mode) + contexteProjetSystem(projet),
+      sevenAiSystem(mode) + contexteProjetSystem(projet) + consignesSite(user),
       user,
       history,
-      mode === 'sixtouch' ? 4000 : 1500, // un rapport demande plus de place qu'une réponse de discussion
+      // Un rapport, un site ou une présentation demande plus de place qu'une réponse de discussion.
+      demandeLivrableLong(user) ? 4500 : mode === 'sixtouch' ? 4000 : 1500,
       premium,
       images,
     )

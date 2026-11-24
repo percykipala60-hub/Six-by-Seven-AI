@@ -33,6 +33,8 @@ export default function ArtefactPanneau({
   const dernier = artefact.versions.length - 1;
   const [version, setVersion] = useState(versionInitiale ?? dernier);
   const [source, setSource] = useState(false); // HTML et tableau : voir le texte brut
+  // Page HTML : aperçu sur ordinateur (toute la largeur du panneau) ou sur téléphone (390 px).
+  const [telephone, setTelephone] = useState(false);
   const [copie, setCopie] = useState(false);
   const panneau = useRef<HTMLElement>(null);
   useEffect(() => {
@@ -194,6 +196,30 @@ export default function ArtefactPanneau({
             </select>
           </label>
         )}
+        {artefact.type === 'html' && !source && (
+          <div className="artefact-ecrans" role="group" aria-label="Taille de l’aperçu">
+            <button
+              type="button"
+              className="volet-action"
+              aria-pressed={!telephone}
+              aria-label="Aperçu sur ordinateur"
+              title="Ordinateur"
+              onClick={() => setTelephone(false)}
+            >
+              <Icon name="panneau" size={16} />
+            </button>
+            <button
+              type="button"
+              className="volet-action"
+              aria-pressed={telephone}
+              aria-label="Aperçu sur téléphone"
+              title="Téléphone"
+              onClick={() => setTelephone(true)}
+            >
+              <Icon name="phone" size={16} />
+            </button>
+          </div>
+        )}
         <span className="grow" />
         <button
           type="button"
@@ -225,7 +251,7 @@ export default function ArtefactPanneau({
           <Diapositives presentation={presentation} theme={theme || presentation.theme} />
         ) : artefact.type === 'html' && !source ? (
           <iframe
-            className="artefact-cadre"
+            className={`artefact-cadre${telephone ? ' artefact-cadre-telephone' : ''}`}
             title={`Aperçu : ${artefact.titre}`}
             sandbox="allow-scripts"
             referrerPolicy="no-referrer"

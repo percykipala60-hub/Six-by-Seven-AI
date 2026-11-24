@@ -8270,3 +8270,18 @@ div.seven-outils-ligne:not(.seven-outils-flottants) {
   color: var(--muted);
   font-size: 0.7rem;
 }
+
+/* Page HTML : aperçu au format téléphone (390 px, centré, cadre arrondi). */
+.artefact-ecrans {
+  display: flex;
+  gap: 2px;
+}
+.artefact-cadre-telephone {
+  flex: none;
+  width: min(390px, 100%);
+  height: min(780px, 100%);
+  margin: 14px auto;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  box-shadow: var(--sh-2);
+}
