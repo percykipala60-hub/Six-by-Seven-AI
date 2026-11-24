@@ -75,6 +75,7 @@ export async function POST(req: Request) {
             },
             surEtape: (texte) => envoyer({ type: 'etape', texte }),
             annulation: req.signal,
+            projet: parsed.data.projet,
           });
           envoyer({
             type: 'fin',
@@ -103,7 +104,13 @@ export async function POST(req: Request) {
   }
   try {
     return NextResponse.json(
-      await chat(parsed.data.messages, a.illimite, parsed.data.images, parsed.data.mode),
+      await chat(
+        parsed.data.messages,
+        a.illimite,
+        parsed.data.images,
+        parsed.data.mode,
+        parsed.data.projet,
+      ),
     );
   } catch (e) {
     return providerFail(e);

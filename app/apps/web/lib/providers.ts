@@ -1,9 +1,10 @@
 import { ProviderError, callAI, callChat, hasChatAI, hasAI } from './ai';
-import type { ImageJointe } from './api-schemas';
+import type { ImageJointe, ProjetBody } from './api-schemas';
 import { corrigerIdentite } from './identite';
 import {
   analysisPrompt,
   adjustPrompt,
+  contexteProjetSystem,
   parseAdjust,
   parseAnalysis,
   parseReplies,
@@ -84,13 +85,14 @@ export async function chat(
   premium = true,
   images?: ImageJointe[],
   mode: 'chat' | 'sixtouch' = 'chat',
+  projet?: ProjetBody,
 ): Promise<ChatResult> {
   const user = messages[messages.length - 1]?.content ?? '';
   const history = messages.slice(0, -1);
   if (!hasChatAI()) return { reponse: demoChat(user), demo: true };
   const reponse = (
     await callChat(
-      sevenAiSystem(mode),
+      sevenAiSystem(mode) + contexteProjetSystem(projet),
       user,
       history,
       mode === 'sixtouch' ? 4000 : 1500, // un rapport demande plus de place qu'une réponse de discussion

@@ -1,8 +1,10 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AppBar } from './AppBar';
+import { ArtefactPanneau, ContenuReponse, type ArtefactOuvert } from './Artefacts';
 import { Icon } from './Icon';
 import { BoutonPartager } from './BoutonPartager';
 import { estBureau } from '@/lib/plateforme';
@@ -20,6 +22,17 @@ import { memoireActive } from '@/lib/memoire';
 import { entetesCompte } from '@/lib/premium-client';
 import { CHAT_MAX_BYTES, CHAT_MAX_CONTENT, CHAT_MAX_MESSAGES } from '@/lib/api-schemas';
 import { detecterOrdre } from '@/lib/seven-ordres';
+import { extrairePdf } from '@/lib/lire-document';
+import { contexteProjet, ecouterProjets, lireProjet, type Projet } from '@/lib/projets';
+import {
+  artefactsDuChat,
+  decouper,
+  ecouterArtefacts,
+  extraireArtefacts,
+  garderArtefacts,
+  retrouver,
+  type Artefact,
+} from '@/lib/artefacts';
 import type { ChatMessage, ChatResult, PieceAffichee } from '@/lib/types';
 import {
   ICONE_PIECE,
@@ -44,7 +57,6 @@ import {
 // Un document importé (texte ou PDF) est envoyé dans le message : on le borne pour
 // rester dans la limite du serveur (20 000 caractères) et raisonnable côté coûts.
 const TAILLE_DOC_MAX = 12_000;
-const PAGES_PDF_MAX = 20;
 const MAX_FICHIER = 20 * 1024 * 1024;
 const MAX_VIDEO = 500 * 1024 * 1024; // lue sur l'appareil, seules quelques images partent
 // Document joint sans question : Six dit en bref ce qu'il a compris, sans reproduire le fichier.
@@ -89,6 +101,54 @@ function TexteProgressif({ texte, onPas }: { texte: string; onPas?: () => void }
   );
 }
 
+/**
+ * Bulle d'un message. Une réponse qui contient des artefacts (lib/artefacts.ts) montre une carte par artefact à la
+ * place de son contenu ; elle s'affiche d'un coup (le travail est dans le panneau).
+ */
+function BulleReponse({
+  message,
+  anime,
+  onPas,
+  chat,
+  artefacts,
+  ouvert,
+  onOuvrir,
+}: {
+  message: ChatMessage;
+  anime: boolean;
+  onPas: () => void;
+  chat: string;
+  artefacts: Artefact[];
+  ouvert: ArtefactOuvert | null;
+  onOuvrir: (a: ArtefactOuvert) => void;
+}) {
+  const morceaux = useMemo(
+    () => (message.role === 'assistant' ? decouper(message.content) : []),
+    [message],
+  );
+  if (morceaux.some((m) => m.genre === 'artefact'))
+    return (
+      <div className="seven-bulle avec-artefact">
+        <ContenuReponse
+          morceaux={morceaux}
+          chat={chat}
+          artefacts={artefacts}
+          ouvert={ouvert}
+          onOuvrir={onOuvrir}
+        />
+      </div>
+    );
+  return (
+    <div className="seven-bulle">
+      {anime && message.role === 'assistant' ? (
+        <TexteProgressif texte={message.content} onPas={onPas} />
+      ) : (
+        message.content
+      )}
+    </div>
+  );
+}
+
 function preparerRequete(historique: ChatMessage[], content: string): string {
   const dernier: ChatMessage = { role: 'user', content };
   // Les aperçus des pièces jointes restent sur l'appareil : seuls le rôle et le texte partent au serveur.
@@ -107,41 +167,6 @@ function preparerRequete(historique: ChatMessage[], content: string): string {
     corps = candidat;
   }
   return corps;
-}
-
-/** Extrait le texte d'un PDF côté navigateur (pdfjs-dist, chargé à la demande). */
-async function extrairePdf(fichier: File): Promise<string> {
-  const pdfjs = await import('pdfjs-dist');
-  pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-    'pdfjs-dist/build/pdf.worker.min.mjs',
-    import.meta.url,
-  ).toString();
-  const chargement = pdfjs.getDocument({ data: await fichier.arrayBuffer() });
-  const morceaux: string[] = [];
-  try {
-    const pdf = await chargement.promise;
-    const pages = Math.min(pdf.numPages, PAGES_PDF_MAX);
-    for (let n = 1; n <= pages; n++) {
-      const page = await pdf.getPage(n);
-      const contenu = await page.getTextContent();
-      morceaux.push(
-        contenu.items
-          .map((it) => ('str' in it ? it.str : ''))
-          .join(' ')
-          .trim(),
-      );
-    }
-    let texte = morceaux.filter(Boolean).join('\n\n');
-    if (!texte)
-      throw new Error(
-        'Aucun texte extractible. Pour un PDF numérisé, utilise une version avec du texte sélectionnable.',
-      );
-    if (pdf.numPages > PAGES_PDF_MAX)
-      texte += `\n\n[… ${pdf.numPages - PAGES_PDF_MAX} pages non importées]`;
-    return texte.trim();
-  } finally {
-    await chargement.destroy();
-  }
 }
 
 // Web Speech API : la dictée se fait dans le navigateur, aucune clé serveur n'est requise.
@@ -359,7 +384,39 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   }, [volet]);
   const params = useSearchParams();
   const demandee = params.get('c') ?? ''; // discussion ouverte depuis le menu ; vide : nouvelle discussion
+  // Nouvelle discussion lancée depuis un projet (/chat?projet=…) ; une discussion ouverte garde son propre projet.
+  const projetDemande = params.get('projet') ?? '';
   const chatId = useRef('');
+  const [projetId, setProjetId] = useState('');
+  const [projet, setProjet] = useState<Projet | undefined>();
+  useEffect(() => {
+    const lire = () => setProjet(lireProjet(projetId));
+    lire();
+    return ecouterProjets(lire);
+  }, [projetId]);
+  // Artefacts de la discussion (lib/artefacts.ts) et celui ouvert dans le panneau.
+  const [artefacts, setArtefacts] = useState<Artefact[]>([]);
+  const [artefactOuvert, setArtefactOuvert] = useState<ArtefactOuvert | null>(null);
+  const fermerArtefact = useCallback(() => setArtefactOuvert(null), []);
+  // Le volet de Cosinus (navigateur, fichiers) et le panneau d'artefact occupent la même place : l'un ferme l'autre.
+  useEffect(() => {
+    if (volet) setArtefactOuvert(null);
+  }, [volet]);
+  const ouvrirArtefact = useCallback(
+    (a: ArtefactOuvert) => {
+      setVolet(null); // un seul panneau à droite à la fois
+      setArtefactOuvert(a);
+    },
+    [setVolet],
+  );
+  useEffect(
+    () =>
+      ecouterArtefacts(() => {
+        const liste = artefactsDuChat(chatId.current);
+        if (liste.length) setArtefacts(liste);
+      }),
+    [],
+  );
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [saisie, setSaisie] = useState('');
   const [occupe, setOccupe] = useState(false);
@@ -513,6 +570,9 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     operation.current?.abort();
     const chat = demandee ? lireChat(demandee) : undefined;
     chatId.current = chat?.id ?? nouvelId();
+    setProjetId(chat ? (chat.projet ?? '') : projetDemande);
+    setArtefacts(chat ? artefactsDuChat(chat.id) : []);
+    setArtefactOuvert(null);
     setAnimee(-1);
     const historique = chat?.messages ?? [];
     setMessages(historique);
@@ -525,7 +585,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     );
     setMemOn(memoireActive());
     if (window.matchMedia('(pointer: fine)').matches) champ.current?.focus();
-  }, [demandee]);
+  }, [demandee, projetDemande]);
 
   useEffect(() => {
     const controleur = new AbortController();
@@ -567,6 +627,8 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         chatId.current = nouvelId();
         documentActif.current = '';
         setMessages([]);
+        setArtefacts([]);
+        setArtefactOuvert(null);
         setDocumentAReimporter(false);
         setDernierEchec(undefined);
         setErreur('');
@@ -598,7 +660,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
 
   function pousser(fil: ChatMessage[]) {
     setMessages(fil);
-    garderChat(chatId.current, fil, mode);
+    garderChat(chatId.current, fil, mode, projetId || undefined);
   }
 
   /**
@@ -690,9 +752,11 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       );
       // Cosinus : le serveur donne à Six ses consignes d'agent de travail.
       const corps =
-        images.length || sixtouch
+        images.length || sixtouch || projet
           ? JSON.stringify({
               ...(JSON.parse(texteSeul) as object),
+              // Projet : ses consignes et ses documents accompagnent chaque message (bornés, lib/projets.ts).
+              ...(projet ? { projet: contexteProjet(projet) } : {}),
               ...(sixtouch
                 ? {
                     mode: 'sixtouch',
@@ -738,6 +802,13 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       const suite = [...fil, reponseSix].slice(-MAX_MSG);
       setAnimee(suite.length - 1); // seule la réponse qui arrive s'écrit progressivement
       pousser(suite);
+      // Artefacts de la réponse : gardés avec la discussion (mémoire active), le dernier s'ouvre dans le panneau.
+      const extraits = extraireArtefacts(data.reponse);
+      if (extraits.length) {
+        const gardes = garderArtefacts(chatId.current, projetId || undefined, extraits);
+        if (gardes.length) setArtefacts(gardes);
+        ouvrirArtefact(retrouver(gardes, chatId.current, extraits[extraits.length - 1]));
+      }
       if (docEnvoye) {
         documentActif.current = docEnvoye;
         setDocumentAReimporter(false);
@@ -955,9 +1026,12 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
           setSaisie('');
           setErreur('');
           setDernierEchec(undefined);
+          setArtefacts([]);
+          setArtefactOuvert(null);
+          setProjetId('');
           documentActif.current = '';
           setDocumentAReimporter(false);
-          if (demandee) router.replace(base);
+          if (demandee || projetDemande) router.replace(base);
           champ.current?.focus();
         }}
         outils={
@@ -994,12 +1068,25 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
           }
         />
       )}
+      {artefactOuvert && (
+        <ArtefactPanneau
+          artefact={artefactOuvert.artefact}
+          version={artefactOuvert.version}
+          onFermer={fermerArtefact}
+        />
+      )}
       <div className="seven-fil" ref={filRef} aria-live="polite">
         {messages.length === 0 && !occupe && (
           <div className="seven-vide">
             <span className="six-vide-logo" aria-hidden="true">
               <Logo label="" />
             </span>
+            {projet && (
+              <Link href={`/projets?p=${encodeURIComponent(projet.id)}`} className="projet-puce">
+                <Icon name="dossier" size={15} stroke={1.8} />
+                <span>{projet.nom}</span>
+              </Link>
+            )}
             {sixtouch ? (
               <>
                 <h1>On se met au travail ?</h1>
@@ -1042,13 +1129,15 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
                 </ol>
               </details>
             )}
-            <div className="seven-bulle">
-              {i === animee && m.role === 'assistant' ? (
-                <TexteProgressif texte={m.content} onPas={suivreFin} />
-              ) : (
-                m.content
-              )}
-            </div>
+            <BulleReponse
+              message={m}
+              anime={i === animee}
+              onPas={suivreFin}
+              chat={chatId.current}
+              artefacts={artefacts}
+              ouvert={artefactOuvert}
+              onOuvrir={ouvrirArtefact}
+            />
             {m.role === 'assistant' && (
               <button
                 type="button"
@@ -1167,6 +1256,15 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
           void envoyer(saisie);
         }}
       >
+        {projet && messages.length > 0 && (
+          <Link
+            href={`/projets?p=${encodeURIComponent(projet.id)}`}
+            className="projet-puce projet-puce-saisie"
+          >
+            <Icon name="dossier" size={14} stroke={1.8} />
+            <span>{projet.nom}</span>
+          </Link>
+        )}
         <div className="seven-capsule">
           <button
             type="button"

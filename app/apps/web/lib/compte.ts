@@ -741,6 +741,7 @@ export async function oublierMemoireDuCompte(): Promise<string | null> {
   if (!sb || typeof id !== 'string') return "Tu n'es pas connecté.";
   const { error } = await sb.from('memoires').delete().eq('user_id', id);
   if (error) return "La mémoire du compte n'a pas pu être effacée. Réessaie.";
+  await import('./projets-sync').then((m) => m.effacerProjetsDuCompte(sb, id));
   effacerMemoire();
   return null;
 }
@@ -776,7 +777,12 @@ export async function autoriserSync(on: boolean): Promise<string | null> {
     return null;
   }
   const { error } = await sb.from('memoires').delete().eq('user_id', id);
-  return error ? "La copie sur ton compte n'a pas pu être effacée. Réessaie." : null;
+  const projetsEffaces = await import('./projets-sync').then((m) =>
+    m.effacerProjetsDuCompte(sb, id),
+  );
+  return error || !projetsEffaces
+    ? "La copie sur ton compte n'a pas pu être effacée. Réessaie."
+    : null;
 }
 
 let demarre = false;
@@ -808,6 +814,18 @@ async function synchroniser(sb: SupabaseClient, userId: string) {
   if (error) return; // hors-ligne : on réessaiera à la prochaine ouverture
   remplacerMemoire(fusionner(lireMemoire(), data?.donnees));
   await envoyerMemoire(sb, userId);
+  await synchroniserProjetsDuCompte(sb, userId);
+}
+
+/** Projets et artefacts (lib/projets-sync.ts, chargé seulement quand la synchronisation est autorisée). */
+async function synchroniserProjetsDuCompte(sb: SupabaseClient, userId: string) {
+  if (!syncAutorisee()) return;
+  try {
+    const m = await import('./projets-sync');
+    await m.synchroniserProjets(sb, userId);
+  } catch {
+    /* hors-ligne : on réessaiera au prochain changement */
+  }
 }
 
 /**
@@ -883,4 +901,15 @@ export async function demarrerCompte(): Promise<void> {
     clearTimeout(minuterie);
     minuterie = setTimeout(() => void envoyerMemoire(sb, id), 1500);
   });
+
+  // Projets et artefacts modifiés sur l'appareil : envoyés au compte, regroupés sur 3 s.
+  let minuterieProjets: ReturnType<typeof setTimeout> | undefined;
+  const projetsChanges = () => {
+    const id = lireJson(SESSION).id;
+    if (typeof id !== 'string' || !syncAutorisee()) return;
+    clearTimeout(minuterieProjets);
+    minuterieProjets = setTimeout(() => void synchroniserProjetsDuCompte(sb, id), 3000);
+  };
+  window.addEventListener('six-projets', projetsChanges);
+  window.addEventListener('six-artefacts', projetsChanges);
 }

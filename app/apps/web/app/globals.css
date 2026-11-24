@@ -7818,3 +7818,382 @@ a.retour-lien:hover {
 div.seven-outils-ligne:not(.seven-outils-flottants) {
   display: flex;
 }
+
+/* ---------- Artefacts (components/ArtefactPanneau.tsx, components/Artefacts.tsx) ----------
+   Le panneau reprend la place du volet de Cosinus : plein écran sur téléphone, à côté de la discussion à partir de
+   768 px (body padding-right = --volet), un peu plus large pour lire un document ou une page. */
+@media (min-width: 768px) {
+  html[data-artefact] {
+    --volet: clamp(380px, 46vw, 760px);
+  }
+  html[data-artefact] body {
+    padding-right: var(--volet);
+  }
+}
+.artefact-panneau {
+  z-index: 28; /* sous le voile et le menu latéral (29, 30) : le menu s'ouvre par-dessus le panneau */
+  outline: none;
+}
+.artefact-tete {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 8px 8px 6px 14px;
+}
+.artefact-icone {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--brand) 12%, var(--card));
+  color: var(--brand);
+}
+.artefact-titre {
+  margin: 0;
+  overflow: hidden;
+  font-size: 1rem;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.artefact-sous {
+  display: block;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+.artefact-barre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px 6px;
+  border-bottom: 1px solid var(--line);
+}
+.artefact-versions,
+.artefact-onglets {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+.artefact-onglets .volet-onglet[aria-pressed='true'] {
+  background: var(--panel2);
+  color: var(--ink);
+}
+.artefact-corps {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+.artefact-cadre {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  border: 0;
+  background: #fff;
+}
+.artefact-code {
+  margin: 0;
+  padding: 14px 16px;
+  overflow: auto;
+  background: var(--panel2);
+  color: var(--ink);
+  font:
+    0.84rem/1.55 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Consolas,
+    monospace;
+  white-space: pre;
+  tab-size: 2;
+}
+.artefact-corps > .artefact-code {
+  flex: 1;
+  background: none;
+}
+.artefact-doc {
+  padding: 14px 20px 32px;
+  font-size: 0.97rem;
+  line-height: 1.6;
+}
+.artefact-doc h3,
+.artefact-doc h4,
+.artefact-doc h5 {
+  margin: 1.1em 0 0.4em;
+  line-height: 1.25;
+}
+.artefact-doc h3 {
+  font-size: 1.35rem;
+}
+.artefact-doc h4 {
+  font-size: 1.1rem;
+}
+.artefact-doc h5 {
+  font-size: 1rem;
+}
+.artefact-doc p {
+  margin: 0 0 0.8em;
+  white-space: pre-wrap;
+}
+.artefact-doc ul,
+.artefact-doc ol {
+  margin: 0 0 0.8em;
+  padding-left: 1.3em;
+}
+.artefact-doc .artefact-code {
+  margin: 0 0 0.8em;
+  border-radius: 10px;
+}
+.artefact-tableau {
+  padding: 12px;
+  overflow: auto;
+}
+.artefact-tableau table {
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+.artefact-tableau th,
+.artefact-tableau td {
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+.artefact-tableau th {
+  background: var(--panel2);
+  font-weight: 600;
+}
+.seven-bulle.avec-artefact {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.artefact-carte {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 56px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--bg);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  white-space: normal;
+  cursor: pointer;
+  transition: transform 0.12s ease;
+}
+.artefact-carte:active {
+  transform: scale(0.99);
+}
+.artefact-carte[aria-pressed='true'] {
+  border-color: var(--accent-b);
+  box-shadow: 0 0 0 1px var(--accent-b);
+}
+.artefact-carte b {
+  display: block;
+  overflow: hidden;
+  font-size: 0.92rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* ---------- Projets (components/Projets.tsx) ---------- */
+.projets-ecran {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+  gap: 18px;
+}
+.projets-tete h1 {
+  margin: 4px 0 6px;
+  font-size: 1.6rem;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+.projets-tete p {
+  margin: 0;
+}
+.projets-retour {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  color: var(--muted);
+  font-size: 0.88rem;
+  text-decoration: none;
+}
+.projets-creer,
+.projets-ranger {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+.projets-creer input,
+.projets-ranger select {
+  flex: 1;
+  min-width: 0;
+}
+.projets-liste {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.projet-carte {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  color: var(--ink);
+  text-decoration: none;
+}
+.projet-carte b {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.projet-carte-icone {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--brand) 12%, var(--card));
+  color: var(--brand);
+}
+.projets-vide {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 28px 16px;
+  color: var(--muted);
+  text-align: center;
+}
+.projets-vide p {
+  margin: 0;
+}
+.projets-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.projets-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+.projets-section > textarea,
+.projets-section > .projets-lignes,
+.projets-section > .projets-ranger,
+.projets-section > .projets-artefacts {
+  align-self: stretch;
+}
+.projets-section h2 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+.projets-section p {
+  margin: 0;
+}
+.projets-compte {
+  align-self: flex-end;
+}
+.projets-lignes {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--card);
+  overflow: hidden;
+}
+.projets-ligne {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 4px 6px 4px 14px;
+}
+.projets-ligne + .projets-ligne {
+  border-top: 1px solid var(--line);
+}
+.projets-ligne .grow {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.projets-ligne .drawer-chat-effacer {
+  position: static;
+  width: 44px;
+  height: 44px;
+  flex: none;
+  opacity: 1;
+}
+.projets-lien {
+  color: var(--ink);
+  text-decoration: none;
+}
+.projets-artefacts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 8px;
+}
+.projets-artefacts .artefact-carte {
+  background: var(--card);
+}
+.projets-supprimer {
+  color: var(--bad);
+}
+.projet-puce {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  margin-bottom: 10px;
+  padding: 5px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink);
+  font-size: 0.84rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+.projet-puce span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.projet-puce-saisie {
+  display: flex;
+  width: fit-content;
+  margin: 0 auto 6px;
+  padding: 3px 10px;
+  font-size: 0.78rem;
+}
+.drawer-nouveau-projet {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+}

@@ -61,7 +61,7 @@ Sur iPhone, iOS ne permet pas de lire les notifications des autres apps. L'utili
 
 ## Comptes et données synchronisées
 
-Le compte reste facultatif. Pour activer la connexion et synchroniser la mémoire, configure `NEXT_PUBLIC_SUPABASE_URL` et `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, puis exécute `apps/web/supabase/migrations/20261017_memoires.sql` dans le SQL Editor Supabase. La migration active la RLS : chaque compte ne peut lire et modifier que sa propre ligne. Sans projet et variables Supabase, l’app reste utilisable en local.
+Le compte reste facultatif. Pour activer la connexion et synchroniser la mémoire, configure `NEXT_PUBLIC_SUPABASE_URL` et `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, puis exécute `apps/web/supabase/migrations/20261017_memoires.sql` dans le SQL Editor Supabase, ainsi que `20261124_projets_artefacts.sql` (projets et artefacts, copiés sur le compte seulement si la synchronisation de la mémoire est autorisée). La migration active la RLS : chaque compte ne peut lire et modifier que sa propre ligne. Sans projet et variables Supabase, l’app reste utilisable en local.
 
 L’écran Compte suit le modèle de Claude, Gemini et Snap :
 

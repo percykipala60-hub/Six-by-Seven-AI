@@ -19,6 +19,7 @@ import {
   type ConversationGardee,
 } from '@/lib/conversations';
 import { memoireActive } from '@/lib/memoire';
+import { ecouterProjets, lireProjets, type Projet } from '@/lib/projets';
 import { Icon, type IconName } from './Icon';
 import { Logo } from './Logo';
 import { Suivis } from './Suivis';
@@ -29,6 +30,7 @@ type Page =
   | 'sujets'
   | 'seven-ai'
   | 'sixtouch'
+  | 'projets'
   | 'reglages'
   | 'confidentialite'
   | 'espace-jeu'
@@ -156,6 +158,19 @@ export function AppBar({
   const [plusReponses, setPlusReponses] = useState(false);
   const [plusChats, setPlusChats] = useState(false);
   const [plusSixTouch, setPlusSixTouch] = useState(false);
+  const [plusProjets, setPlusProjets] = useState(false);
+  const [projets, setProjets] = useState<Projet[]>([]);
+  useEffect(() => {
+    const lire = () => setProjets(lireProjets());
+    lire();
+    return ecouterProjets(lire);
+  }, []);
+  // Projet ouvert (/projets?p=…), en relief dans la liste du menu.
+  const [projetActif, setProjetActif] = useState('');
+  useEffect(() => {
+    if (page === 'projets')
+      setProjetActif(new URLSearchParams(window.location.search).get('p') ?? '');
+  }, [page]);
   const chatsChat = chats.filter((c) => c.mode !== 'sixtouch');
   const chatsSixTouch = chats.filter((c) => c.mode === 'sixtouch');
   const [reponses, setReponses] = useState<ConversationGardee[]>([]);
@@ -500,6 +515,46 @@ export function AppBar({
               )}
             </div>
           )}
+          {item('/projets', 'projets', <Icon name="dossier" />, 'Projets')}
+          <div className="drawer-sous" role="group" aria-label="Projets">
+            {(plusProjets ? projets : projets.slice(0, PAR_DEFAUT)).map((p) => (
+              <div
+                className="drawer-chat-ligne"
+                key={p.id}
+                data-actif={page === 'projets' && p.id === projetActif ? '' : undefined}
+              >
+                <Link
+                  href={`/projets?p=${encodeURIComponent(p.id)}`}
+                  className="drawer-chat"
+                  aria-current={page === 'projets' && p.id === projetActif ? 'page' : undefined}
+                  onClick={() => {
+                    setProjetActif(p.id);
+                    apresLien();
+                  }}
+                  title={p.nom}
+                >
+                  {p.nom}
+                </Link>
+              </div>
+            ))}
+            {projets.length > PAR_DEFAUT && (
+              <button
+                type="button"
+                className="drawer-voir-plus"
+                aria-expanded={plusProjets}
+                onClick={() => setPlusProjets((v) => !v)}
+              >
+                {plusProjets ? 'Voir moins' : `Voir plus (${projets.length - PAR_DEFAUT})`}
+              </button>
+            )}
+            <Link
+              href="/projets?nouveau=1"
+              className="drawer-chat drawer-nouveau-projet"
+              onClick={apresLien}
+            >
+              <Icon name="plus" size={15} stroke={1.75} /> Nouveau projet
+            </Link>
+          </div>
         </nav>
         <nav aria-label="Réglages" className="drawer-nav drawer-bas">
           {item('/reglages', 'reglages', <Icon name="sliders" />, 'Réglages')}
@@ -614,6 +669,7 @@ function Rail({
       {lien('/responsive', 'accueil', 'repondre', 'Responsive')}
       {lien('/chat', 'seven-ai', 'discuter', 'Chat')}
       {lien('/cosinus', 'sixtouch', 'sixtouch', 'Cosinus')}
+      {lien('/projets', 'projets', 'dossier', 'Projets')}
       <span className="rail-fin" aria-hidden="true" />
       {lien('/reglages', 'reglages', 'sliders', 'Réglages')}
       <Avatar size={32} />

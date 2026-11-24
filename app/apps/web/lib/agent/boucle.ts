@@ -1,5 +1,6 @@
 import { appelAgent } from '@/lib/ai';
-import { sevenAiSystem } from '@/lib/prompt';
+import type { ProjetBody } from '@/lib/api-schemas';
+import { contexteProjetSystem, sevenAiSystem } from '@/lib/prompt';
 import type { ChatMessage } from '@/lib/types';
 import { ficheStyle } from './memoire-documents';
 import { definitionsOutils, executerOutil, libelleEtape, type ContexteOutils } from './outils';
@@ -119,6 +120,7 @@ export async function executerAgent({
   ctx,
   surEtape,
   annulation,
+  projet,
 }: {
   historique: ChatMessage[];
   question: string;
@@ -127,6 +129,8 @@ export async function executerAgent({
   ctx: ContexteOutils;
   surEtape: (texte: string) => void;
   annulation?: AbortSignal;
+  /** Consignes et documents du projet de la discussion (lib/projets.ts). */
+  projet?: ProjetBody;
 }): Promise<ResultatAgent> {
   // « Ne l'enregistre pas » : on retire l'outil d'enregistrement pour cette tâche, au lieu de compter sur le modèle
   // (un petit modèle l'a déjà enregistré malgré la demande).
@@ -159,7 +163,8 @@ export async function executerAgent({
 
 ${style}
 Respecte ce style dans les documents que tu rédiges (plan, numérotation, ton, longueur des phrases), sauf si la personne demande autre chose.`
-      : '');
+      : '') +
+    contexteProjetSystem(projet);
   const messages: MessageAgent[] = [
     ...historique.map((m) => ({ role: m.role, content: m.content }) as MessageAgent),
     { role: 'user', content: question, ...(images?.length ? { images } : {}) },
