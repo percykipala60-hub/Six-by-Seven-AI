@@ -15,12 +15,12 @@ const { browser, page } = await ouvrir();
 // Réponses simulées pour ce parcours ; les contrôles d'accès réels sont faits plus bas sans interception.
 const reponsesEssai = {
   analyze: {
-    resume: 'Patrick demande un dossier rapidement.',
+    resume: 'Une personne demande un dossier rapidement.',
     intention: 'Obtenir le dossier',
     ton_detecte: 'pressé',
     tension: 20,
     arnaque: { score: 0, raisons: [] },
-    objectifs: ['Répondre à Patrick'],
+    objectifs: ['Répondre à la personne'],
     question: null,
     nuances: [],
     demo: true,
