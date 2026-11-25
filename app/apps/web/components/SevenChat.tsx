@@ -35,6 +35,7 @@ import { extraireArtefacts, versionsDe } from '@/lib/artefacts';
 import { extrairePdf } from '@/lib/lire-document';
 import { lireSkillDefaut, type ChoixSkill } from '@/lib/skills-cosinus';
 import { ChoixModele } from './ChoixModele';
+import { EnregistrementVocal } from './EnregistrementVocal';
 import { ecouterPhrase } from '@/lib/ecoute';
 import { bcp47, chargerVoix, choisirVoix, lirePreferencesVoix, phrases } from '@/lib/voix';
 import { VoixOrbe, type PhaseVoix } from './VoixOrbe';
@@ -563,6 +564,8 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   const appelActif = useRef(false);
   const ecouteAppel = useRef<AbortController | null>(null);
   const toucherSphere = useRef<(() => void) | null>(null);
+  const vocalAnnule = useRef(false);
+  const [fluxVocal, setFluxVocal] = useState<MediaStream | null>(null);
   const finirLecture = useRef<(() => void) | null>(null);
   useEffect(
     () => () => {
@@ -1157,6 +1160,16 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   }
 
   // — Message vocal : enregistrement navigateur, transcription serveur, envoi auto. —
+  /** Message vocal : « Arrêter » efface l'audio, « Envoyer » le fait transcrire puis l'envoie. */
+  function arreterVocal() {
+    vocalAnnule.current = true;
+    mediaRecorder.current?.stop();
+  }
+  function envoyerAudioVocal() {
+    vocalAnnule.current = false;
+    mediaRecorder.current?.stop(); // la fin de l'enregistrement déclenche la transcription (onstop)
+  }
+
   async function basculerMicro() {
     if (appelActif.current) return;
     if (enregistre) {
@@ -1269,6 +1282,10 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       mr.onstop = () => {
         mr.stream.getTracks().forEach((t) => t.stop());
         setEnregistre(false);
+        if (vocalAnnule.current) {
+          vocalAnnule.current = false;
+          return;
+        }
         const blob = new Blob(chunksAudio.current, { type: mr.mimeType || 'audio/webm' });
         if (blob.size === 0) {
           setErreur('Je n’ai reçu aucun son. Réessaie en parlant après le clic.');
@@ -1276,6 +1293,8 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         }
         void envoyerVocal(blob);
       };
+      vocalAnnule.current = false;
+      setFluxVocal(flux ?? null);
       mr.start();
       setEnregistre(true);
     } catch (e) {
@@ -1769,7 +1788,14 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
             ))}
           </ul>
         )}
-        <div className="seven-capsule">
+        <div className={`seven-capsule${enregistre ? ' en-vocal' : ''}`}>
+          {enregistre && (
+            <EnregistrementVocal
+              flux={fluxVocal}
+              onArreter={arreterVocal}
+              onEnvoyer={envoyerAudioVocal}
+            />
+          )}
           <button
             type="button"
             className="seven-doc"
@@ -1855,16 +1881,18 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
                   <Icon name={appel ? 'x' : 'vocal'} size={20} stroke={1.9} />
                 </button>
               )}
-              <button
-                type="button"
-                className={`seven-mic${enregistre ? ' rec' : ''}`}
-                aria-label={enregistre ? 'Arrêter le message vocal' : 'Envoyer un message vocal'}
-                title={enregistre ? 'Terminer le vocal' : 'Message vocal'}
-                disabled={micOccupe && !enregistre}
-                onClick={() => void basculerMicro()}
-              >
-                <Icon name={enregistre ? 'x' : 'mic'} size={20} stroke={1.75} />
-              </button>
+              {!enregistre && (
+                <button
+                  type="button"
+                  className="seven-mic"
+                  aria-label="Enregistrer un message vocal"
+                  title="Message vocal"
+                  disabled={micOccupe}
+                  onClick={() => void basculerMicro()}
+                >
+                  <Icon name="mic" size={20} stroke={1.75} />
+                </button>
+              )}
             </>
           )}
         </div>

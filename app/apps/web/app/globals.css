@@ -10201,3 +10201,77 @@ div.seven-outils-ligne:not(.seven-outils-flottants) {
     filter: brightness(1.1);
   }
 }
+
+/* ---------- Message vocal : barre d'enregistrement (components/EnregistrementVocal.tsx) ---------- */
+.seven-capsule.en-vocal > :not(.vocal-enregistrement) {
+  display: none;
+}
+.vocal-enregistrement {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 2px 0 2px 2px;
+}
+.seven-composer .vocal-enregistrement button {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 50%;
+  box-shadow: none;
+  cursor: pointer;
+}
+.seven-composer .vocal-enregistrement .vocal-arreter {
+  background: color-mix(in srgb, var(--ink) 10%, transparent);
+  color: var(--ink);
+}
+.seven-composer .vocal-enregistrement .vocal-arreter:hover {
+  background: color-mix(in srgb, var(--ink) 16%, transparent);
+}
+.vocal-carre {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: currentColor;
+}
+.seven-composer .vocal-enregistrement .vocal-envoyer {
+  background: var(--brand);
+  color: #fff;
+}
+.vocal-point {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e5484d;
+  animation: retour-pulse 1.1s ease-in-out infinite;
+}
+.vocal-temps {
+  flex: none;
+  min-width: 34px;
+  color: var(--ink);
+  font-size: 0.9rem;
+  font-variant-numeric: tabular-nums;
+}
+.vocal-onde {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+  height: 28px;
+  min-width: 0;
+  overflow: hidden;
+}
+.vocal-onde i {
+  flex: 0 0 3px;
+  height: 100%;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--brand) 85%, var(--ink));
+  transform: scaleY(0.12);
+  transition: transform 0.07s linear;
+}
