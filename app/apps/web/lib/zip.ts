@@ -126,3 +126,17 @@ export async function readChatFromZip(
   const chosen = named ?? txt.reduce((a, b) => (b.size > a.size ? b : a));
   return { name: chosen.name, text: await extract(view, chosen) };
 }
+
+/** Une entrée précise d'un .zip (ex. « word/document.xml » d'un .docx), en texte ; null si elle n'existe pas. */
+export async function lireEntreeZip(buffer: ArrayBuffer, nom: string): Promise<string | null> {
+  const view = new DataView(buffer);
+  const entree = listEntries(view).find((e) => e.name === nom);
+  return entree ? extract(view, entree) : null;
+}
+
+/** Contenu d'un .zip (noms et tailles), pour l'afficheur interne : rien n'est extrait. */
+export function contenuZip(buffer: ArrayBuffer): { nom: string; taille: number }[] {
+  return listEntries(new DataView(buffer))
+    .filter((e) => !e.name.startsWith('__MACOSX'))
+    .map((e) => ({ nom: e.name, taille: e.size }));
+}

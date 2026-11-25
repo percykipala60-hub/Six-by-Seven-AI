@@ -163,6 +163,8 @@
     <!-- Micro du Chat (dictée et messages vocaux) : demandé au moment du clic sur le micro.
          Sans ces deux lignes, Android refuse le micro sans rien demander. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- Caméra : scanner le code QR de connexion d'un autre appareil (components/ScannerQr.tsx). -->
+    <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />

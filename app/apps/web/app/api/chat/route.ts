@@ -8,6 +8,16 @@ import { depasse } from '@/lib/quotas';
 import { ProviderError, agentDisponible, hasChatAI } from '@/lib/ai';
 import { executerAgent } from '@/lib/agent/boucle';
 import { espacePourDemande } from '@/lib/agent/outils';
+import { dossierChoisi } from '@/lib/espace-travail';
+import { utilisateurDeRequete } from '@/lib/supabase-serveur';
+import {
+  ErreurCloud,
+  choisirAuto,
+  environnementsCloud,
+  materialiser,
+  synchroniser,
+  type EnvironnementCloud,
+} from '@/lib/cloud-cosinus';
 import { corpusDisponible } from '@/lib/agent/memoire-documents';
 import { corrigerIdentite } from '@/lib/identite';
 import { transcriptionLocaleDisponible } from '@/lib/transcription-locale';
@@ -17,6 +27,11 @@ import { contexteDuProjet } from '@/lib/travail';
 // Calculé à chaque demande : sinon Next fige la réponse au moment de la construction de l'app,
 // quand les clés du serveur (deploy/.env) ne sont pas encore chargées, et l'app se croit en démonstration.
 export const dynamic = 'force-dynamic';
+
+const SANS_ENVIRONNEMENT =
+  'Choisis d’abord l’environnement de cette discussion : un dossier de l’ordinateur, ou ton Cloud.';
+const DOSSIER_REFUSE =
+  'Ce dossier de travail est introuvable ou inaccessible. Choisis un autre dossier pour cette discussion.';
 
 export async function GET() {
   return NextResponse.json(
@@ -69,12 +84,53 @@ export async function POST(req: Request) {
     const messages = parsed.data.messages;
     const derniere = messages[messages.length - 1];
     const encodeur = new TextEncoder();
+    // Environnement cloud : ses fichiers sont copiés dans un dossier temporaire, l'agent y travaille, puis ce qui
+    // a changé repart dans le Cloud (lib/cloud-cosinus.ts). Demande un compte connecté.
+    let cloud: {
+      jeton: string;
+      userId: string;
+      env: EnvironnementCloud;
+      dossier: string;
+      avant: Map<string, string>;
+    } | null = null;
+    if (parsed.data.cloud) {
+      const u = await utilisateurDeRequete(req);
+      const jeton = /^Bearer\s+(\S+)$/.exec(req.headers.get('authorization') ?? '')?.[1];
+      if (!u || !jeton)
+        return fail(401, 'Connecte-toi à ton compte Six pour travailler dans le Cloud.');
+      try {
+        const envs = await environnementsCloud(jeton, u.id);
+        const env =
+          parsed.data.cloud === 'auto'
+            ? choisirAuto(envs, derniere.content)
+            : envs.find((e) => e.id === parsed.data.cloud);
+        if (!env) return fail(404, 'Environnement cloud introuvable.');
+        cloud = { jeton, userId: u.id, env, ...(await materialiser(jeton, env.id)) };
+      } catch (e) {
+        return fail(400, e instanceof ErreurCloud ? e.message : 'Cloud indisponible.');
+      }
+    }
     // Fichiers et anciens documents de la personne : seulement en local (voir lib/agent/outils.ts).
-    const espace = espacePourDemande(req);
+    const espace = cloud ? cloud.dossier : await espacePourDemande(req, parsed.data.dossier);
+    if (!cloud && parsed.data.dossier && !espace) return fail(400, DOSSIER_REFUSE);
+    // Cosinus ne travaille jamais sans environnement (dossier de l'ordinateur ou Cloud).
+    if (!cloud && !parsed.data.dossier) return fail(400, SANS_ENVIRONNEMENT);
+    // Autres dossiers de l'environnement : lisibles par Six (jamais modifiés), seulement en local.
+    const lecture =
+      espace && !cloud
+        ? (await Promise.all((parsed.data.dossiersLecture ?? []).map(dossierChoisi))).filter(
+            Boolean,
+          )
+        : [];
     const flux = new ReadableStream<Uint8Array>({
       async start(c) {
         const envoyer = (o: unknown) => c.enqueue(encodeur.encode(`${JSON.stringify(o)}\n`));
         try {
+          if (cloud)
+            envoyer({
+              type: 'etape',
+              texte: `Six travaille dans le Cloud : « ${cloud.env.nom} »${cloud.env.depot_github ? ` (${cloud.env.depot_github})` : ''}`,
+            });
           const r = await executerAgent({
             historique: messages.slice(0, -1),
             question: derniere.content,
@@ -83,8 +139,9 @@ export async function POST(req: Request) {
             premium: a.illimite,
             ctx: {
               espace,
-              corpus: Boolean(espace) && (await corpusDisponible()),
-              ...(espace && !process.env.VERCEL
+              horsDossier: { toutLePc: false, chemins: lecture },
+              corpus: !cloud && Boolean(espace) && (await corpusDisponible()),
+              ...(espace && !cloud && !process.env.VERCEL
                 ? {
                     navigateur: {
                       session: parsed.data.navigateurSession,
@@ -95,6 +152,7 @@ export async function POST(req: Request) {
                 : {}),
             },
             surEtape: (texte) => envoyer({ type: 'etape', texte }),
+            surPlan: (taches) => envoyer({ type: 'plan', taches }),
             annulation: req.signal,
           });
           envoyer({
@@ -104,12 +162,28 @@ export async function POST(req: Request) {
               'Travail terminé, mais Six n’a pas écrit de résumé. Regarde tes fichiers.',
             etapes: r.etapes,
             fichiers: r.fichiers,
+            plan: r.plan,
           });
         } catch (e) {
           envoyer({
             type: 'erreur',
             error: e instanceof ProviderError ? e.message : 'Erreur inattendue. Réessaie.',
           });
+        }
+        if (cloud) {
+          // Ce que Six a créé ou modifié repart dans le Cloud ; le dossier temporaire est effacé.
+          await synchroniser(
+            cloud.jeton,
+            cloud.userId,
+            cloud.env.id,
+            cloud.dossier,
+            cloud.avant,
+          ).catch(() =>
+            envoyer({
+              type: 'etape',
+              texte: 'Attention : la copie des résultats vers le Cloud a échoué.',
+            }),
+          );
         }
         c.close();
       },

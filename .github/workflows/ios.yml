@@ -32,7 +32,8 @@ defaults:
 jobs:
   compiler:
     name: Compilation iOS (simulateur, sans signature)
-    runs-on: macos-15
+    # Xcode 26 : le plugin de dictée utilise la reconnaissance vocale d’iOS 26 (comme testflight.yml).
+    runs-on: macos-26
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4

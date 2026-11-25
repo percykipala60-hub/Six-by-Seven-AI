@@ -11,10 +11,18 @@ import {
   type PointerEvent as ReactPointerEvent,
 } from 'react';
 import { Icon } from './Icon';
+import { Explorateur } from './Explorateur';
+import { recuperer } from '@/lib/recuperer';
 import type { ChatMessage } from '@/lib/types';
 import type { PageLecture } from '@/lib/page-lecture';
 import { NavigateurComplet, type PoigneeNavigateur } from './NavigateurComplet';
-import { NavigateurNatif, pontBureau } from './NavigateurNatif';
+import {
+  BoutonMenuNatif,
+  NavigateurNatif,
+  OngletsNatifs,
+  RechercheNatif,
+  pontBureau,
+} from './NavigateurNatif';
 import { entetesCompte } from '@/lib/premium-client';
 
 /**
@@ -490,32 +498,26 @@ function Annotations({
   );
 }
 
+/** Élément de la discussion ouvert dans l'aperçu du volet : texte ou image. */
 type Fichier = { nom: string; texte?: string; image?: string };
 
-// ---------- Espace de travail de Cosinus (dossier local, voir lib/espace-travail.ts) ----------
-type FichierEspace = { chemin: string; taille: number; maj: number };
-type EtatEspace =
-  | { statut: 'chargement' }
-  | { statut: 'absent'; message: string }
-  | { statut: 'ok'; dossier: string; fichiers: FichierEspace[] };
-
+// Espace de travail de Cosinus (dossier local, voir lib/espace-travail.ts) : explorateur dans components/Explorateur.
 const URL_ESPACE = '/api/sixtouch/espace';
-const urlFichier = (chemin: string) => `${URL_ESPACE}?f=${encodeURIComponent(chemin)}`;
-const TEXTE_LISIBLE = /\.(txt|md|csv|json|log|html)$/i;
-const IMAGE = /\.(png|jpe?g|webp|gif)$/i;
-
-function taille(o: number): string {
-  if (o < 1024) return `${o} o`;
-  if (o < 1024 * 1024) return `${Math.round(o / 1024)} Ko`;
-  return `${(o / 1024 / 1024).toFixed(1)} Mo`;
-}
 
 /** Enregistre un texte de Six dans `resultats/` de l'espace de travail. Renvoie le chemin, ou lève une erreur. */
-async function enregistrerDansEspace(nom: string, contenu: string): Promise<string> {
-  const r = await fetch(URL_ESPACE, {
+async function enregistrerDansEspace(
+  nom: string,
+  contenu: string,
+  dossier: string,
+): Promise<string> {
+  // « cloud:<id> » : environnement cloud (enregistré dans le Cloud du compte).
+  const cloud = dossier.startsWith('cloud:') ? dossier.slice(6) : '';
+  const r = await recuperer(cloud ? '/api/cloud/espace' : URL_ESPACE, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ nom, contenu }),
+    body: JSON.stringify(
+      cloud ? { e: cloud, nom, contenu } : { nom, contenu, ...(dossier ? { dossier } : {}) },
+    ),
   });
   const d = (await r.json().catch(() => ({}))) as { chemin?: string; error?: string };
   if (!r.ok || !d.chemin) throw new Error(d.error ?? 'Enregistrement impossible.');
@@ -536,131 +538,6 @@ function nomPourReponse(texte: string): string {
   return `six-${date}${mots ? `-${mots}` : ''}.md`;
 }
 
-function EspaceTravail({
-  version,
-  onJoindre,
-  onApercu,
-  onInfo,
-}: {
-  version: number;
-  onJoindre: (fichiers: File[]) => void;
-  onApercu: (f: Fichier) => void;
-  onInfo: (message: string) => void;
-}) {
-  const [etat, setEtat] = useState<EtatEspace>({ statut: 'chargement' });
-  const [occupe, setOccupe] = useState('');
-  const [tout, setTout] = useState(false);
-  const charger = useCallback(async () => {
-    try {
-      const r = await fetch(URL_ESPACE, { cache: 'no-store' });
-      const d = (await r.json().catch(() => ({}))) as {
-        dossier?: string;
-        fichiers?: FichierEspace[];
-        error?: string;
-      };
-      if (!r.ok || !d.dossier)
-        setEtat({ statut: 'absent', message: d.error ?? 'Espace indisponible.' });
-      else setEtat({ statut: 'ok', dossier: d.dossier, fichiers: d.fichiers ?? [] });
-    } catch {
-      setEtat({ statut: 'absent', message: 'Espace de travail injoignable.' });
-    }
-  }, []);
-  useEffect(() => {
-    void charger();
-  }, [charger, version]);
-
-  const recuperer = async (chemin: string): Promise<File> => {
-    const r = await fetch(urlFichier(chemin), { cache: 'no-store' });
-    if (!r.ok) throw new Error('fichier introuvable');
-    const blob = await r.blob();
-    return new File([blob], chemin.split('/').pop() ?? 'fichier', {
-      type: blob.type.split(';')[0],
-    });
-  };
-  const joindre = async (chemin: string) => {
-    setOccupe(chemin);
-    try {
-      onJoindre([await recuperer(chemin)]);
-      onInfo(`« ${chemin} » est joint à la barre de Six.`);
-    } catch {
-      onInfo(`Impossible de joindre « ${chemin} ».`);
-    } finally {
-      setOccupe('');
-    }
-  };
-  const ouvrir = async (chemin: string) => {
-    if (TEXTE_LISIBLE.test(chemin)) {
-      try {
-        const r = await fetch(urlFichier(chemin), { cache: 'no-store' });
-        if (!r.ok) throw new Error('introuvable');
-        onApercu({ nom: chemin, texte: await r.text() });
-      } catch {
-        onInfo(`Impossible d'ouvrir « ${chemin} ».`);
-      }
-    } else if (IMAGE.test(chemin)) onApercu({ nom: chemin, image: urlFichier(chemin) });
-    else window.open(urlFichier(chemin), '_blank', 'noopener,noreferrer');
-  };
-
-  if (etat.statut !== 'ok')
-    return (
-      <div className="volet-liste">
-        <h3>Espace de travail</h3>
-        <p className="volet-rien">{etat.statut === 'chargement' ? 'Chargement…' : etat.message}</p>
-      </div>
-    );
-  const visibles = tout ? etat.fichiers : etat.fichiers.slice(0, 12);
-  return (
-    <div className="volet-liste">
-      <h3>
-        Espace de travail
-        <button type="button" className="volet-effacer" onClick={() => void charger()}>
-          Actualiser
-        </button>
-      </h3>
-      <p className="volet-dossier" title={etat.dossier}>
-        <Icon name="dossier" size={14} stroke={1.8} />
-        <span>{etat.dossier}</span>
-      </p>
-      {etat.fichiers.length === 0 ? (
-        <p className="volet-rien">
-          Le dossier est vide. Dépose-y tes fichiers (rapports, PDF, images, vidéos) : ils
-          apparaîtront ici. Les résultats de Six vont dans « resultats ».
-        </p>
-      ) : (
-        visibles.map((f) => (
-          <div key={f.chemin} className="volet-ligne">
-            <Icon name={IMAGE.test(f.chemin) ? 'image' : 'file'} size={15} stroke={1.8} />
-            <button
-              type="button"
-              className="volet-ligne-texte"
-              title={`${f.chemin} · ${taille(f.taille)}`}
-              onClick={() => void ouvrir(f.chemin)}
-            >
-              {f.chemin}
-            </button>
-            <span className="volet-taille">{taille(f.taille)}</span>
-            <button
-              type="button"
-              className="volet-action"
-              aria-label={`Joindre « ${f.chemin} » à la barre de Six`}
-              title="Joindre à la barre de Six"
-              disabled={Boolean(occupe)}
-              onClick={() => void joindre(f.chemin)}
-            >
-              <Icon name="plus" size={15} stroke={2} />
-            </button>
-          </div>
-        ))
-      )}
-      {etat.fichiers.length > 12 && (
-        <button type="button" className="drawer-voir-plus" onClick={() => setTout((v) => !v)}>
-          {tout ? 'Voir moins' : `Voir tout (${etat.fichiers.length})`}
-        </button>
-      )}
-    </div>
-  );
-}
-
 export function Volet({
   onglet,
   onOnglet,
@@ -670,6 +547,8 @@ export function Volet({
   onJoindre,
   onAnnoter,
   telephone,
+  dossier = '',
+  dossiers = [],
 }: {
   onglet: OngletVolet;
   onOnglet: (onglet: OngletVolet) => void;
@@ -682,6 +561,10 @@ export function Volet({
   onAnnoter: (description: string, capture: Capture | null) => void;
   /** Téléphone : pas de navigateur ; les liens s'ouvrent dans un onglet. */
   telephone: boolean;
+  /** Cosinus : dossier de l'environnement de la discussion (vide : dossier par défaut). */
+  dossier?: string;
+  /** Tous les dossiers de l'environnement (le premier = dossier de travail), affichables dans l'explorateur. */
+  dossiers?: string[];
 }) {
   // ---- Largeur : appliquée à la page par la variable --volet-largeur (voir globals.css) ----
   const [largeur, setLargeurBrut] = useState(() => lireReglagesVolet().largeur);
@@ -882,7 +765,7 @@ export function Volet({
   }, [info]);
   const enregistrer = async (m: ChatMessage) => {
     try {
-      await enregistrerDansEspace(nomPourReponse(m.content), m.content);
+      await enregistrerDansEspace(nomPourReponse(m.content), m.content, dossier);
       setVersionEspace((v) => v + 1);
     } catch (e) {
       setInfo(e instanceof Error ? e.message : 'Enregistrement impossible.');
@@ -916,6 +799,8 @@ export function Volet({
       const visites = [u, ...n.visites.filter((v) => v !== u)].slice(0, HISTORIQUE_MAX);
       return { pile, pos: pile.length - 1, visites };
     });
+    // App de bureau : ouvert tout de suite dans l'onglet actif (même adresse que la précédente dans un nouvel onglet).
+    if (natif) completRef.current?.ouvrir?.(u);
     setHistorique(false);
     onOnglet('navigateur');
   };
@@ -999,6 +884,14 @@ export function Volet({
 
       {navigateur ? (
         <div className="volet-corps volet-nav">
+          {natif && (
+            <OngletsNatifs
+              onNouvel={() => {
+                setSaisie('');
+                champ.current?.focus();
+              }}
+            />
+          )}
           <form className="volet-barre" onSubmit={valider}>
             <button
               type="button"
@@ -1090,37 +983,43 @@ export function Volet({
                 <Icon name="globe" size={15} stroke={1.9} />
               </button>
             )}
-            <button
-              type="button"
-              className="volet-action"
-              aria-label={modeLecture ? "Afficher la page d'origine" : 'Version lecture'}
-              aria-pressed={modeLecture}
-              title={
-                lecture && !lecture.integrable
-                  ? "Ce site refuse l'affichage intégré : version lecture"
-                  : modeLecture
-                    ? "Page d'origine"
-                    : 'Version lecture (texte seul)'
-              }
-              disabled={!url || (Boolean(lecture) && !lecture?.blocs.length)}
-              onClick={() => {
-                setLectureDemandee(true);
-                setModeLecture((m) => !m);
-              }}
-            >
-              <Icon name="file" size={15} stroke={1.9} />
-            </button>
-            <a
-              className={`volet-action volet-a-part${url ? '' : ' inactif'}`}
-              href={url || undefined}
-              target="_blank"
-              rel="noopener noreferrer"
-              aria-label="Ouvrir à part, dans un onglet"
-              title="Ouvrir à part (si la page reste blanche ou refuse de s'afficher ici)"
-              aria-disabled={!url}
-            >
-              <Icon name="up" size={15} stroke={2} />
-            </a>
+            {natif ? (
+              <BoutonMenuNatif />
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className="volet-action"
+                  aria-label={modeLecture ? "Afficher la page d'origine" : 'Version lecture'}
+                  aria-pressed={modeLecture}
+                  title={
+                    lecture && !lecture.integrable
+                      ? "Ce site refuse l'affichage intégré : version lecture"
+                      : modeLecture
+                        ? "Page d'origine"
+                        : 'Version lecture (texte seul)'
+                  }
+                  disabled={!url || (Boolean(lecture) && !lecture?.blocs.length)}
+                  onClick={() => {
+                    setLectureDemandee(true);
+                    setModeLecture((m) => !m);
+                  }}
+                >
+                  <Icon name="file" size={15} stroke={1.9} />
+                </button>
+                <a
+                  className={`volet-action volet-a-part${url ? '' : ' inactif'}`}
+                  href={url || undefined}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Ouvrir à part, dans un onglet"
+                  title="Ouvrir à part (si la page reste blanche ou refuse de s'afficher ici)"
+                  aria-disabled={!url}
+                >
+                  <Icon name="up" size={15} stroke={2} />
+                </a>
+              </>
+            )}
             <button
               type="button"
               className="volet-action"
@@ -1131,6 +1030,7 @@ export function Volet({
               <Icon name="panneau" size={15} stroke={1.8} />
             </button>
           </form>
+          {natif && <RechercheNatif onHistorique={() => setHistorique(true)} />}
           {historique ? (
             <div className="volet-defile">
               <button type="button" className="volet-ligne" onClick={accueil}>
@@ -1258,70 +1158,75 @@ export function Volet({
                   {info}
                 </p>
               )}
-              <EspaceTravail
+              <Explorateur
+                dossier={dossier}
+                dossiers={dossiers}
                 version={versionEspace}
                 onJoindre={onJoindre}
-                onApercu={setApercu}
                 onInfo={setInfo}
+                enDessous={
+                  <>
+                    {documents.length + reponses.length + liens.length === 0 && (
+                      <p className="volet-rien volet-rien-discussion">
+                        Les pièces jointes, les réponses de Six et les liens de cette discussion
+                        apparaîtront aussi ici.
+                      </p>
+                    )}
+                    {documents.length > 0 && (
+                      <div className="volet-liste">
+                        <h3>Pièces jointes</h3>
+                        {documents.map((d, i) => (
+                          <button
+                            key={i}
+                            type="button"
+                            className="volet-ligne"
+                            onClick={() => setApercu(d)}
+                          >
+                            <Icon name="file" size={15} stroke={1.8} />
+                            <span>{d.nom}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    {reponses.length > 0 && (
+                      <div className="volet-liste">
+                        <h3>Réponses de Six</h3>
+                        {reponses.map(({ m, n }) => (
+                          <div key={n} className="volet-ligne">
+                            <Icon name="sparkles" size={15} stroke={1.8} />
+                            <button
+                              type="button"
+                              className="volet-ligne-texte"
+                              onClick={() => setApercu({ nom: `Réponse ${n}`, texte: m.content })}
+                            >
+                              {m.content.slice(0, 80)}
+                            </button>
+                            <button
+                              type="button"
+                              className="volet-action"
+                              aria-label={`Exporter la réponse ${n} en PDF`}
+                              title="Exporter en PDF"
+                              onClick={() => onExporter(m)}
+                            >
+                              <Icon name="down" size={15} stroke={2} />
+                            </button>
+                            <button
+                              type="button"
+                              className="volet-action"
+                              aria-label={`Enregistrer la réponse ${n} dans l'espace de travail`}
+                              title="Enregistrer dans l'espace de travail"
+                              onClick={() => void enregistrer(m)}
+                            >
+                              <Icon name="dossier" size={15} stroke={1.9} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {listeLiens('Liens cités')}
+                  </>
+                }
               />
-              {documents.length + reponses.length + liens.length === 0 && (
-                <p className="volet-rien volet-rien-discussion">
-                  Les pièces jointes, les réponses de Six et les liens de cette discussion
-                  apparaîtront aussi ici.
-                </p>
-              )}
-              {documents.length > 0 && (
-                <div className="volet-liste">
-                  <h3>Pièces jointes</h3>
-                  {documents.map((d, i) => (
-                    <button
-                      key={i}
-                      type="button"
-                      className="volet-ligne"
-                      onClick={() => setApercu(d)}
-                    >
-                      <Icon name="file" size={15} stroke={1.8} />
-                      <span>{d.nom}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-              {reponses.length > 0 && (
-                <div className="volet-liste">
-                  <h3>Réponses de Six</h3>
-                  {reponses.map(({ m, n }) => (
-                    <div key={n} className="volet-ligne">
-                      <Icon name="sparkles" size={15} stroke={1.8} />
-                      <button
-                        type="button"
-                        className="volet-ligne-texte"
-                        onClick={() => setApercu({ nom: `Réponse ${n}`, texte: m.content })}
-                      >
-                        {m.content.slice(0, 80)}
-                      </button>
-                      <button
-                        type="button"
-                        className="volet-action"
-                        aria-label={`Exporter la réponse ${n} en PDF`}
-                        title="Exporter en PDF"
-                        onClick={() => onExporter(m)}
-                      >
-                        <Icon name="down" size={15} stroke={2} />
-                      </button>
-                      <button
-                        type="button"
-                        className="volet-action"
-                        aria-label={`Enregistrer la réponse ${n} dans l'espace de travail`}
-                        title="Enregistrer dans l'espace de travail"
-                        onClick={() => void enregistrer(m)}
-                      >
-                        <Icon name="dossier" size={15} stroke={1.9} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {listeLiens('Liens cités')}
             </>
           )}
         </div>

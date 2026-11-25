@@ -68,6 +68,15 @@ export const ChatBodySchema = z.object({
   skill: z
     .enum(['auto', 'documents', 'code', 'web', 'presentations', 'donnees', 'images'])
     .optional(),
+  /** Cosinus : dossier de l'environnement de la discussion (chemin absolu, vérifié côté serveur). */
+  dossier: z.string().max(400).optional(),
+  /** Cosinus : autres dossiers de l'environnement (lecture seule, vérifiés côté serveur). */
+  dossiersLecture: z.array(z.string().max(400)).max(8).optional(),
+  /** Cosinus dans le Cloud : environnement cloud (identifiant, ou « auto » : choisi selon le dépôt cité). */
+  cloud: z
+    .string()
+    .regex(/^(auto|[0-9a-f-]{36})$/)
+    .optional(),
   images: z
     .array(ImageJointeSchema)
     .max(CHAT_IMAGES_MAX)

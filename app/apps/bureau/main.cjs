@@ -19,23 +19,14 @@
 const path = require('node:path');
 const { existsSync } = require('node:fs');
 const { spawn } = require('node:child_process');
-const {
-  app,
-  BrowserWindow,
-  WebContentsView,
-  ipcMain,
-  shell,
-  session,
-  Menu,
-  dialog,
-} = require('electron');
+const { app, BrowserWindow, WebContentsView, ipcMain, shell, Menu, dialog } = require('electron');
+const { creerNavigateur } = require('./navigateur.cjs');
 
 /** Hauteur de la barre du haut de Six (barre.html), au-dessus de l'app. */
 const BARRE = 40;
 
 const URL_APP = process.env.SIX_URL || 'http://localhost:3000/cosinus';
 const ORIGINE_APP = new URL(URL_APP).origin;
-const PARTITION = 'persist:cosinus';
 let moteurVocal = null;
 
 async function demarrerMoteurVocal() {
@@ -68,8 +59,6 @@ let appli = null;
 let etatApp = { volet: null, cosinus: false };
 /** Couleurs du thème de l'app, reprises par la barre et les boutons Windows. */
 let theme = null;
-/** @type {WebContentsView | null} */
-let vue = null;
 
 const web = (u) => {
   try {
@@ -94,69 +83,13 @@ function depuisApp(evenement) {
   }
 }
 
-function envoyerEtat() {
-  if (!appli || !vue) return;
-  const w = vue.webContents;
-  appli.webContents.send('six:navigateur-etat', {
-    url: w.getURL(),
-    titre: w.getTitle(),
-    charge: w.isLoading(),
-    retour: w.navigationHistory.canGoBack(),
-    avant: w.navigationHistory.canGoForward(),
-  });
-}
-
-function preparerSessionNavigateur() {
-  const s = session.fromPartition(PARTITION);
-  // Aucune autorisation accordée d'office (caméra, micro, position, notifications…).
-  s.setPermissionRequestHandler((_wc, permission, rappel) =>
-    rappel(permission === 'fullscreen' || permission === 'clipboard-sanitized-write'),
-  );
-  s.setPermissionCheckHandler(
-    (_wc, permission) => permission === 'fullscreen' || permission === 'clipboard-sanitized-write',
-  );
-  // Pas de téléchargement silencieux : le fichier s'ouvre dans le navigateur par défaut, qui demande où l'enregistrer.
-  s.on('will-download', (e, item) => {
-    e.preventDefault();
-    const u = item.getURL();
-    if (web(u)) void shell.openExternal(u);
-  });
-}
-
-function creerVue() {
-  if (vue || !fenetre) return vue;
-  vue = new WebContentsView({
-    webPreferences: {
-      partition: PARTITION,
-      sandbox: true,
-      contextIsolation: true,
-      nodeIntegration: false,
-      webviewTag: false,
-      spellcheck: false,
-    },
-  });
-  vue.setBackgroundColor('#ffffff');
-  vue.setVisible(false);
-  fenetre.contentView.addChildView(vue);
-  const w = vue.webContents;
-  // Seulement des pages web ; une fenêtre surgissante s'ouvre dans le même onglet.
-  w.on('will-navigate', (e, u) => {
-    if (!web(u)) e.preventDefault();
-  });
-  w.setWindowOpenHandler(({ url }) => {
-    if (web(url)) void w.loadURL(url);
-    return { action: 'deny' };
-  });
-  for (const ev of [
-    'did-navigate',
-    'did-navigate-in-page',
-    'page-title-updated',
-    'did-start-loading',
-    'did-stop-loading',
-  ])
-    w.on(ev, envoyerEtat);
-  return vue;
-}
+// Navigateur de Cosinus (onglets, menu ⋯) : navigateur.cjs.
+const navigateur = creerNavigateur({
+  fenetre: () => fenetre,
+  appli: () => appli,
+  barre: BARRE,
+  depuisApp,
+});
 
 // ---------- Connexion par le navigateur de l'ordinateur ----------
 
@@ -201,52 +134,6 @@ function connexion(evenement, url) {
 }
 
 const borne = (v, min, max) => Math.round(Math.min(max, Math.max(min, Number(v) || 0)));
-
-function piloter(evenement, commande) {
-  if (!depuisApp(evenement) || !commande || typeof commande !== 'object') return false;
-  const v = creerVue();
-  if (!v || !fenetre) return false;
-  const w = v.webContents;
-  switch (commande.action) {
-    case 'afficher': {
-      // Position donnée dans la page de l'app, qui commence sous la barre du haut.
-      const [lw, lh] = fenetre.getContentSize();
-      const b = commande.bornes ?? {};
-      const x = borne(b.x, 0, lw);
-      const y = borne(Number(b.y) + BARRE, BARRE, lh);
-      v.setBounds({
-        x,
-        y,
-        width: borne(b.largeur, 0, lw - x),
-        height: borne(b.hauteur, 0, lh - y),
-      });
-      v.setVisible(true);
-      return true;
-    }
-    case 'cacher':
-      v.setVisible(false);
-      return true;
-    case 'ouvrir':
-      if (typeof commande.url !== 'string' || commande.url.length > 4000 || !web(commande.url))
-        return false;
-      if (w.getURL() !== commande.url) void w.loadURL(commande.url).catch(() => {});
-      return true;
-    case 'retour':
-      if (w.navigationHistory.canGoBack()) w.navigationHistory.goBack();
-      return true;
-    case 'avant':
-      if (w.navigationHistory.canGoForward()) w.navigationHistory.goForward();
-      return true;
-    case 'recharger':
-      w.reload();
-      return true;
-    case 'etat':
-      envoyerEtat();
-      return true;
-    default:
-      return false;
-  }
-}
 
 // ---------- Barre du haut ----------
 
@@ -518,7 +405,7 @@ function creerFenetre() {
   });
   // Nouvelle page de l'app (rechargement, autre espace) : le navigateur se cache jusqu'à ce que le volet le replace.
   wc.on('did-start-navigation', (_e, _u, dansLaPage, principal) => {
-    if (principal && !dansLaPage) vue?.setVisible(false);
+    if (principal && !dansLaPage) navigateur.cacher();
   });
   for (const ev of ['did-navigate', 'did-navigate-in-page', 'page-title-updated'])
     wc.on(ev, () => void etatBarre());
@@ -530,7 +417,7 @@ function creerFenetre() {
     clearInterval(suiviTheme);
     fenetre = null;
     appli = null;
-    vue = null;
+    navigateur.oublier();
   });
 }
 
@@ -557,8 +444,8 @@ else {
   app.whenReady().then(() => {
     void demarrerMoteurVocal();
     Menu.setApplicationMenu(null);
-    preparerSessionNavigateur();
-    ipcMain.handle('six:navigateur', piloter);
+    navigateur.preparerSession();
+    ipcMain.handle('six:navigateur', navigateur.piloter);
     ipcMain.handle('six:barre', commandeBarre);
     ipcMain.handle('six:menu', choixMenu);
     // L'app signale à la barre l'état de Cosinus (volet ouvert).
@@ -571,6 +458,25 @@ else {
       void etatBarre();
     });
     ipcMain.handle('six:connexion', connexion);
+    // Volet Fichiers : montrer un fichier dans l'Explorateur (seulement un fichier existant, chemin absolu ; rien
+    // n'est ouvert ni exécuté).
+    ipcMain.handle('six:montrer-fichier', (evenement, chemin) => {
+      if (!depuisApp(evenement) || typeof chemin !== 'string' || !path.isAbsolute(chemin))
+        return false;
+      if (!require('node:fs').existsSync(chemin)) return false;
+      shell.showItemInFolder(path.normalize(chemin));
+      return true;
+    });
+    // Cosinus : choix du dossier de travail d'une discussion (sélecteur natif). Renvoie le chemin, ou null si annulé.
+    ipcMain.handle('six:choisir-dossier', async (evenement) => {
+      if (!depuisApp(evenement) || !fenetre) return null;
+      const r = await dialog.showOpenDialog(fenetre, {
+        title: 'Dossier de travail de Cosinus',
+        buttonLabel: 'Choisir ce dossier',
+        properties: ['openDirectory', 'createDirectory'],
+      });
+      return r.canceled ? null : (r.filePaths[0] ?? null);
+    });
     // Connexion terminée : la fenêtre revient devant le navigateur (Windows n'autorise pas toujours un simple focus).
     ipcMain.handle('six:premier-plan', (evenement) => {
       if (!depuisApp(evenement) || !fenetre) return;

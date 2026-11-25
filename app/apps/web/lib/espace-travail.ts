@@ -132,6 +132,8 @@ export async function ecrireEnPlace(
   const existe = await fs.lstat(/*turbopackIgnore: true*/ abs).catch(() => null);
   if (existe && (!existe.isFile() || !(await vraimentDedans(racine, abs))))
     throw new Error('Chemin refusé.');
+  // Jamais de perte : l'ancienne version est gardée avant d'être remplacée (restaurable depuis le volet Fichiers).
+  if (existe) await sauverVersion(racine, abs);
   await fs.writeFile(/*turbopackIgnore: true*/ abs, donnees);
   return path.relative(racine, abs).split(path.sep).join('/');
 }
@@ -204,7 +206,217 @@ const TYPES: Record<string, string> = {
   '.csv': 'text/plain; charset=utf-8',
   '.json': 'text/plain; charset=utf-8',
   '.log': 'text/plain; charset=utf-8',
+  '.svg': 'image/svg+xml',
+  '.mp3': 'audio/mpeg',
+  '.wav': 'audio/wav',
+  '.ogg': 'audio/ogg',
+  '.m4a': 'audio/mp4',
+  '.m4v': 'video/mp4',
+  '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
 };
 export function typeDe(chemin: string): string {
   return TYPES[path.extname(chemin).toLowerCase()] ?? 'application/octet-stream';
+}
+
+// ---------- Environnements : un dossier choisi par la personne ----------
+
+const HOTES_LOCAUX = ['localhost', '127.0.0.1', '[::1]', '::1'];
+
+/** La demande vient de cet ordinateur (ou l'accès distant est permis par SIXTOUCH_DISTANT=1). */
+export function demandeLocale(req: Request): boolean {
+  return HOTES_LOCAUX.includes(new URL(req.url).hostname) || process.env.SIXTOUCH_DISTANT === '1';
+}
+
+/**
+ * Dossier d'un environnement choisi par la personne (chemin absolu) → chemin vérifié, ou '' s'il est refusé :
+ * chemin relatif, racine d'un disque (« C:\ », « / »), dossier inexistant ou qui n'est pas un dossier.
+ */
+export async function dossierChoisi(dossier: unknown): Promise<string> {
+  if (typeof dossier !== 'string' || !dossier || dossier.length > 400 || dossier.includes('\0'))
+    return '';
+  if (!path.isAbsolute(dossier)) return '';
+  const abs = path.resolve(/*turbopackIgnore: true*/ dossier);
+  if (path.parse(abs).root === abs) return '';
+  try {
+    const s = await fs.stat(/*turbopackIgnore: true*/ abs);
+    return s.isDirectory() ? abs : '';
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Espace de travail d'une demande : le dossier de l'environnement s'il est donné, sinon le dossier par défaut.
+ * Local seulement (voir demandeLocale) : un site distant ne doit jamais lire les fichiers de l'ordinateur.
+ */
+export async function espaceAutorise(req: Request, dossier?: unknown): Promise<string> {
+  if (!demandeLocale(req)) return '';
+  if (dossier !== undefined && dossier !== null && dossier !== '') return dossierChoisi(dossier);
+  return dossierEspace();
+}
+
+// ---------- Versions précédentes des fichiers (en cas de bourde, on revient en arrière) ----------
+
+/** Dossier caché des anciennes versions : ignoré par la liste des fichiers, les outils de Six et la lecture. */
+export const DOSSIER_VERSIONS = '.versions';
+const VERSIONS_MAX = 20;
+const ID_VERSION = /^(\d{13})(\.[a-z0-9]{1,6})?$/i;
+
+export type VersionFichier = { id: string; date: number; taille: number };
+
+function dossierVersions(racine: string, abs: string): string {
+  return path.join(racine, DOSSIER_VERSIONS, path.relative(racine, abs));
+}
+
+/** Copie le fichier actuel dans .versions/<chemin>/<horodatage><ext> (20 versions au plus par fichier). */
+async function sauverVersion(racine: string, abs: string): Promise<void> {
+  const dossier = dossierVersions(racine, abs);
+  await fs.mkdir(/*turbopackIgnore: true*/ dossier, { recursive: true });
+  let date = Date.now();
+  // Deux sauvegardes dans la même milliseconde : la seconde prend la suivante.
+  while (
+    await fs
+      .stat(/*turbopackIgnore: true*/ path.join(dossier, `${date}${path.extname(abs)}`))
+      .then(() => true)
+      .catch(() => false)
+  )
+    date++;
+  await fs.copyFile(
+    /*turbopackIgnore: true*/ abs,
+    path.join(dossier, `${date}${path.extname(abs)}`),
+  );
+  const anciennes = (await fs.readdir(/*turbopackIgnore: true*/ dossier))
+    .filter((n) => ID_VERSION.test(n))
+    .sort();
+  for (const n of anciennes.slice(0, Math.max(0, anciennes.length - VERSIONS_MAX)))
+    await fs.rm(/*turbopackIgnore: true*/ path.join(dossier, n), { force: true });
+}
+
+/** Versions gardées d'un fichier de l'espace, la plus récente d'abord. */
+export async function listerVersions(racine: string, relatif: unknown): Promise<VersionFichier[]> {
+  const abs = cheminSur(racine, relatif);
+  if (!abs) return [];
+  const dossier = dossierVersions(racine, abs);
+  const noms = await fs.readdir(/*turbopackIgnore: true*/ dossier).catch(() => [] as string[]);
+  const versions: VersionFichier[] = [];
+  for (const id of noms) {
+    const m = ID_VERSION.exec(id);
+    if (!m) continue;
+    const st = await fs.lstat(/*turbopackIgnore: true*/ path.join(dossier, id)).catch(() => null);
+    if (st?.isFile()) versions.push({ id, date: Number(m[1]), taille: st.size });
+  }
+  return versions.sort((a, b) => b.date - a.date);
+}
+
+/** Nombre de versions gardées pour chaque fichier de l'espace (pour afficher « Versions » dans la liste). */
+export async function nombresDeVersions(racine: string): Promise<Record<string, number>> {
+  const base = path.join(racine, DOSSIER_VERSIONS);
+  const resultat: Record<string, number> = {};
+  const parcourir = async (dossier: string, profondeur: number) => {
+    if (profondeur > ESPACE_PROFONDEUR_MAX + 1) return;
+    const entrees = await fs
+      .readdir(/*turbopackIgnore: true*/ dossier, { withFileTypes: true })
+      .catch(() => []);
+    const versions = entrees.filter((e) => e.isFile() && ID_VERSION.test(e.name)).length;
+    if (versions) resultat[path.relative(base, dossier).split(path.sep).join('/')] = versions;
+    for (const e of entrees)
+      if (e.isDirectory() && !e.isSymbolicLink())
+        await parcourir(path.join(dossier, e.name), profondeur + 1);
+  };
+  await parcourir(base, 0);
+  return resultat;
+}
+
+/**
+ * Remet une version précédente d'un fichier. La version actuelle est gardée d'abord : restaurer se défait aussi.
+ * Pour un rapport, son texte, son Word et son PDF (même nom) reviennent ensemble à la même époque.
+ */
+export async function restaurerVersion(
+  racine: string,
+  relatif: unknown,
+  id: unknown,
+): Promise<string[]> {
+  const abs = cheminSur(racine, relatif);
+  const m = typeof id === 'string' ? ID_VERSION.exec(id) : null;
+  if (!abs || !m) throw new Error('Version introuvable.');
+  const date = Number(m[1]);
+  const rel = path.relative(racine, abs).split(path.sep).join('/');
+  const base = rel.replace(/\.[^./]+$/, '');
+  const famille = /\.(md|docx|pdf)$/i.test(rel)
+    ? ['md', 'docx', 'pdf'].map((e) => `${base}.${e}`)
+    : [rel];
+  const restaures: string[] = [];
+  for (const membre of famille) {
+    const versions = await listerVersions(racine, membre);
+    // La version choisie pour ce fichier ; pour les autres de la famille, celle sauvée au même moment (±15 s).
+    const v =
+      membre === rel
+        ? versions.find((x) => x.id === id)
+        : versions.find((x) => Math.abs(x.date - date) <= 15_000);
+    if (!v) continue;
+    const cible = cheminSur(racine, membre);
+    if (!cible) continue;
+    const contenu = await fs.readFile(
+      /*turbopackIgnore: true*/ path.join(dossierVersions(racine, cible), v.id),
+    );
+    await ecrireEnPlace(racine, membre, contenu);
+    restaures.push(membre);
+  }
+  if (!restaures.includes(rel)) throw new Error('Version introuvable.');
+  return restaures;
+}
+
+// ---------- Premier niveau d'un dossier (explorateur : on voit toujours le contenu direct du dossier choisi) ----------
+
+export type EntreeNiveau = {
+  nom: string;
+  chemin: string;
+  type: 'dossier' | 'fichier';
+  taille: number;
+  maj: number;
+};
+const NIVEAU_MAX = 1000;
+
+/**
+ * Contenu direct d'un dossier de l'espace (relatif vide : la racine), dossiers d'abord. Fichiers et dossiers
+ * cachés, liens symboliques et tout ce qui sortirait de l'espace sont ignorés. Null si ce n'est pas un dossier.
+ */
+export async function listerNiveau(
+  racine: string,
+  relatif: unknown = '',
+): Promise<EntreeNiveau[] | null> {
+  const abs = relatif === '' ? racine : cheminSur(racine, relatif);
+  if (!abs) return null;
+  try {
+    const st = await fs.lstat(/*turbopackIgnore: true*/ abs);
+    if (!st.isDirectory()) return null;
+    if (abs !== racine && !(await vraimentDedans(racine, abs))) return null;
+    const entrees = await fs.readdir(/*turbopackIgnore: true*/ abs, { withFileTypes: true });
+    const sortie: EntreeNiveau[] = [];
+    for (const e of entrees) {
+      if (sortie.length >= NIVEAU_MAX) break;
+      if (e.name.startsWith('.') || e.isSymbolicLink() || (!e.isDirectory() && !e.isFile()))
+        continue;
+      const chemin = path.relative(racine, path.join(abs, e.name)).split(path.sep).join('/');
+      const s = await fs.stat(/*turbopackIgnore: true*/ path.join(abs, e.name)).catch(() => null);
+      if (!s) continue;
+      sortie.push({
+        nom: e.name,
+        chemin,
+        type: e.isDirectory() ? 'dossier' : 'fichier',
+        taille: e.isDirectory() ? 0 : s.size,
+        maj: s.mtimeMs,
+      });
+    }
+    return sortie.sort((a, b) =>
+      a.type !== b.type
+        ? a.type === 'dossier'
+          ? -1
+          : 1
+        : a.nom.localeCompare(b.nom, 'fr', { sensitivity: 'base', numeric: true }),
+    );
+  } catch {
+    return null;
+  }
 }

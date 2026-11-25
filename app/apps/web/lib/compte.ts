@@ -9,6 +9,15 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { effacerMemoire, fusionner, lireMemoire, memoireActive, remplacerMemoire } from './memoire';
 import { CLE, CONNEXION_DISPONIBLE, URL_SUPABASE, supabase } from './supabase';
+import { appareilBloque, marquerBloque, noterMethode, signalerConnexion } from './securite';
+
+/**
+ * Page du lien « Mot de passe oublié » : on y choisit le nouveau mot de passe (deux fois), puis on revient soi-même
+ * dans l'app pour se connecter. La session de récupération n'y vaut jamais connexion à l'app.
+ */
+export const PAGE_NOUVEAU_MDP = '/connexion/nouveau-mot-de-passe';
+const surPageNouveauMdp = () =>
+  typeof window !== 'undefined' && window.location.pathname.startsWith(PAGE_NOUVEAU_MDP);
 
 export { CONNEXION_DISPONIBLE };
 
@@ -222,6 +231,7 @@ export async function connecterParMotDePasse(
 
   verificationMdp = true;
   try {
+    noterMethode('Mot de passe');
     const { error } = await sb.auth.signInWithPassword({
       email: id.valeur,
       password: motDePasse,
@@ -329,7 +339,8 @@ export async function reinitialiserMotDePasse(email: string): Promise<string | n
   if (!sb) return "La connexion n'est pas disponible pour le moment.";
 
   const { error } = await sb.auth.resetPasswordForEmail(id.valeur, {
-    redirectTo: `${obtenirRedirectUrl()}/reglages?v=compte`,
+    // Le lien de l'e-mail ouvre la page « Nouveau mot de passe » : ni connexion automatique, ni accès à l'app.
+    redirectTo: `${obtenirRedirectUrl()}${PAGE_NOUVEAU_MDP}`,
   });
   if (error) return messageErreur(error, id);
   return null;
@@ -337,6 +348,34 @@ export async function reinitialiserMotDePasse(email: string): Promise<string | n
 
 /** Adresse de retour de la connexion Apple ou Google dans les apps iPhone et Android (autorisée dans Supabase). */
 export const RETOUR_OAUTH_APP = 'six://auth';
+
+/**
+ * Message clair pour une connexion Google ou Apple refusée au retour (Supabase met l'erreur dans l'adresse).
+ * « Unable to exchange external code » : Supabase n'a pas pu échanger le code du fournisseur, presque toujours
+ * parce que la clé secrète du fournisseur enregistrée dans Supabase n'est plus valide (réglage du serveur).
+ */
+export function messageRetourRefuse(description: string, fournisseur?: string): string {
+  const qui = fournisseur ? `avec ${fournisseur} ` : '';
+  if (/exchange external code|invalid_client|client secret/i.test(description))
+    return `La connexion ${qui}est momentanément indisponible (réglage du serveur à mettre à jour). Utilise ton adresse e-mail en attendant.`;
+  if (/access_denied|cancel|denied/i.test(description)) return `Connexion ${qui}annulée.`;
+  return `La connexion ${qui}n’a pas abouti. Réessaie, ou utilise ton adresse e-mail.`;
+}
+
+/** Erreur de connexion laissée par Supabase dans l'adresse de la page (retour du fournisseur), ou ''. */
+export function erreurDeRetourDansAdresse(adresse: string): string {
+  const i = adresse.indexOf('#');
+  const q = adresse.indexOf('?');
+  const fragment = new URLSearchParams(i >= 0 ? adresse.slice(i + 1) : '');
+  const requete = new URLSearchParams(q >= 0 ? adresse.slice(q + 1, i > q ? i : undefined) : '');
+  return (
+    fragment.get('error_description') ??
+    requete.get('error_description') ??
+    fragment.get('error') ??
+    requete.get('error') ??
+    ''
+  );
+}
 
 export type RetourOAuth =
   | { type: 'jetons'; access_token: string; refresh_token: string }
@@ -514,6 +553,7 @@ export async function connecterAvecFournisseur(
   const sb = await supabase();
   if (!sb) return { erreur: "La connexion n'est pas disponible pour le moment.", info: null };
   const nom = fournisseur === 'google' ? 'Google' : 'Apple';
+  noterMethode(nom);
   if (!(await fournisseursActifs())[fournisseur]) {
     return {
       erreur: `La connexion avec ${nom} n’est pas encore disponible. Utilise ton adresse e-mail.`,
@@ -585,7 +625,10 @@ export async function connecterAvecFournisseur(
             : { error: { message: retour.type === 'erreur' ? retour.message : 'vide' } };
       if (erreurSession) {
         return {
-          erreur: `La connexion avec ${nom} n’a pas abouti. Réessaie, ou utilise ton adresse e-mail.`,
+          erreur: messageRetourRefuse(
+            retour.type === 'erreur' ? retour.message : (erreurSession.message ?? ''),
+            nom,
+          ),
           info: null,
         };
       }
@@ -714,6 +757,7 @@ export async function verifierCode(
   if (token.length !== 6) return 'Entre les 6 chiffres du code reçu par e-mail.';
   const sb = await supabase();
   if (!sb) return "La connexion n'est pas disponible pour le moment.";
+  noterMethode('Code e-mail');
   const { error } = await sb.auth.verifyOtp({
     email: id.valeur,
     token,
@@ -817,17 +861,39 @@ async function synchroniser(sb: SupabaseClient, userId: string) {
  */
 const synchronises = new Set<string>();
 
+/** Cet appareil a été bloqué depuis l'e-mail d'alerte : déconnexion (l'écran de connexion l'explique). */
+async function deconnecterAppareilBloque(sb: SupabaseClient): Promise<void> {
+  marquerBloque(true);
+  await sb.auth.signOut({ scope: 'local' }).catch(() => {});
+}
+
+/** Vérifie (au démarrage, toutes les 5 minutes et au retour sur l'app) que cet appareil n'a pas été bloqué. */
+function surveillerBlocage(sb: SupabaseClient): void {
+  const verifier = async () => {
+    const jeton = (await sb.auth.getSession()).data.session?.access_token;
+    if (jeton && (await appareilBloque(jeton))) await deconnecterAppareilBloque(sb);
+  };
+  void verifier();
+  setInterval(() => void verifier(), 5 * 60_000);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') void verifier();
+  });
+}
+
 export async function demarrerCompte(): Promise<void> {
   if (demarre) return;
   demarre = true;
   const sb = await supabase();
   if (!sb) return;
+  if (!surPageNouveauMdp()) surveillerBlocage(sb);
 
   sb.auth.onAuthStateChange((evenement, session) => {
     // Session d'un instant pendant la vérification du mot de passe : ni « connecté », ni synchronisation.
     if (verificationMdp) return;
+    // Lien « Mot de passe oublié » : la session de récupération sert seulement à changer le mot de passe sur sa
+    // page ; elle ne connecte jamais l'app (ni cet onglet, ni les autres).
+    if (evenement === 'PASSWORD_RECOVERY' || surPageNouveauMdp()) return;
     try {
-      if (evenement === 'PASSWORD_RECOVERY') sessionStorage.setItem(RECUPERATION, '1');
       if (evenement === 'SIGNED_OUT') sessionStorage.removeItem(RECUPERATION);
     } catch {
       /* stockage bloqué */
@@ -868,6 +934,14 @@ export async function demarrerCompte(): Promise<void> {
     // Supabase réannonce SIGNED_IN à chaque retour sur l'onglet : la fusion complète n'a lieu qu'une fois par
     // compte et par ouverture de l'app (les changements suivants partent par « six-memoire » ci-dessous).
     if (session?.user && (evenement === 'SIGNED_IN' || evenement === 'INITIAL_SESSION')) {
+      // Nouvelle session : e-mail d'alerte (« Ce n'était pas moi » bloque cet appareil). Appareil déjà bloqué :
+      // déconnexion immédiate.
+      const jeton = session.access_token;
+      setTimeout(() => {
+        void signalerConnexion(jeton).then((r) => {
+          if (r === 'bloque') void deconnecterAppareilBloque(sb);
+        });
+      }, 0);
       const id = session.user.id;
       if (!synchronises.has(id)) {
         synchronises.add(id);

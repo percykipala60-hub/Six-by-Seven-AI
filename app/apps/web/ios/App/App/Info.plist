@@ -38,7 +38,7 @@
 	<key>NSSpeechRecognitionUsageDescription</key>
 	<string>Six transforme ta voix en texte seulement quand tu dictes un message dans le Chat.</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Six utilise l’appareil photo seulement si tu prends en photo une conversation à analyser.</string>
+	<string>Six utilise l’appareil photo seulement si tu prends en photo une conversation à analyser, ou pour scanner le code QR de connexion d’un autre appareil.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Six ouvre tes photos seulement pour importer les captures d’écran que tu choisis.</string>
 	<key>LSRequiresIPhoneOS</key>

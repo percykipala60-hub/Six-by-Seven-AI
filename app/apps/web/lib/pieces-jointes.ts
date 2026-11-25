@@ -145,5 +145,11 @@ export async function pieceCapture(
 }
 
 export function versAffichage(p: Piece): PieceAffichee {
-  return { genre: p.genre, nom: p.nom, ...(p.apercu ? { apercu: p.apercu } : {}) };
+  return {
+    genre: p.genre,
+    nom: p.nom,
+    ...(p.apercu ? { apercu: p.apercu } : {}),
+    ...(p.chemin ? { chemin: p.chemin } : {}),
+    ...(p.extrait ? { extrait: p.extrait } : {}),
+  };
 }
