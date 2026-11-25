@@ -156,11 +156,16 @@ export function FormulaireConnexion() {
     setErreur('');
     setInfo('');
     setSocialBusy(fournisseur);
-    await demarrerCompte();
-    const r = await connecterAvecFournisseur(fournisseur);
-    setSocialBusy(null);
-    if (r.erreur) setErreur(r.erreur);
-    else if (r.info) setInfo(r.info);
+    try {
+      await demarrerCompte();
+      const r = await connecterAvecFournisseur(fournisseur);
+      if (r.erreur) setErreur(r.erreur);
+      else if (r.info) setInfo(r.info);
+    } catch {
+      setErreur('La connexion ne répond pas. Vérifie ta connexion Internet et réessaie.');
+    } finally {
+      setSocialBusy(null);
+    }
   }
 
   function ouvrirEtapeCode(type: TypeCode) {
@@ -174,11 +179,17 @@ export function FormulaireConnexion() {
     setErreur('');
     setInfo('');
     setBusy(true);
-    await demarrerCompte();
-    const r = await connecterParMotDePasse(email, motDePasse);
-    setBusy(false);
-    if (r.erreur) setErreur(r.erreur);
-    else if (r.code) ouvrirEtapeCode(r.code);
+    try {
+      await demarrerCompte();
+      const r = await connecterParMotDePasse(email, motDePasse);
+      if (r.erreur) setErreur(r.erreur);
+      else if (r.code) ouvrirEtapeCode(r.code);
+      else setErreur('La connexion n’a pas pu être terminée. Réessaie.');
+    } catch {
+      setErreur('La connexion ne répond pas. Vérifie ta connexion Internet et réessaie.');
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function handleInscription(e: FormEvent) {
@@ -202,17 +213,20 @@ export function FormulaireConnexion() {
       return;
     }
     setBusy(true);
-    await demarrerCompte();
-    const res = await inscrire(email, motDePasse, prenomSaisie, accepteConditions);
-    setBusy(false);
-    if (res.error) {
-      setErreur(res.error);
-    } else if (res.confirmationRequise) {
-      // Le compte n'est actif qu'une fois l'adresse confirmée avec le code reçu.
-      ouvrirEtapeCode('inscription');
-    } else {
-      setMotDePasse('');
-      setConfirmationMdp('');
+    try {
+      await demarrerCompte();
+      const res = await inscrire(email, motDePasse, prenomSaisie, accepteConditions);
+      if (res.error) setErreur(res.error);
+      else if (res.confirmationRequise) ouvrirEtapeCode('inscription');
+      else {
+        setMotDePasse('');
+        setConfirmationMdp('');
+        setInfo('Compte créé. Tu peux maintenant utiliser Six.');
+      }
+    } catch {
+      setErreur('La création du compte ne répond pas. Vérifie ta connexion Internet et réessaie.');
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -222,15 +236,20 @@ export function FormulaireConnexion() {
     setErreur('');
     setInfo('');
     // Connexion : on revérifie le mot de passe avant tout nouvel envoi.
-    const err =
-      etapeCode.type === 'inscription'
-        ? await renvoyerConfirmation(etapeCode.email)
-        : (await connecterParMotDePasse(etapeCode.email, motDePasse)).erreur;
-    setBusy(false);
-    if (err) setErreur(err);
-    else {
-      setAttente(60);
-      setInfo('Un nouveau code vient de partir. Regarde aussi tes spams.');
+    try {
+      const err =
+        etapeCode.type === 'inscription'
+          ? await renvoyerConfirmation(etapeCode.email)
+          : (await connecterParMotDePasse(etapeCode.email, motDePasse)).erreur;
+      if (err) setErreur(err);
+      else {
+        setAttente(60);
+        setInfo('Un nouveau code vient de partir. Regarde aussi tes spams.');
+      }
+    } catch {
+      setErreur('Le renvoi du code ne répond pas. Réessaie dans un instant.');
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -240,17 +259,23 @@ export function FormulaireConnexion() {
     setBusy(true);
     setErreur('');
     setInfo('');
-    await demarrerCompte();
-    const err = await verifierCode(etapeCode.email, codeOtp, etapeCode.type);
-    setBusy(false);
-    if (err) setErreur(err);
-    else {
-      setEtapeCode(null);
-      setCodeOtp('');
-      setEmail('');
-      setMotDePasse('');
-      setConfirmationMdp('');
-      setMode('connexion');
+    try {
+      await demarrerCompte();
+      const err = await verifierCode(etapeCode.email, codeOtp, etapeCode.type);
+      if (err) setErreur(err);
+      else {
+        setEtapeCode(null);
+        setCodeOtp('');
+        setEmail('');
+        setMotDePasse('');
+        setConfirmationMdp('');
+        setMode('connexion');
+        setInfo('Adresse confirmée. Ton compte est prêt.');
+      }
+    } catch {
+      setErreur('La vérification du code ne répond pas. Réessaie dans un instant.');
+    } finally {
+      setBusy(false);
     }
   }
 
@@ -259,13 +284,17 @@ export function FormulaireConnexion() {
     setErreur('');
     setInfo('');
     setBusy(true);
-    const err = await reinitialiserMotDePasse(email);
-    setBusy(false);
-    if (err) {
-      setErreur(err);
-    } else {
-      setInfo('Un e-mail de réinitialisation t’a été envoyé. Regarde aussi tes spams.');
-      setMode('connexion');
+    try {
+      const err = await reinitialiserMotDePasse(email);
+      if (err) setErreur(err);
+      else {
+        setInfo('Un e-mail de réinitialisation t’a été envoyé. Regarde aussi tes spams.');
+        setMode('connexion');
+      }
+    } catch {
+      setErreur('La demande ne répond pas. Vérifie ta connexion Internet et réessaie.');
+    } finally {
+      setBusy(false);
     }
   }
 
