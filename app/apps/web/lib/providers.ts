@@ -1,6 +1,7 @@
 import { ProviderError, agentDisponible, callAI, callChat, hasChatAI, hasAI } from './ai';
 import { questionDeLieu } from './carte-rdc';
 import type { ImageJointe } from './api-schemas';
+import { consignesSkill, type ChoixSkill } from './skills-cosinus';
 import { corrigerIdentite } from './identite';
 import {
   analysisPrompt,
@@ -85,6 +86,7 @@ export async function chat(
   premium = true,
   images?: ImageJointe[],
   mode: 'chat' | 'sixtouch' = 'chat',
+  skill: ChoixSkill = 'auto',
 ): Promise<ChatResult> {
   const user = messages[messages.length - 1]?.content ?? '';
   const history = messages.slice(0, -1);
@@ -113,7 +115,8 @@ export async function chat(
   }
   const reponse = (
     await callChat(
-      sevenAiSystem(mode),
+      sevenAiSystem(mode) +
+        (mode === 'sixtouch' ? consignesSkill(skill, user, Boolean(images?.length)) : ''),
       user,
       history,
       mode === 'sixtouch' ? 4000 : 1500, // un rapport demande plus de place qu'une réponse de discussion

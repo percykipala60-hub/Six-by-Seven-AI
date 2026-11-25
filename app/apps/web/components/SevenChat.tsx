@@ -9,6 +9,9 @@ import { estBureau } from '@/lib/plateforme';
 import { CarteLieux } from './CarteLieux';
 import { Logo } from './Logo';
 import { PiecesJointes } from './PiecesJointes';
+import { Artefacts } from './Artefacts';
+import { extraireArtefacts } from '@/lib/artefacts';
+import { SKILLS, choisirSkill, type ChoixSkill } from '@/lib/skills-cosinus';
 import {
   BoutonsVolet,
   GRAND_VOLET,
@@ -199,25 +202,6 @@ async function messageMicroRefuse(): Promise<string> {
   return 'Accès au micro refusé. Autorise le micro pour ce site : clique sur l’icône 🔒 (ou ℹ️) à gauche de l’adresse, puis autorise le microphone.';
 }
 
-/**
- * Demande l'accès au micro au moment du clic : la fenêtre d'autorisation du navigateur, d'iOS ou d'Android s'ouvre
- * si l'accès n'a pas encore été donné. Le micro est relâché aussitôt (la dictée le reprend juste après).
- */
-async function demanderAccesMicro(): Promise<void> {
-  if (!window.isSecureContext || typeof navigator.mediaDevices?.getUserMedia !== 'function') return;
-  try {
-    const flux = await navigator.mediaDevices.getUserMedia({ audio: true });
-    flux.getTracks().forEach((piste) => piste.stop());
-  } catch (e) {
-    const nom = e instanceof DOMException ? e.name : '';
-    if (nom === 'NotAllowedError' || nom === 'SecurityError')
-      throw new ErreurMicro(await messageMicroRefuse());
-    if (nom === 'NotFoundError' || nom === 'OverconstrainedError')
-      throw new ErreurMicro(MESSAGE_PAS_DE_MICRO);
-    // Autre souci : on laisse la dictée essayer quand même.
-  }
-}
-
 /** Message à afficher quand la dictée échoue ('' : arrêtée par la personne, rien à dire). */
 async function messageErreurDictee(e: unknown): Promise<string> {
   if (e instanceof ErreurMicro) return e.message;
@@ -255,7 +239,13 @@ function dicterTexte(signal: AbortSignal): Promise<string> {
     rec.onerror = (e) => {
       signal.removeEventListener('abort', arreter);
       const code = e?.error ?? '';
-      if (code === 'not-allowed' || code === 'service-not-allowed') reject(new Error('refus'));
+      if (code === 'not-allowed') reject(new Error('refus'));
+      else if (code === 'service-not-allowed')
+        reject(
+          new ErreurMicro(
+            'Le service de dictée est indisponible dans cette application. La transcription audio doit être configurée sur le serveur.',
+          ),
+        );
       else if (code === 'no-speech') reject(new Error('dictée vide'));
       else if (code === 'audio-capture') reject(new ErreurMicro(MESSAGE_PAS_DE_MICRO));
       else if (code === 'network')
@@ -292,6 +282,7 @@ function dicterTexte(signal: AbortSignal): Promise<string> {
 export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   const router = useRouter();
   const sixtouch = mode === 'sixtouch';
+  const [skill, setSkill] = useState<ChoixSkill>('auto');
   const base = sixtouch ? '/cosinus' : '/chat';
   // Volet d'outils à droite (navigateur, fichiers). Son onglet ouvert est gardé sur l'appareil : sur grand écran,
   // on le retrouve en revenant dans le Chat (sur téléphone il s'ouvrirait en plein écran, donc on ne le rouvre pas).
@@ -480,6 +471,19 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     operation.current = controleur;
     const delai = setTimeout(() => controleur.abort(), 60000);
     try {
+      if ((await plateforme()) !== 'web') {
+        const { dicterSurTelephone } = await import('@/lib/dictee-native');
+        try {
+          return await dicterSurTelephone(controleur.signal);
+        } catch (e) {
+          if (
+            e instanceof Error &&
+            !['refus', 'Dictée arrêtée.', 'dictée vide'].includes(e.message)
+          )
+            throw new ErreurMicro(e.message);
+          throw e;
+        }
+      }
       return await dicterTexte(controleur.signal);
     } finally {
       clearTimeout(delai);
@@ -506,6 +510,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   }, []);
   const champ = useRef<HTMLInputElement>(null);
   const docInput = useRef<HTMLInputElement>(null);
+  const dossierInput = useRef<HTMLInputElement>(null);
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const chunksAudio = useRef<Blob[]>([]);
 
@@ -599,7 +604,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
 
   function pousser(fil: ChatMessage[]) {
     setMessages(fil);
-    garderChat(chatId.current, fil, mode);
+    garderChat(chatId.current, fil, mode, params.get('projet') ?? undefined);
   }
 
   /**
@@ -697,6 +702,8 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
               ...(sixtouch
                 ? {
                     mode: 'sixtouch',
+                    skill,
+                    ...(params.get('projet') ? { projetId: params.get('projet') } : {}),
                     navigateurSession: JSON.parse(
                       sessionStorage.getItem('six-navigateur-agent') || '{}',
                     ).session,
@@ -765,8 +772,20 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   // — Pièces jointes (bouton +) : préparées sur l'appareil, puis montrées en carrés dans la barre. Elles partent avec
   // le prochain message. Images réduites, vidéos découpées en images, documents lus (texte ou PDF). —
   async function importerFichiers(liste: FileList | File[] | null) {
-    const fichiers = Array.from(liste ?? []);
+    const fichiers = Array.from(liste ?? []).filter(
+      (f) =>
+        !f.webkitRelativePath
+          .split('/')
+          .some(
+            (partie) =>
+              partie.startsWith('.') || ['node_modules', 'dist', 'build'].includes(partie),
+          ),
+    );
     if (!fichiers.length || occupe) return;
+    if (fichiers.length + pieces.length > 100) {
+      setErreur('Ajoute au plus 100 fichiers à la fois. Choisis un sous-dossier plus petit.');
+      return;
+    }
     setOccupe(true);
     setLectureDoc(true);
     setErreur('');
@@ -776,21 +795,35 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         const estVideo =
           fichier.type.startsWith('video/') ||
           /\.(mp4|mov|m4v|webm|mkv|avi|3gp)$/i.test(fichier.name);
-        const estImage = fichier.type.startsWith('image/');
+        const estImage =
+          fichier.type.startsWith('image/') ||
+          /\.(png|jpe?g|webp|gif|bmp|avif|heic|heif|svg)$/i.test(fichier.name);
         if (fichier.size > (estVideo ? MAX_VIDEO : MAX_FICHIER))
           throw new Error(`le fichier dépasse ${estVideo ? '500' : '20'} Mo.`);
-        if (estImage) nouvelles.push(await lireImage(fichier));
-        else if (estVideo) nouvelles.push(await lireVideo(fichier));
+        if (estImage)
+          nouvelles.push({
+            ...(await lireImage(fichier)),
+            nom: fichier.webkitRelativePath || fichier.name,
+          });
+        else if (estVideo)
+          nouvelles.push({
+            ...(await lireVideo(fichier)),
+            nom: fichier.webkitRelativePath || fichier.name,
+          });
         else {
           const estPdf = fichier.type === 'application/pdf' || /\.pdf$/i.test(fichier.name);
           let texte = estPdf ? await extrairePdf(fichier) : await fichier.text();
+          if (!estPdf && (texte.includes('\0') || texte.includes('\uFFFD')))
+            throw new Error(
+              'format binaire non pris en charge. Utilise un PDF ou un fichier texte UTF-8.',
+            );
           if (!texte.trim()) throw new Error('ce fichier ne contient pas de texte lisible.');
           while (encoder.encode(JSON.stringify(texte)).length > TAILLE_DOC_MAX)
             texte = `${texte.slice(0, Math.floor(texte.length * 0.8))}\n\n[… document tronqué]`;
           nouvelles.push({
             id: nouvelId(),
             genre: 'document',
-            nom: fichier.name,
+            nom: fichier.webkitRelativePath || fichier.name,
             texte,
             images: [],
           });
@@ -805,6 +838,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     setLectureDoc(false);
     setOccupe(false);
     if (docInput.current) docInput.current.value = '';
+    if (dossierInput.current) dossierInput.current.value = '';
     champ.current?.focus();
   }
 
@@ -816,7 +850,46 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     }
     if (occupe || verrouMicro.current) return;
     setErreur('');
-    if (transcription !== true) {
+    verrouMicro.current = true;
+    if ((await plateforme()) !== 'web') {
+      setOccupe(true);
+      try {
+        setSaisie(await dictee());
+      } catch (e) {
+        setErreur(await messageErreurDictee(e));
+      } finally {
+        verrouMicro.current = false;
+        setOccupe(false);
+      }
+      return;
+    }
+    verrouMicro.current = false;
+    let serviceVocal = transcription;
+    if (estBureau() && serviceVocal !== true) {
+      verrouMicro.current = true;
+      try {
+        const res = await fetch('/api/chat', { signal: AbortSignal.timeout(5000) });
+        if (res.ok) {
+          serviceVocal = (await res.json()).transcription === true;
+          setTranscription(serviceVocal);
+        }
+      } catch {
+        /* Le message de disponibilité ci-dessous permet de réessayer. */
+      } finally {
+        verrouMicro.current = false;
+      }
+    }
+    if (serviceVocal !== true) {
+      if (serviceVocal === null) {
+        setErreur('Vérification du service vocal en cours. Réessaie dans quelques secondes.');
+        return;
+      }
+      if (estBureau()) {
+        setErreur(
+          'La dictée de l’application de bureau demande une transcription audio configurée sur le serveur.',
+        );
+        return;
+      }
       if (!dicteeDisponible()) {
         setErreur(
           'La dictée vocale n’est pas encore disponible sur cet appareil. Écris ton message en attendant.',
@@ -826,7 +899,6 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       verrouMicro.current = true;
       setOccupe(true);
       try {
-        await demanderAccesMicro();
         setSaisie(await dictee());
       } catch (e) {
         setErreur(await messageErreurDictee(e));
@@ -1024,65 +1096,73 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
             )}
           </div>
         )}
-        {messages.map((m, i) => (
-          <div key={i} className={`seven-msg ${m.role}`}>
-            {m.role === 'assistant' && (
-              <span className="six-msg-logo" aria-hidden="true">
-                <Logo label="" small />
-              </span>
-            )}
-            {m.pieces && <PiecesJointes pieces={m.pieces} petit />}
-            {m.etapes && m.etapes.length > 0 && (
-              <details className="six-etapes">
-                <summary>
-                  {m.etapes.length} étape{m.etapes.length > 1 ? 's' : ''} de travail
-                </summary>
-                <ol>
-                  {m.etapes.map((e, k) => (
-                    <li key={k}>{e}</li>
+        {messages.map((m, i) => {
+          const creation = sixtouch && m.role === 'assistant' ? extraireArtefacts(m.content) : null;
+          const texte = creation?.texte ?? m.content;
+          return (
+            <div key={i} className={`seven-msg ${m.role}`}>
+              {m.role === 'assistant' && (
+                <span className="six-msg-logo" aria-hidden="true">
+                  <Logo label="" small />
+                </span>
+              )}
+              {m.pieces && <PiecesJointes pieces={m.pieces} petit />}
+              {m.etapes && m.etapes.length > 0 && (
+                <details className="six-etapes">
+                  <summary>
+                    {m.etapes.length} étape{m.etapes.length > 1 ? 's' : ''} de travail
+                  </summary>
+                  <ol>
+                    {m.etapes.map((e, k) => (
+                      <li key={k}>{e}</li>
+                    ))}
+                  </ol>
+                </details>
+              )}
+              <div className="seven-bulle">
+                {i === animee && m.role === 'assistant' ? (
+                  <TexteProgressif texte={texte} onPas={suivreFin} />
+                ) : (
+                  texte
+                )}
+              </div>
+              {creation && creation.artefacts.length > 0 && (
+                <Artefacts fichiers={creation.artefacts} />
+              )}
+              {m.role === 'assistant' && (
+                <button
+                  type="button"
+                  className="seven-pdf"
+                  aria-label="Exporter cette réponse en PDF"
+                  title="Exporter cette réponse en PDF"
+                  onClick={() => void exporterMessage(m)}
+                >
+                  <Icon name="down" size={15} />
+                </button>
+              )}
+              {m.fichiers && m.fichiers.length > 0 && (
+                <div className="six-fichiers-crees">
+                  {m.fichiers.map((f) => (
+                    <button
+                      key={f}
+                      type="button"
+                      className="six-fichier-cree"
+                      title="Voir dans les fichiers"
+                      onClick={() => setVolet('fichiers')}
+                    >
+                      <Icon name="file" size={14} stroke={1.8} />
+                      <span>{f}</span>
+                    </button>
                   ))}
-                </ol>
-              </details>
-            )}
-            <div className="seven-bulle">
-              {i === animee && m.role === 'assistant' ? (
-                <TexteProgressif texte={m.content} onPas={suivreFin} />
-              ) : (
-                m.content
+                </div>
+              )}
+              {m.role === 'assistant' && m.lieux && m.lieux.length > 0 && (
+                <CarteLieux lieux={m.lieux} />
               )}
             </div>
-            {m.role === 'assistant' && m.lieux && m.lieux.length > 0 && (
-              <CarteLieux lieux={m.lieux} />
-            )}
-            {m.role === 'assistant' && (
-              <button
-                type="button"
-                className="seven-pdf"
-                aria-label="Exporter cette réponse en PDF"
-                title="Exporter cette réponse en PDF"
-                onClick={() => void exporterMessage(m)}
-              >
-                <Icon name="down" size={15} />
-              </button>
-            )}
-            {m.fichiers && m.fichiers.length > 0 && (
-              <div className="six-fichiers-crees">
-                {m.fichiers.map((f) => (
-                  <button
-                    key={f}
-                    type="button"
-                    className="six-fichier-cree"
-                    title="Voir dans les fichiers"
-                    onClick={() => setVolet('fichiers')}
-                  >
-                    <Icon name="file" size={14} stroke={1.8} />
-                    <span>{f}</span>
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
+          );
+        })}
+
         {enAttente && (
           <div className="seven-msg user">
             <PiecesJointes pieces={attentePieces} petit />
@@ -1172,6 +1252,42 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
           void envoyer(saisie);
         }}
       >
+        {sixtouch && (
+          <div style={{ width: '100%', maxWidth: 560, margin: '0 auto 8px' }}>
+            {params.get('projet') && (
+              <p>
+                Contexte du projet actif · <a href="/projets">Mes projets</a>
+              </p>
+            )}
+            <label htmlFor="cosinus-skill">Skill : </label>
+            <select
+              id="cosinus-skill"
+              value={skill}
+              disabled={occupe || enregistre}
+              onChange={(e) => setSkill(e.target.value as ChoixSkill)}
+              style={{
+                maxWidth: '100%',
+                minHeight: 44,
+                borderRadius: 10,
+                padding: '8px 12px',
+                color: 'inherit',
+                background: 'Canvas',
+              }}
+            >
+              <option value="auto">Automatique</option>
+              {SKILLS.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.nom}
+                </option>
+              ))}
+            </select>
+            <p style={{ margin: '4px 0', fontSize: 12, opacity: 0.75 }}>
+              {skill === 'auto'
+                ? 'Cosinus choisit une méthode selon ta demande.'
+                : choisirSkill(skill)?.description}
+            </p>
+          </div>
+        )}
         <div className="seven-capsule">
           <button
             type="button"
@@ -1186,13 +1302,39 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
           <input
             ref={docInput}
             type="file"
-            accept=".txt,.md,.csv,.json,.log,.pdf,image/*,video/*"
+            accept={sixtouch ? undefined : '.txt,.md,.csv,.json,.log,.pdf,image/*,video/*'}
             multiple
             className="seven-doc-input"
             aria-hidden="true"
             tabIndex={-1}
             onChange={(e) => void importerFichiers(e.target.files)}
           />
+          {sixtouch && (
+            <>
+              <button
+                type="button"
+                className="seven-doc"
+                title="Ajouter un dossier"
+                aria-label="Ajouter un dossier"
+                disabled={occupe || enregistre}
+                onClick={() => dossierInput.current?.click()}
+              >
+                <span aria-hidden="true">📁</span>
+              </button>
+              <input
+                ref={(element) => {
+                  dossierInput.current = element;
+                  element?.setAttribute('webkitdirectory', '');
+                }}
+                type="file"
+                multiple
+                className="seven-doc-input"
+                aria-label="Choisir un dossier"
+                tabIndex={-1}
+                onChange={(e) => void importerFichiers(e.target.files)}
+              />
+            </>
+          )}
           <PiecesJointes
             pieces={pieces}
             onRetirer={(i) => setPieces((p) => p.filter((_, j) => j !== i))}

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { fail, guard } from '@/lib/http';
+import { urlTranscriptionLocale } from '@/lib/transcription-locale';
 
 // Message vocal Seven AI : transcription via le modèle audio d'OpenAI quand une clé est configurée.
 // Sans clé OpenAI, on le dit honnêtement (Claude ne transcrit pas l'audio) : jamais de fausse transcription.
@@ -20,6 +21,23 @@ export async function POST(req: Request) {
     return fail(400, 'Envoie un message vocal (fichier audio).');
   if (audio.size === 0) return fail(400, 'Le message vocal est vide.');
   if (audio.size > TAILLE_MAX) return fail(400, 'Le message vocal dépasse 10 Mo.');
+
+  const local = urlTranscriptionLocale();
+  if (local) {
+    try {
+      const res = await fetch(`${local}/transcribe`, {
+        method: 'POST',
+        body: audio,
+        signal: AbortSignal.timeout(120_000),
+      });
+      const data = await res.json();
+      if (!res.ok || typeof data.texte !== 'string' || !data.texte.trim())
+        return fail(502, 'Le moteur local n’a pas compris le message. Réessaie.');
+      return NextResponse.json({ texte: data.texte.trim() });
+    } catch {
+      return fail(503, 'Le moteur de transcription local est indisponible.');
+    }
+  }
 
   const key = (process.env.OPENAI_API_KEY ?? '').trim();
   if (!key)

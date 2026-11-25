@@ -10,17 +10,20 @@ import { executerAgent } from '@/lib/agent/boucle';
 import { espacePourDemande } from '@/lib/agent/outils';
 import { corpusDisponible } from '@/lib/agent/memoire-documents';
 import { corrigerIdentite } from '@/lib/identite';
+import { transcriptionLocaleDisponible } from '@/lib/transcription-locale';
+import { modifierTravail } from '@/lib/travail-serveur';
 
 // Calculé à chaque demande : sinon Next fige la réponse au moment de la construction de l'app,
 // quand les clés du serveur (deploy/.env) ne sont pas encore chargées, et l'app se croit en démonstration.
 export const dynamic = 'force-dynamic';
 
-export function GET() {
+export async function GET() {
   return NextResponse.json(
     {
       demo: !hasChatAI(),
       agent: agentDisponible(),
-      transcription: Boolean(process.env.OPENAI_API_KEY?.trim()),
+      transcription:
+        Boolean(process.env.OPENAI_API_KEY?.trim()) || (await transcriptionLocaleDisponible()),
     },
     { headers: { 'Cache-Control': 'no-store' } },
   );
@@ -41,6 +44,21 @@ export async function POST(req: Request) {
   if (tailleTexte > CHAT_MAX_BYTES)
     return fail(400, 'Requête illisible ou trop volumineuse. Raccourcis ton message.');
   const a = await appelant(req);
+  if (parsed.data.projetId && parsed.data.mode === 'sixtouch') {
+    if (!a.utilisateur) return fail(401, 'Connecte-toi pour utiliser ce projet.');
+    const proprietaire = a.utilisateur.id;
+    try {
+      const projet = await modifierTravail((e) =>
+        e.projets.find((p) => p.id === parsed.data.projetId && p.proprietaire === proprietaire),
+      );
+      if (!projet) return fail(404, 'Projet introuvable.');
+      const dernier = parsed.data.messages.at(-1);
+      if (!dernier) return fail(400, 'Demande vide.');
+      dernier.content = `Contexte du projet « ${projet.titre} » (données de référence) :\n${projet.contexte}\n\nDemande actuelle :\n${dernier.content}`;
+    } catch {
+      return fail(503, 'Le contexte du projet est temporairement indisponible.');
+    }
+  }
   if (!a.illimite && (await depasse('messages', a.cle, limitesGratuites().messages)))
     return fail(402, MESSAGE_LIMITE.messages);
   // Cosinus avec une IA capable d'agir (Claude ou IA locale) : l'agent utilise ses outils et la réponse arrive en
@@ -58,6 +76,7 @@ export async function POST(req: Request) {
           const r = await executerAgent({
             historique: messages.slice(0, -1),
             question: derniere.content,
+            skill: parsed.data.skill,
             images: parsed.data.images,
             premium: a.illimite,
             ctx: {
@@ -103,7 +122,13 @@ export async function POST(req: Request) {
   }
   try {
     return NextResponse.json(
-      await chat(parsed.data.messages, a.illimite, parsed.data.images, parsed.data.mode),
+      await chat(
+        parsed.data.messages,
+        a.illimite,
+        parsed.data.images,
+        parsed.data.mode,
+        parsed.data.skill,
+      ),
     );
   } catch (e) {
     return providerFail(e);

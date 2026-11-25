@@ -16,6 +16,7 @@ export type ChatSeven = {
   messages: ChatMessage[];
   /** Absent pour les discussions d'avant Cosinus : ce sont des discussions du Chat. */
   mode?: ModeChat;
+  projetId?: string;
 };
 
 const CLE = 'seven-ai-chats';
@@ -99,7 +100,12 @@ export function lireChat(id: string): ChatSeven | undefined {
 }
 
 /** Enregistre (ou met à jour) une discussion et la remonte en tête de liste. */
-export function garderChat(id: string, messages: ChatMessage[], mode: ModeChat = 'chat'): void {
+export function garderChat(
+  id: string,
+  messages: ChatMessage[],
+  mode: ModeChat = 'chat',
+  projetId?: string,
+): void {
   if (!memoireActive() || messages.length === 0) return;
   const chat: ChatSeven = {
     id,
@@ -107,6 +113,7 @@ export function garderChat(id: string, messages: ChatMessage[], mode: ModeChat =
     maj: Date.now(),
     messages: messages.slice(-MAX_MSG),
     ...(mode === 'sixtouch' ? { mode } : {}),
+    ...(projetId ? { projetId } : {}),
   };
   ecrire([chat, ...lireChats().filter((c) => c.id !== id)]);
 }
