@@ -1,13 +1,15 @@
 import { lookup } from 'node:dns/promises';
+import path from 'node:path';
 import { isIP } from 'node:net';
-import {
-  dossierEspace,
-  ecrireResultat,
-  lireEspace,
-  listerEspace,
-  preparerEspace,
-} from '@/lib/espace-travail';
+import { ecrireResultat, espaceAutorise, lireEspace, listerEspace } from '@/lib/espace-travail';
 import { NOMS_OUTILS_CARTE, OUTILS_CARTE, executerOutilCarte } from '@/lib/carte-rdc';
+import {
+  REFUS_HORS_DOSSIER,
+  aUnAcces,
+  dossierCouvert,
+  racinePour,
+  type AccesHorsDossier,
+} from './acces-pc';
 import { BASES_PAR_TYPE, TYPES_RECHERCHE, chercherSources } from './sources';
 import { chercherMesDocuments } from './memoire-documents';
 import { modifierDocument, regenerer } from './edition';
@@ -44,6 +46,8 @@ export type ContexteOutils = {
    * inventées) et le nombre de corrections déjà demandées par le contrôle qualité (une seule par tâche).
    */
   suivi?: { vus: string[]; corrections: number };
+  /** Ce que la personne autorise hors du dossier pour cette tâche (voir acces-pc.ts) : rien par défaut. */
+  horsDossier?: AccesHorsDossier;
 };
 
 /** Libellé lisible d'une étape, montré dans Cosinus pendant que Six travaille. */
@@ -111,7 +115,39 @@ export function definitionsOutils(ctx: ContexteOutils): OutilDef[] {
         },
       ]
     : [];
-  if (!ctx.espace) return [...memoire, ...web];
+  // Hors du dossier de l'environnement : seulement ce que la personne a demandé pour cette tâche (lecture seule).
+  const acces = ctx.horsDossier;
+  const lireFichierDef: OutilDef = {
+    nom: 'lire_fichier',
+    description: `Lit le texte d'un fichier (txt, md, csv, json, html, pdf). Dans l'espace de travail : le chemin relatif exact renvoyé par lister_espace.${aUnAcces(acces) ? ' Ailleurs sur l’ordinateur : le chemin absolu, seulement dans ce que la personne a autorisé.' : ''}`,
+    parametres: {
+      type: 'object',
+      properties: {
+        chemin: {
+          type: 'string',
+          description: 'Chemin relatif (ex. rapports/pbl.pdf) ou absolu si autorisé',
+        },
+      },
+      required: ['chemin'],
+    },
+  };
+  const hors: OutilDef[] = aUnAcces(acces)
+    ? [
+        {
+          nom: 'lister_dossier',
+          description: `Liste les fichiers d'un dossier de l'ordinateur hors de l'espace de travail (chemin absolu), en lecture seule. Autorisé par la personne pour cette tâche : ${acces?.toutLePc ? "tout l'ordinateur" : (acces?.chemins ?? []).join(', ')}. N'y va que si la tâche le demande.`,
+          parametres: {
+            type: 'object',
+            properties: {
+              chemin: { type: 'string', description: 'Chemin absolu du dossier' },
+            },
+            required: ['chemin'],
+          },
+        },
+        ...(ctx.espace ? [] : [lireFichierDef]),
+      ]
+    : [];
+  if (!ctx.espace) return [...memoire, ...hors, ...web];
   return [
     ...memoire,
     ...(ctx.navigateur
@@ -152,18 +188,8 @@ export function definitionsOutils(ctx: ContexteOutils): OutilDef[] {
         "Liste les fichiers de l'espace de travail de la personne (rapports, PDF, notes, images), du plus récent au plus ancien.",
       parametres: { type: 'object', properties: {}, required: [] },
     },
-    {
-      nom: 'lire_fichier',
-      description:
-        "Lit le texte d'un fichier de l'espace de travail (txt, md, csv, json, html, pdf). Donne le chemin exact renvoyé par lister_espace.",
-      parametres: {
-        type: 'object',
-        properties: {
-          chemin: { type: 'string', description: 'Chemin relatif, ex. rapports/pbl.pdf' },
-        },
-        required: ['chemin'],
-      },
-    },
+    lireFichierDef,
+    ...hors,
     {
       nom: 'ecrire_resultat',
       description:
@@ -231,6 +257,8 @@ export function libelleEtape(nom: string, args: Record<string, unknown>): string
       return `Six relit tes anciens documents : « ${s('requete')} »`;
     case 'lire_fichier':
       return `Six lit « ${s('chemin')} »`;
+    case 'lister_dossier':
+      return `Six regarde le dossier « ${s('chemin')} »`;
     case 'ecrire_resultat':
       return `Six enregistre « ${s('nom')} »`;
     case 'modifier_document':
@@ -418,7 +446,6 @@ export async function executerOutil(
       }
       case 'lister_espace': {
         if (!ctx.espace) break;
-        await preparerEspace(ctx.espace);
         const l = await listerEspace(ctx.espace);
         if (!l.length) return { resultat: "L'espace de travail est vide." };
         return {
@@ -428,9 +455,32 @@ export async function executerOutil(
             .join('\n'),
         };
       }
-      case 'lire_fichier':
+      case 'lire_fichier': {
+        // Chemin absolu : hors de l'espace, seulement si la personne l'a autorisé pour cette tâche.
+        if (typeof args.chemin === 'string' && path.isAbsolute(args.chemin)) {
+          const cible = racinePour(ctx.horsDossier, args.chemin);
+          if (!cible) return { resultat: REFUS_HORS_DOSSIER };
+          return { resultat: await lireFichier(cible.racine, cible.relatif) };
+        }
         if (!ctx.espace) break;
         return { resultat: await lireFichier(ctx.espace, args.chemin) };
+      }
+      case 'lister_dossier': {
+        const dossier = dossierCouvert(ctx.horsDossier, args.chemin);
+        if (!dossier) return { resultat: REFUS_HORS_DOSSIER };
+        const l = await listerEspace(dossier);
+        if (!l.length)
+          return { resultat: 'Ce dossier est vide (ou ne contient que des fichiers cachés).' };
+        return {
+          resultat: l
+            .slice(0, 80)
+            .map(
+              (f) =>
+                `${path.join(dossier, f.chemin)} (${Math.max(1, Math.round(f.taille / 1024))} Ko)`,
+            )
+            .join('\n'),
+        };
+      }
       case 'ecrire_resultat': {
         if (!ctx.espace) break;
         const contenu = typeof args.contenu === 'string' ? args.contenu : '';
@@ -491,11 +541,10 @@ export async function executerOutil(
   }
 }
 
-/** Espace de travail utilisable pour cette demande (local seulement, voir app/api/sixtouch/espace). */
-export function espacePourDemande(req: Request): string {
-  const racine = dossierEspace();
-  if (!racine) return '';
-  const hote = new URL(req.url).hostname;
-  const local = ['localhost', '127.0.0.1', '[::1]', '::1'].includes(hote);
-  return local || process.env.SIXTOUCH_DISTANT === '1' ? racine : '';
+/**
+ * Espace de travail utilisable pour cette demande : le dossier de l'environnement de la discussion, sinon le dossier
+ * par défaut (local seulement, voir lib/espace-travail.ts).
+ */
+export function espacePourDemande(req: Request, dossier?: string): Promise<string> {
+  return espaceAutorise(req, dossier);
 }

@@ -94,6 +94,10 @@ export interface PieceAffichee {
   nom: string;
   /** Petite image JPEG (data URL) : la capture, l'image, la première image de la vidéo. */
   apercu?: string;
+  /** Chemin complet du fichier sur l'ordinateur (app de bureau), montré sur la carte à la place du nom. */
+  chemin?: string;
+  /** Début d'un texte collé, montré sur la carte. */
+  extrait?: string;
 }
 
 export interface ChatMessage {
@@ -106,6 +110,13 @@ export interface ChatMessage {
   fichiers?: string[];
   /** Chat : lieux trouvés dans OpenStreetMap, montrés sur une carte sous la réponse. Affichage seulement. */
   lieux?: LieuCarte[];
+  /** Cosinus : la liste de tâches de l'agent, cochées une à une (lib/agent/plan.ts). */
+  plan?: { texte: string; faite: boolean }[];
+  /** Moment de l'envoi (ms). */
+  date?: number;
+  /** Question modifiée ou relancée : les autres versions de la suite de la discussion (lib/versions.ts). */
+  precedentes?: ChatMessage[][];
+  suivantes?: ChatMessage[][];
 }
 
 export interface ChatResult {

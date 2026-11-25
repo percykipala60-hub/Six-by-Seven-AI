@@ -12,6 +12,8 @@ import { ecouterCompte, lireCompte, type Compte } from '@/lib/compte';
 import { AvatarContenu } from './AvatarContenu';
 import { LIEN_CONFIDENTIALITE } from '@/lib/liens';
 import { effacerChat, ecouterChats, lireChats, type ChatSeven } from '@/lib/seven-chats';
+import { Recents, type ElementRecent } from './Recents';
+import { ScannerQr } from './ScannerQr';
 import {
   effacerConversationGardee,
   ecouterConversations,
@@ -155,11 +157,9 @@ export function AppBar({
   const [chats, setChats] = useState<ChatSeven[]>([]);
   const [demandeEffacer, demanderEffacer] = useConfirmer();
   // Trois éléments visibles par défaut sous chaque outil ; « Voir plus » déplie toute la liste.
-  const [plusReponses, setPlusReponses] = useState(false);
-  const [plusChats, setPlusChats] = useState(false);
-  const [plusSixTouch, setPlusSixTouch] = useState(false);
-  const chatsChat = chats.filter((c) => c.mode !== 'sixtouch');
-  const chatsSixTouch = chats.filter((c) => c.mode === 'sixtouch');
+  const [recherche, setRecherche] = useState('');
+  const [scanner, setScanner] = useState(false);
+  const [rechercheOuverte, setRechercheOuverte] = useState(false);
   const [reponses, setReponses] = useState<ConversationGardee[]>([]);
   useEffect(() => {
     const lire = () => setChats(lireChats());
@@ -171,6 +171,62 @@ export function AppBar({
     lire();
     return ecouterConversations(lire);
   }, []);
+  // « Récents » : les discussions de l'espace ouvert (Responsive : réponses gardées ; ailleurs : toutes).
+  const effacerDiscussion = (c: ChatSeven) =>
+    demanderEffacer({
+      titre: 'Effacer cette discussion ?',
+      texte: `« ${c.titre} » sera effacée de cet appareil.`,
+      action: 'Effacer',
+      danger: true,
+      onConfirmer: () => effacerChat(c.id),
+    });
+  const versRecent = (c: ChatSeven): ElementRecent => {
+    const cosinus = c.mode === 'sixtouch';
+    return {
+      id: c.id,
+      titre: c.titre,
+      href: `${cosinus ? '/cosinus' : '/chat'}?c=${encodeURIComponent(c.id)}`,
+      actif: c.id === chatActif && page === (cosinus ? 'sixtouch' : 'seven-ai'),
+      chat: c,
+      onEffacer: () => effacerDiscussion(c),
+    };
+  };
+  const recents: ElementRecent[] =
+    page === 'accueil'
+      ? reponses.map((g) => ({
+          id: g.id,
+          titre: titreReponse(g),
+          href: `/responsive?g=${encodeURIComponent(g.id)}`,
+          actif: false,
+          onEffacer: () =>
+            demanderEffacer({
+              titre: 'Effacer cette réponse ?',
+              texte: 'Elle sera effacée de cet appareil.',
+              action: 'Effacer',
+              danger: true,
+              onConfirmer: () => effacerConversationGardee(g.id),
+            }),
+        }))
+      : page === 'sixtouch'
+        ? chats.filter((c) => c.mode === 'sixtouch' && !c.archive).map(versRecent)
+        : page === 'seven-ai'
+          ? chats.filter((c) => c.mode !== 'sixtouch' && !c.archive).map(versRecent)
+          : chats.filter((c) => !c.archive).map(versRecent);
+  // Discussions archivées de l'espace ouvert (section « Archivées » en bas de « Récents »).
+  const archives: ElementRecent[] =
+    page === 'accueil'
+      ? []
+      : chats
+          .filter(
+            (c) =>
+              c.archive &&
+              (page === 'sixtouch'
+                ? c.mode === 'sixtouch'
+                : page === 'seven-ai'
+                  ? c.mode !== 'sixtouch'
+                  : true),
+          )
+          .map(versRecent);
   const panel = useRef<HTMLDivElement>(null);
   const opener = useRef<HTMLButtonElement>(null);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
@@ -297,6 +353,7 @@ export function AppBar({
       </header>
       <Rail page={page} onPanneau={() => setOpen(true)} onNouvelle={onNouvelle} />
       {demandeEffacer}
+      {scanner && <ScannerQr onFermer={() => setScanner(false)} />}
       <div
         className={`drawer-scrim${open ? ' open' : ''}`}
         onClick={() => setOpen(false)}
@@ -354,158 +411,64 @@ export function AppBar({
             <Icon name="nouvelle" /> Nouvelle conversation
           </Link>
         )}
-        {/* Chaque outil, avec juste dessous son propre historique : Responsive → réponses gardées,
-            Chat → discussions avec Six. Réglages et confidentialité restent en bas. */}
+        {/* Comme dans Claude : Rechercher, les trois espaces, puis « Récents » (les discussions de l'espace ouvert ;
+            dans Cosinus, groupées par dossier comme dans Claude Code). Réglages et confidentialité restent en bas. */}
         <nav aria-label="Navigation principale" className="drawer-nav">
+          <button
+            type="button"
+            className="drawer-item"
+            aria-expanded={rechercheOuverte}
+            onClick={() => {
+              setRechercheOuverte((v) => !v);
+              setRecherche('');
+            }}
+          >
+            <Icon name="search" />
+            <span>Rechercher</span>
+          </button>
+          {rechercheOuverte && (
+            <input
+              className="drawer-recherche"
+              // eslint-disable-next-line jsx-a11y/no-autofocus -- la recherche vient d'être ouverte par un clic
+              autoFocus
+              value={recherche}
+              onChange={(e) => setRecherche(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  setRechercheOuverte(false);
+                  setRecherche('');
+                }
+              }}
+              placeholder="Rechercher une discussion"
+              aria-label="Rechercher une discussion"
+            />
+          )}
           {item('/responsive', 'accueil', <Icon name="repondre" />, 'Responsive')}
-          {reponses.length > 0 && (
-            <div className="drawer-sous" role="group" aria-label="Réponses gardées">
-              {(plusReponses ? reponses : reponses.slice(0, PAR_DEFAUT)).map((g) => {
-                const titre = titreReponse(g);
-                return (
-                  <div className="drawer-chat-ligne" key={g.id}>
-                    <Link
-                      href={`/responsive?g=${encodeURIComponent(g.id)}`}
-                      className="drawer-chat"
-                      onClick={apresLien}
-                      title={titre}
-                    >
-                      {titre}
-                    </Link>
-                    <button
-                      type="button"
-                      className="drawer-chat-effacer"
-                      aria-label={`Effacer « ${titre} »`}
-                      title="Effacer"
-                      onClick={() =>
-                        demanderEffacer({
-                          titre: 'Effacer cette réponse ?',
-                          texte: 'Elle sera effacée de cet appareil.',
-                          action: 'Effacer',
-                          danger: true,
-                          onConfirmer: () => effacerConversationGardee(g.id),
-                        })
-                      }
-                    >
-                      <Icon name="trash" size={15} stroke={1.75} />
-                    </button>
-                  </div>
-                );
-              })}
-              {reponses.length > PAR_DEFAUT && (
-                <button
-                  type="button"
-                  className="drawer-voir-plus"
-                  aria-expanded={plusReponses}
-                  onClick={() => setPlusReponses((v) => !v)}
-                >
-                  {plusReponses ? 'Voir moins' : `Voir plus (${reponses.length - PAR_DEFAUT})`}
-                </button>
-              )}
-            </div>
-          )}
           {item('/chat', 'seven-ai', <Icon name="discuter" />, 'Chat')}
-          {chatsChat.length > 0 && (
-            <div className="drawer-sous" role="group" aria-label="Discussions avec Six">
-              {(plusChats ? chatsChat : chatsChat.slice(0, PAR_DEFAUT)).map((c) => (
-                <div
-                  className="drawer-chat-ligne"
-                  key={c.id}
-                  data-actif={page === 'seven-ai' && c.id === chatActif ? '' : undefined}
-                >
-                  <Link
-                    href={`/chat?c=${encodeURIComponent(c.id)}`}
-                    className="drawer-chat"
-                    aria-current={page === 'seven-ai' && c.id === chatActif ? 'page' : undefined}
-                    onClick={apresLien}
-                    title={c.titre}
-                  >
-                    {c.titre}
-                  </Link>
-                  <button
-                    type="button"
-                    className="drawer-chat-effacer"
-                    aria-label={`Effacer la discussion « ${c.titre} »`}
-                    title="Effacer"
-                    onClick={() =>
-                      demanderEffacer({
-                        titre: 'Effacer cette discussion ?',
-                        texte: `« ${c.titre} » sera effacée de cet appareil.`,
-                        action: 'Effacer',
-                        danger: true,
-                        onConfirmer: () => effacerChat(c.id),
-                      })
-                    }
-                  >
-                    <Icon name="trash" size={15} stroke={1.75} />
-                  </button>
-                </div>
-              ))}
-              {chatsChat.length > PAR_DEFAUT && (
-                <button
-                  type="button"
-                  className="drawer-voir-plus"
-                  aria-expanded={plusChats}
-                  onClick={() => setPlusChats((v) => !v)}
-                >
-                  {plusChats ? 'Voir moins' : `Voir plus (${chatsChat.length - PAR_DEFAUT})`}
-                </button>
-              )}
-            </div>
-          )}
           {item('/cosinus', 'sixtouch', <Icon name="sixtouch" />, 'Cosinus')}
           {item('/projets', 'projets', <Icon name="file" />, 'Projets')}
           {item('/taches', 'taches', <Icon name="file" />, 'Tâches planifiées')}
-          {chatsSixTouch.length > 0 && (
-            <div className="drawer-sous" role="group" aria-label="Travaux avec Six">
-              {(plusSixTouch ? chatsSixTouch : chatsSixTouch.slice(0, PAR_DEFAUT)).map((c) => (
-                <div
-                  className="drawer-chat-ligne"
-                  key={c.id}
-                  data-actif={page === 'sixtouch' && c.id === chatActif ? '' : undefined}
-                >
-                  <Link
-                    href={`/cosinus?c=${encodeURIComponent(c.id)}${c.projetId ? `&projet=${encodeURIComponent(c.projetId)}` : ''}`}
-                    className="drawer-chat"
-                    aria-current={page === 'sixtouch' && c.id === chatActif ? 'page' : undefined}
-                    onClick={apresLien}
-                    title={c.titre}
-                  >
-                    {c.titre}
-                  </Link>
-                  <button
-                    type="button"
-                    className="drawer-chat-effacer"
-                    aria-label={`Effacer la discussion « ${c.titre} »`}
-                    title="Effacer"
-                    onClick={() =>
-                      demanderEffacer({
-                        titre: 'Effacer cette discussion ?',
-                        texte: `« ${c.titre} » sera effacée de cet appareil.`,
-                        action: 'Effacer',
-                        danger: true,
-                        onConfirmer: () => effacerChat(c.id),
-                      })
-                    }
-                  >
-                    <Icon name="trash" size={15} stroke={1.75} />
-                  </button>
-                </div>
-              ))}
-              {chatsSixTouch.length > PAR_DEFAUT && (
-                <button
-                  type="button"
-                  className="drawer-voir-plus"
-                  aria-expanded={plusSixTouch}
-                  onClick={() => setPlusSixTouch((v) => !v)}
-                >
-                  {plusSixTouch ? 'Voir moins' : `Voir plus (${chatsSixTouch.length - PAR_DEFAUT})`}
-                </button>
-              )}
-            </div>
-          )}
         </nav>
+        <Recents
+          elements={recents}
+          archives={archives}
+          parDossier={page === 'sixtouch'}
+          recherche={recherche}
+          apresLien={apresLien}
+        />
         <nav aria-label="Réglages" className="drawer-nav drawer-bas">
+          {/* Connexion d'un autre appareil par code QR (comme Steam) : on scanne le code de son écran de connexion. */}
+          <button
+            type="button"
+            className="drawer-item"
+            onClick={() => {
+              apresLien();
+              setScanner(true);
+            }}
+          >
+            <Icon name="qr" />
+            <span>Scanner un code QR</span>
+          </button>
           {item('/reglages', 'reglages', <Icon name="sliders" />, 'Réglages')}
           <a
             href={LIEN_CONFIDENTIALITE}
@@ -528,7 +491,6 @@ export function AppBar({
 }
 
 const CLE_PANNEAU = 'six-panneau';
-const PAR_DEFAUT = 3; // éléments d'historique visibles sous chaque outil avant « Voir plus »
 const GRAND_ECRAN = '(min-width: 768px)'; // même seuil que la barre verticale (.rail, app/globals.css)
 
 /** Vrai sur grand écran (au moins 768 px de large), suivi en direct quand la fenêtre change de taille. */

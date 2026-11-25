@@ -7,6 +7,33 @@ import { Icon } from './Icon';
 import { BoutonPartager } from './BoutonPartager';
 import { estBureau } from '@/lib/plateforme';
 import { CarteLieux } from './CarteLieux';
+import { lireDocx, texteDeBlocs } from '@/lib/docx';
+import { NOM_TEXTE_COLLE, extraitTexte, piecesDuCollage } from '@/lib/collage';
+import {
+  mettreEnFile,
+  prochainMessage,
+  rendreALaSaisie,
+  retirerDeFile,
+  type MessageEnFile,
+} from '@/lib/file-messages';
+import {
+  environnementDuDossier,
+  lireEnvironnement,
+  lireEnvironnements,
+  lireEnvironnementsCloud,
+  nomDossier,
+  utiliserEnvironnement,
+  type Environnement,
+} from '@/lib/environnements';
+import { changerVersion, jusquA, nouvelleVersion } from '@/lib/versions';
+import { ActionsMessage } from './ActionsMessage';
+import {
+  CarteEnvironnements,
+  SelecteurEnvironnement,
+  cheminDuFichier,
+  useEtatEspace,
+} from './ChoixEnvironnement';
+import { PlanTaches } from './PlanTaches';
 import { Logo } from './Logo';
 import { PiecesJointes } from './PiecesJointes';
 import { ArtefactPanneau, Artefacts, type ArtefactOuvert } from './Artefacts';
@@ -279,8 +306,34 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     pont?.signaler?.({ volet: sixtouch ? volet : null, cosinus: sixtouch });
     return () => pont?.signaler?.({ volet: null, cosinus: false });
   }, [volet, sixtouch]);
-  // Cosinus : étapes de l'agent reçues pendant la tâche en cours.
+  // Cosinus : étapes de l'agent reçues pendant la tâche en cours, et sa liste de tâches (cochée une à une).
   const [etapesEnCours, setEtapesEnCours] = useState<string[]>([]);
+  const [planEnCours, setPlanEnCours] = useState<{ texte: string; faite: boolean }[]>([]);
+  // Messages envoyés pendant que Six répond : ils partent dans l'ordre dès que la réponse en cours est arrivée.
+  const [file, setFile] = useState<MessageEnFile<Piece>[]>([]);
+  const fileRef = useRef(file);
+  fileRef.current = file;
+  // Cosinus : dossier de l'environnement de la discussion (demandé avant de commencer, quand Six tourne en local).
+  // Environnement de la discussion (nom + dossiers) ; une ancienne discussion peut n'avoir qu'un dossier.
+  const [env, setEnv] = useState<Environnement | undefined>();
+  const [dossierAncien, setDossierAncien] = useState('');
+  // Environnement cloud : pas de dossier de l'ordinateur, Six travaille sur les fichiers du compte (Supabase).
+  const enCloud = env?.type === 'cloud';
+  const dossier = enCloud ? '' : (env?.dossiers[0] ?? dossierAncien);
+  const lecture = enCloud ? [] : (env?.dossiers.slice(1) ?? []);
+  // Ce que montre le volet Fichiers : « cloud:<id> » (Auto : le cloud par défaut), sinon le dossier de travail.
+  const vueFichiers = enCloud
+    ? `cloud:${
+        env?.cloud === 'auto'
+          ? (lireEnvironnementsCloud().find((e) => e.parDefaut)?.cloud ?? '')
+          : (env?.cloud ?? '')
+      }`
+    : dossier;
+  const espace = useEtatEspace(sixtouch);
+  // Cosinus travaille TOUJOURS dans un environnement : un dossier de l'ordinateur ou le Cloud. Une nouvelle
+  // discussion reprend le dernier environnement utilisé ; sans environnement, rien ne part.
+  const dossierRequis = sixtouch;
+  const choixEnvironnement = sixtouch;
   // Pièces jointes en attente dans la barre (carrés) : images, vidéos, documents, capture du navigateur.
   const [pieces, setPieces] = useState<Piece[]>([]);
   const [attentePieces, setAttentePieces] = useState<PieceAffichee[]>([]);
@@ -332,6 +385,8 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   useEffect(() => {
     if (volet) setArtefactOuvert(null);
   }, [volet]);
+  const envDemande = params.get('e') ?? ''; // Cosinus : nouvelle discussion dans cet environnement
+  const dossierDemande = params.get('d') ?? ''; // (ancien lien : dans ce dossier)
   const chatId = useRef('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [saisie, setSaisie] = useState('');
@@ -343,17 +398,28 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     affichage?: string;
     document?: string;
     jointes?: Piece[];
+    reprise?: { index: number; pieces?: PieceAffichee[] };
   }>();
   const documentActif = useRef('');
   const [documentAReimporter, setDocumentAReimporter] = useState(false);
   const [enAttente, setEnAttente] = useState(''); // question envoyée, réponse pas encore arrivée
-  const [lectureDoc, setLectureDoc] = useState(false); // lecture locale d'un fichier (non annulable)
+  // Fichiers en cours de lecture sur l'appareil : la saisie reste libre pendant ce temps (et pendant la réponse).
+  const [lectures, setLectures] = useState(0);
+  // Dictée ou transcription d'un vocal en cours (indépendante de la réponse de Six).
+  const [micOccupe, setMicOccupe] = useState(false);
+  const [depot, setDepot] = useState(false); // un fichier glissé survole la barre
   const operation = useRef<AbortController | null>(null);
+  const operationMicro = useRef<AbortController | null>(null);
   const arretVolontaire = useRef(false); // la personne a touché « Arrêter »
+  const messagesRef = useRef<ChatMessage[]>([]);
 
-  async function requete(url: string, init: RequestInit): Promise<Response> {
+  async function requete(
+    url: string,
+    init: RequestInit,
+    ref: { current: AbortController | null } = operation,
+  ): Promise<Response> {
     const controleur = new AbortController();
-    operation.current = controleur;
+    ref.current = controleur;
     const delai = setTimeout(() => controleur.abort(new Error('Délai dépassé. Réessaie.')), 90000);
     try {
       const response = await fetch(url, { ...init, signal: controleur.signal });
@@ -367,7 +433,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       throw error;
     } finally {
       clearTimeout(delai);
-      if (operation.current === controleur) operation.current = null;
+      if (ref.current === controleur) ref.current = null;
     }
   }
 
@@ -378,7 +444,13 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   async function requeteAgent(
     url: string,
     init: RequestInit,
-  ): Promise<ChatResult & { etapes?: string[]; fichiers?: string[] }> {
+  ): Promise<
+    ChatResult & {
+      etapes?: string[];
+      fichiers?: string[];
+      plan?: { texte: string; faite: boolean }[];
+    }
+  > {
     const controleur = new AbortController();
     operation.current = controleur;
     const delai = setTimeout(() => controleur.abort(new Error('Délai dépassé. Réessaie.')), 300000);
@@ -410,7 +482,10 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
             error?: string;
             session?: string;
             url?: string;
+            taches?: { texte: string; faite: boolean }[];
+            plan?: { texte: string; faite: boolean }[];
           };
+          if (o.type === 'plan' && Array.isArray(o.taches)) setPlanEnCours(o.taches);
           if (o.type === 'navigateur' && o.session && o.url) {
             sessionStorage.setItem(
               'six-navigateur-agent',
@@ -431,6 +506,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
               demo: false,
               etapes: o.etapes,
               fichiers: o.fichiers,
+              plan: o.plan,
             };
         }
       }
@@ -449,7 +525,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
 
   async function dictee(): Promise<string> {
     const controleur = new AbortController();
-    operation.current = controleur;
+    operationMicro.current = controleur;
     const delai = setTimeout(() => controleur.abort(), 60000);
     try {
       if ((await plateforme()) !== 'web') {
@@ -468,7 +544,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       return await dicterTexte(controleur.signal);
     } finally {
       clearTimeout(delai);
-      if (operation.current === controleur) operation.current = null;
+      if (operationMicro.current === controleur) operationMicro.current = null;
     }
   }
   const verrouMicro = useRef(false);
@@ -520,13 +596,29 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     setSaisie('');
     setErreur('');
     setDernierEchec(undefined);
+    setFile([]);
+    setPlanEnCours([]);
+    // Environnement : celui de la discussion ; pour une nouvelle, celui demandé, sinon le dernier utilisé.
+    const envTrouve = chat
+      ? chat.environnement
+        ? lireEnvironnement(chat.environnement)
+        : chat.dossier
+          ? environnementDuDossier(chat.dossier)
+          : undefined
+      : envDemande
+        ? lireEnvironnement(envDemande)
+        : dossierDemande
+          ? environnementDuDossier(dossierDemande)
+          : lireEnvironnements()[0];
+    setEnv(envTrouve);
+    setDossierAncien(envTrouve ? '' : (chat ? chat.dossier : dossierDemande) || '');
     documentActif.current = '';
     setDocumentAReimporter(
       historique.some((message) => message.role === 'user' && message.content.startsWith('📄 ')),
     );
     setMemOn(memoireActive());
     if (window.matchMedia('(pointer: fine)').matches) champ.current?.focus();
-  }, [demandee, projetDemande]);
+  }, [demandee, projetDemande, envDemande, dossierDemande]);
 
   useEffect(() => {
     const controleur = new AbortController();
@@ -557,6 +649,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   const nbMessages = useRef(0);
   useEffect(() => {
     nbMessages.current = messages.length;
+    messagesRef.current = messages;
   }, [messages]);
   useEffect(
     () =>
@@ -598,8 +691,18 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   }, [messages, occupe, suivreFin]);
 
   function pousser(fil: ChatMessage[]) {
+    messagesRef.current = fil;
     setMessages(fil);
-    garderChat(chatId.current, fil, mode, projetId || undefined);
+    garderChat(chatId.current, fil, mode, projetId || undefined, dossier, env?.id);
+  }
+
+  /** Cosinus : l'environnement est choisi (ou changé avant le premier message). */
+  function choisirEnvironnement(e: Environnement) {
+    setEnv(e);
+    setDossierAncien('');
+    utiliserEnvironnement(e.id);
+    setErreur('');
+    champ.current?.focus();
   }
 
   /**
@@ -612,14 +715,32 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     affichage?: string,
     document?: string,
     jointes: Piece[] = affichage ? [] : pieces,
-    depuisVocal = false,
+    depuisFile = false,
+    /** Modifier ou relancer la question n° index : l'ancienne suite devient une version précédente. */
+    reprise?: { index: number; pieces?: PieceAffichee[] },
   ) {
-    if (!depuisVocal && (occupe || enregistre)) return;
+    if (enregistre && !depuisFile) return;
     const docs = jointes.filter((p) => p.genre === 'document');
     const visuels = jointes.filter((p) => p.genre !== 'document');
     const images = visuels.flatMap((p) => p.images);
     const question = texte.trim();
     if (!question && !jointes.length) return;
+    // Six répond encore : le message attend son tour, et la barre se libère tout de suite pour la suite.
+    if (occupe && !affichage) {
+      setFile((f) => mettreEnFile(f, texte, jointes));
+      setSaisie('');
+      setPieces([]);
+      return;
+    }
+    if (dossierRequis && !dossier && !enCloud) {
+      setErreur(
+        espace.local
+          ? 'Choisis d’abord l’environnement de cette discussion (sous la barre de saisie).'
+          : 'Choisis d’abord l’environnement de cette discussion : ton Cloud (connecte-toi à ton compte), ou un dossier de l’ordinateur dans l’app de bureau.',
+      );
+      return;
+    }
+    const ancien = messagesRef.current;
     if (images.length > IMAGES_MAX) {
       setErreur(
         `Six lit ${IMAGES_MAX} images au plus par message (ici ${images.length}). Retire une pièce jointe.`,
@@ -652,22 +773,32 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     // Ce qu'on montre dans la bulle (et garde dans l'historique) : la question, sinon le nom des pièces.
     const etiquettes = jointes.map((p) => `${ICONE_PIECE[p.genre]} ${p.nom}`).join(', ');
     const visible = (affichage ?? (question || etiquettes)).trim();
-    const affichees = jointes.map(versAffichage);
-    const fil = [
-      ...messages,
-      {
-        role: 'user' as const,
-        content: visible,
-        ...(affichees.length ? { pieces: affichees } : {}),
-      },
-    ].slice(-MAX_MSG);
+    const affichees = reprise?.pieces ?? jointes.map(versAffichage);
+    const questionAffichee: ChatMessage = {
+      role: 'user',
+      content: visible,
+      date: Date.now(),
+      ...(affichees.length ? { pieces: affichees } : {}),
+    };
+    const version = reprise ? nouvelleVersion(ancien, reprise.index, questionAffichee) : null;
+    const messages = version ? version.avant : ancien;
+    const fil = [...messages, version ? version.question : questionAffichee].slice(-MAX_MSG);
+    if (version) {
+      // La suite remplacée disparaît de l'écran pendant la réponse (elle reste gardée comme version précédente).
+      messagesRef.current = messages;
+      setMessages(messages);
+    }
     setDernierEchec(undefined);
     setOccupe(true);
     setErreur('');
     setEnAttente(visible); // la question s'affiche tout de suite, en attendant la réponse
     setAttentePieces(affichees);
-    setSaisie(''); // et quitte la barre, comme dans les autres assistants (« Réessayer » la garde en cas d'échec)
-    if (!affichage) setPieces([]);
+    // Le message quitte la barre, comme dans les autres assistants (« Réessayer » le garde en cas d'échec). Un message
+    // qui sort de la file ne touche pas à la barre : la personne y écrit peut-être déjà la suite.
+    if (!depuisFile) {
+      setSaisie('');
+      if (!affichage) setPieces([]);
+    }
     arretVolontaire.current = false;
 
     // Pilotage : un ordre (« ouvre les réglages ») navigue directement, sans appel à l'IA.
@@ -675,7 +806,6 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     const ordre = affichage || jointes.length ? null : detecterOrdre(texte);
     if (ordre) {
       pousser([...fil, { role: 'assistant' as const, content: ordre.reponse }].slice(-MAX_MSG));
-      setSaisie('');
       setEnAttente('');
       setAttentePieces([]);
       setOccupe(false);
@@ -701,6 +831,8 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
                     mode: 'sixtouch',
                     skill,
                     ...(projetId ? { projetId } : {}),
+                    ...(enCloud && env?.cloud ? { cloud: env.cloud } : dossier ? { dossier } : {}),
+                    ...(lecture.length ? { dossiersLecture: lecture } : {}),
                     navigateurSession: JSON.parse(
                       sessionStorage.getItem('six-navigateur-agent') || '{}',
                     ).session,
@@ -722,7 +854,13 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         body: corps,
       };
       setEtapesEnCours([]);
-      let data: ChatResult & { error?: string; etapes?: string[]; fichiers?: string[] };
+      setPlanEnCours([]);
+      let data: ChatResult & {
+        error?: string;
+        etapes?: string[];
+        fichiers?: string[];
+        plan?: { texte: string; faite: boolean }[];
+      };
       if (sixtouch) data = await requeteAgent('/api/chat', initEnvoi);
       else {
         const res = await requete('/api/chat', initEnvoi);
@@ -734,10 +872,12 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       }
       const reponseSix: ChatMessage = {
         role: 'assistant',
+        date: Date.now(),
         content: data.reponse,
         ...(data.etapes?.length ? { etapes: data.etapes } : {}),
         ...(data.fichiers?.length ? { fichiers: data.fichiers } : {}),
         ...(data.lieux?.length ? { lieux: data.lieux } : {}),
+        ...(data.plan?.length ? { plan: data.plan } : {}),
       };
       // Un fichier vient d'être enregistré par l'agent : l'onglet Fichiers se met à jour.
       if (data.fichiers?.length) window.dispatchEvent(new Event('six-espace-maj'));
@@ -756,10 +896,21 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         documentActif.current = docEnvoye;
         setDocumentAReimporter(false);
       }
-      setSaisie('');
       return data.reponse;
     } catch (e) {
-      setDernierEchec({ texte, affichage, document, jointes });
+      setDernierEchec({ texte, affichage, document, jointes, reprise });
+      // Modification ou relance qui échoue : la discussion revient telle qu'elle était.
+      if (version) {
+        messagesRef.current = ancien;
+        setMessages(ancien);
+      }
+      // Échec ou arrêt : les messages en attente reviennent dans la barre au lieu de partir sans contexte.
+      const enFile = fileRef.current;
+      if (enFile.length) {
+        setFile([]);
+        setSaisie((s) => rendreALaSaisie(enFile, s, []).texte);
+        setPieces((p) => rendreALaSaisie(enFile, '', p).pieces);
+      }
       // Arrêt demandé par la personne : pas de message d'erreur, juste « Réessayer ».
       setErreur(
         arretVolontaire.current
@@ -771,6 +922,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     } finally {
       setEnAttente('');
       setAttentePieces([]);
+      setPlanEnCours([]);
       setOccupe(false);
     }
   }
@@ -852,6 +1004,15 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       raccrocher();
     }
   }
+  // La réponse est arrivée : le message suivant de la file part (un seul à la fois, dans l'ordre).
+  useEffect(() => {
+    if (occupe || !file.length) return;
+    const { message, reste } = prochainMessage(file);
+    if (!message) return;
+    setFile(reste);
+    void envoyer(message.texte, undefined, undefined, message.pieces, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- envoyer change à chaque rendu ; seul l'état compte
+  }, [occupe, file]);
 
   // — Pièces jointes (bouton +) : préparées sur l'appareil, puis montrées en carrés dans la barre. Elles partent avec
   // le prochain message. Images réduites, vidéos découpées en images, documents lus (texte ou PDF). —
@@ -865,17 +1026,18 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
               partie.startsWith('.') || ['node_modules', 'dist', 'build'].includes(partie),
           ),
     );
-    if (!fichiers.length || occupe) return;
+    if (!fichiers.length) return;
     if (fichiers.length + pieces.length > 100) {
       setErreur('Ajoute au plus 100 fichiers à la fois. Choisis un sous-dossier plus petit.');
       return;
     }
-    setOccupe(true);
-    setLectureDoc(true);
+    // La lecture se fait à côté de la réponse en cours : on peut joindre ou coller à tout moment.
+    setLectures((n) => n + fichiers.length);
     setErreur('');
     const nouvelles: Piece[] = [];
     for (const fichier of fichiers) {
       try {
+        const chemin = cheminDuFichier(fichier);
         const estVideo =
           fichier.type.startsWith('video/') ||
           /\.(mp4|mov|m4v|webm|mkv|avi|3gp)$/i.test(fichier.name);
@@ -884,22 +1046,22 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
           /\.(png|jpe?g|webp|gif|bmp|avif|heic|heif|svg)$/i.test(fichier.name);
         if (fichier.size > (estVideo ? MAX_VIDEO : MAX_FICHIER))
           throw new Error(`le fichier dépasse ${estVideo ? '500' : '20'} Mo.`);
+        const nom = fichier.webkitRelativePath || fichier.name;
         if (estImage)
-          nouvelles.push({
-            ...(await lireImage(fichier)),
-            nom: fichier.webkitRelativePath || fichier.name,
-          });
+          nouvelles.push({ ...(await lireImage(fichier)), nom, ...(chemin ? { chemin } : {}) });
         else if (estVideo)
-          nouvelles.push({
-            ...(await lireVideo(fichier)),
-            nom: fichier.webkitRelativePath || fichier.name,
-          });
+          nouvelles.push({ ...(await lireVideo(fichier)), nom, ...(chemin ? { chemin } : {}) });
         else {
           const estPdf = fichier.type === 'application/pdf' || /\.pdf$/i.test(fichier.name);
-          let texte = estPdf ? await extrairePdf(fichier) : await fichier.text();
-          if (!estPdf && (texte.includes('\0') || texte.includes('\uFFFD')))
+          const estDocx = /\.docx$/i.test(fichier.name);
+          let texte = estPdf
+            ? await extrairePdf(fichier)
+            : estDocx
+              ? texteDeBlocs(await lireDocx(await fichier.arrayBuffer()))
+              : await fichier.text();
+          if (!estPdf && !estDocx && (texte.includes('\0') || texte.includes('\uFFFD')))
             throw new Error(
-              'format binaire non pris en charge. Utilise un PDF ou un fichier texte UTF-8.',
+              'format binaire non pris en charge. Utilise un PDF, un document Word ou un fichier texte UTF-8.',
             );
           if (!texte.trim()) throw new Error('ce fichier ne contient pas de texte lisible.');
           while (encoder.encode(JSON.stringify(texte)).length > TAILLE_DOC_MAX)
@@ -910,17 +1072,19 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
             nom: fichier.webkitRelativePath || fichier.name,
             texte,
             images: [],
+            ...(chemin ? { chemin } : {}),
+            ...(fichier.name === NOM_TEXTE_COLLE ? { extrait: extraitTexte(texte) } : {}),
           });
         }
       } catch (e) {
         setErreur(
           `Lecture de « ${fichier.name} » impossible : ${e instanceof Error ? e.message : 'réessaie.'}`,
         );
+      } finally {
+        setLectures((n) => Math.max(0, n - 1));
       }
     }
     setPieces((p) => [...p, ...nouvelles]);
-    setLectureDoc(false);
-    setOccupe(false);
     if (docInput.current) docInput.current.value = '';
     if (dossierInput.current) dossierInput.current.value = '';
     champ.current?.focus();
@@ -933,11 +1097,11 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       mediaRecorder.current?.stop(); // la fin déclenche l'envoi dans onstop
       return;
     }
-    if (occupe || verrouMicro.current) return;
+    if (micOccupe || verrouMicro.current) return;
     setErreur('');
     verrouMicro.current = true;
     if ((await plateforme()) !== 'web') {
-      setOccupe(true);
+      setMicOccupe(true);
       let texte = '';
       try {
         texte = await dictee();
@@ -945,7 +1109,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         setErreur(await messageErreurDictee(e));
       } finally {
         verrouMicro.current = false;
-        setOccupe(false);
+        setMicOccupe(false);
       }
       if (texte.trim()) {
         setSaisie(texte.trim());
@@ -987,7 +1151,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         return;
       }
       verrouMicro.current = true;
-      setOccupe(true);
+      setMicOccupe(true);
       let texte = '';
       try {
         texte = await dictee();
@@ -995,7 +1159,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         setErreur(await messageErreurDictee(e));
       } finally {
         verrouMicro.current = false;
-        setOccupe(false);
+        setMicOccupe(false);
       }
       if (texte.trim()) {
         setSaisie(texte.trim());
@@ -1062,13 +1226,17 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   }
 
   async function envoyerVocal(blob: Blob) {
-    setOccupe(true);
+    setMicOccupe(true);
     setErreur('');
     let texte = '';
     try {
       const form = new FormData();
       form.append('audio', blob);
-      const res = await requete('/api/chat/transcription', { method: 'POST', body: form });
+      const res = await requete(
+        '/api/chat/transcription',
+        { method: 'POST', body: form },
+        operationMicro,
+      );
       const data = (await res.json().catch(() => ({}))) as { texte?: string; error?: string };
       if (!res.ok || !data.texte) throw new Error(data.error ?? 'Transcription impossible.');
       texte = data.texte.trim();
@@ -1091,7 +1259,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       } else
         setErreur(e instanceof Error ? e.message : 'Transcription impossible. Réessaie ou écris.');
     } finally {
-      setOccupe(false);
+      setMicOccupe(false);
     }
     if (texte) {
       setSaisie(texte);
@@ -1115,6 +1283,58 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     () => versionsDe(messages.filter((m) => m.role === 'assistant').map((m) => m.content)),
     [messages],
   );
+  // — Actions sur les messages (comme dans Claude) : relancer, modifier, partir d'ici, Word. —
+  const [edition, setEdition] = useState<{ index: number; texte: string } | null>(null);
+  function relancer(i: number) {
+    const m = messagesRef.current[i];
+    if (!m || m.role !== 'user' || occupe) return;
+    setEdition(null);
+    void envoyer(m.content, undefined, undefined, [], true, { index: i, pieces: m.pieces });
+  }
+  function validerEdition() {
+    if (!edition || occupe) return;
+    const m = messagesRef.current[edition.index];
+    const texte = edition.texte.trim();
+    if (!m || !texte) return;
+    setEdition(null);
+    void envoyer(texte, undefined, undefined, [], true, { index: edition.index, pieces: m.pieces });
+  }
+  /** Nouvelle discussion qui reprend celle-ci jusqu'à ce message (même dossier pour Cosinus). */
+  function bifurquer(i: number) {
+    if (!memoireActive()) {
+      setErreur(
+        'Active la mémoire de Six (Réglages → Mémoire) pour garder une nouvelle discussion.',
+      );
+      return;
+    }
+    const id = nouvelId();
+    garderChat(id, jusquA(messagesRef.current, i), mode, projetId || undefined, dossier, env?.id);
+    router.push(`${base}?c=${encodeURIComponent(id)}`);
+  }
+  /** Le Chat comme Cosinus produisent un fichier Word à partir d'une réponse (sans agent). */
+  async function telechargerWord(m: ChatMessage) {
+    setErreur('');
+    try {
+      const nom = titreDe(messagesRef.current) || 'Réponse de Six';
+      const r = await fetch('/api/document', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ contenu: m.content, nom }),
+      });
+      if (!r.ok) {
+        const d = (await r.json().catch(() => ({}))) as { error?: string };
+        throw new Error(d.error ?? 'Création du document Word impossible.');
+      }
+      const url = URL.createObjectURL(await r.blob());
+      const lien = window.document.createElement('a');
+      lien.href = url;
+      lien.download = `${nom}.docx`;
+      lien.click();
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    } catch (e) {
+      setErreur(e instanceof Error ? e.message : 'Création du document Word impossible.');
+    }
+  }
 
   // Partager la discussion par le Cloud (Six Premium).
   const partage = (
@@ -1134,11 +1354,14 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
           setSaisie('');
           setErreur('');
           setDernierEchec(undefined);
+          setFile([]);
           documentActif.current = '';
           setDocumentAReimporter(false);
           setArtefactOuvert(null);
           setProjetId('');
-          if (demandee || projetDemande) router.replace(base);
+          // Cosinus : une nouvelle discussion reste dans l'environnement en cours.
+          if (sixtouch && env) router.replace(`${base}?e=${encodeURIComponent(env.id)}`);
+          else if (demandee || projetDemande || dossierDemande || envDemande) router.replace(base);
           champ.current?.focus();
         }}
         outils={
@@ -1167,6 +1390,8 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
           onExporter={(m) => void exporterMessage(m)}
           onJoindre={(fichiers) => void importerFichiers(fichiers)}
           telephone={sansNavigateur}
+          dossier={vueFichiers}
+          dossiers={enCloud ? [] : (env?.dossiers ?? (dossier ? [dossier] : []))}
           onAnnoter={(description, capture) =>
             // Chaque repère remplace la capture précédente dans la barre (une seule capture, toujours à jour).
             void pieceCapture(description, capture).then((piece) =>
@@ -1192,12 +1417,17 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
               <>
                 <h1>On se met au travail ?</h1>
                 <p>
-                  Donne-moi une tâche : un rapport, une recherche, l&apos;analyse d&apos;un
-                  document, d&apos;une image ou d&apos;une vidéo.{' '}
-                  {telephone
-                    ? 'Tes fichiers sont en haut à droite.'
-                    : 'Le navigateur et les fichiers sont en haut à droite.'}
+                  {dossierRequis
+                    ? 'Choisis l’environnement de cette discussion : un dossier de cet ordinateur, ou ton Cloud (en ligne, avec un dépôt GitHub si tu veux). Ailleurs sur l’ordinateur, je ne vais que si tu me le demandes.'
+                    : `Donne-moi une tâche : une recherche, l’analyse d’un document, d’une image ou d’une vidéo, un rapport. ${telephone ? 'Tes fichiers sont en haut à droite.' : 'Le navigateur et les fichiers sont en haut à droite.'}`}
                 </p>
+                {choixEnvironnement && (
+                  <CarteEnvironnements
+                    actuel={env}
+                    defaut={espace.defaut}
+                    onChoisi={choisirEnvironnement}
+                  />
+                )}
               </>
             ) : (
               <>
@@ -1221,6 +1451,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
                 </span>
               )}
               {m.pieces && <PiecesJointes pieces={m.pieces} petit />}
+              {m.plan && m.plan.length > 0 && <PlanTaches taches={m.plan} replie />}
               {m.etapes && m.etapes.length > 0 && (
                 <details className="six-etapes">
                   <summary>
@@ -1233,13 +1464,47 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
                   </ol>
                 </details>
               )}
-              <div className="seven-bulle">
-                {i === animee && m.role === 'assistant' ? (
-                  <TexteProgressif texte={texte} onPas={suivreFin} />
-                ) : (
-                  texte
-                )}
-              </div>
+              {edition?.index === i ? (
+                <form
+                  className="seven-edition"
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    validerEdition();
+                  }}
+                >
+                  <textarea
+                    // eslint-disable-next-line jsx-a11y/no-autofocus -- « Modifier » vient d'être choisi
+                    autoFocus
+                    value={edition.texte}
+                    aria-label="Modifier le message"
+                    rows={Math.min(8, Math.max(2, edition.texte.split('\n').length))}
+                    onChange={(e) => setEdition({ index: i, texte: e.target.value })}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') setEdition(null);
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        validerEdition();
+                      }
+                    }}
+                  />
+                  <div className="seven-edition-boutons">
+                    <button type="button" onClick={() => setEdition(null)}>
+                      Annuler
+                    </button>
+                    <button type="submit" disabled={!edition.texte.trim() || occupe}>
+                      Envoyer
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <div className="seven-bulle">
+                  {i === animee && m.role === 'assistant' ? (
+                    <TexteProgressif texte={texte} onPas={suivreFin} />
+                  ) : (
+                    texte
+                  )}
+                </div>
+              )}
               {creation && creation.artefacts.length > 0 && (
                 <Artefacts
                   fichiers={creation.artefacts}
@@ -1248,16 +1513,24 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
                   onOuvrir={ouvrirArtefact}
                 />
               )}
-              {m.role === 'assistant' && (
-                <button
-                  type="button"
-                  className="seven-pdf"
-                  aria-label="Exporter cette réponse en PDF"
-                  title="Exporter cette réponse en PDF"
-                  onClick={() => void exporterMessage(m)}
-                >
-                  <Icon name="down" size={15} />
-                </button>
+              {edition?.index !== i && (
+                <ActionsMessage
+                  message={m}
+                  occupe={occupe}
+                  onCopier={() => navigator.clipboard.writeText(m.content)}
+                  onRelancer={
+                    m.role === 'user'
+                      ? () => relancer(i)
+                      : messages[i - 1]?.role === 'user'
+                        ? () => relancer(i - 1)
+                        : undefined
+                  }
+                  onModifier={() => setEdition({ index: i, texte: m.content })}
+                  onBifurquer={() => bifurquer(i)}
+                  onVersion={(sens) => pousser(changerVersion(messagesRef.current, i, sens))}
+                  onPdf={() => void exporterMessage(m)}
+                  onWord={() => void telechargerWord(m)}
+                />
               )}
               {m.fichiers && m.fichiers.length > 0 && (
                 <div className="six-fichiers-crees">
@@ -1293,13 +1566,12 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
             <span className="six-msg-logo" aria-hidden="true">
               <Logo label="" small />
             </span>
+            {planEnCours.length > 0 && <PlanTaches taches={planEnCours} enCours />}
             <div className="six-attente" role="status">
               <span className="six-attente-texte">
-                {lectureDoc
-                  ? 'Six lit ton document…'
-                  : sixtouch
-                    ? (etapesEnCours.at(-1) ?? 'Six réfléchit à la tâche…')
-                    : 'Six prépare sa réponse…'}
+                {sixtouch
+                  ? (etapesEnCours.at(-1) ?? 'Six réfléchit à la tâche…')
+                  : 'Six prépare sa réponse…'}
               </span>
               {/* Mini vague : trois voiles qui ondulent en décalé, fondus aux deux bouts (comme la vague du fond). */}
               <svg className="six-attente-vague" viewBox="0 0 120 18" aria-hidden="true">
@@ -1344,6 +1616,8 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
                 dernierEchec.affichage,
                 dernierEchec.document,
                 dernierEchec.jointes,
+                Boolean(dernierEchec.reprise),
+                dernierEchec.reprise,
               )
             }
           >
@@ -1364,12 +1638,28 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         )}
       </div>
 
+      {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions -- dépôt d'un fichier en option ; le bouton « + » reste accessible au clavier */}
       <form
-        className="seven-composer"
+        className={`seven-composer${depot ? ' depot' : ''}`}
         onSubmit={(e) => {
           e.preventDefault();
           if (appelActif.current) return;
           void envoyer(saisie);
+        }}
+        // Glisser-déposer un document sur la barre : il rejoint les pièces jointes, même pendant la réponse.
+        onDragOver={(e) => {
+          if (!e.dataTransfer.types.includes('Files')) return;
+          e.preventDefault();
+          setDepot(true);
+        }}
+        onDragLeave={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDepot(false);
+        }}
+        onDrop={(e) => {
+          if (!e.dataTransfer.files.length) return;
+          e.preventDefault();
+          setDepot(false);
+          void importerFichiers(e.dataTransfer.files);
         }}
       >
         <div className="seven-appel-barre" role="status" aria-live="polite">
@@ -1431,13 +1721,39 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
             </p>
           </div>
         )}
+        {file.length > 0 && (
+          <ul className="seven-file" aria-label="Messages en attente">
+            {file.map((m) => (
+              <li key={m.id}>
+                <span className="seven-file-etat">En attente</span>
+                <span className="seven-file-texte">
+                  {m.texte || m.pieces.map((p) => p.nom).join(', ')}
+                  {m.texte && m.pieces.length > 0 && (
+                    <span className="seven-file-pieces">
+                      {' '}
+                      · {m.pieces.length} pièce{m.pieces.length > 1 ? 's' : ''}
+                    </span>
+                  )}
+                </span>
+                <button
+                  type="button"
+                  aria-label="Retirer ce message de la file"
+                  title="Retirer"
+                  onClick={() => setFile((f) => retirerDeFile(f, m.id))}
+                >
+                  <Icon name="x" size={13} stroke={2.2} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
         <div className="seven-capsule">
           <button
             type="button"
             className="seven-doc"
-            aria-label="Joindre des fichiers (images, vidéos, PDF, texte)"
+            aria-label="Joindre des fichiers (images, vidéos, PDF, Word, texte)"
             title="Joindre des fichiers"
-            disabled={occupe || enregistre}
+            disabled={enregistre}
             onClick={() => docInput.current?.click()}
           >
             <Icon name="plus" size={22} stroke={1.75} />
@@ -1445,7 +1761,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
           <input
             ref={docInput}
             type="file"
-            accept={sixtouch ? undefined : '.txt,.md,.csv,.json,.log,.pdf,image/*,video/*'}
+            accept={sixtouch ? undefined : '.txt,.md,.csv,.json,.log,.pdf,.docx,image/*,video/*'}
             multiple
             className="seven-doc-input"
             aria-hidden="true"
@@ -1480,6 +1796,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
           )}
           <PiecesJointes
             pieces={pieces}
+            enLecture={lectures}
             onRetirer={(i) => setPieces((p) => p.filter((_, j) => j !== i))}
           />
           <input
@@ -1488,12 +1805,23 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
             value={saisie}
             onChange={(e) => setSaisie(e.target.value)}
             disabled={appel}
-            placeholder="Demander à Six"
+            placeholder={occupe ? 'Écrire la suite (envoyée après la réponse)' : 'Demander à Six'}
             aria-label="Demander à Six"
             enterKeyHint="send"
+            onPaste={(e) => {
+              // Coller une capture, un fichier ou un long texte : il rejoint les pièces jointes (lib/collage).
+              const collees = piecesDuCollage(
+                Array.from(e.clipboardData.files),
+                e.clipboardData.getData('text'),
+              );
+              if (!collees) return;
+              e.preventDefault();
+              void importerFichiers(collees);
+            }}
           />
-          {/* Micro tant que le champ est vide ; dès qu'on écrit, il laisse la place au bouton d'envoi. */}
-          {occupe && !lectureDoc && !enregistre ? (
+          {/* Pendant la réponse : « Arrêter », et l'envoi reste possible (le message attend son tour). Sinon, micro
+              tant que le champ est vide ; dès qu'on écrit, il laisse la place au bouton d'envoi. */}
+          {occupe && !enregistre && (
             <button
               type="button"
               className="seven-arreter"
@@ -1506,23 +1834,45 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
             >
               <span className="seven-arreter-carre" aria-hidden="true" />
             </button>
-          ) : (saisie.trim() || pieces.length) && !enregistre ? (
-            <button type="submit" className="seven-envoyer" disabled={occupe} aria-label="Envoyer">
+          )}
+          {(saisie.trim() || pieces.length) && !enregistre ? (
+            <button
+              type="submit"
+              className="seven-envoyer"
+              disabled={lectures > 0}
+              aria-label={occupe ? 'Envoyer après la réponse en cours' : 'Envoyer'}
+              title={occupe ? 'Envoyer après la réponse en cours' : 'Envoyer'}
+            >
               <Icon name="up" size={18} stroke={2} />
             </button>
-          ) : (
+          ) : occupe && !enregistre ? null : (
             <button
               type="button"
               className={`seven-mic${enregistre ? ' rec' : ''}`}
               aria-label={enregistre ? 'Arrêter le message vocal' : 'Envoyer un message vocal'}
               title={enregistre ? 'Terminer le vocal' : 'Message vocal'}
-              disabled={occupe && !enregistre}
+              disabled={micOccupe && !enregistre}
               onClick={() => void basculerMicro()}
             >
               <Icon name={enregistre ? 'x' : 'mic'} size={20} stroke={1.75} />
             </button>
           )}
         </div>
+        {choixEnvironnement && (
+          <div className="seven-sous-barre">
+            <SelecteurEnvironnement
+              actuel={
+                env ??
+                (dossierAncien
+                  ? { id: '', nom: nomDossier(dossierAncien), dossiers: [dossierAncien], maj: 0 }
+                  : undefined)
+              }
+              defaut={espace.defaut}
+              verrouille={messages.length > 0 || occupe}
+              onChoisi={choisirEnvironnement}
+            />
+          </div>
+        )}
         <p className="seven-mention">Six peut se tromper : vérifie les informations importantes.</p>
       </form>
     </main>

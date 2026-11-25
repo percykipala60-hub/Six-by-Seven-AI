@@ -123,3 +123,111 @@ export async function activerPaiement(reference: string): Promise<void> {
     body: JSON.stringify({ p_reference: reference }),
   });
 }
+
+// ---------- Sécurité des connexions (voir app/setup_securite_connexion_supabase.sql) ----------
+
+const sha256 = async (texte: string): Promise<string> =>
+  Array.from(
+    new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(texte))),
+    (o) => o.toString(16).padStart(2, '0'),
+  ).join('');
+
+/** Identifiant de la session Supabase contenu dans un jeton (déjà vérifié par utilisateurDeRequete). */
+export function sessionDuJeton(jeton: string): string | null {
+  try {
+    const charge = JSON.parse(
+      Buffer.from(jeton.split('.')[1] ?? '', 'base64url').toString('utf8'),
+    ) as { session_id?: unknown };
+    return typeof charge.session_id === 'string' ? charge.session_id : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Enregistre une connexion (appareil, méthode, session) et renvoie le jeton du lien de l'e-mail d'alerte.
+ * « bloque » : cet appareil a déjà été bloqué depuis un e-mail d'alerte (la connexion doit être refusée).
+ */
+export async function enregistrerConnexion(c: {
+  userId: string;
+  appareil: string;
+  nom: string;
+  methode: string;
+  sessionId: string | null;
+}): Promise<{ jeton: string; bloque: boolean }> {
+  const existant = (await rest(
+    `six_appareils?select=bloque&user_id=eq.${encodeURIComponent(c.userId)}&appareil=eq.${encodeURIComponent(c.appareil)}`,
+  )) as { bloque: boolean }[];
+  if (existant?.[0]?.bloque) return { jeton: '', bloque: true };
+  const jeton = crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '');
+  await rest('six_appareils?on_conflict=user_id,appareil', {
+    method: 'POST',
+    headers: { prefer: 'resolution=merge-duplicates,return=minimal' },
+    body: JSON.stringify({
+      user_id: c.userId,
+      appareil: c.appareil,
+      nom: c.nom.slice(0, 120),
+      methode: c.methode.slice(0, 30),
+      session_id: c.sessionId,
+      jeton_hash: await sha256(jeton),
+      confirme: false,
+      derniere_connexion: new Date().toISOString(),
+    }),
+  });
+  return { jeton, bloque: false };
+}
+
+/** Cet appareil a-t-il été bloqué depuis un e-mail d'alerte ? */
+export async function appareilBloque(userId: string, appareil: string): Promise<boolean> {
+  const lignes = (await rest(
+    `six_appareils?select=bloque&user_id=eq.${encodeURIComponent(userId)}&appareil=eq.${encodeURIComponent(appareil)}`,
+  )) as { bloque: boolean }[];
+  return Boolean(lignes?.[0]?.bloque);
+}
+
+/** Réponse au lien de l'e-mail d'alerte : bloquer l'appareil (et couper sa session) ou confirmer. */
+export async function repondreAlerte(
+  jeton: string,
+  bloquer: boolean,
+): Promise<{ nom: string; methode: string; bloque: boolean } | null> {
+  const lignes = (await rest('rpc/six_reponse_alerte', {
+    method: 'POST',
+    body: JSON.stringify({ p_jeton: jeton, p_bloquer: bloquer }),
+  })) as { nom: string; methode: string; bloque: boolean }[];
+  return lignes?.[0] ?? null;
+}
+
+/**
+ * Connexion par code QR : l'appareil déjà connecté approuve la demande. Le serveur fabrique un jeton de connexion
+ * à usage unique (lien magique, sans e-mail envoyé) que l'autre appareil récupère une seule fois.
+ */
+export async function approuverQr(
+  demande: { id: string; secret: string },
+  utilisateur: { id: string; email: string },
+): Promise<'ok' | 'introuvable'> {
+  if (!utilisateur.email) throw new Error('Compte sans adresse e-mail');
+  const lien = await fetch(`${URL_SUPABASE}/auth/v1/admin/generate_link`, {
+    method: 'POST',
+    headers: entetesAdmin(),
+    body: JSON.stringify({ type: 'magiclink', email: utilisateur.email }),
+    cache: 'no-store',
+    signal: AbortSignal.timeout(8_000),
+  });
+  if (!lien.ok) throw new Error(`Supabase ${lien.status}`);
+  const d = (await lien.json()) as {
+    hashed_token?: string;
+    properties?: { hashed_token?: string };
+  };
+  const tokenHash = d.properties?.hashed_token ?? d.hashed_token;
+  if (!tokenHash) throw new Error('Jeton de connexion absent');
+  const maj = (await rest(
+    `six_connexions_qr?id=eq.${encodeURIComponent(demande.id)}&secret_hash=eq.${await sha256(demande.secret)}` +
+      `&statut=eq.attente&expire_le=gt.${encodeURIComponent(new Date().toISOString())}`,
+    {
+      method: 'PATCH',
+      headers: { prefer: 'return=representation' },
+      body: JSON.stringify({ statut: 'approuve', user_id: utilisateur.id, token_hash: tokenHash }),
+    },
+  )) as unknown[];
+  return Array.isArray(maj) && maj.length ? 'ok' : 'introuvable';
+}

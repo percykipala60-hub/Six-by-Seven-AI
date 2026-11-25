@@ -25,7 +25,12 @@ type Action =
   | { action: 'fermer' };
 type Evenement = { t: 'etat'; url: string; titre: string; charge: boolean } | { t: 'vivant' };
 
-export type PoigneeNavigateur = { retour: () => void; avant: () => void };
+export type PoigneeNavigateur = {
+  retour: () => void;
+  avant: () => void;
+  /** Ouvrir une adresse dans l'onglet actif, même si c'est la même que la précédente (app de bureau). */
+  ouvrir?: (url: string) => void;
+};
 
 const TOUCHES = new Set([
   'Enter',

@@ -75,7 +75,10 @@ describe("boucle de l'agent", () => {
     appelAgent
       .mockResolvedValueOnce({
         texte: '',
-        appels: [{ id: 'a1', nom: 'ecrire_resultat', args: { nom: 'plan.md', contenu: '# Plan' } }],
+        appels: [
+          { id: 'a1', nom: 'ecrire_resultat', args: { nom: 'plan.md', contenu: '# Plan' } },
+          { id: 'p1', nom: 'planifier', args: { taches: 'Rédiger le plan\nL’enregistrer' } },
+        ],
       })
       .mockResolvedValueOnce({ texte: 'Plan enregistré : resultats/plan.md', appels: [] });
     const etapes: string[] = [];

@@ -228,3 +228,52 @@ export async function envoyerParResend(
   });
   return r.ok;
 }
+
+/* ---------- Alerte de connexion (envoyée par Six lui-même, pas par Supabase) ---------- */
+
+const bouton = (lien: string, texte: string, principal: boolean) =>
+  `<a href="${echapper(lien)}" style="display:inline-block;margin:0 8px 8px 0;padding:12px 20px;border-radius:10px;` +
+  (principal
+    ? 'background:#0f1a3a;color:#ffffff;border:1px solid #0f1a3a;'
+    : 'background:#ffffff;color:#0f1a3a;border:1px solid #c9cfdd;') +
+  `font-weight:700;font-size:15px;text-decoration:none">${texte}</a>`;
+
+/**
+ * « Nouvelle connexion à votre compte » : méthode, appareil, date. Deux boutons : « Ce n'était pas moi » (bloque
+ * cet appareil et coupe sa session) et « C'était moi ». Sans réponse, la connexion reste valable.
+ */
+export function composerAlerteConnexion(a: {
+  methode: string;
+  appareil: string;
+  quand: Date;
+  lienReponse: string;
+}): { objet: string; html: string } {
+  const date = a.quand.toLocaleString('fr-FR', {
+    dateStyle: 'full',
+    timeStyle: 'short',
+    timeZone: 'Africa/Kinshasa',
+  });
+  const ligne = (titre: string, valeur: string) =>
+    `<tr><td style="padding:6px 12px 6px 0;font-size:14px;color:#5b6375">${titre}</td>` +
+    `<td style="padding:6px 0;font-size:14px;color:#1f2430;font-weight:600">${echapper(valeur)}</td></tr>`;
+  return {
+    objet: 'Nouvelle connexion à votre compte Six',
+    html: page(
+      'Nouvelle connexion à votre compte',
+      p('Une connexion à votre compte Six vient d’avoir lieu :') +
+        `<table style="margin:0 0 20px;border-collapse:collapse">` +
+        ligne('Méthode', a.methode) +
+        ligne('Appareil', a.appareil || 'Appareil inconnu') +
+        ligne('Date', `${date} (heure de Kinshasa)`) +
+        `</table>` +
+        p(
+          'Si c’est bien vous, vous n’avez rien à faire. Si ce n’est pas vous, bloquez cet appareil : il sera déconnecté immédiatement.',
+        ) +
+        `<p style="margin:4px 0 12px">` +
+        bouton(`${a.lienReponse}&r=non`, 'Ce n’était pas moi', true) +
+        bouton(`${a.lienReponse}&r=oui`, 'C’était moi', false) +
+        `</p>`,
+      'Si vous n’êtes pas à l’origine de cette connexion, changez aussi votre mot de passe depuis l’écran de connexion (« Mot de passe oublié »). Ce lien ne fonctionne qu’une fois.',
+    ),
+  };
+}

@@ -20,8 +20,12 @@ import {
   type FournisseurSocial,
   type FournisseursActifs,
   type TypeCode,
+  erreurDeRetourDansAdresse,
+  messageRetourRefuse,
 } from '@/lib/compte';
 import { LIEN_CONDITIONS, LIEN_CONFIDENTIALITE } from '@/lib/liens';
+import { etaitBloque, marquerBloque } from '@/lib/securite';
+import { QrConnexion } from './QrConnexion';
 import { AppIcon } from './AppIcon';
 import { Icon } from './Icon';
 import { Logo } from './Logo';
@@ -149,6 +153,24 @@ export function FormulaireConnexion() {
   const [busy, setBusy] = useState(false);
   const [erreur, setErreur] = useState('');
   const [info, setInfo] = useState('');
+  // Retour de Google ou Apple refusé : Supabase revient sur Six avec l'erreur dans l'adresse. On l'affiche en
+  // clair (au lieu de rester silencieux) puis on la retire de l'adresse.
+  // Connexion par code QR (comme Steam) : le code s'affiche à la place des boutons quand on le demande.
+  const [qrOuvert, setQrOuvert] = useState(false);
+  // Appareil bloqué depuis l'e-mail d'alerte : on l'explique une fois.
+  useEffect(() => {
+    if (!etaitBloque()) return;
+    marquerBloque(false);
+    setErreur(
+      'Cet appareil a été déconnecté depuis l’e-mail d’alerte de connexion (« Ce n’était pas moi »). Si c’était bien toi, reconnecte-toi ; sinon, change ton mot de passe avec « Mot de passe oublié ».',
+    );
+  }, []);
+  useEffect(() => {
+    const description = erreurDeRetourDansAdresse(window.location.href);
+    if (!description) return;
+    setErreur(messageRetourRefuse(description));
+    window.history.replaceState(null, '', window.location.pathname);
+  }, []);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -376,7 +398,20 @@ export function FormulaireConnexion() {
                   </span>
                 </button>
               )}
+              {mode === 'connexion' && (
+                <button
+                  type="button"
+                  className="auth-social-btn"
+                  aria-expanded={qrOuvert}
+                  onClick={() => setQrOuvert((v) => !v)}
+                  disabled={busy || socialBusy !== null}
+                >
+                  <Icon name="qr" size={20} stroke={1.6} />
+                  <span>{qrOuvert ? 'Masquer le code QR' : 'Se connecter avec un code QR'}</span>
+                </button>
+              )}
             </div>
+            {mode === 'connexion' && qrOuvert && <QrConnexion />}
             {socialBusy && dansAppBureau() && (
               <div className="auth-attente-navigateur">
                 <p>Termine la connexion dans ton navigateur : Six reprend ici tout seul ensuite.</p>
@@ -789,6 +824,8 @@ const PAGES_PUBLIQUES = [
   '/confidentialite',
   '/mentions',
   '/connexion/retour',
+  '/connexion/nouveau-mot-de-passe',
+  '/compte/alerte',
   '/partage',
 ];
 
