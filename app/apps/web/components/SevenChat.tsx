@@ -9,8 +9,9 @@ import { estBureau } from '@/lib/plateforme';
 import { CarteLieux } from './CarteLieux';
 import { Logo } from './Logo';
 import { PiecesJointes } from './PiecesJointes';
-import { Artefacts } from './Artefacts';
-import { extraireArtefacts } from '@/lib/artefacts';
+import { ArtefactPanneau, Artefacts, type ArtefactOuvert } from './Artefacts';
+import { extraireArtefacts, versionsDe } from '@/lib/artefacts';
+import { extrairePdf } from '@/lib/lire-document';
 import { SKILLS, choisirSkill, type ChoixSkill } from '@/lib/skills-cosinus';
 import {
   BoutonsVolet,
@@ -48,7 +49,6 @@ import {
 // Un document importé (texte ou PDF) est envoyé dans le message : on le borne pour
 // rester dans la limite du serveur (20 000 caractères) et raisonnable côté coûts.
 const TAILLE_DOC_MAX = 12_000;
-const PAGES_PDF_MAX = 20;
 const MAX_FICHIER = 20 * 1024 * 1024;
 const MAX_VIDEO = 500 * 1024 * 1024; // lue sur l'appareil, seules quelques images partent
 // Document joint sans question : Six dit en bref ce qu'il a compris, sans reproduire le fichier.
@@ -111,41 +111,6 @@ function preparerRequete(historique: ChatMessage[], content: string): string {
     corps = candidat;
   }
   return corps;
-}
-
-/** Extrait le texte d'un PDF côté navigateur (pdfjs-dist, chargé à la demande). */
-async function extrairePdf(fichier: File): Promise<string> {
-  const pdfjs = await import('pdfjs-dist');
-  pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-    'pdfjs-dist/build/pdf.worker.min.mjs',
-    import.meta.url,
-  ).toString();
-  const chargement = pdfjs.getDocument({ data: await fichier.arrayBuffer() });
-  const morceaux: string[] = [];
-  try {
-    const pdf = await chargement.promise;
-    const pages = Math.min(pdf.numPages, PAGES_PDF_MAX);
-    for (let n = 1; n <= pages; n++) {
-      const page = await pdf.getPage(n);
-      const contenu = await page.getTextContent();
-      morceaux.push(
-        contenu.items
-          .map((it) => ('str' in it ? it.str : ''))
-          .join(' ')
-          .trim(),
-      );
-    }
-    let texte = morceaux.filter(Boolean).join('\n\n');
-    if (!texte)
-      throw new Error(
-        'Aucun texte extractible. Pour un PDF numérisé, utilise une version avec du texte sélectionnable.',
-      );
-    if (pdf.numPages > PAGES_PDF_MAX)
-      texte += `\n\n[… ${pdf.numPages - PAGES_PDF_MAX} pages non importées]`;
-    return texte.trim();
-  } finally {
-    await chargement.destroy();
-  }
 }
 
 // Web Speech API : la dictée se fait dans le navigateur, aucune clé serveur n'est requise.
@@ -351,6 +316,22 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   }, [volet]);
   const params = useSearchParams();
   const demandee = params.get('c') ?? ''; // discussion ouverte depuis le menu ; vide : nouvelle discussion
+  // Projet de la discussion : celui où elle est rangée, sinon celui de l'adresse (/chat?projet=…, /cosinus?projet=…).
+  const projetDemande = params.get('projet') ?? '';
+  const [projetId, setProjetId] = useState('');
+  // Artefact ouvert dans le panneau, à côté de la discussion (un seul panneau à droite : il ferme le volet).
+  const [artefactOuvert, setArtefactOuvert] = useState<ArtefactOuvert | null>(null);
+  const fermerArtefact = useCallback(() => setArtefactOuvert(null), []);
+  const ouvrirArtefact = useCallback(
+    (a: ArtefactOuvert) => {
+      setVolet(null);
+      setArtefactOuvert(a);
+    },
+    [setVolet],
+  );
+  useEffect(() => {
+    if (volet) setArtefactOuvert(null);
+  }, [volet]);
   const chatId = useRef('');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [saisie, setSaisie] = useState('');
@@ -519,6 +500,8 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     operation.current?.abort();
     const chat = demandee ? lireChat(demandee) : undefined;
     chatId.current = chat?.id ?? nouvelId();
+    setProjetId(chat ? (chat.projetId ?? projetDemande) : projetDemande);
+    setArtefactOuvert(null);
     setAnimee(-1);
     const historique = chat?.messages ?? [];
     setMessages(historique);
@@ -531,7 +514,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     );
     setMemOn(memoireActive());
     if (window.matchMedia('(pointer: fine)').matches) champ.current?.focus();
-  }, [demandee]);
+  }, [demandee, projetDemande]);
 
   useEffect(() => {
     const controleur = new AbortController();
@@ -604,7 +587,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
 
   function pousser(fil: ChatMessage[]) {
     setMessages(fil);
-    garderChat(chatId.current, fil, mode, params.get('projet') ?? undefined);
+    garderChat(chatId.current, fil, mode, projetId || undefined);
   }
 
   /**
@@ -696,14 +679,15 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       );
       // Cosinus : le serveur donne à Six ses consignes d'agent de travail.
       const corps =
-        images.length || sixtouch
+        images.length || sixtouch || projetId
           ? JSON.stringify({
               ...(JSON.parse(texteSeul) as object),
+              ...(!sixtouch && projetId ? { projetId } : {}),
               ...(sixtouch
                 ? {
                     mode: 'sixtouch',
                     skill,
-                    ...(params.get('projet') ? { projetId: params.get('projet') } : {}),
+                    ...(projetId ? { projetId } : {}),
                     navigateurSession: JSON.parse(
                       sessionStorage.getItem('six-navigateur-agent') || '{}',
                     ).session,
@@ -747,6 +731,14 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       const suite = [...fil, reponseSix].slice(-MAX_MSG);
       setAnimee(suite.length - 1); // seule la réponse qui arrive s'écrit progressivement
       pousser(suite);
+      // Un fichier livré (artefact) s'ouvre aussitôt dans le panneau, avec ses versions précédentes.
+      const nouveau = extraireArtefacts(data.reponse).artefacts.at(-1);
+      if (nouveau) {
+        const toutes = versionsDe(
+          suite.filter((x) => x.role === 'assistant').map((x) => x.content),
+        ).get(nouveau.nom) ?? [nouveau];
+        ouvrirArtefact({ versions: toutes, version: toutes.length - 1 });
+      }
       if (docEnvoye) {
         documentActif.current = docEnvoye;
         setDocumentAReimporter(false);
@@ -1011,6 +1003,12 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     }
   }
 
+  // Versions de chaque fichier livré dans la discussion (même nom = nouvelle version).
+  const versions = useMemo(
+    () => versionsDe(messages.filter((m) => m.role === 'assistant').map((m) => m.content)),
+    [messages],
+  );
+
   // Partager la discussion par le Cloud (Six Premium).
   const partage = (
     <BoutonPartager titre={titreDe(messages)} messages={messages} onErreur={setErreur} />
@@ -1031,7 +1029,9 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
           setDernierEchec(undefined);
           documentActif.current = '';
           setDocumentAReimporter(false);
-          if (demandee) router.replace(base);
+          setArtefactOuvert(null);
+          setProjetId('');
+          if (demandee || projetDemande) router.replace(base);
           champ.current?.focus();
         }}
         outils={
@@ -1068,6 +1068,13 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
           }
         />
       )}
+      {artefactOuvert && (
+        <ArtefactPanneau
+          versions={artefactOuvert.versions}
+          version={artefactOuvert.version}
+          onFermer={fermerArtefact}
+        />
+      )}
       <div className="seven-fil" ref={filRef} aria-live="polite">
         {messages.length === 0 && !occupe && (
           <div className="seven-vide">
@@ -1097,7 +1104,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
           </div>
         )}
         {messages.map((m, i) => {
-          const creation = sixtouch && m.role === 'assistant' ? extraireArtefacts(m.content) : null;
+          const creation = m.role === 'assistant' ? extraireArtefacts(m.content) : null;
           const texte = creation?.texte ?? m.content;
           return (
             <div key={i} className={`seven-msg ${m.role}`}>
@@ -1127,7 +1134,12 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
                 )}
               </div>
               {creation && creation.artefacts.length > 0 && (
-                <Artefacts fichiers={creation.artefacts} />
+                <Artefacts
+                  fichiers={creation.artefacts}
+                  versions={versions}
+                  ouvert={artefactOuvert}
+                  onOuvrir={ouvrirArtefact}
+                />
               )}
               {m.role === 'assistant' && (
                 <button
@@ -1252,9 +1264,14 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
           void envoyer(saisie);
         }}
       >
+        {!sixtouch && projetId && (
+          <p style={{ width: '100%', maxWidth: 560, margin: '0 auto 8px' }}>
+            Contexte du projet actif · <a href="/projets">Mes projets</a>
+          </p>
+        )}
         {sixtouch && (
           <div style={{ width: '100%', maxWidth: 560, margin: '0 auto 8px' }}>
-            {params.get('projet') && (
+            {projetId && (
               <p>
                 Contexte du projet actif · <a href="/projets">Mes projets</a>
               </p>

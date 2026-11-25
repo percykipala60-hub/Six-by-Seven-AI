@@ -1,5 +1,5 @@
 import { modifierTravail } from './travail-serveur';
-import { prochaineOccurrence, type Tache } from './travail';
+import { contexteDuProjet, prochaineOccurrence, type Tache } from './travail';
 
 /** La réservation est persistée avant l'appel IA. Une exécution interrompue n'est pas relancée automatiquement. */
 export async function executerProchaine(
@@ -22,7 +22,7 @@ export async function executerProchaine(
     if (!t) return null;
     t.execution = { debut: new Date(maintenant).toISOString() };
     const p = e.projets.find((p) => p.id === t.projetId && p.proprietaire === t.proprietaire);
-    return { tache: structuredClone(t), contexte: p ? `Projet : ${p.titre}\n${p.contexte}` : '' };
+    return { tache: structuredClone(t), contexte: p ? contexteDuProjet(p) : '' };
   });
   if (!reservation) return false;
   let resultat = '',

@@ -12,6 +12,7 @@ import { corpusDisponible } from '@/lib/agent/memoire-documents';
 import { corrigerIdentite } from '@/lib/identite';
 import { transcriptionLocaleDisponible } from '@/lib/transcription-locale';
 import { modifierTravail } from '@/lib/travail-serveur';
+import { contexteDuProjet } from '@/lib/travail';
 
 // Calculé à chaque demande : sinon Next fige la réponse au moment de la construction de l'app,
 // quand les clés du serveur (deploy/.env) ne sont pas encore chargées, et l'app se croit en démonstration.
@@ -44,7 +45,8 @@ export async function POST(req: Request) {
   if (tailleTexte > CHAT_MAX_BYTES)
     return fail(400, 'Requête illisible ou trop volumineuse. Raccourcis ton message.');
   const a = await appelant(req);
-  if (parsed.data.projetId && parsed.data.mode === 'sixtouch') {
+  // Projet (Chat et Cosinus) : son contexte et ses documents, lus sur le serveur, précèdent la demande.
+  if (parsed.data.projetId) {
     if (!a.utilisateur) return fail(401, 'Connecte-toi pour utiliser ce projet.');
     const proprietaire = a.utilisateur.id;
     try {
@@ -54,7 +56,7 @@ export async function POST(req: Request) {
       if (!projet) return fail(404, 'Projet introuvable.');
       const dernier = parsed.data.messages.at(-1);
       if (!dernier) return fail(400, 'Demande vide.');
-      dernier.content = `Contexte du projet « ${projet.titre} » (données de référence) :\n${projet.contexte}\n\nDemande actuelle :\n${dernier.content}`;
+      dernier.content = `${contexteDuProjet(projet)}\n\nDemande actuelle :\n${dernier.content}`;
     } catch {
       return fail(503, 'Le contexte du projet est temporairement indisponible.');
     }

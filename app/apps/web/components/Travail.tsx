@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { AppBar } from './AppBar';
 import { Artefacts } from './Artefacts';
@@ -7,7 +7,16 @@ import { extraireArtefacts } from '@/lib/artefacts';
 import { entetesCompte } from '@/lib/premium-client';
 import { ecouterCompte } from '@/lib/compte';
 import { SKILLS } from '@/lib/skills-cosinus';
-import type { Projet, Tache } from '@/lib/travail';
+import { ajouterDocumentProjet, type Projet, type Tache } from '@/lib/travail';
+import { lireTexteFichier } from '@/lib/lire-document';
+import {
+  chatsDuProjet,
+  ecouterChats,
+  lireChats,
+  rangerChat,
+  sortirDuProjet,
+  type ChatSeven,
+} from '@/lib/seven-chats';
 import styles from './Travail.module.css';
 type Etat = { projets: Projet[]; taches: Tache[]; planification: boolean };
 export function TravailPage({ onglet }: { onglet: 'projets' | 'taches' }) {
@@ -221,7 +230,9 @@ export function TravailPage({ onglet }: { onglet: 'projets' | 'taches' }) {
                   <article className={styles.carte} key={p.id}>
                     <h2>{p.titre}</h2>
                     <p className={styles.texte}>{p.contexte}</p>
+                    <ExtrasProjet projet={p} occupe={occupe} modifier={modifier} />
                     <div className={styles.actions}>
+                      <Link href={`/chat?projet=${p.id}`}>Nouvelle discussion</Link>
                       <Link href={`/cosinus?projet=${p.id}`}>Ouvrir dans Cosinus</Link>
                       <button
                         disabled={occupe}
@@ -235,8 +246,14 @@ export function TravailPage({ onglet }: { onglet: 'projets' | 'taches' }) {
                       <button
                         disabled={occupe}
                         onClick={() => {
-                          if (window.confirm('Supprimer ce projet ?'))
-                            void modifier({ action: 'supprimer', type: 'projet', id: p.id });
+                          if (
+                            window.confirm(
+                              'Supprimer ce projet ? Ses discussions restent, hors projet.',
+                            )
+                          )
+                            void modifier({ action: 'supprimer', type: 'projet', id: p.id }).then(
+                              (ok) => ok && sortirDuProjet(p.id),
+                            );
                         }}
                       >
                         Supprimer
@@ -306,6 +323,147 @@ export function TravailPage({ onglet }: { onglet: 'projets' | 'taches' }) {
           </>
         )}
       </main>
+    </>
+  );
+}
+
+const FICHIER_MAX = 20 * 1024 * 1024;
+
+/**
+ * Documents et discussions d'un projet. Les documents sont lus sur l'appareil puis gardés avec le projet sur le
+ * serveur ; les discussions restent sur l'appareil (réglage Mémoire), rangées dans le projet par leur projetId.
+ */
+function ExtrasProjet({
+  projet,
+  occupe,
+  modifier,
+}: {
+  projet: Projet;
+  occupe: boolean;
+  modifier: (commande: unknown) => Promise<boolean>;
+}) {
+  const [chats, setChats] = useState<ChatSeven[]>([]);
+  const [lecture, setLecture] = useState(false);
+  const [erreur, setErreur] = useState('');
+  const [aRanger, setARanger] = useState('');
+  const fichiers = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const lire = () => setChats(lireChats());
+    lire();
+    return ecouterChats(lire);
+  }, []);
+  const documents = projet.documents ?? [];
+  const discussions = chatsDuProjet(projet.id, chats);
+  const horsProjet = chats.filter((c) => !c.projetId);
+  const enregistrer = (docs: { nom: string; texte: string }[]) =>
+    modifier({
+      action: 'projet',
+      id: projet.id,
+      donnees: { titre: projet.titre, contexte: projet.contexte, documents: docs },
+    });
+
+  async function ajouter(liste: FileList | null) {
+    const f = liste?.[0];
+    if (!f) return;
+    setErreur('');
+    setLecture(true);
+    try {
+      if (f.size > FICHIER_MAX) throw new Error('le fichier dépasse 20 Mo.');
+      const r = ajouterDocumentProjet(documents, f.name, await lireTexteFichier(f));
+      if ('erreur' in r) throw new Error(r.erreur);
+      await enregistrer(r.documents);
+    } catch (e) {
+      setErreur(
+        `« ${f.name} » n’a pas été ajouté : ${e instanceof Error ? e.message : 'réessaie.'}`,
+      );
+    } finally {
+      setLecture(false);
+      if (fichiers.current) fichiers.current.value = '';
+    }
+  }
+
+  return (
+    <>
+      <details>
+        <summary>
+          Documents ({documents.length}) · Discussions ({discussions.length})
+        </summary>
+        <p>
+          Textes ou PDF lus sur ton appareil : Six s’appuie dessus dans chaque discussion du projet.
+        </p>
+        {documents.length > 0 && (
+          <ul>
+            {documents.map((d, i) => (
+              <li key={`${d.nom}-${i}`}>
+                {d.nom} · {Math.ceil(d.texte.length / 1000)} k caractères{' '}
+                <button
+                  type="button"
+                  disabled={occupe}
+                  onClick={() => void enregistrer(documents.filter((_, j) => j !== i))}
+                >
+                  Retirer
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        <input
+          ref={fichiers}
+          type="file"
+          accept=".txt,.md,.csv,.json,.log,.pdf"
+          hidden
+          onChange={(e) => void ajouter(e.target.files)}
+        />
+        <button
+          type="button"
+          disabled={occupe || lecture}
+          onClick={() => fichiers.current?.click()}
+        >
+          {lecture ? 'Lecture du document…' : 'Ajouter un document'}
+        </button>
+        {erreur && <p role="alert">{erreur}</p>}
+        {discussions.length > 0 && (
+          <ul>
+            {discussions.map((c) => (
+              <li key={c.id}>
+                <Link
+                  href={`${c.mode === 'sixtouch' ? '/cosinus' : '/chat'}?c=${encodeURIComponent(c.id)}&projet=${projet.id}`}
+                >
+                  {c.mode === 'sixtouch' ? 'Cosinus' : 'Chat'} · {c.titre}
+                </Link>{' '}
+                <button type="button" onClick={() => rangerChat(c.id, '')}>
+                  Sortir du projet
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+        {horsProjet.length > 0 && (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (aRanger) rangerChat(aRanger, projet.id);
+              setARanger('');
+            }}
+          >
+            <label>
+              Ranger une discussion dans ce projet
+              <select value={aRanger} onChange={(e) => setARanger(e.target.value)}>
+                <option value="">Choisir…</option>
+                {horsProjet.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.mode === 'sixtouch' ? 'Cosinus · ' : 'Chat · '}
+                    {c.titre}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button type="submit" disabled={!aRanger}>
+              Ranger
+            </button>
+          </form>
+        )}
+      </details>
     </>
   );
 }

@@ -1,7 +1,7 @@
 import { ProviderError, agentDisponible, callAI, callChat, hasChatAI, hasAI } from './ai';
 import { questionDeLieu } from './carte-rdc';
 import type { ImageJointe } from './api-schemas';
-import { consignesSkill, type ChoixSkill } from './skills-cosinus';
+import { consignesSkill, skillLong, type ChoixSkill } from './skills-cosinus';
 import { corrigerIdentite } from './identite';
 import {
   analysisPrompt,
@@ -113,13 +113,17 @@ export async function chat(
       if (e instanceof ProviderError && /limite/i.test(e.message)) throw e;
     }
   }
+  // Site ou présentation : la méthode spécialisée s'applique aussi dans le Chat, et le fichier entier demande de la
+  // place. Les autres méthodes restent propres à Cosinus.
+  const long = skillLong(skill, user, Boolean(images?.length));
   const reponse = (
     await callChat(
       sevenAiSystem(mode) +
-        (mode === 'sixtouch' ? consignesSkill(skill, user, Boolean(images?.length)) : ''),
+        (mode === 'sixtouch' || long ? consignesSkill(skill, user, Boolean(images?.length)) : ''),
       user,
       history,
-      mode === 'sixtouch' ? 4000 : 1500, // un rapport demande plus de place qu'une réponse de discussion
+      // Un rapport, un site ou une présentation demande plus de place qu'une réponse de discussion.
+      long ? 4500 : mode === 'sixtouch' ? 4000 : 1500,
       premium,
       images,
     )

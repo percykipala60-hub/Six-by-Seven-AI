@@ -65,7 +65,9 @@ export const ChatBodySchema = z.object({
   projetId: z.string().uuid().optional(),
   /** Espace de la discussion : absent = Chat ; « sixtouch » = consignes d'agent de travail. */
   mode: z.enum(['chat', 'sixtouch']).optional(),
-  skill: z.enum(['auto', 'documents', 'code', 'web', 'donnees', 'images']).optional(),
+  skill: z
+    .enum(['auto', 'documents', 'code', 'web', 'presentations', 'donnees', 'images'])
+    .optional(),
   images: z
     .array(ImageJointeSchema)
     .max(CHAT_IMAGES_MAX)

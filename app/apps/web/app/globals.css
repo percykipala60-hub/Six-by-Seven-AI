@@ -7818,3 +7818,243 @@ a.retour-lien:hover {
 div.seven-outils-ligne:not(.seven-outils-flottants) {
   display: flex;
 }
+
+/* ---------- Artefacts (components/ArtefactPanneau.tsx, components/Artefacts.tsx) ----------
+   Le panneau reprend la place du volet de Cosinus : plein écran sur téléphone, à côté de la discussion à partir de
+   768 px (body padding-right = --volet), un peu plus large pour lire un document ou une page. */
+@media (min-width: 768px) {
+  html[data-artefact] {
+    --volet: clamp(380px, 46vw, 760px);
+  }
+  html[data-artefact] body {
+    padding-right: var(--volet);
+  }
+}
+.artefact-panneau {
+  z-index: 28; /* sous le voile et le menu latéral (29, 30) : le menu s'ouvre par-dessus le panneau */
+  outline: none;
+}
+.artefact-tete {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 8px 8px 6px 14px;
+}
+.artefact-icone {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--brand) 12%, var(--card));
+  color: var(--brand);
+}
+.artefact-titre {
+  margin: 0;
+  overflow: hidden;
+  font-size: 1rem;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.artefact-sous {
+  display: block;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+.artefact-barre {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 0 8px 6px;
+  border-bottom: 1px solid var(--line);
+}
+.artefact-versions,
+.artefact-onglets {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+.artefact-onglets .volet-onglet[aria-pressed='true'] {
+  background: var(--panel2);
+  color: var(--ink);
+}
+.artefact-corps {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+.artefact-cadre {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+  border: 0;
+  background: #fff;
+}
+.artefact-code {
+  margin: 0;
+  padding: 14px 16px;
+  overflow: auto;
+  background: var(--panel2);
+  color: var(--ink);
+  font:
+    0.84rem/1.55 ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Consolas,
+    monospace;
+  white-space: pre;
+  tab-size: 2;
+}
+.artefact-corps > .artefact-code {
+  flex: 1;
+  background: none;
+}
+.artefact-doc {
+  padding: 14px 20px 32px;
+  font-size: 0.97rem;
+  line-height: 1.6;
+}
+.artefact-doc h3,
+.artefact-doc h4,
+.artefact-doc h5 {
+  margin: 1.1em 0 0.4em;
+  line-height: 1.25;
+}
+.artefact-doc h3 {
+  font-size: 1.35rem;
+}
+.artefact-doc h4 {
+  font-size: 1.1rem;
+}
+.artefact-doc h5 {
+  font-size: 1rem;
+}
+.artefact-doc p {
+  margin: 0 0 0.8em;
+  white-space: pre-wrap;
+}
+.artefact-doc ul,
+.artefact-doc ol {
+  margin: 0 0 0.8em;
+  padding-left: 1.3em;
+}
+.artefact-doc .artefact-code {
+  margin: 0 0 0.8em;
+  border-radius: 10px;
+}
+.artefact-tableau {
+  padding: 12px;
+  overflow: auto;
+}
+.artefact-tableau table {
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+.artefact-tableau th,
+.artefact-tableau td {
+  padding: 7px 10px;
+  border: 1px solid var(--line);
+  text-align: left;
+  vertical-align: top;
+}
+.artefact-tableau th {
+  background: var(--panel2);
+  font-weight: 600;
+}
+/* ---------- Présentations (components/Diapositives.tsx) : diapositives 16:9 dessinées comme le .pptx ---------- */
+.artefact-theme select {
+  max-width: 150px;
+  height: 30px;
+  min-height: 30px;
+  padding: 0 28px 0 10px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+}
+.artefact-alerte {
+  margin: 8px 12px 0;
+}
+.diapos {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+  padding: 14px 14px 28px;
+  list-style: none;
+  background: var(--panel2);
+}
+.diapo-cadre {
+  position: relative;
+}
+.diapo {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 6px;
+  box-shadow: var(--sh-1);
+  container-type: inline-size;
+}
+.diapo-el {
+  position: absolute;
+  box-sizing: border-box;
+}
+.diapo-arrondi {
+  border-radius: 2.4cqw;
+}
+.diapo-ellipse {
+  border-radius: 50%;
+}
+.diapo-losange {
+  clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%);
+}
+.diapo-hexagone {
+  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
+}
+.diapo-texte {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  line-height: 1.18;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.diapo-texte ul {
+  margin: 0;
+  padding-left: 1.2em;
+}
+.diapo-texte li + li {
+  margin-top: 0.45em;
+}
+.diapo-numero {
+  position: absolute;
+  right: 6px;
+  bottom: -2px;
+  transform: translateY(100%);
+  color: var(--muted);
+  font-size: 0.7rem;
+}
+
+/* Page HTML : aperçu au format téléphone (390 px, centré, cadre arrondi). */
+.artefact-ecrans {
+  display: flex;
+  gap: 2px;
+}
+.artefact-cadre-telephone {
+  flex: none;
+  width: min(390px, 100%);
+  height: min(780px, 100%);
+  margin: 14px auto;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  box-shadow: var(--sh-2);
+}

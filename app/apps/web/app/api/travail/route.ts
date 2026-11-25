@@ -57,7 +57,7 @@ export async function POST(req: Request) {
   if (!utilisateur) return NextResponse.json({ error: 'Connexion requise.' }, { status: 401 });
   if (!travailDisponible())
     return NextResponse.json({ error: 'Stockage non configuré.' }, { status: 503 });
-  const parsed = commande.safeParse(await readJson(req, 40000));
+  const parsed = commande.safeParse(await readJson(req, 100000));
   if (!parsed.success)
     return NextResponse.json({ error: 'Vérifie les champs du formulaire.' }, { status: 400 });
   const c = parsed.data;

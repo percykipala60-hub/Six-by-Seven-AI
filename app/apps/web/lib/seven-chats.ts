@@ -99,7 +99,10 @@ export function lireChat(id: string): ChatSeven | undefined {
   return lireChats().find((c) => c.id === id);
 }
 
-/** Enregistre (ou met à jour) une discussion et la remonte en tête de liste. */
+/**
+ * Enregistre (ou met à jour) une discussion et la remonte en tête de liste. Sans `projetId`, la discussion garde le
+ * projet où elle était rangée.
+ */
 export function garderChat(
   id: string,
   messages: ChatMessage[],
@@ -107,19 +110,54 @@ export function garderChat(
   projetId?: string,
 ): void {
   if (!memoireActive() || messages.length === 0) return;
+  const chats = lireChats();
+  const projet = projetId ?? chats.find((c) => c.id === id)?.projetId;
   const chat: ChatSeven = {
     id,
     titre: titreDe(messages),
     maj: Date.now(),
     messages: messages.slice(-MAX_MSG),
     ...(mode === 'sixtouch' ? { mode } : {}),
-    ...(projetId ? { projetId } : {}),
+    ...(projet ? { projetId: projet } : {}),
   };
-  ecrire([chat, ...lireChats().filter((c) => c.id !== id)]);
+  ecrire([chat, ...chats.filter((c) => c.id !== id)]);
 }
 
 export function effacerChat(id: string): void {
   ecrire(lireChats().filter((c) => c.id !== id));
+}
+
+/** Discussions rangées dans un projet (lib/travail.ts), les plus récentes d'abord. */
+export function chatsDuProjet(projetId: string, chats = lireChats()): ChatSeven[] {
+  return chats.filter((c) => c.projetId === projetId);
+}
+
+/** Range une discussion dans un projet, ou l'en sort (projet vide). Sa place dans la liste ne change pas. */
+export function rangerChat(id: string, projetId: string): void {
+  const chats = lireChats();
+  if (!chats.some((c) => c.id === id)) return;
+  ecrire(
+    chats.map((c) => {
+      if (c.id !== id) return c;
+      const reste = { ...c };
+      delete reste.projetId;
+      return projetId ? { ...reste, projetId } : reste;
+    }),
+  );
+}
+
+/** Le projet est supprimé : ses discussions restent, hors projet. */
+export function sortirDuProjet(projetId: string): void {
+  const chats = lireChats();
+  if (!chats.some((c) => c.projetId === projetId)) return;
+  ecrire(
+    chats.map((c) => {
+      if (c.projetId !== projetId) return c;
+      const reste = { ...c };
+      delete reste.projetId;
+      return reste;
+    }),
+  );
 }
 
 export function effacerTousLesChats(): void {

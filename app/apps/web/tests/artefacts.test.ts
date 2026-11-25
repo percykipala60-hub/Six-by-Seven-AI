@@ -1,5 +1,13 @@
 import { expect, it } from 'vitest';
-import { extraireArtefacts, documentApercu } from '../lib/artefacts';
+import {
+  blocsDocument,
+  documentApercu,
+  extraireArtefacts,
+  genreArtefact,
+  lireTableau,
+  typeMime,
+  versionsDe,
+} from '../lib/artefacts';
 import { sansMarkdown } from '../lib/agent/boucle';
 it('extrait plusieurs fichiers complets sans altérer leur contenu', () => {
   const texte =
@@ -19,4 +27,40 @@ it('impose une politique sans réseau ni scripts avant le contenu généré', ()
   expect(doc.indexOf('Content-Security-Policy')).toBeLessThan(doc.indexOf('<script>'));
   expect(doc).toContain("default-src 'none'");
   expect(doc).toContain("form-action 'none'");
+});
+
+it('reconnaît le genre d’un artefact par son nom', () => {
+  expect(genreArtefact({ nom: 'expose.pptx', langage: 'presentation' })).toBe('presentation');
+  expect(genreArtefact({ nom: 'page.html', langage: 'html' })).toBe('page');
+  expect(genreArtefact({ nom: 'logo.svg', langage: 'svg' })).toBe('page');
+  expect(genreArtefact({ nom: 'budget.csv', langage: 'csv' })).toBe('tableau');
+  expect(genreArtefact({ nom: 'plan.md', langage: 'markdown' })).toBe('document');
+  expect(genreArtefact({ nom: 'calcul.py', langage: 'python' })).toBe('code');
+  expect(typeMime({ nom: 'expose.pptx', langage: 'presentation' })).toContain('presentationml');
+});
+
+it('fait une nouvelle version quand un même fichier revient avec un autre contenu', () => {
+  const bloc = (contenu: string) => `Voici.\n\`\`\`markdown filename="plan.md"\n${contenu}\n\`\`\``;
+  const v = versionsDe([bloc('v1'), 'Une réponse sans fichier.', bloc('v1'), bloc('v2')]);
+  expect(v.get('plan.md')?.map((a) => a.contenu)).toEqual(['v1\n', 'v2\n']);
+});
+
+it('lit un tableau CSV ou Markdown', () => {
+  expect(lireTableau('Nom;Prix\n"Pain; frais";500')).toEqual([
+    ['Nom', 'Prix'],
+    ['Pain; frais', '500'],
+  ]);
+  expect(lireTableau('| A | B |\n|---|---|\n| 1 | 2 |')).toEqual([
+    ['A', 'B'],
+    ['1', '2'],
+  ]);
+});
+
+it('met en page un document léger', () => {
+  expect(blocsDocument('# Titre\n\nUn **paragraphe**\n- a\n- b\n1. c')).toEqual([
+    { genre: 'titre', niveau: 1, texte: 'Titre' },
+    { genre: 'paragraphe', texte: 'Un paragraphe' },
+    { genre: 'liste', ordonnee: false, elements: ['a', 'b'] },
+    { genre: 'liste', ordonnee: true, elements: ['c'] },
+  ]);
 });
