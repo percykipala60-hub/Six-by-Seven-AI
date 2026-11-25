@@ -38,7 +38,7 @@ describe('route /api/chat/transcription', () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ texte: 'Bonjour Six' });
     expect(appel).toHaveBeenCalledWith(
-      'http://127.0.0.1:8765/transcribe',
+      'http://127.0.0.1:8765/transcribe?langue=fr',
       expect.objectContaining({ method: 'POST' }),
     );
   });

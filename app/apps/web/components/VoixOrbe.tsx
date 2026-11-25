@@ -3,9 +3,10 @@
 import { useEffect, useRef } from 'react';
 import { plateforme } from '@/lib/plateforme';
 
-export type PhaseVoix = 'ecoute' | 'reflechit' | 'parle';
+export type PhaseVoix = 'attente' | 'ecoute' | 'reflechit' | 'parle';
 
 const LIBELLES: Record<PhaseVoix, string> = {
+  attente: 'Touche la sphère pour parler',
   ecoute: 'Je t’écoute…',
   reflechit: 'Six réfléchit…',
   parle: 'Six te répond…',
@@ -17,8 +18,16 @@ const LIBELLES: Record<PhaseVoix, string> = {
  * - pendant la réflexion, elle respire lentement ; pendant la réponse de Six, elle ondule.
  * Sur iPhone et Android, la dictée native garde le micro pour elle : la sphère s'anime alors sans mesure.
  */
-export function VoixOrbe({ phase, onTerminer }: { phase: PhaseVoix; onTerminer: () => void }) {
-  const orbe = useRef<HTMLDivElement>(null);
+export function VoixOrbe({
+  phase,
+  onTerminer,
+  onToucher,
+}: {
+  phase: PhaseVoix;
+  onTerminer: () => void;
+  onToucher: () => void;
+}) {
+  const orbe = useRef<HTMLButtonElement>(null);
   const phaseRef = useRef(phase);
   phaseRef.current = phase;
 
@@ -79,10 +88,17 @@ export function VoixOrbe({ phase, onTerminer }: { phase: PhaseVoix; onTerminer: 
 
   return (
     <div className="voix-scene" role="status" aria-live="polite">
-      <div ref={orbe} className={`voix-orbe ${phase}`} aria-hidden="true">
+      <button
+        type="button"
+        ref={orbe}
+        className={`voix-orbe ${phase}`}
+        aria-label={phase === 'attente' ? 'Parler à Six' : LIBELLES[phase]}
+        disabled={phase !== 'attente'}
+        onClick={onToucher}
+      >
         <span className="voix-halo" />
         <span className="voix-coeur" />
-      </div>
+      </button>
       <p className="voix-libelle">{LIBELLES[phase]}</p>
       <button type="button" className="voix-terminer" onClick={onTerminer}>
         Terminer

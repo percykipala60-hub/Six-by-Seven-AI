@@ -65,6 +65,8 @@ export const ChatBodySchema = z.object({
   projetId: z.string().uuid().optional(),
   /** Espace de la discussion : absent = Chat ; « sixtouch » = consignes d'agent de travail. */
   mode: z.enum(['chat', 'sixtouch']).optional(),
+  /** Mode vocal : réponse orale courte, sans relecture (elle doublerait l'attente). */
+  vocal: z.boolean().optional(),
   skill: z
     .enum(['auto', 'documents', 'code', 'web', 'presentations', 'donnees', 'images'])
     .optional(),

@@ -10173,3 +10173,31 @@ div.seven-outils-ligne:not(.seven-outils-flottants) {
 .voix-terminer:hover {
   background: #d93d42;
 }
+
+.voix-orbe {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: default;
+}
+.voix-orbe:disabled {
+  opacity: 1;
+}
+.voix-orbe.attente {
+  cursor: pointer;
+  animation: voix-invite 2.4s ease-in-out infinite;
+}
+.voix-orbe.attente:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 10px;
+  border-radius: 50%;
+}
+@keyframes voix-invite {
+  0%,
+  100% {
+    filter: brightness(0.85);
+  }
+  50% {
+    filter: brightness(1.1);
+  }
+}

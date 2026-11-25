@@ -204,6 +204,7 @@ export async function POST(req: Request) {
         parsed.data.images,
         parsed.data.mode,
         parsed.data.skill,
+        parsed.data.vocal === true,
       ),
     );
   } catch (e) {

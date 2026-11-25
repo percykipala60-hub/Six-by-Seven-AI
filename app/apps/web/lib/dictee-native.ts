@@ -1,3 +1,4 @@
+import { bcp47, lirePreferencesVoix } from './voix';
 import { Capacitor } from '@capacitor/core';
 import { SpeechRecognition } from '@capgo/capacitor-speech-recognition';
 
@@ -17,7 +18,7 @@ export async function dicterSurTelephone(signal: AbortSignal): Promise<string> {
   }
   verifierArret();
   if (permission.speechRecognition !== 'granted') throw new Error('refus');
-  const options = { language: 'fr-FR', preferLegacyRecognizer: true };
+  const options = { language: bcp47(lirePreferencesVoix().langue), preferLegacyRecognizer: true };
   const local = await SpeechRecognition.isOnDeviceRecognitionAvailable(options);
   verifierArret();
   if (!local.available) {

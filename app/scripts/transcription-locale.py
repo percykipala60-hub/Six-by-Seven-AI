@@ -1,10 +1,14 @@
 """Serveur vocal local. Lancer avec le Python contenant faster-whisper."""
 import io
 import json
+import os
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from urllib.parse import parse_qs, urlparse
 from faster_whisper import WhisperModel
 
-model = WhisperModel('base', device='cpu', compute_type='int8')
+# Modèle Whisper (licence MIT) : « base » par défaut ; « small » comprend mieux mais pèse ~460 Mo de plus.
+model = WhisperModel(os.environ.get('SIX_WHISPER_MODELE', 'base'), device='cpu', compute_type='int8')
+LANGUES = {'fr', 'en', 'ln', 'sw'}
 
 
 class Transcription(BaseHTTPRequestHandler):
@@ -23,7 +27,8 @@ class Transcription(BaseHTTPRequestHandler):
         self.repondre(200 if self.path == '/health' else 404, {'ready': True})
 
     def do_POST(self):
-        if self.path != '/transcribe' or self.headers.get('Origin'):
+        adresse = urlparse(self.path)
+        if adresse.path != '/transcribe' or self.headers.get('Origin'):
             self.repondre(403, {'error': 'Requête refusée.'})
             return
         try:
@@ -33,7 +38,16 @@ class Transcription(BaseHTTPRequestHandler):
                 return
             self.connection.settimeout(30)
             audio = self.rfile.read(size)
-            segments, _info = model.transcribe(io.BytesIO(audio), language='fr', vad_filter=True)
+            demandee = parse_qs(adresse.query).get('langue', ['fr'])[0]
+            langue = demandee if demandee in LANGUES else None  # « auto » : Whisper reconnaît la langue
+            segments, _info = model.transcribe(
+                io.BytesIO(audio),
+                language=langue,
+                vad_filter=True,
+                beam_size=5,
+                # Le nom de l'assistant, pour qu'il soit écrit « Six » et non « 6 ».
+                initial_prompt="Conversation avec Six, l'assistant.",
+            )
             self.repondre(200, {'texte': ' '.join(s.text.strip() for s in segments).strip()})
         except Exception:
             self.repondre(422, {'error': 'Audio illisible.'})

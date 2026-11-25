@@ -35,6 +35,8 @@ import { extraireArtefacts, versionsDe } from '@/lib/artefacts';
 import { extrairePdf } from '@/lib/lire-document';
 import { lireSkillDefaut, type ChoixSkill } from '@/lib/skills-cosinus';
 import { ChoixModele } from './ChoixModele';
+import { ecouterPhrase } from '@/lib/ecoute';
+import { bcp47, chargerVoix, choisirVoix, lirePreferencesVoix, phrases } from '@/lib/voix';
 import { VoixOrbe, type PhaseVoix } from './VoixOrbe';
 import {
   BoutonsVolet,
@@ -209,7 +211,7 @@ function dicterTexte(signal: AbortSignal): Promise<string> {
       return;
     }
     const rec = new Ctor();
-    rec.lang = 'fr-FR';
+    rec.lang = bcp47(lirePreferencesVoix().langue);
     rec.interimResults = false;
     rec.maxAlternatives = 1;
     let recu = '';
@@ -236,8 +238,16 @@ function dicterTexte(signal: AbortSignal): Promise<string> {
         );
       else if (code === 'no-speech') reject(new Error('dictée vide'));
       else if (code === 'audio-capture') reject(new ErreurMicro(MESSAGE_PAS_DE_MICRO));
+      // « network » : soit pas d'Internet, soit un navigateur sans accès au service de reconnaissance vocale
+      // (Electron, certains Chromium) ; on ne prétend pas que la connexion est en cause.
       else if (code === 'network')
-        reject(new ErreurMicro('La dictée a besoin d’Internet. Vérifie ta connexion et réessaie.'));
+        reject(
+          new ErreurMicro(
+            navigator.onLine
+              ? 'La dictée de ce navigateur ne répond pas. Réessaie, ou écris ton message.'
+              : 'Pas de connexion Internet : la dictée ne peut pas fonctionner. Écris ton message en attendant.',
+          ),
+        );
       else reject(new Error('erreur dictée'));
     };
     rec.onend = () => {
@@ -551,6 +561,8 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   const [appel, setAppel] = useState(false);
   const [phaseAppel, setPhaseAppel] = useState<PhaseVoix>('ecoute');
   const appelActif = useRef(false);
+  const ecouteAppel = useRef<AbortController | null>(null);
+  const toucherSphere = useRef<(() => void) | null>(null);
   const finirLecture = useRef<(() => void) | null>(null);
   useEffect(
     () => () => {
@@ -828,6 +840,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
                     mode: 'sixtouch',
                     skill,
                     ...(projetId ? { projetId } : {}),
+                    ...(appelActif.current ? { vocal: true } : {}),
                     ...(enCloud && env?.cloud ? { cloud: env.cloud } : dossier ? { dossier } : {}),
                     ...(lecture.length ? { dossiersLecture: lecture } : {}),
                     navigateurSession: JSON.parse(
@@ -933,6 +946,8 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
 
   function raccrocher() {
     appelActif.current = false;
+    ecouteAppel.current?.abort();
+    toucherSphere.current?.();
     operation.current?.abort();
     window.speechSynthesis?.cancel();
     finirLecture.current?.();
@@ -942,6 +957,10 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
 
   async function lireReponse(texte: string): Promise<void> {
     const synthese = window.speechSynthesis;
+    const prefs = lirePreferencesVoix();
+    const voixChoisie = choisirVoix(await chargerVoix(), prefs);
+    // Phrase par phrase : une longue lecture d'un seul bloc hache ou se coupe sur certains appareils.
+    const morceaux = phrases(texte);
     await new Promise<void>((resolve, reject) => {
       let termine = false;
       const finir = () => {
@@ -951,15 +970,35 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         resolve();
       };
       finirLecture.current = finir;
-      const voix = new SpeechSynthesisUtterance(texte);
-      voix.lang = 'fr-FR';
-      voix.onend = finir;
-      voix.onerror = () => {
-        if (!appelActif.current) finir();
-        else reject(new Error('Six ne peut pas lire sa réponse à voix haute sur cet appareil.'));
-      };
-      synthese.speak(voix);
+      if (!morceaux.length) return finir();
+      morceaux.forEach((morceau, i) => {
+        const voix = new SpeechSynthesisUtterance(morceau);
+        voix.lang = voixChoisie?.lang ?? bcp47(prefs.langue);
+        if (voixChoisie) voix.voice = voixChoisie;
+        voix.rate = prefs.vitesse;
+        if (i === morceaux.length - 1) voix.onend = finir;
+        voix.onerror = (e) => {
+          if (e.error === 'interrupted' || e.error === 'canceled' || !appelActif.current) finir();
+          else reject(new Error('Six ne peut pas lire sa réponse à voix haute sur cet appareil.'));
+        };
+        synthese.speak(voix);
+      });
     });
+  }
+
+  /** Transcription d'une phrase du mode vocal par le serveur de Six. */
+  async function transcrireAudio(audio: Blob): Promise<string> {
+    const form = new FormData();
+    form.append('audio', audio);
+    form.append('langue', lirePreferencesVoix().langue);
+    const res = await fetch('/api/chat/transcription', {
+      method: 'POST',
+      headers: await entetesCompte(),
+      body: form,
+    });
+    const data = (await res.json().catch(() => ({}))) as { texte?: string; error?: string };
+    if (!res.ok) throw new Error(data.error ?? 'Six n’a pas pu transcrire ta phrase. Réessaie.');
+    return data.texte ?? '';
   }
 
   async function lancerAppel() {
@@ -969,19 +1008,51 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       setErreur('La lecture vocale n’est pas disponible sur cet appareil.');
       return;
     }
-    if ((await plateforme()) === 'web' && !dicteeDisponible()) {
-      setErreur('L’appel vocal demande un navigateur compatible avec la dictée.');
-      return;
+    // App de bureau (pas de reconnaissance vocale Google dans Electron) ou navigateur sans dictée : on enregistre
+    // la phrase et le serveur de Six la transcrit (moteur vocal local ou service vocal).
+    const bureau = estBureau();
+    const parMoteur = bureau || ((await plateforme()) === 'web' && !dicteeDisponible());
+    if (parMoteur) {
+      const pret = await fetch('/api/chat', { cache: 'no-store' })
+        .then((r) => (r.ok ? (r.json() as Promise<{ transcription?: boolean }>) : null))
+        .then((d) => d?.transcription === true)
+        .catch(() => false);
+      if (!pret) {
+        setErreur(
+          bureau
+            ? 'Le moteur vocal de Six ne répond pas sur cet ordinateur. Ferme puis rouvre l’app Six, et réessaie.'
+            : 'Le mode vocal n’est pas disponible dans ce navigateur. Essaie avec Chrome ou Edge.',
+        );
+        return;
+      }
     }
     setErreur('');
     appelActif.current = true;
     setAppel(true);
+    // Le modèle se charge pendant que la personne dit sa première phrase (sinon la première réponse attend).
+    void fetch('/api/chat/prechauffer', { method: 'POST' }).catch(() => {});
     try {
       while (appelActif.current) {
+        if (lirePreferencesVoix().declenchement === 'toucher') {
+          setPhaseAppel('attente');
+          await new Promise<void>((resolve) => {
+            toucherSphere.current = resolve;
+          });
+          toucherSphere.current = null;
+          if (!appelActif.current) break;
+        }
         setPhaseAppel('ecoute');
-        const phrase = (await dictee()).trim();
-        if (!appelActif.current) break;
-        if (!phrase) throw new Error('Je n’ai rien entendu. Réessaie.');
+        let phrase: string;
+        if (parMoteur) {
+          ecouteAppel.current = new AbortController();
+          phrase = await ecouterPhrase(transcrireAudio, ecouteAppel.current.signal);
+          if (!appelActif.current) break;
+          if (!phrase) continue; // personne n'a parlé : Six continue d'écouter
+        } else {
+          phrase = (await dictee()).trim();
+          if (!appelActif.current) break;
+          if (!phrase) throw new Error('Je n’ai rien entendu. Réessaie.');
+        }
         setPhaseAppel('reflechit');
         const reponse = await envoyerPendantAppel.current(phrase);
         if (!appelActif.current || !reponse) break;
@@ -991,7 +1062,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     } catch (e) {
       if (appelActif.current) {
         setErreur(
-          e instanceof Error && e.message.startsWith('Six ne peut pas lire')
+          e instanceof Error && (e.message.startsWith('Six ne peut pas lire') || parMoteur)
             ? e.message
             : await messageErreurDictee(e),
         );
@@ -1403,7 +1474,13 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         />
       )}
       {/* Mode vocal : la discussion laisse la place à une sphère qui réagit à la voix. */}
-      {appel && <VoixOrbe phase={phaseAppel} onTerminer={raccrocher} />}
+      {appel && (
+        <VoixOrbe
+          phase={phaseAppel}
+          onTerminer={raccrocher}
+          onToucher={() => toucherSphere.current?.()}
+        />
+      )}
       <div className="seven-fil" ref={filRef} aria-live="polite" hidden={appel}>
         {messages.length === 0 && !occupe && (
           <div className="seven-vide">
