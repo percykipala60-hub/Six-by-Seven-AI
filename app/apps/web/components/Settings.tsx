@@ -58,6 +58,7 @@ import {
 import { plateforme } from '@/lib/plateforme';
 import { AppareilsVue } from './Appareils';
 import { ReglagesSkills } from './ReglagesSkills';
+import { ReglagesVoix } from './ReglagesVoix';
 
 type Theme = 'auto' | 'light' | 'dark';
 // Chaque thème est montré comme le logo qu'il donne : fond, « 6 » et trait (mêmes valeurs que app/globals.css).
@@ -274,6 +275,7 @@ type Vue =
   | 'raccourcis'
   | 'sixtouch'
   | 'skills'
+  | 'voix'
   | 'appareils';
 const TITRES: Record<Exclude<Vue, ''>, string> = {
   premium: 'Six Premium',
@@ -286,6 +288,7 @@ const TITRES: Record<Exclude<Vue, ''>, string> = {
   raccourcis: 'Bulle et clavier',
   sixtouch: 'Cosinus',
   skills: 'Focus',
+  voix: 'Voix',
   appareils: 'Appareils connectés',
 };
 const MODES: Record<Theme, string> = { auto: 'Auto', light: 'Clair', dark: 'Sombre' };
@@ -964,6 +967,7 @@ export function Settings() {
       {vue === 'sixtouch' && <ReglagesSixTouch />}
       {vue === 'appareils' && <AppareilsVue />}
       {vue === 'skills' && <ReglagesSkills />}
+      {vue === 'voix' && <ReglagesVoix />}
     </>
   );
 
@@ -1033,6 +1037,13 @@ export function Settings() {
           },
         ]
       : []),
+    {
+      id: 'voix',
+      icon: 'vocal',
+      label: 'Voix',
+      sous: 'Voix de Six, langue, mode vocal',
+      cles: 'voix vocal parler langue lecture vitesse dictée micro écoute sphère',
+    },
     {
       id: 'skills',
       icon: 'sparkles',

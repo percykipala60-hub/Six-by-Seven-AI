@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useLayoutEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AppBar } from './AppBar';
 import { Icon } from './Icon';
@@ -35,6 +35,17 @@ import { extraireArtefacts, versionsDe } from '@/lib/artefacts';
 import { extrairePdf } from '@/lib/lire-document';
 import { lireSkillDefaut, type ChoixSkill } from '@/lib/skills-cosinus';
 import { ChoixModele } from './ChoixModele';
+import { ecouterPhrase } from '@/lib/ecoute';
+import {
+  audioMicro,
+  bcp47,
+  chargerVoix,
+  choisirVoix,
+  estPhraseFantome,
+  lirePreferencesVoix,
+  passagesALire,
+} from '@/lib/voix';
+import { VoixOrbe, type PhaseVoix } from './VoixOrbe';
 import {
   BoutonsVolet,
   GRAND_VOLET,
@@ -208,7 +219,7 @@ function dicterTexte(signal: AbortSignal): Promise<string> {
       return;
     }
     const rec = new Ctor();
-    rec.lang = 'fr-FR';
+    rec.lang = bcp47(lirePreferencesVoix().langue);
     rec.interimResults = false;
     rec.maxAlternatives = 1;
     let recu = '';
@@ -235,8 +246,16 @@ function dicterTexte(signal: AbortSignal): Promise<string> {
         );
       else if (code === 'no-speech') reject(new Error('dictée vide'));
       else if (code === 'audio-capture') reject(new ErreurMicro(MESSAGE_PAS_DE_MICRO));
+      // « network » : soit pas d'Internet, soit un navigateur sans accès au service de reconnaissance vocale
+      // (Electron, certains Chromium) ; on ne prétend pas que la connexion est en cause.
       else if (code === 'network')
-        reject(new ErreurMicro('La dictée a besoin d’Internet. Vérifie ta connexion et réessaie.'));
+        reject(
+          new ErreurMicro(
+            navigator.onLine
+              ? 'La dictée de ce navigateur ne répond pas. Réessaie, ou écris ton message.'
+              : 'Pas de connexion Internet : la dictée ne peut pas fonctionner. Écris ton message en attendant.',
+          ),
+        );
       else reject(new Error('erreur dictée'));
     };
     rec.onend = () => {
@@ -266,6 +285,11 @@ function dicterTexte(signal: AbortSignal): Promise<string> {
  * - « chat » (/chat) : discussion libre avec Six, sans navigateur ni fichiers ;
  * - « sixtouch » (/cosinus) : Six travaille pour toi (agent) ; seul espace avec le volet navigateur et fichiers.
  */
+/** Ajoute le texte dicté à ce qui était déjà écrit dans la barre. */
+function joindreTexte(avant: string, dit: string): string {
+  return avant.trim() ? `${avant.trimEnd()} ${dit}` : dit;
+}
+
 export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   const router = useRouter();
   const sixtouch = mode === 'sixtouch';
@@ -548,8 +572,14 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   const [memOn, setMemOn] = useState(false); // mémoire de Six active (gate de conservation de l'historique)
   const [enregistre, setEnregistre] = useState(false); // micro en cours d'enregistrement
   const [appel, setAppel] = useState(false);
-  const [etapeAppel, setEtapeAppel] = useState('');
+  const [phaseAppel, setPhaseAppel] = useState<PhaseVoix>('ecoute');
   const appelActif = useRef(false);
+  const ecouteAppel = useRef<AbortController | null>(null);
+  const toucherSphere = useRef<(() => void) | null>(null);
+  const envoiApresVocal = useRef(false);
+  const saisieAvantVocal = useRef('');
+  const minuterieDirect = useRef(0);
+  const enDirect = useRef<AbortController | null>(null);
   const finirLecture = useRef<(() => void) | null>(null);
   useEffect(
     () => () => {
@@ -574,7 +604,33 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     const glisser = doux && reste < fil.clientHeight;
     fil.scrollTo({ top: fil.scrollHeight, behavior: glisser ? 'smooth' : 'auto' });
   }, []);
-  const champ = useRef<HTMLInputElement>(null);
+  const champ = useRef<HTMLTextAreaElement>(null);
+  const [multiligne, setMultiligne] = useState(false);
+  const [rayon, setRayon] = useState(26);
+  // Beaucoup de texte : la barre grandit ligne par ligne (8 lignes au plus, puis elle défile). Mesuré avant
+  // l'affichage (pas de saut). Passage à deux rangées avec une marge : sinon, en pleine largeur le texte retient sur
+  // une ligne, la barre revient à une rangée, le texte repasse à la ligne… et la barre s'agite.
+  const longueurMulti = useRef(0);
+  useLayoutEffect(() => {
+    const el = champ.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    const hauteur = el.scrollHeight;
+    el.style.height = `${Math.min(hauteur, 200)}px`;
+    // Plus il y a de lignes, plus les coins se resserrent : la pilule devient peu à peu un carré arrondi.
+    const lignes = Math.max(1, Math.round((Math.min(hauteur, 200) - 16) / 22));
+    setRayon(Math.max(14, 26 - (lignes - 1) * 3));
+    setMultiligne((avant) => {
+      if (!avant && hauteur > 48) {
+        longueurMulti.current = saisie.length;
+        return true;
+      }
+      if (avant && (saisie.length === 0 || saisie.length < longueurMulti.current * 0.75))
+        return false;
+      return avant;
+    });
+    // multiligne : la largeur du champ change, la hauteur est recalculée avant l'affichage.
+  }, [saisie, multiligne]);
   const docInput = useRef<HTMLInputElement>(null);
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const chunksAudio = useRef<Blob[]>([]);
@@ -817,16 +873,28 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         contexteDoc ? pourIA + '\n\nDocument de référence :\n' + contexteDoc : pourIA,
       );
       // Cosinus : le serveur donne à Six ses consignes d'agent de travail.
+      // Chat de l'app de bureau : le navigateur interne existe, Six peut le piloter pour une demande web.
+      const navigateurChat = !sixtouch && estBureau() && !appelActif.current;
       const corps =
-        images.length || sixtouch || projetId
+        images.length || sixtouch || projetId || navigateurChat || appelActif.current
           ? JSON.stringify({
               ...(JSON.parse(texteSeul) as object),
               ...(!sixtouch && projetId ? { projetId } : {}),
+              ...(!sixtouch && appelActif.current ? { vocal: true } : {}),
+              ...(navigateurChat
+                ? {
+                    navigateur: true,
+                    navigateurSession: JSON.parse(
+                      sessionStorage.getItem('six-navigateur-agent') || '{}',
+                    ).session,
+                  }
+                : {}),
               ...(sixtouch
                 ? {
                     mode: 'sixtouch',
                     skill,
                     ...(projetId ? { projetId } : {}),
+                    ...(appelActif.current ? { vocal: true } : {}),
                     ...(enCloud && env?.cloud ? { cloud: env.cloud } : dossier ? { dossier } : {}),
                     ...(lecture.length ? { dossiersLecture: lecture } : {}),
                     navigateurSession: JSON.parse(
@@ -857,7 +925,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         fichiers?: string[];
         plan?: { texte: string; faite: boolean }[];
       };
-      if (sixtouch) data = await requeteAgent('/api/chat', initEnvoi);
+      if (sixtouch || navigateurChat) data = await requeteAgent('/api/chat', initEnvoi);
       else {
         const res = await requete('/api/chat', initEnvoi);
         data = (await res.json().catch(() => ({}))) as ChatResult & { error?: string };
@@ -932,16 +1000,21 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
 
   function raccrocher() {
     appelActif.current = false;
+    ecouteAppel.current?.abort();
+    toucherSphere.current?.();
     operation.current?.abort();
     window.speechSynthesis?.cancel();
     finirLecture.current?.();
     finirLecture.current = null;
     setAppel(false);
-    setEtapeAppel('');
   }
 
   async function lireReponse(texte: string): Promise<void> {
     const synthese = window.speechSynthesis;
+    const prefs = lirePreferencesVoix();
+    const voixChoisie = choisirVoix(await chargerVoix(), prefs);
+    // Par passages : un seul bloc très long se coupe sur certains appareils, phrase par phrase la voix hache.
+    const morceaux = passagesALire(texte);
     await new Promise<void>((resolve, reject) => {
       let termine = false;
       const finir = () => {
@@ -951,15 +1024,35 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         resolve();
       };
       finirLecture.current = finir;
-      const voix = new SpeechSynthesisUtterance(texte);
-      voix.lang = 'fr-FR';
-      voix.onend = finir;
-      voix.onerror = () => {
-        if (!appelActif.current) finir();
-        else reject(new Error('Six ne peut pas lire sa réponse à voix haute sur cet appareil.'));
-      };
-      synthese.speak(voix);
+      if (!morceaux.length) return finir();
+      morceaux.forEach((morceau, i) => {
+        const voix = new SpeechSynthesisUtterance(morceau);
+        voix.lang = voixChoisie?.lang ?? bcp47(prefs.langue);
+        if (voixChoisie) voix.voice = voixChoisie;
+        voix.rate = prefs.vitesse;
+        if (i === morceaux.length - 1) voix.onend = finir;
+        voix.onerror = (e) => {
+          if (e.error === 'interrupted' || e.error === 'canceled' || !appelActif.current) finir();
+          else reject(new Error('Six ne peut pas lire sa réponse à voix haute sur cet appareil.'));
+        };
+        synthese.speak(voix);
+      });
     });
+  }
+
+  /** Transcription d'une phrase du mode vocal par le serveur de Six. */
+  async function transcrireAudio(audio: Blob): Promise<string> {
+    const form = new FormData();
+    form.append('audio', audio);
+    form.append('langue', lirePreferencesVoix().langue);
+    const res = await fetch('/api/chat/transcription', {
+      method: 'POST',
+      headers: await entetesCompte(),
+      body: form,
+    });
+    const data = (await res.json().catch(() => ({}))) as { texte?: string; error?: string };
+    if (!res.ok) throw new Error(data.error ?? 'Six n’a pas pu transcrire ta phrase. Réessaie.');
+    return data.texte ?? '';
   }
 
   async function lancerAppel() {
@@ -969,29 +1062,64 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       setErreur('La lecture vocale n’est pas disponible sur cet appareil.');
       return;
     }
-    if ((await plateforme()) === 'web' && !dicteeDisponible()) {
-      setErreur('L’appel vocal demande un navigateur compatible avec la dictée.');
-      return;
+    // App de bureau (pas de reconnaissance vocale Google dans Electron) ou navigateur sans dictée : on enregistre
+    // la phrase et le serveur de Six la transcrit (moteur vocal local ou service vocal).
+    const bureau = estBureau();
+    const parMoteur = bureau || ((await plateforme()) === 'web' && !dicteeDisponible());
+    if (parMoteur) {
+      const pret = await fetch('/api/chat', { cache: 'no-store' })
+        .then((r) => (r.ok ? (r.json() as Promise<{ transcription?: boolean }>) : null))
+        .then((d) => d?.transcription === true)
+        .catch(() => false);
+      if (!pret) {
+        setErreur(
+          bureau
+            ? 'Le moteur vocal de Six ne répond pas sur cet ordinateur. Ferme puis rouvre l’app Six, et réessaie.'
+            : 'Le mode vocal n’est pas disponible dans ce navigateur. Essaie avec Chrome ou Edge.',
+        );
+        return;
+      }
     }
     setErreur('');
     appelActif.current = true;
     setAppel(true);
+    // Le modèle se charge pendant que la personne dit sa première phrase (sinon la première réponse attend).
+    void fetch('/api/chat/prechauffer', { method: 'POST' }).catch(() => {});
     try {
       while (appelActif.current) {
-        setEtapeAppel('Je t’écoute…');
-        const phrase = (await dictee()).trim();
-        if (!appelActif.current) break;
-        if (!phrase) throw new Error('Je n’ai rien entendu. Réessaie.');
-        setEtapeAppel('Six prépare sa réponse…');
+        if (lirePreferencesVoix().declenchement === 'toucher') {
+          setPhaseAppel('attente');
+          await new Promise<void>((resolve) => {
+            toucherSphere.current = resolve;
+          });
+          toucherSphere.current = null;
+          if (!appelActif.current) break;
+        }
+        setPhaseAppel('ecoute');
+        let phrase: string;
+        if (parMoteur) {
+          ecouteAppel.current = new AbortController();
+          phrase = await ecouterPhrase(transcrireAudio, ecouteAppel.current.signal);
+          if (!appelActif.current) break;
+          // Personne n'a parlé, ou Whisper a « entendu » une phrase fantôme sur un bruit : Six continue d'écouter.
+          if (!phrase || estPhraseFantome(phrase)) continue;
+        } else {
+          phrase = (await dictee()).trim();
+          if (!appelActif.current) break;
+          if (!phrase) throw new Error('Je n’ai rien entendu. Réessaie.');
+        }
+        setPhaseAppel('reflechit');
         const reponse = await envoyerPendantAppel.current(phrase);
         if (!appelActif.current || !reponse) break;
-        setEtapeAppel('Six te répond…');
+        setPhaseAppel('parle');
         await lireReponse(reponse);
+        // Petite pause avant de réécouter : le micro ne doit pas capter la fin de la voix de Six.
+        await new Promise((r) => setTimeout(r, 450));
       }
     } catch (e) {
       if (appelActif.current) {
         setErreur(
-          e instanceof Error && e.message.startsWith('Six ne peut pas lire')
+          e instanceof Error && (e.message.startsWith('Six ne peut pas lire') || parMoteur)
             ? e.message
             : await messageErreurDictee(e),
         );
@@ -1086,10 +1214,16 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   }
 
   // — Message vocal : enregistrement navigateur, transcription serveur, envoi auto. —
+  /** Message vocal : la flèche arrête l'enregistrement, le fait transcrire et l'envoie aussitôt. */
+  function envoyerAudioVocal() {
+    envoiApresVocal.current = true;
+    mediaRecorder.current?.stop(); // la fin de l'enregistrement déclenche la transcription (onstop)
+  }
+
   async function basculerMicro() {
     if (appelActif.current) return;
     if (enregistre) {
-      mediaRecorder.current?.stop(); // la fin déclenche l'envoi dans onstop
+      mediaRecorder.current?.stop(); // la fin déclenche la transcription dans onstop (texte dans la barre)
       return;
     }
     if (micOccupe || verrouMicro.current) return;
@@ -1106,9 +1240,11 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         verrouMicro.current = false;
         setMicOccupe(false);
       }
+      // Le texte dicté arrive dans la barre : la personne le relit, puis l'envoie avec la flèche.
       if (texte.trim()) {
-        setSaisie(texte.trim());
-        void envoyer(texte.trim(), undefined, undefined, pieces, true);
+        const dit = texte.trim();
+        setSaisie((avant) => (avant.trim() ? `${avant.trimEnd()} ${dit}` : dit));
+        champ.current?.focus();
       }
       return;
     }
@@ -1156,9 +1292,11 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         verrouMicro.current = false;
         setMicOccupe(false);
       }
+      // Le texte dicté arrive dans la barre : la personne le relit, puis l'envoie avec la flèche.
       if (texte.trim()) {
-        setSaisie(texte.trim());
-        void envoyer(texte.trim(), undefined, undefined, pieces, true);
+        const dit = texte.trim();
+        setSaisie((avant) => (avant.trim() ? `${avant.trimEnd()} ${dit}` : dit));
+        champ.current?.focus();
       }
       return;
     }
@@ -1183,7 +1321,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     verrouMicro.current = true;
     let flux: MediaStream | undefined;
     try {
-      flux = await navigator.mediaDevices.getUserMedia({ audio: true });
+      flux = await navigator.mediaDevices.getUserMedia({ audio: audioMicro() });
       chunksAudio.current = [];
       const mr = new MediaRecorder(flux);
       mediaRecorder.current = mr;
@@ -1197,15 +1335,22 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       };
       mr.onstop = () => {
         mr.stream.getTracks().forEach((t) => t.stop());
+        window.clearInterval(minuterieDirect.current);
+        enDirect.current?.abort();
         setEnregistre(false);
         const blob = new Blob(chunksAudio.current, { type: mr.mimeType || 'audio/webm' });
         if (blob.size === 0) {
           setErreur('Je n’ai reçu aucun son. Réessaie en parlant après le clic.');
           return;
         }
-        void envoyerVocal(blob);
+        void envoyerVocal(blob, envoiApresVocal.current);
       };
-      mr.start();
+      envoiApresVocal.current = false;
+      saisieAvantVocal.current = champ.current?.value ?? '';
+      // Transcription en direct : toutes les 1,5 s, ce qui a déjà été dit est transcrit et s'affiche dans la barre,
+      // mot à mot, pour voir les erreurs tout de suite. Le texte final remplace cet aperçu à l'arrêt.
+      mr.start(500);
+      minuterieDirect.current = window.setInterval(() => void transcrireEnDirect(mr), 1500);
       setEnregistre(true);
     } catch (e) {
       flux?.getTracks().forEach((piste) => piste.stop());
@@ -1220,7 +1365,32 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     }
   }
 
-  async function envoyerVocal(blob: Blob) {
+  /** Aperçu de la transcription pendant la dictée (une seule demande à la fois). */
+  async function transcrireEnDirect(mr: MediaRecorder) {
+    if (enDirect.current || mr.state !== 'recording' || !chunksAudio.current.length) return;
+    const controleur = new AbortController();
+    enDirect.current = controleur;
+    try {
+      const form = new FormData();
+      form.append('audio', new Blob(chunksAudio.current, { type: mr.mimeType || 'audio/webm' }));
+      form.append('langue', lirePreferencesVoix().langue);
+      const res = await fetch('/api/chat/transcription', {
+        method: 'POST',
+        headers: await entetesCompte(),
+        body: form,
+        signal: controleur.signal,
+      });
+      const data = (await res.json().catch(() => ({}))) as { texte?: string };
+      if (res.ok && data.texte && !estPhraseFantome(data.texte) && mr.state === 'recording')
+        setSaisie(joindreTexte(saisieAvantVocal.current, data.texte.trim()));
+    } catch {
+      /* aperçu seulement : le texte final arrive à l'arrêt */
+    } finally {
+      if (enDirect.current === controleur) enDirect.current = null;
+    }
+  }
+
+  async function envoyerVocal(blob: Blob, envoyerApres = false) {
     setMicOccupe(true);
     setErreur('');
     let texte = '';
@@ -1256,10 +1426,19 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     } finally {
       setMicOccupe(false);
     }
-    if (texte) {
-      setSaisie(texte);
-      void envoyer(texte, undefined, undefined, pieces, true);
+    if (!texte || estPhraseFantome(texte)) {
+      setSaisie(saisieAvantVocal.current);
+      return;
     }
+    const complet = joindreTexte(saisieAvantVocal.current, texte);
+    if (envoyerApres) {
+      setSaisie(complet);
+      void envoyer(complet, undefined, undefined, pieces, true);
+      return;
+    }
+    // Micro réappuyé : le texte reste dans la barre, à relire ou corriger avant d'envoyer.
+    setSaisie(complet);
+    champ.current?.focus();
   }
 
   // Export PDF d'une réponse : le PDF est construit sur l'appareil (jsPDF, chargé à la demande).
@@ -1402,7 +1581,15 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
           onFermer={fermerArtefact}
         />
       )}
-      <div className="seven-fil" ref={filRef} aria-live="polite">
+      {/* Mode vocal : la discussion laisse la place à une sphère qui réagit à la voix. */}
+      {appel && (
+        <VoixOrbe
+          phase={phaseAppel}
+          onTerminer={raccrocher}
+          onToucher={() => toucherSphere.current?.()}
+        />
+      )}
+      <div className="seven-fil" ref={filRef} aria-live="polite" hidden={appel}>
         {messages.length === 0 && !occupe && (
           <div className="seven-vide">
             <span className="six-vide-logo" aria-hidden="true">
@@ -1659,17 +1846,6 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
           void importerFichiers(e.dataTransfer.files);
         }}
       >
-        {appel && (
-          <div className="seven-appel-etat" role="status" aria-live="polite">
-            <span className="seven-appel-onde" aria-hidden="true">
-              <Icon name="vocal" size={16} stroke={2} />
-            </span>
-            <span>{etapeAppel || 'Conversation vocale en cours…'}</span>
-            <button type="button" onClick={raccrocher}>
-              Terminer
-            </button>
-          </div>
-        )}
         {projetId && (
           <p className="seven-projet">
             Contexte du projet actif · <a href="/projets">Mes projets</a>
@@ -1701,7 +1877,10 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
             ))}
           </ul>
         )}
-        <div className="seven-capsule">
+        <div
+          className={`seven-capsule${multiligne ? ' multi' : ''}`}
+          style={{ borderRadius: `${rayon}px` }}
+        >
           <button
             type="button"
             className="seven-doc"
@@ -1727,13 +1906,26 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
             enLecture={lectures}
             onRetirer={(i) => setPieces((p) => p.filter((_, j) => j !== i))}
           />
-          <input
+          <textarea
             ref={champ}
-            type="text"
+            rows={1}
             value={saisie}
             onChange={(e) => setSaisie(e.target.value)}
+            onKeyDown={(e) => {
+              // Entrée envoie, Maj+Entrée passe à la ligne (comme Claude et ChatGPT).
+              if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                e.preventDefault();
+                e.currentTarget.form?.requestSubmit();
+              }
+            }}
             disabled={appel}
-            placeholder={occupe ? 'Écrire la suite (envoyée après la réponse)' : 'Demander à Six'}
+            placeholder={
+              enregistre
+                ? 'Je t’écoute… (micro : écrire ici, flèche : envoyer)'
+                : occupe
+                  ? 'Écrire la suite (envoyée après la réponse)'
+                  : 'Demander à Six'
+            }
             aria-label="Demander à Six"
             enterKeyHint="send"
             onPaste={(e) => {
@@ -1790,13 +1982,27 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
               <button
                 type="button"
                 className={`seven-mic${enregistre ? ' rec' : ''}`}
-                aria-label={enregistre ? 'Arrêter le message vocal' : 'Envoyer un message vocal'}
-                title={enregistre ? 'Terminer le vocal' : 'Message vocal'}
+                aria-pressed={enregistre}
+                aria-label={
+                  enregistre ? 'Arrêter et écrire le texte dans la barre' : 'Dicter un message'
+                }
+                title={enregistre ? 'Arrêter : le texte s’écrit dans la barre' : 'Dicter'}
                 disabled={micOccupe && !enregistre}
                 onClick={() => void basculerMicro()}
               >
-                <Icon name={enregistre ? 'x' : 'mic'} size={20} stroke={1.75} />
+                <Icon name="mic" size={20} stroke={1.9} />
               </button>
+              {enregistre && (
+                <button
+                  type="button"
+                  className="seven-envoyer"
+                  aria-label="Envoyer le message vocal"
+                  title="Envoyer"
+                  onClick={envoyerAudioVocal}
+                >
+                  <Icon name="up" size={18} stroke={2} />
+                </button>
+              )}
             </>
           )}
         </div>

@@ -5,15 +5,20 @@ import { urlTranscriptionLocale } from '@/lib/transcription-locale';
 // Message vocal Seven AI : transcription via le modèle audio d'OpenAI quand une clé est configurée.
 // Sans clé OpenAI, on le dit honnêtement (Claude ne transcrit pas l'audio) : jamais de fausse transcription.
 const TAILLE_MAX = 10 * 1024 * 1024; // 10 Mo
+/** Langue de la dictée (Réglages → Voix) ; « auto » laisse le modèle la reconnaître. */
+const LANGUES = new Set(['fr', 'en', 'ln', 'sw', 'auto']);
 
 export async function POST(req: Request) {
   const blocked = await guard(req, true);
   if (blocked) return blocked;
 
   let audio: unknown;
+  let langue = 'fr';
   try {
     const form = await req.formData();
     audio = form.get('audio');
+    const l = form.get('langue');
+    if (typeof l === 'string' && LANGUES.has(l)) langue = l;
   } catch {
     return fail(400, 'Message vocal illisible. Réessaie.');
   }
@@ -25,7 +30,7 @@ export async function POST(req: Request) {
   const local = urlTranscriptionLocale();
   if (local) {
     try {
-      const res = await fetch(`${local}/transcribe`, {
+      const res = await fetch(`${local}/transcribe?langue=${langue}`, {
         method: 'POST',
         body: audio,
         signal: AbortSignal.timeout(120_000),
@@ -64,6 +69,7 @@ export async function POST(req: Request) {
     corps.append('file', audio, `message.${extension}`);
     corps.append('model', (process.env.OPENAI_TRANSCRIBE_MODEL ?? '').trim() || 'whisper-1');
     corps.append('response_format', 'json');
+    if (langue !== 'auto') corps.append('language', langue);
     const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
       method: 'POST',
       headers: { authorization: `Bearer ${key}` },

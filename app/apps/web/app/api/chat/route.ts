@@ -1,3 +1,4 @@
+import { demandeNavigation } from '@/lib/agent/demande-navigation';
 import { NextResponse } from 'next/server';
 import { fail, guard, providerFail, readJson } from '@/lib/http';
 import { CHAT_MAX_BYTES, CHAT_MAX_BYTES_AVEC_IMAGE, ChatBodySchema } from '@/lib/api-schemas';
@@ -80,6 +81,59 @@ export async function POST(req: Request) {
     return fail(402, MESSAGE_LIMITE.messages);
   // Cosinus avec une IA capable d'agir (Claude ou IA locale) : l'agent utilise ses outils et la réponse arrive en
   // flux NDJSON, une ligne par étape ({type:'etape'}), puis la fin ({type:'fin'}) ou une erreur ({type:'erreur'}).
+  // Chat de l'app de bureau : une demande qui passe par le web (ouvrir un site, chercher, cliquer…) est confiée à
+  // l'agent avec le navigateur interne, sans espace de travail ni fichiers.
+  const derniereQuestion = parsed.data.messages.at(-1)?.content ?? '';
+  if (
+    parsed.data.mode !== 'sixtouch' &&
+    parsed.data.navigateur === true &&
+    parsed.data.vocal !== true &&
+    !process.env.VERCEL &&
+    agentDisponible() &&
+    demandeNavigation(derniereQuestion)
+  ) {
+    const messages = parsed.data.messages;
+    const encodeur = new TextEncoder();
+    const flux = new ReadableStream<Uint8Array>({
+      async start(c) {
+        const envoyer = (o: unknown) => c.enqueue(encodeur.encode(`${JSON.stringify(o)}\n`));
+        try {
+          const r = await executerAgent({
+            historique: messages.slice(0, -1),
+            question: derniereQuestion,
+            images: parsed.data.images,
+            premium: a.illimite,
+            ctx: {
+              espace: '', // le Chat n'a pas d'espace de travail
+              navigateur: {
+                session: parsed.data.navigateurSession,
+                surEtat: (etat: { session: string; url: string }) =>
+                  envoyer({ type: 'navigateur', ...etat }),
+              },
+            },
+            surEtape: (texte) => envoyer({ type: 'etape', texte }),
+            annulation: req.signal,
+          });
+          envoyer({ type: 'fin', reponse: corrigerIdentite(r.reponse), etapes: r.etapes });
+        } catch (e) {
+          envoyer({
+            type: 'erreur',
+            error: e instanceof ProviderError ? e.message : 'Erreur inattendue. Réessaie.',
+          });
+        } finally {
+          c.close();
+        }
+      },
+    });
+    return new Response(flux, {
+      headers: {
+        'content-type': 'application/x-ndjson; charset=utf-8',
+        'cache-control': 'no-store',
+        'x-accel-buffering': 'no',
+      },
+    });
+  }
+
   if (parsed.data.mode === 'sixtouch' && agentDisponible()) {
     const messages = parsed.data.messages;
     const derniere = messages[messages.length - 1];
@@ -204,6 +258,7 @@ export async function POST(req: Request) {
         parsed.data.images,
         parsed.data.mode,
         parsed.data.skill,
+        parsed.data.vocal === true,
       ),
     );
   } catch (e) {

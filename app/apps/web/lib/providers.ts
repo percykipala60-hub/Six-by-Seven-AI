@@ -82,12 +82,17 @@ export async function topics(situation: Situation, contexte: string): Promise<To
 }
 
 /** Six en mode « Chat » : Conversation libre, multi-tours, identité connue du prompt système. */
+/** Mode vocal : la réponse est lue à voix haute. */
+const CONSIGNE_VOCALE =
+  "\n\nConversation vocale : ta réponse sera lue à voix haute. Réponds en 2 ou 3 phrases courtes et naturelles, comme à l'oral : pas de liste, pas de titre, pas de Markdown, pas d'emoji, pas de lien. Si la demande appelle un long document, propose de le préparer par écrit.";
+
 export async function chat(
   messages: ChatMessage[],
   premium = true,
   images?: ImageJointe[],
   mode: 'chat' | 'sixtouch' = 'chat',
   skill: ChoixSkill = 'auto',
+  vocal = false,
 ): Promise<ChatResult> {
   const user = messages[messages.length - 1]?.content ?? '';
   const history = messages.slice(0, -1);
@@ -123,20 +128,28 @@ export async function chat(
   }
   // Site ou présentation : la méthode spécialisée s'applique aussi dans le Chat, et le fichier entier demande de la
   // place. Les autres méthodes restent propres à Cosinus.
-  const long = skillLong(skill, user, Boolean(images?.length));
+  const long = !vocal && skillLong(skill, user, Boolean(images?.length));
   const reponse = (
     await callChat(
       sevenAiSystem(mode) +
-        (mode === 'sixtouch' || long ? consignesSkill(skill, user, Boolean(images?.length)) : ''),
+        (vocal
+          ? CONSIGNE_VOCALE
+          : mode === 'sixtouch' || long
+            ? consignesSkill(skill, user, Boolean(images?.length))
+            : ''),
       user,
       history,
-      // Un rapport, un site ou une présentation demande plus de place qu'une réponse de discussion.
-      long ? 4500 : mode === 'sixtouch' ? 4000 : 1500,
+      // Un rapport, un site ou une présentation demande plus de place qu'une réponse de discussion ; une réponse
+      // orale tient en quelques phrases.
+      vocal ? 300 : long ? 4500 : mode === 'sixtouch' ? 4000 : 1500,
       premium,
       images,
     )
   ).trim();
   if (!reponse) throw new ProviderError('La réponse de Six était vide. Réessaie.');
+  // Mode vocal : la réponse est lue tout de suite. La relecture (un second appel au modèle) doublerait l'attente
+  // pour quelques phrases de conversation sans outil ni fichier.
+  if (vocal) return { reponse: corrigerIdentite(reponse), demo: false };
   return {
     reponse: corrigerIdentite(await verifierReponse({ question: user, reponse, premium })),
     demo: false,
