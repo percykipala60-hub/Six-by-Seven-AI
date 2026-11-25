@@ -10245,19 +10245,19 @@ div.seven-outils-ligne:not(.seven-outils-flottants) {
   }
 }
 
-/* ---------- Message vocal : le micro change de couleur pendant l'écoute ---------- */
+/* ---------- Dictée : le micro devient un carré bleu pendant l'écoute ---------- */
 .seven-composer .seven-capsule button.seven-mic.rec {
-  background: #e5484d;
+  border-radius: 10px;
+  background: var(--brand);
   color: #fff;
-  box-shadow: 0 0 0 0 rgb(229 72 77 / 0.5);
   animation: micro-ecoute 1.4s ease-out infinite;
 }
 @keyframes micro-ecoute {
   0% {
-    box-shadow: 0 0 0 0 rgb(229 72 77 / 0.45);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--brand) 55%, transparent);
   }
   100% {
-    box-shadow: 0 0 0 10px rgb(229 72 77 / 0);
+    box-shadow: 0 0 0 9px color-mix(in srgb, var(--brand) 0%, transparent);
   }
 }
 @media (prefers-reduced-motion: reduce) {

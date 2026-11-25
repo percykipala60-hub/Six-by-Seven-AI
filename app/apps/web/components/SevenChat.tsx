@@ -277,6 +277,11 @@ function dicterTexte(signal: AbortSignal): Promise<string> {
  * - « chat » (/chat) : discussion libre avec Six, sans navigateur ni fichiers ;
  * - « sixtouch » (/cosinus) : Six travaille pour toi (agent) ; seul espace avec le volet navigateur et fichiers.
  */
+/** Ajoute le texte dicté à ce qui était déjà écrit dans la barre. */
+function joindreTexte(avant: string, dit: string): string {
+  return avant.trim() ? `${avant.trimEnd()} ${dit}` : dit;
+}
+
 export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   const router = useRouter();
   const sixtouch = mode === 'sixtouch';
@@ -564,6 +569,9 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   const ecouteAppel = useRef<AbortController | null>(null);
   const toucherSphere = useRef<(() => void) | null>(null);
   const envoiApresVocal = useRef(false);
+  const saisieAvantVocal = useRef('');
+  const minuterieDirect = useRef(0);
+  const enDirect = useRef<AbortController | null>(null);
   const finirLecture = useRef<(() => void) | null>(null);
   useEffect(
     () => () => {
@@ -1279,6 +1287,8 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       };
       mr.onstop = () => {
         mr.stream.getTracks().forEach((t) => t.stop());
+        window.clearInterval(minuterieDirect.current);
+        enDirect.current?.abort();
         setEnregistre(false);
         const blob = new Blob(chunksAudio.current, { type: mr.mimeType || 'audio/webm' });
         if (blob.size === 0) {
@@ -1288,7 +1298,11 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         void envoyerVocal(blob, envoiApresVocal.current);
       };
       envoiApresVocal.current = false;
-      mr.start();
+      saisieAvantVocal.current = champ.current?.value ?? '';
+      // Transcription en direct : toutes les 1,5 s, ce qui a déjà été dit est transcrit et s'affiche dans la barre,
+      // mot à mot, pour voir les erreurs tout de suite. Le texte final remplace cet aperçu à l'arrêt.
+      mr.start(500);
+      minuterieDirect.current = window.setInterval(() => void transcrireEnDirect(mr), 1500);
       setEnregistre(true);
     } catch (e) {
       flux?.getTracks().forEach((piste) => piste.stop());
@@ -1300,6 +1314,31 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       else setErreur('Le micro n’a pas répondu. Réessaie, ou écris ton message en attendant.');
     } finally {
       verrouMicro.current = false;
+    }
+  }
+
+  /** Aperçu de la transcription pendant la dictée (une seule demande à la fois). */
+  async function transcrireEnDirect(mr: MediaRecorder) {
+    if (enDirect.current || mr.state !== 'recording' || !chunksAudio.current.length) return;
+    const controleur = new AbortController();
+    enDirect.current = controleur;
+    try {
+      const form = new FormData();
+      form.append('audio', new Blob(chunksAudio.current, { type: mr.mimeType || 'audio/webm' }));
+      form.append('langue', lirePreferencesVoix().langue);
+      const res = await fetch('/api/chat/transcription', {
+        method: 'POST',
+        headers: await entetesCompte(),
+        body: form,
+        signal: controleur.signal,
+      });
+      const data = (await res.json().catch(() => ({}))) as { texte?: string };
+      if (res.ok && data.texte && mr.state === 'recording')
+        setSaisie(joindreTexte(saisieAvantVocal.current, data.texte.trim()));
+    } catch {
+      /* aperçu seulement : le texte final arrive à l'arrêt */
+    } finally {
+      if (enDirect.current === controleur) enDirect.current = null;
     }
   }
 
@@ -1340,13 +1379,14 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       setMicOccupe(false);
     }
     if (!texte) return;
+    const complet = joindreTexte(saisieAvantVocal.current, texte);
     if (envoyerApres) {
-      setSaisie(texte);
-      void envoyer(texte, undefined, undefined, pieces, true);
+      setSaisie(complet);
+      void envoyer(complet, undefined, undefined, pieces, true);
       return;
     }
-    // Micro réappuyé : le texte arrive dans la barre, à relire ou compléter avant d'envoyer.
-    setSaisie((s) => (s.trim() ? `${s.trimEnd()} ${texte}` : texte));
+    // Micro réappuyé : le texte reste dans la barre, à relire ou corriger avant d'envoyer.
+    setSaisie(complet);
     champ.current?.focus();
   }
 
