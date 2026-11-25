@@ -7,6 +7,7 @@ import {
   listerEspace,
   preparerEspace,
 } from '@/lib/espace-travail';
+import { NOMS_OUTILS_CARTE, OUTILS_CARTE, executerOutilCarte } from '@/lib/carte-rdc';
 import { BASES_PAR_TYPE, TYPES_RECHERCHE, chercherSources } from './sources';
 import { chercherMesDocuments } from './memoire-documents';
 import { modifierDocument, regenerer } from './edition';
@@ -89,6 +90,7 @@ export function definitionsOutils(ctx: ContexteOutils): OutilDef[] {
         required: ['url'],
       },
     },
+    ...OUTILS_CARTE,
   ];
   const memoire: OutilDef[] = ctx.corpus
     ? [
@@ -237,6 +239,10 @@ export function libelleEtape(nom: string, args: Record<string, unknown>): string
       return `Six cherche des sources (${BASES_PAR_TYPE[(TYPES_RECHERCHE as string[]).includes(String(args.type)) ? (args.type as keyof typeof BASES_PAR_TYPE) : 'academique']}) : « ${s('requete')} »`;
     case 'lire_page':
       return `Six lit la page ${s('url')}`;
+    case 'chercher_lieu_rdc':
+      return `Six cherche « ${s('requete')} » sur la carte`;
+    case 'lieux_proches_rdc':
+      return `Six cherche sur la carte autour de « ${s('pres_de')} »`;
     default:
       return `Six utilise ${nom}`;
   }
@@ -477,6 +483,8 @@ export async function executerOutil(
       case 'lire_page':
         return { resultat: await lirePage(args.url) };
     }
+    if (NOMS_OUTILS_CARTE.has(nom))
+      return { resultat: (await executerOutilCarte(nom, args)).resultat };
     return { resultat: `Outil indisponible ici : ${nom}.` };
   } catch {
     return { resultat: `L'outil ${nom} a échoué. Continue sans lui ou essaie autrement.` };

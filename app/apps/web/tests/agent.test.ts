@@ -63,6 +63,8 @@ describe("outils de l'agent", () => {
     expect(definitionsOutils({ espace: '' }).map((o) => o.nom)).toEqual([
       'chercher_sources',
       'lire_page',
+      'chercher_lieu_rdc',
+      'lieux_proches_rdc',
     ]);
     expect(definitionsOutils({ espace }).map((o) => o.nom)).toContain('ecrire_resultat');
   });

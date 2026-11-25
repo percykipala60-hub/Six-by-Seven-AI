@@ -1,4 +1,5 @@
-import { ProviderError, callAI, callChat, hasChatAI, hasAI } from './ai';
+import { ProviderError, agentDisponible, callAI, callChat, hasChatAI, hasAI } from './ai';
+import { questionDeLieu } from './carte-rdc';
 import type { ImageJointe } from './api-schemas';
 import { corrigerIdentite } from './identite';
 import {
@@ -88,6 +89,28 @@ export async function chat(
   const user = messages[messages.length - 1]?.content ?? '';
   const history = messages.slice(0, -1);
   if (!hasChatAI()) return { reponse: demoChat(user), demo: true };
+  // Question de lieu (où se trouve…, pharmacie proche…, distance…) : Six cherche dans OpenStreetMap et l'app
+  // montre la carte des lieux trouvés sous la réponse. Sinon, ou en cas d'échec, réponse habituelle.
+  if (mode === 'chat' && questionDeLieu(user) && agentDisponible()) {
+    try {
+      const { repondreAvecCarte } = await import('./agent/carte');
+      const r = await repondreAvecCarte({
+        system: sevenAiSystem('chat', true),
+        question: user,
+        historique: history,
+        images,
+        premium,
+      });
+      if (r.reponse.trim())
+        return {
+          reponse: corrigerIdentite(r.reponse.trim()),
+          demo: false,
+          ...(r.lieux.length ? { lieux: r.lieux } : {}),
+        };
+    } catch (e) {
+      if (e instanceof ProviderError && /limite/i.test(e.message)) throw e;
+    }
+  }
   const reponse = (
     await callChat(
       sevenAiSystem(mode),
