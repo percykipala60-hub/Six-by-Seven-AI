@@ -21,11 +21,20 @@ page.on('response', async (res) => {
 });
 
 try {
-  // Accueil et écran WhatsApp
+  // Entrée de l'app : « / » mène au Chat (app/page.tsx), premier écran après connexion.
   await page.goto(BASE + '/');
-  // L'accueil s'affiche une fois la session lue (components/Connexion.tsx) : on l'attend.
+  await page.waitForURL('**/chat', { timeout: 15000 }).catch(() => {});
+  r.verifier(
+    "L'entrée de l'app ouvre le Chat",
+    new URL(page.url()).pathname === '/chat',
+    page.url(),
+  );
+
+  // Responsive (lecture de conversation, components/Flow.tsx) et écran WhatsApp
+  await page.goto(BASE + '/responsive');
+  // L'écran s'affiche une fois la session lue (components/Connexion.tsx) : on l'attend.
   await page.waitForSelector('#conv', { timeout: 15000 }).catch(() => {});
-  r.verifier('Accueil affiché', (await page.locator('#conv').count()) === 1);
+  r.verifier('Accueil de Responsive affiché', (await page.locator('#conv').count()) === 1);
   await page.getByRole('button', { name: 'Importer' }).click(); // le « + » de la barre de saisie ouvre la feuille d'import
   await page.getByRole('button', { name: "Fichier d'export" }).click();
   r.verifier('Bouton Ouvrir WhatsApp', (await page.locator('a[href="whatsapp://"]').count()) === 1);
@@ -136,7 +145,7 @@ try {
   }
 
   // Mobile : pas de défilement horizontal
-  await page.goto(BASE + '/');
+  await page.goto(BASE + '/responsive');
   await page.waitForSelector('#conv', { timeout: 15000 }).catch(() => {});
   r.verifier(
     'Pas de défilement horizontal à 375 px',

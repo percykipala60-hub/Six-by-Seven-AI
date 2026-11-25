@@ -34,7 +34,7 @@ try {
   await page.screenshot({ path: image });
   await page.setViewportSize({ width: 375, height: 812 });
 
-  await page.goto(BASE + '/');
+  await page.goto(BASE + '/responsive'); // la lecture de capture est dans Responsive (components/Flow.tsx)
   const debut = Date.now();
   await page.locator('input[type=file][accept="image/*"]').setInputFiles(image);
   await page.waitForSelector('.envoi .envoi-tete', { timeout: 60000 });
