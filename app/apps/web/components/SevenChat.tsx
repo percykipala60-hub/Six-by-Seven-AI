@@ -36,7 +36,15 @@ import { extrairePdf } from '@/lib/lire-document';
 import { lireSkillDefaut, type ChoixSkill } from '@/lib/skills-cosinus';
 import { ChoixModele } from './ChoixModele';
 import { ecouterPhrase } from '@/lib/ecoute';
-import { bcp47, chargerVoix, choisirVoix, lirePreferencesVoix, phrases } from '@/lib/voix';
+import {
+  audioMicro,
+  bcp47,
+  chargerVoix,
+  choisirVoix,
+  estPhraseFantome,
+  lirePreferencesVoix,
+  passagesALire,
+} from '@/lib/voix';
 import { VoixOrbe, type PhaseVoix } from './VoixOrbe';
 import {
   BoutonsVolet,
@@ -596,7 +604,14 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     const glisser = doux && reste < fil.clientHeight;
     fil.scrollTo({ top: fil.scrollHeight, behavior: glisser ? 'smooth' : 'auto' });
   }, []);
-  const champ = useRef<HTMLInputElement>(null);
+  const champ = useRef<HTMLTextAreaElement>(null);
+  // Beaucoup de texte : la barre grandit ligne par ligne (8 lignes au plus, puis elle défile).
+  useEffect(() => {
+    const el = champ.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.min(el.scrollHeight, 200)}px`;
+  }, [saisie]);
   const docInput = useRef<HTMLInputElement>(null);
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const chunksAudio = useRef<Blob[]>([]);
@@ -968,8 +983,8 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     const synthese = window.speechSynthesis;
     const prefs = lirePreferencesVoix();
     const voixChoisie = choisirVoix(await chargerVoix(), prefs);
-    // Phrase par phrase : une longue lecture d'un seul bloc hache ou se coupe sur certains appareils.
-    const morceaux = phrases(texte);
+    // Par passages : un seul bloc très long se coupe sur certains appareils, phrase par phrase la voix hache.
+    const morceaux = passagesALire(texte);
     await new Promise<void>((resolve, reject) => {
       let termine = false;
       const finir = () => {
@@ -1056,7 +1071,8 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
           ecouteAppel.current = new AbortController();
           phrase = await ecouterPhrase(transcrireAudio, ecouteAppel.current.signal);
           if (!appelActif.current) break;
-          if (!phrase) continue; // personne n'a parlé : Six continue d'écouter
+          // Personne n'a parlé, ou Whisper a « entendu » une phrase fantôme sur un bruit : Six continue d'écouter.
+          if (!phrase || estPhraseFantome(phrase)) continue;
         } else {
           phrase = (await dictee()).trim();
           if (!appelActif.current) break;
@@ -1067,6 +1083,8 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         if (!appelActif.current || !reponse) break;
         setPhaseAppel('parle');
         await lireReponse(reponse);
+        // Petite pause avant de réécouter : le micro ne doit pas capter la fin de la voix de Six.
+        await new Promise((r) => setTimeout(r, 450));
       }
     } catch (e) {
       if (appelActif.current) {
@@ -1273,7 +1291,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     verrouMicro.current = true;
     let flux: MediaStream | undefined;
     try {
-      flux = await navigator.mediaDevices.getUserMedia({ audio: true });
+      flux = await navigator.mediaDevices.getUserMedia({ audio: audioMicro() });
       chunksAudio.current = [];
       const mr = new MediaRecorder(flux);
       mediaRecorder.current = mr;
@@ -1333,7 +1351,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         signal: controleur.signal,
       });
       const data = (await res.json().catch(() => ({}))) as { texte?: string };
-      if (res.ok && data.texte && mr.state === 'recording')
+      if (res.ok && data.texte && !estPhraseFantome(data.texte) && mr.state === 'recording')
         setSaisie(joindreTexte(saisieAvantVocal.current, data.texte.trim()));
     } catch {
       /* aperçu seulement : le texte final arrive à l'arrêt */
@@ -1378,7 +1396,10 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     } finally {
       setMicOccupe(false);
     }
-    if (!texte) return;
+    if (!texte || estPhraseFantome(texte)) {
+      setSaisie(saisieAvantVocal.current);
+      return;
+    }
     const complet = joindreTexte(saisieAvantVocal.current, texte);
     if (envoyerApres) {
       setSaisie(complet);
@@ -1852,11 +1873,18 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
             enLecture={lectures}
             onRetirer={(i) => setPieces((p) => p.filter((_, j) => j !== i))}
           />
-          <input
+          <textarea
             ref={champ}
-            type="text"
+            rows={1}
             value={saisie}
             onChange={(e) => setSaisie(e.target.value)}
+            onKeyDown={(e) => {
+              // Entrée envoie, Maj+Entrée passe à la ligne (comme Claude et ChatGPT).
+              if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) {
+                e.preventDefault();
+                e.currentTarget.form?.requestSubmit();
+              }
+            }}
             disabled={appel}
             placeholder={
               enregistre

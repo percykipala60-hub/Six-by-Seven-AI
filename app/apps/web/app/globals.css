@@ -10265,3 +10265,112 @@ div.seven-outils-ligne:not(.seven-outils-flottants) {
     animation: none;
   }
 }
+
+/* ---------- Réglages → Voix : parties et rangées (titre à gauche, liste déroulante à droite) ---------- */
+.voix-reglages {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+.voix-bloc-titre {
+  margin: 0 0 4px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+  font-size: 1rem;
+  font-weight: 650;
+}
+.voix-rangee {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+.voix-rangee-texte {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.voix-rangee-titre {
+  font-weight: 600;
+}
+.voix-rangee-sous {
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+.voix-rangee-choix {
+  flex: none;
+  max-width: 60%;
+}
+select.select.voix-select {
+  width: auto;
+  max-width: 100%;
+  min-height: 36px;
+  padding: 7px 34px 7px 12px;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  text-overflow: ellipsis;
+}
+.voix-choix-ligne {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.voix-ecouter {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+.voix-ecouter:hover {
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+}
+@media (max-width: 560px) {
+  .voix-rangee {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .voix-rangee-choix {
+    max-width: none;
+  }
+  select.select.voix-select {
+    width: 100%;
+  }
+}
+
+/* ---------- Barre de saisie : elle grandit avec le texte (8 lignes au plus), les boutons restent en bas ---------- */
+.seven-capsule {
+  align-items: flex-end;
+}
+.seven-composer .seven-capsule textarea {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  max-height: 200px;
+  padding: 9px 8px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+  line-height: 1.45;
+  resize: none;
+  overflow-y: auto;
+  box-shadow: none;
+  outline: none;
+}
+.seven-composer .seven-capsule textarea:focus {
+  border-color: transparent;
+  box-shadow: none;
+}

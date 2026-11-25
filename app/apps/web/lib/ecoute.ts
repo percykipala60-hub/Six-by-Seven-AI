@@ -1,5 +1,7 @@
 'use client';
 
+import { audioMicro } from './voix';
+
 /**
  * Écoute d'une phrase par le micro, pour le mode vocal là où la dictée du navigateur n'existe pas (app de bureau :
  * Electron n'a pas accès à la reconnaissance vocale de Google). On enregistre, on repère la fin de la phrase par le
@@ -34,7 +36,7 @@ function volume(analyseur: AnalyserNode, donnees: Uint8Array): number {
 /** Enregistre une phrase et renvoie son audio (vide si personne n'a parlé). */
 export async function enregistrerPhrase(signal?: AbortSignal): Promise<Blob> {
   const flux = await navigator.mediaDevices.getUserMedia({
-    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+    audio: audioMicro({ echoCancellation: true, noiseSuppression: true, autoGainControl: true }),
   });
   const contexte = new AudioContext();
   const analyseur = contexte.createAnalyser();

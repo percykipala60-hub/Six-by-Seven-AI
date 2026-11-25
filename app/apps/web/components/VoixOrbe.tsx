@@ -3,6 +3,7 @@
 import { useEffect, useRef, type CSSProperties } from 'react';
 import { Logo } from './Logo';
 import { plateforme } from '@/lib/plateforme';
+import { audioMicro } from '@/lib/voix';
 
 export type PhaseVoix = 'attente' | 'ecoute' | 'reflechit' | 'parle';
 
@@ -68,7 +69,7 @@ export function VoixOrbe({
         return;
       }
       try {
-        flux = await navigator.mediaDevices.getUserMedia({ audio: true });
+        flux = await navigator.mediaDevices.getUserMedia({ audio: audioMicro() });
         if (arret) return;
         contexte = new AudioContext();
         const analyseur = contexte.createAnalyser();

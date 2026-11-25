@@ -12,6 +12,8 @@
 export type LangueVoix = 'fr' | 'en' | 'ln' | 'sw' | 'auto';
 export type Declenchement = 'auto' | 'toucher';
 export type PreferencesVoix = {
+  /** Micro choisi (identifiant de l'appareil) ; vide : le micro par défaut du système. */
+  micro: string;
   voix: string;
   langue: LangueVoix;
   vitesse: number;
@@ -33,12 +35,19 @@ export const VITESSES: { valeur: number; nom: string }[] = [
 ];
 
 const CLE = 'six-voix';
-const DEFAUT: PreferencesVoix = { voix: '', langue: 'fr', vitesse: 1.05, declenchement: 'auto' };
+const DEFAUT: PreferencesVoix = {
+  micro: '',
+  voix: '',
+  langue: 'fr',
+  vitesse: 1.05,
+  declenchement: 'auto',
+};
 
 export function lirePreferencesVoix(): PreferencesVoix {
   try {
     const p = JSON.parse(localStorage.getItem(CLE) ?? '{}') as Partial<PreferencesVoix>;
     return {
+      micro: typeof p.micro === 'string' ? p.micro.slice(0, 200) : DEFAUT.micro,
       voix: typeof p.voix === 'string' ? p.voix.slice(0, 200) : DEFAUT.voix,
       langue: LANGUES_VOIX.some((l) => l.id === p.langue)
         ? (p.langue as LangueVoix)
@@ -91,7 +100,7 @@ export function choisirVoix(
   );
 }
 
-/** Découpe un texte en phrases pour une lecture fluide (une longue lecture d'un bloc hache ou se coupe). */
+/** Découpe un texte en phrases (sert à composer les passages lus). */
 export function phrases(texte: string): string[] {
   return (
     texte
@@ -100,6 +109,48 @@ export function phrases(texte: string): string[] {
       ?.map((p) => p.trim())
       .filter(Boolean) ?? []
   );
+}
+
+/**
+ * Texte prêt à être lu : sans emoji, symbole, lien ni mise en forme, et ponctuation collée aux mots (les voix de
+ * Windows lisent parfois « ? », « ! » ou les guillemets isolés comme des mots).
+ */
+export function texteALire(texte: string): string {
+  return texte
+    .replace(/https?:\/\/\S+/g, '')
+    .replace(/[*_#`>|~^]+/g, ' ')
+    .replace(/\[(.*?)\]\([^)]*\)/g, '$1')
+    .replace(/[«»“”"]/g, '')
+    .replace(/\p{Extended_Pictographic}|\p{Emoji_Modifier}|‍|️/gu, '')
+    .replace(/\s+([?!:;.,…])/g, '$1')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Passages à lire : les phrases regroupées jusqu'à ~220 caractères. Moins de coupures entre deux lectures, donc une
+ * voix plus fluide ; assez court pour que la lecture ne se coupe pas sur certains appareils.
+ */
+export function passagesALire(texte: string, max = 220): string[] {
+  const passages: string[] = [];
+  let courant = '';
+  for (const p of phrases(texteALire(texte))) {
+    if (courant && courant.length + p.length + 1 > max) {
+      passages.push(courant);
+      courant = p;
+    } else courant = courant ? `${courant} ${p}` : p;
+  }
+  if (courant) passages.push(courant);
+  return passages;
+}
+
+/** Phrases que Whisper invente parfois sur un silence ou un bruit (à ignorer, ce n'est pas la personne). */
+const FANTOMES =
+  /^(merci d'avoir regardé|sous-titr|sous titres|abonnez-vous|merci\.?$|you\.?$|thank you|thanks for watching|\.+$|…$)/i;
+
+export function estPhraseFantome(texte: string): boolean {
+  const t = texte.trim().replace(/[!.]+$/, '');
+  return !t || FANTOMES.test(t) || /amara\.org|sous-titres? réalisés?/i.test(t);
 }
 
 /** Les voix de l'appareil (elles arrivent parfois après un court délai). */
@@ -113,4 +164,27 @@ export function chargerVoix(): Promise<SpeechSynthesisVoice[]> {
     synthese.addEventListener('voiceschanged', fini, { once: true });
     setTimeout(fini, 1500);
   });
+}
+
+/** Contraintes audio pour le micro choisi dans Réglages → Voix (le micro par défaut sinon). */
+export function audioMicro(extra: MediaTrackConstraints = {}): MediaTrackConstraints | true {
+  const micro = lirePreferencesVoix().micro;
+  if (!micro && !Object.keys(extra).length) return true;
+  return { ...extra, ...(micro ? { deviceId: { ideal: micro } } : {}) };
+}
+
+/** Les micros de l'ordinateur. Sans autorisation du micro, les noms restent vides : on la demande d'abord. */
+export async function listerMicros(demander = false): Promise<MediaDeviceInfo[]> {
+  if (!navigator.mediaDevices?.enumerateDevices) return [];
+  let liste = (await navigator.mediaDevices.enumerateDevices()).filter(
+    (d) => d.kind === 'audioinput',
+  );
+  if (demander && liste.every((d) => !d.label)) {
+    const flux = await navigator.mediaDevices.getUserMedia({ audio: true });
+    flux.getTracks().forEach((piste) => piste.stop());
+    liste = (await navigator.mediaDevices.enumerateDevices()).filter(
+      (d) => d.kind === 'audioinput',
+    );
+  }
+  return liste.filter((d) => d.deviceId !== 'default' && d.deviceId !== 'communications');
 }
