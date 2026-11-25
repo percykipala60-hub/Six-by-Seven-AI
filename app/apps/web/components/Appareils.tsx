@@ -93,7 +93,7 @@ export function AppareilsVue() {
         pied={
           gestion
             ? 'Déconnecter un appareil ferme sa session : il devra se reconnecter pour utiliser votre compte.'
-            : 'Seul l’appareil principal (connecté avec votre mot de passe ou Google) peut déconnecter les autres. S’il n’est plus connecté, le plus ancien appareil prend le relais.'
+            : undefined
         }
       >
         {liste === null && !erreur && <LigneInfo icon="refresh" label="Chargement…" />}

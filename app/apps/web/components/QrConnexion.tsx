@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { attendreDemandeQr, creerDemandeQr, lienQr, type DemandeQr } from '@/lib/qr-connexion';
+import { Logo } from './Logo';
 
 /**
- * Code QR de l'écran de connexion (comme Steam) : un appareil déjà connecté à Six le scanne (menu → « Scanner un
- * code QR ») et confirme ; cet appareil-ci se connecte alors au même compte, sans mot de passe. Le code change
+ * Code QR de l'écran de connexion (comme Steam), avec le « 6 » de Six au centre : un appareil déjà connecté le scanne
+ * (Réglages → Appareils connectés → « Associer un appareil ») et confirme ; cet appareil-ci se connecte alors au même compte, sans mot de passe. Le code change
  * toutes les 2 minutes et ne sert qu'une fois.
  */
 export function QrConnexion() {
@@ -27,7 +28,8 @@ export function QrConnexion() {
         const image = await QRCode.toString(lienQr(d), {
           type: 'svg',
           margin: 1,
-          errorCorrectionLevel: 'M',
+          // Correction maximale (H, 30 %) : le logo de Six au centre ne gêne pas la lecture.
+          errorCorrectionLevel: 'H',
           color: { dark: '#0f1a3a', light: '#ffffff' },
         });
         if (annule) return;
@@ -81,13 +83,19 @@ export function QrConnexion() {
       <div className="qr-image" aria-label="Code QR de connexion" role="img">
         {etat === 'pret' || etat === 'connexion' ? (
           // SVG fabriqué sur l'appareil par la bibliothèque qrcode (aucun contenu venu d'ailleurs).
-          // eslint-disable-next-line @next/next/no-img-element -- image fabriquée sur l'appareil (data URL)
-          <img
-            src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`}
-            alt=""
-            width={136}
-            height={136}
-          />
+          <span className="qr-avec-logo">
+            {/* eslint-disable-next-line @next/next/no-img-element -- image fabriquée sur l'appareil (data URL) */}
+            <img
+              src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`}
+              alt=""
+              width={136}
+              height={136}
+            />
+            {/* Le « 6 » de Six au centre du code. */}
+            <span className="qr-logo" aria-hidden="true">
+              <Logo label="" small />
+            </span>
+          </span>
         ) : (
           <span className="qr-attente">{etat === 'erreur' ? '' : 'Préparation du code…'}</span>
         )}
@@ -108,7 +116,8 @@ export function QrConnexion() {
             <ol>
               <li>Ouvre Six sur un appareil déjà connecté (téléphone, ordinateur).</li>
               <li>
-                Menu → <strong>Scanner un code QR</strong>, puis vise ce code.
+                Réglages → <strong>Appareils connectés</strong> →{' '}
+                <strong>Associer un appareil</strong>, puis vise ce code.
               </li>
               <li>Confirme : cet appareil se connecte à ton compte.</li>
             </ol>
