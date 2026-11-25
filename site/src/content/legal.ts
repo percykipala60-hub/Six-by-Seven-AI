@@ -153,7 +153,7 @@ export const legalPages: LegalPage[] = [
           {
             list: [
               "La mémoire de Six : habitudes d'écriture résumées en nombres, notes que vous ajoutez sur vos contacts, rappels de suivi. Ce que Six apprend est oublié après 90 jours.",
-              "Lorsque la mémoire est activée : vos conversations terminées avec Six (un court extrait masqué et la réponse retenue) et vos échanges avec Seven AI, jusqu'à ce que vous les effaciez. Ils ne sont jamais envoyés à votre compte.",
+              "Lorsque la mémoire est activée : vos conversations terminées avec Six (un court extrait masqué et la réponse retenue) et vos échanges avec Seven AI, jusqu'à ce que vous les effaciez. Ces conversations restent sur l'appareil : elles ne sont pas copiées sur votre compte, même lorsque la copie de la mémoire est activée.",
               "Sur Android, si vous l'autorisez : les aperçus des notifications des applications que vous choisissez (25 au plus), dans le stockage privé de l'appareil. Rien n'est envoyé tant que vous ne lancez pas vous-même une analyse.",
             ],
           },
@@ -164,7 +164,8 @@ export const legalPages: LegalPage[] = [
         title: "5. Compte et copie de la mémoire",
         body: [
           "Un compte est nécessaire pour utiliser Six. Seven.AI traite votre adresse électronique pour l'authentification, ainsi que votre prénom.",
-          "Votre mémoire n'est copiée sur votre compte que si vous l'autorisez expressément (Réglages > Compte). Si vous retirez cette autorisation, la copie conservée sur le compte est effacée.",
+          "Votre mémoire (habitudes d'écriture résumées en nombres, notes sur vos contacts, rappels de suivi) n'est copiée sur votre compte que si vous l'autorisez expressément (Réglages > Compte), pour la retrouver sur vos autres appareils. Vos conversations n'en font pas partie. Si vous retirez cette autorisation, la copie conservée sur le compte est effacée.",
+          "Si vous partagez une discussion par lien (Cloud de Six Premium), son texte (questions et réponses, sans pièces jointes ni images) est enregistré sur nos serveurs et peut être lu par toute personne qui a le lien, jusqu'à ce que vous supprimiez le partage ou qu'il expire.",
           "Ces données sont hébergées par Supabase, dans une région située à Paris (Union européenne), avec des règles d'accès qui réservent chaque compte à son titulaire.",
         ],
       },
@@ -189,6 +190,7 @@ export const legalPages: LegalPage[] = [
             list: [
               "Contenu des messages : aucune conservation sur nos serveurs.",
               "Données de compte (adresse électronique, prénom, copie de la mémoire si vous l'avez autorisée) : jusqu'à la suppression du compte.",
+              "Discussions partagées par lien : jusqu'à la suppression du partage ou à sa date d'expiration.",
               "Journaux techniques sans contenu : durée limitée, strictement nécessaire à la sécurité et au bon fonctionnement du service.",
             ],
           },
