@@ -23,6 +23,7 @@ import {
   RechercheNatif,
   pontBureau,
 } from './NavigateurNatif';
+import { entetesCompte } from '@/lib/premium-client';
 
 /**
  * Volet latéral du Chat, à droite : un navigateur et les fichiers de la discussion.
@@ -692,7 +693,8 @@ export function Volet({
     if (!url || !besoinVerif || url.startsWith('https://www.google.com/search?igu=1')) return;
     let actif = true;
     setVerification(true);
-    fetch(`/api/page-lecture?url=${encodeURIComponent(url)}`)
+    entetesCompte()
+      .then((headers) => fetch(`/api/page-lecture?url=${encodeURIComponent(url)}`, { headers }))
       .then((r) => (r.ok ? (r.json() as Promise<PageLecture>) : null))
       .then((d) => {
         if (!actif || !d) return;

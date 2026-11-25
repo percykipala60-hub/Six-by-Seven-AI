@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { offres } from '@/lib/premium';
 import { depasse, viderQuotas } from '@/lib/quotas';
+vi.mock('@/lib/supabase-serveur', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  utilisateurDeRequete: async (req: Request) =>
+    req.headers.get('authorization') === 'Bearer test-token' ? { id: 'test-user' } : null,
+}));
 
 const VARIABLES = [
   'PREMIUM_PRIX_7J',
@@ -52,7 +57,11 @@ describe('route d’analyse', () => {
     return POST(
       new Request('http://localhost/api/analyze', {
         method: 'POST',
-        headers: { origin: 'http://localhost', 'content-type': 'application/json' },
+        headers: {
+          origin: 'http://localhost',
+          authorization: 'Bearer test-token',
+          'content-type': 'application/json',
+        },
         body: JSON.stringify({ conversation: 'Salut, tu viens samedi ?' }),
       }),
     );

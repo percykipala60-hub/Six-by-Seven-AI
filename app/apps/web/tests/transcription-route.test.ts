@@ -1,4 +1,9 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+vi.mock('@/lib/supabase-serveur', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  utilisateurDeRequete: async (req: Request) =>
+    req.headers.get('authorization') === 'Bearer test-token' ? { id: 'test-user' } : null,
+}));
 
 const { POST } = await import('@/app/api/chat/transcription/route');
 
@@ -7,7 +12,7 @@ const demande = (body: FormData | undefined, origin = site) =>
   POST(
     new Request(`${site}/api/chat/transcription`, {
       method: 'POST',
-      headers: { origin },
+      headers: { origin, authorization: 'Bearer test-token' },
       ...(body ? { body } : {}),
     }),
   );

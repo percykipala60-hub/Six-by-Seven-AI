@@ -8,7 +8,14 @@ import { ENTREPRISE, PRODUIT } from '@/lib/marque';
  */
 
 export type ActionEmail =
-  'signup' | 'magiclink' | 'recovery' | 'reauthentication' | 'invite' | 'email_change' | 'email';
+  | 'signup'
+  | 'magiclink'
+  | 'recovery'
+  | 'reauthentication'
+  | 'invite'
+  | 'email_change'
+  | 'email'
+  | 'password_changed_notification';
 
 export type DemandeEmail = {
   user: { id: string; email: string };
@@ -200,6 +207,15 @@ export function composerEmail(
             `font-weight:700;font-size:15px;text-decoration:none">Choisir un nouveau mot de passe</a></p>` +
             p('Ce lien est valable 10 minutes et ne peut être utilisé qu’une seule fois.'),
           'Si vous n’avez pas demandé cette réinitialisation, ignorez cet e-mail : votre mot de passe actuel reste inchangé.',
+        ),
+      };
+    case 'password_changed_notification':
+      return {
+        objet: 'Votre mot de passe Six a été modifié',
+        html: page(
+          'Mot de passe modifié',
+          p('Le mot de passe de votre compte Six vient d’être modifié.'),
+          'Si vous n’êtes pas à l’origine de cette modification, réinitialisez immédiatement votre mot de passe depuis l’application et contactez notre équipe.',
         ),
       };
     default:

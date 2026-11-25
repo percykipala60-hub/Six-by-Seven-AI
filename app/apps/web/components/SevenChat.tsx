@@ -1234,7 +1234,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       form.append('audio', blob);
       const res = await requete(
         '/api/chat/transcription',
-        { method: 'POST', body: form },
+        { method: 'POST', headers: await entetesCompte(), body: form },
         operationMicro,
       );
       const data = (await res.json().catch(() => ({}))) as { texte?: string; error?: string };

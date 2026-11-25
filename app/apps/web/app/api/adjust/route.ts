@@ -4,7 +4,7 @@ import { AdjustBodySchema } from '@/lib/api-schemas';
 import { adjust } from '@/lib/providers';
 
 export async function POST(req: Request) {
-  const blocked = await guard(req);
+  const blocked = await guard(req, true);
   if (blocked) return blocked;
   const b = await readJson(req);
   const parsed = AdjustBodySchema.safeParse(b);
