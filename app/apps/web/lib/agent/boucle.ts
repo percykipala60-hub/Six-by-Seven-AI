@@ -215,7 +215,7 @@ export async function executerAgent({
       ? await ficheStyle()
       : '';
   const system =
-    sevenAiSystem('sixtouch', true) +
+    sevenAiSystem(ctx.espace ? 'sixtouch' : 'chat', true) +
     consignesSkill(skill, question, Boolean(images?.length)) +
     CONSIGNE_PLAN +
     // Consignes détaillées des spécialités que la tâche concerne (rapports…), seulement quand elles servent.

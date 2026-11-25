@@ -147,41 +147,42 @@ export function definitionsOutils(ctx: ContexteOutils): OutilDef[] {
         ...(ctx.espace ? [] : [lireFichierDef]),
       ]
     : [];
-  if (!ctx.espace) return [...memoire, ...hors, ...web];
+  // Navigateur interne : dans Cosinus comme dans le Chat (qui n'a pas d'espace de travail).
+  const navigation: OutilDef[] = ctx.navigateur
+    ? [
+        {
+          nom: 'naviguer',
+          description:
+            'Pilote le navigateur interne de Six. Ouvre une URL, observe le texte et les éléments, clique un identifiant observé, remplit un champ, défile ou revient en arrière. Chaque résultat est une nouvelle observation : anciens identifiants périmés. Ne prétends jamais réussir sans vérifier le résultat.',
+          parametres: {
+            type: 'object' as const,
+            properties: {
+              action: {
+                type: 'string' as const,
+                description: 'Action à réaliser',
+                enum: ['ouvrir', 'observer', 'cliquer', 'remplir', 'retour', 'avant', 'defiler'],
+              },
+              url: { type: 'string' as const, description: 'URL publique pour ouvrir' },
+              element: {
+                type: 'string' as const,
+                description: 'Identifiant exact de la dernière observation pour cliquer ou remplir',
+              },
+              texte: { type: 'string' as const, description: 'Texte à saisir' },
+              direction: {
+                type: 'string' as const,
+                description: 'Direction du défilement',
+                enum: ['haut', 'bas'],
+              },
+            },
+            required: ['action'],
+          },
+        },
+      ]
+    : [];
+  if (!ctx.espace) return [...memoire, ...hors, ...navigation, ...web];
   return [
     ...memoire,
-    ...(ctx.navigateur
-      ? [
-          {
-            nom: 'naviguer',
-            description:
-              'Pilote le navigateur interne de Six. Ouvre une URL, observe le texte et les éléments, clique un identifiant observé, remplit un champ, défile ou revient en arrière. Chaque résultat est une nouvelle observation : anciens identifiants périmés. Ne prétends jamais réussir sans vérifier le résultat.',
-            parametres: {
-              type: 'object' as const,
-              properties: {
-                action: {
-                  type: 'string' as const,
-                  description: 'Action à réaliser',
-                  enum: ['ouvrir', 'observer', 'cliquer', 'remplir', 'retour', 'avant', 'defiler'],
-                },
-                url: { type: 'string' as const, description: 'URL publique pour ouvrir' },
-                element: {
-                  type: 'string' as const,
-                  description:
-                    'Identifiant exact de la dernière observation pour cliquer ou remplir',
-                },
-                texte: { type: 'string' as const, description: 'Texte à saisir' },
-                direction: {
-                  type: 'string' as const,
-                  description: 'Direction du défilement',
-                  enum: ['haut', 'bas'],
-                },
-              },
-              required: ['action'],
-            },
-          },
-        ]
-      : []),
+    ...navigation,
     {
       nom: 'lister_espace',
       description:
@@ -431,7 +432,7 @@ export async function executerOutil(
   try {
     switch (nom) {
       case 'naviguer': {
-        if (!ctx.espace || !ctx.navigateur) break;
+        if (!ctx.navigateur) break;
         const { agirAgent } = await import('@/lib/navigateur-distant');
         try {
           const etat = await agirAgent(ctx.navigateur.session, args);

@@ -10378,7 +10378,6 @@ select.select.voix-select {
 /* Texte sur plusieurs lignes : il prend toute la largeur, « + » et l'envoi restent sur la rangée du bas. */
 .seven-capsule.multi {
   flex-wrap: wrap;
-  border-radius: 22px;
 }
 .seven-capsule.multi textarea {
   order: -1;
@@ -10387,4 +10386,16 @@ select.select.voix-select {
 }
 .seven-capsule.multi .seven-doc {
   margin-right: auto;
+}
+
+/* Barre de saisie : pas de barre de défilement visible (la molette et le doigt défilent toujours), coins qui se
+   resserrent en douceur quand des lignes s'ajoutent. */
+.seven-composer .seven-capsule textarea {
+  scrollbar-width: none;
+}
+.seven-composer .seven-capsule textarea::-webkit-scrollbar {
+  display: none;
+}
+.seven-capsule {
+  transition: border-radius 0.18s ease;
 }

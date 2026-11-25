@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useLayoutEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AppBar } from './AppBar';
 import { Icon } from './Icon';
@@ -606,15 +606,31 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   }, []);
   const champ = useRef<HTMLTextAreaElement>(null);
   const [multiligne, setMultiligne] = useState(false);
-  // Beaucoup de texte : la barre grandit ligne par ligne (8 lignes au plus, puis elle défile).
-  useEffect(() => {
+  const [rayon, setRayon] = useState(26);
+  // Beaucoup de texte : la barre grandit ligne par ligne (8 lignes au plus, puis elle défile). Mesuré avant
+  // l'affichage (pas de saut). Passage à deux rangées avec une marge : sinon, en pleine largeur le texte retient sur
+  // une ligne, la barre revient à une rangée, le texte repasse à la ligne… et la barre s'agite.
+  const longueurMulti = useRef(0);
+  useLayoutEffect(() => {
     const el = champ.current;
     if (!el) return;
     el.style.height = 'auto';
-    el.style.height = `${Math.min(el.scrollHeight, 200)}px`;
-    // Plus d'une ligne : le texte prend toute la largeur, les boutons passent sur une rangée dessous.
-    setMultiligne(el.scrollHeight > 48);
-  }, [saisie]);
+    const hauteur = el.scrollHeight;
+    el.style.height = `${Math.min(hauteur, 200)}px`;
+    // Plus il y a de lignes, plus les coins se resserrent : la pilule devient peu à peu un carré arrondi.
+    const lignes = Math.max(1, Math.round((Math.min(hauteur, 200) - 16) / 22));
+    setRayon(Math.max(14, 26 - (lignes - 1) * 3));
+    setMultiligne((avant) => {
+      if (!avant && hauteur > 48) {
+        longueurMulti.current = saisie.length;
+        return true;
+      }
+      if (avant && (saisie.length === 0 || saisie.length < longueurMulti.current * 0.75))
+        return false;
+      return avant;
+    });
+    // multiligne : la largeur du champ change, la hauteur est recalculée avant l'affichage.
+  }, [saisie, multiligne]);
   const docInput = useRef<HTMLInputElement>(null);
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const chunksAudio = useRef<Blob[]>([]);
@@ -857,11 +873,22 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         contexteDoc ? pourIA + '\n\nDocument de référence :\n' + contexteDoc : pourIA,
       );
       // Cosinus : le serveur donne à Six ses consignes d'agent de travail.
+      // Chat de l'app de bureau : le navigateur interne existe, Six peut le piloter pour une demande web.
+      const navigateurChat = !sixtouch && estBureau() && !appelActif.current;
       const corps =
-        images.length || sixtouch || projetId
+        images.length || sixtouch || projetId || navigateurChat || appelActif.current
           ? JSON.stringify({
               ...(JSON.parse(texteSeul) as object),
               ...(!sixtouch && projetId ? { projetId } : {}),
+              ...(!sixtouch && appelActif.current ? { vocal: true } : {}),
+              ...(navigateurChat
+                ? {
+                    navigateur: true,
+                    navigateurSession: JSON.parse(
+                      sessionStorage.getItem('six-navigateur-agent') || '{}',
+                    ).session,
+                  }
+                : {}),
               ...(sixtouch
                 ? {
                     mode: 'sixtouch',
@@ -898,7 +925,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         fichiers?: string[];
         plan?: { texte: string; faite: boolean }[];
       };
-      if (sixtouch) data = await requeteAgent('/api/chat', initEnvoi);
+      if (sixtouch || navigateurChat) data = await requeteAgent('/api/chat', initEnvoi);
       else {
         const res = await requete('/api/chat', initEnvoi);
         data = (await res.json().catch(() => ({}))) as ChatResult & { error?: string };
@@ -1850,7 +1877,10 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
             ))}
           </ul>
         )}
-        <div className={`seven-capsule${multiligne ? ' multi' : ''}`}>
+        <div
+          className={`seven-capsule${multiligne ? ' multi' : ''}`}
+          style={{ borderRadius: `${rayon}px` }}
+        >
           <button
             type="button"
             className="seven-doc"
