@@ -11,6 +11,40 @@ const fichier = join(dir, 'Discussion WhatsApp avec Patrick.txt');
 writeFileSync(fichier, EXPORT_ESSAI, 'utf8');
 
 const { browser, page } = await ouvrir();
+// La session locale d'essai permet de vérifier l'interface, mais ne donne pas accès à l'API.
+// Réponses simulées pour ce parcours ; les contrôles d'accès réels sont faits plus bas sans interception.
+const reponsesEssai = {
+  analyze: {
+    resume: 'Patrick demande un dossier rapidement.',
+    intention: 'Obtenir le dossier',
+    ton_detecte: 'pressé',
+    tension: 20,
+    arnaque: { score: 0, raisons: [] },
+    objectifs: ['Répondre à Patrick'],
+    question: null,
+    nuances: [],
+    demo: true,
+  },
+  replies: {
+    reponses: [
+      'Je te réponds bientôt.',
+      'Je peux te répondre après le cours.',
+      'Je reviens vers toi à 16h30.',
+    ],
+    demo: true,
+  },
+  adjust: { reponse: 'Je reviens vers toi après le cours.', demo: true },
+};
+const simulerIA = async (route) => {
+  const nom = new URL(route.request().url()).pathname.split('/').pop();
+  await route.fulfill({
+    status: 200,
+    contentType: 'application/json',
+    body: JSON.stringify(reponsesEssai[nom]),
+  });
+};
+const routesIA = /\/api\/(analyze|replies|adjust)$/;
+await page.route(routesIA, simulerIA);
 const apiCorps = [];
 const apiReponses = [];
 page.on('request', (req) => {
@@ -116,6 +150,7 @@ try {
   );
 
   // Sans session, l'API d'IA refuse la demande avant de lire son contenu.
+  await page.unroute(routesIA, simulerIA);
   const api = (corps) =>
     page.evaluate(
       async (c) =>
