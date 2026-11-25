@@ -150,6 +150,26 @@ export function FormulaireConnexion() {
   const [erreur, setErreur] = useState('');
   const [info, setInfo] = useState('');
 
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    const fragment = new URLSearchParams(url.hash.slice(1));
+    if (!url.searchParams.has('error') && !fragment.has('error')) return;
+    setErreur(
+      'La connexion avec Google ou Apple a échoué. Utilise ton adresse e-mail ou réessaie plus tard.',
+    );
+    url.searchParams.delete('error');
+    url.searchParams.delete('error_code');
+    url.searchParams.delete('error_description');
+    fragment.delete('error');
+    fragment.delete('error_code');
+    fragment.delete('error_description');
+    window.history.replaceState(
+      null,
+      '',
+      `${url.pathname}${url.search}${fragment.size ? `#${fragment}` : ''}`,
+    );
+  }, []);
+
   const forceMdp = useMemo(() => evaluerForceMdp(motDePasse), [motDePasse]);
 
   async function handleSocial(fournisseur: FournisseurSocial) {

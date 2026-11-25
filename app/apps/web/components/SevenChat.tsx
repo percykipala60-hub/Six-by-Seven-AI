@@ -474,6 +474,18 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   const verrouMicro = useRef(false);
   const [memOn, setMemOn] = useState(false); // mémoire de Six active (gate de conservation de l'historique)
   const [enregistre, setEnregistre] = useState(false); // micro en cours d'enregistrement
+  const [appel, setAppel] = useState(false);
+  const [etapeAppel, setEtapeAppel] = useState('');
+  const appelActif = useRef(false);
+  const finirLecture = useRef<(() => void) | null>(null);
+  useEffect(
+    () => () => {
+      appelActif.current = false;
+      window.speechSynthesis?.cancel();
+      finirLecture.current?.();
+    },
+    [],
+  );
   const filRef = useRef<HTMLDivElement>(null);
   const [animee, setAnimee] = useState(-1); // index de la réponse en train de s'écrire
   // Le fil suit l'écriture seulement si la personne est déjà en bas : si elle remonte lire, on la
@@ -745,6 +757,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         setDocumentAReimporter(false);
       }
       setSaisie('');
+      return data.reponse;
     } catch (e) {
       setDernierEchec({ texte, affichage, document, jointes });
       // Arrêt demandé par la personne : pas de message d'erreur, juste « Réessayer ».
@@ -759,6 +772,84 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       setEnAttente('');
       setAttentePieces([]);
       setOccupe(false);
+    }
+  }
+
+  const envoyerPendantAppel = useRef<(texte: string) => Promise<string | undefined>>(
+    async () => undefined,
+  );
+  useEffect(() => {
+    envoyerPendantAppel.current = (texte) => envoyer(texte, undefined, undefined, [], true);
+  });
+
+  function raccrocher() {
+    appelActif.current = false;
+    operation.current?.abort();
+    window.speechSynthesis?.cancel();
+    finirLecture.current?.();
+    finirLecture.current = null;
+    setAppel(false);
+    setEtapeAppel('');
+  }
+
+  async function lireReponse(texte: string): Promise<void> {
+    const synthese = window.speechSynthesis;
+    await new Promise<void>((resolve, reject) => {
+      let termine = false;
+      const finir = () => {
+        if (termine) return;
+        termine = true;
+        finirLecture.current = null;
+        resolve();
+      };
+      finirLecture.current = finir;
+      const voix = new SpeechSynthesisUtterance(texte);
+      voix.lang = 'fr-FR';
+      voix.onend = finir;
+      voix.onerror = () => {
+        if (!appelActif.current) finir();
+        else reject(new Error('Six ne peut pas lire sa réponse à voix haute sur cet appareil.'));
+      };
+      synthese.speak(voix);
+    });
+  }
+
+  async function lancerAppel() {
+    if (appelActif.current) return raccrocher();
+    if (occupe || enregistre) return;
+    if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') {
+      setErreur('La lecture vocale n’est pas disponible sur cet appareil.');
+      return;
+    }
+    if ((await plateforme()) === 'web' && !dicteeDisponible()) {
+      setErreur('L’appel vocal demande un navigateur compatible avec la dictée.');
+      return;
+    }
+    setErreur('');
+    appelActif.current = true;
+    setAppel(true);
+    try {
+      while (appelActif.current) {
+        setEtapeAppel('Je t’écoute…');
+        const phrase = (await dictee()).trim();
+        if (!appelActif.current) break;
+        if (!phrase) throw new Error('Je n’ai rien entendu. Réessaie.');
+        setEtapeAppel('Six prépare sa réponse…');
+        const reponse = await envoyerPendantAppel.current(phrase);
+        if (!appelActif.current || !reponse) break;
+        setEtapeAppel('Six te répond…');
+        await lireReponse(reponse);
+      }
+    } catch (e) {
+      if (appelActif.current) {
+        setErreur(
+          e instanceof Error && e.message.startsWith('Six ne peut pas lire')
+            ? e.message
+            : await messageErreurDictee(e),
+        );
+      }
+    } finally {
+      raccrocher();
     }
   }
 
@@ -837,6 +928,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
 
   // — Message vocal : enregistrement navigateur, transcription serveur, envoi auto. —
   async function basculerMicro() {
+    if (appelActif.current) return;
     if (enregistre) {
       mediaRecorder.current?.stop(); // la fin déclenche l'envoi dans onstop
       return;
@@ -1276,9 +1368,28 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         className="seven-composer"
         onSubmit={(e) => {
           e.preventDefault();
+          if (appelActif.current) return;
           void envoyer(saisie);
         }}
       >
+        <div className="seven-appel-barre" role="status" aria-live="polite">
+          {appel ? (
+            <>
+              <span>{etapeAppel || 'Appel en cours…'}</span>
+              <button type="button" onClick={raccrocher}>
+                Raccrocher
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              disabled={occupe || enregistre}
+              onClick={() => void lancerAppel()}
+            >
+              📞 Appeler Six
+            </button>
+          )}
+        </div>
         {!sixtouch && projetId && (
           <p style={{ width: '100%', maxWidth: 560, margin: '0 auto 8px' }}>
             Contexte du projet actif · <a href="/projets">Mes projets</a>
@@ -1376,6 +1487,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
             type="text"
             value={saisie}
             onChange={(e) => setSaisie(e.target.value)}
+            disabled={appel}
             placeholder="Demander à Six"
             aria-label="Demander à Six"
             enterKeyHint="send"
