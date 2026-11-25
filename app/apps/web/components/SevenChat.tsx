@@ -600,8 +600,9 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     affichage?: string,
     document?: string,
     jointes: Piece[] = affichage ? [] : pieces,
+    depuisVocal = false,
   ) {
-    if (occupe || enregistre) return;
+    if (!depuisVocal && (occupe || enregistre)) return;
     const docs = jointes.filter((p) => p.genre === 'document');
     const visuels = jointes.filter((p) => p.genre !== 'document');
     const images = visuels.flatMap((p) => p.images);
@@ -845,13 +846,18 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     verrouMicro.current = true;
     if ((await plateforme()) !== 'web') {
       setOccupe(true);
+      let texte = '';
       try {
-        setSaisie(await dictee());
+        texte = await dictee();
       } catch (e) {
         setErreur(await messageErreurDictee(e));
       } finally {
         verrouMicro.current = false;
         setOccupe(false);
+      }
+      if (texte.trim()) {
+        setSaisie(texte.trim());
+        void envoyer(texte.trim(), undefined, undefined, pieces, true);
       }
       return;
     }
@@ -890,13 +896,18 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       }
       verrouMicro.current = true;
       setOccupe(true);
+      let texte = '';
       try {
-        setSaisie(await dictee());
+        texte = await dictee();
       } catch (e) {
         setErreur(await messageErreurDictee(e));
       } finally {
         verrouMicro.current = false;
         setOccupe(false);
+      }
+      if (texte.trim()) {
+        setSaisie(texte.trim());
+        void envoyer(texte.trim(), undefined, undefined, pieces, true);
       }
       return;
     }
@@ -937,7 +948,10 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         mr.stream.getTracks().forEach((t) => t.stop());
         setEnregistre(false);
         const blob = new Blob(chunksAudio.current, { type: mr.mimeType || 'audio/webm' });
-        if (blob.size === 0) return;
+        if (blob.size === 0) {
+          setErreur('Je n’ai reçu aucun son. Réessaie en parlant après le clic.');
+          return;
+        }
         void envoyerVocal(blob);
       };
       mr.start();
@@ -958,13 +972,14 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   async function envoyerVocal(blob: Blob) {
     setOccupe(true);
     setErreur('');
+    let texte = '';
     try {
       const form = new FormData();
       form.append('audio', blob);
       const res = await requete('/api/chat/transcription', { method: 'POST', body: form });
       const data = (await res.json().catch(() => ({}))) as { texte?: string; error?: string };
       if (!res.ok || !data.texte) throw new Error(data.error ?? 'Transcription impossible.');
-      setSaisie(data.texte);
+      texte = data.texte.trim();
     } catch (e) {
       // Serveur sans clé de transcription (Netlify, démo) : on retombe sur la reconnaissance
       // vocale du navigateur (Web Speech API) pour dicter le message, sans clé côté serveur.
@@ -976,19 +991,19 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
           'Transcription serveur indisponible : dicte ton message avec le micro du navigateur.',
         );
         try {
-          const texte = await dictee();
-          if (texte.trim()) setSaisie(texte.trim());
-          return;
+          texte = (await dictee()).trim();
         } catch (err) {
           setErreur(await messageErreurDictee(err));
           return;
-        } finally {
-          setOccupe(false);
         }
-      }
-      setErreur(e instanceof Error ? e.message : 'Transcription impossible. Réessaie ou écris.');
+      } else
+        setErreur(e instanceof Error ? e.message : 'Transcription impossible. Réessaie ou écris.');
     } finally {
       setOccupe(false);
+    }
+    if (texte) {
+      setSaisie(texte);
+      void envoyer(texte, undefined, undefined, pieces, true);
     }
   }
 
