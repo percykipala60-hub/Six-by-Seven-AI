@@ -87,6 +87,9 @@ export function signatureValide(
  * aucun lien (on n'apprend pas aux gens à cliquer sur des liens reçus) ; seul l'e-mail de réinitialisation en a un.
  */
 
+/** Logo de l'app, en PNG hébergé sur le site (beaucoup de boîtes mail n'affichent pas le SVG). */
+const LOGO = 'https://app.sixbysevenai.com/icon-192.png';
+
 const POLICE = "-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
 
 const echapper = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -98,7 +101,11 @@ function page(titre: string, contenu: string, securite: string): string {
   return (
     `<div style="background:#f3f5fa;padding:32px 12px;font-family:${POLICE}">` +
     `<div style="max-width:520px;margin:0 auto;background:#ffffff;border-radius:16px;padding:32px 28px;border:1px solid #e3e7f0">` +
-    `<p style="margin:0 0 28px;font-size:14px;font-weight:700;letter-spacing:0.02em;color:#0f1a3a">${PRODUIT}</p>` +
+    `<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 28px"><tr>` +
+    `<td style="padding:0 10px 0 0;vertical-align:middle"><img src="${LOGO}" width="36" height="36" alt="${PRODUIT}" ` +
+    `style="display:block;width:36px;height:36px;border:0;border-radius:9px"></td>` +
+    `<td style="vertical-align:middle;font-size:16px;font-weight:700;letter-spacing:0.02em;color:#0f1a3a">${PRODUIT}</td>` +
+    `</tr></table>` +
     `<h1 style="margin:0 0 20px;font-size:22px;line-height:1.3;color:#0f1a3a">${titre}</h1>` +
     p('Bonjour,') +
     contenu +

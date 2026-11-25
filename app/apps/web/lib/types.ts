@@ -1,3 +1,4 @@
+import type { LieuCarte } from './carte-rdc';
 export const MAX_CHARS = 2000;
 
 export const TONS = ['amical', 'professionnel', 'ferme', 'court', 'chaleureux'] as const;
@@ -103,9 +104,12 @@ export interface ChatMessage {
   /** Cosinus : ce que l'agent a fait (« Six lit … ») et les fichiers qu'il a enregistrés. Affichage seulement. */
   etapes?: string[];
   fichiers?: string[];
+  /** Chat : lieux trouvés dans OpenStreetMap, montrés sur une carte sous la réponse. Affichage seulement. */
+  lieux?: LieuCarte[];
 }
 
 export interface ChatResult {
   reponse: string;
   demo: boolean;
+  lieux?: LieuCarte[];
 }

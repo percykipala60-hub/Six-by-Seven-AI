@@ -8,6 +8,7 @@ import { ArtefactPanneau, ContenuReponse, type ArtefactOuvert } from './Artefact
 import { Icon } from './Icon';
 import { BoutonPartager } from './BoutonPartager';
 import { estBureau } from '@/lib/plateforme';
+import { CarteLieux } from './CarteLieux';
 import { Logo } from './Logo';
 import { PiecesJointes } from './PiecesJointes';
 import {
@@ -796,6 +797,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         content: data.reponse,
         ...(data.etapes?.length ? { etapes: data.etapes } : {}),
         ...(data.fichiers?.length ? { fichiers: data.fichiers } : {}),
+        ...(data.lieux?.length ? { lieux: data.lieux } : {}),
       };
       // Un fichier vient d'être enregistré par l'agent : l'onglet Fichiers se met à jour.
       if (data.fichiers?.length) window.dispatchEvent(new Event('six-espace-maj'));
@@ -1138,6 +1140,9 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
               ouvert={artefactOuvert}
               onOuvrir={ouvrirArtefact}
             />
+            {m.role === 'assistant' && m.lieux && m.lieux.length > 0 && (
+              <CarteLieux lieux={m.lieux} />
+            )}
             {m.role === 'assistant' && (
               <button
                 type="button"
