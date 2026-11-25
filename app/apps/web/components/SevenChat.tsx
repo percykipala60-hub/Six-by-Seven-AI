@@ -21,18 +21,12 @@ import {
   lireEnvironnement,
   lireEnvironnements,
   lireEnvironnementsCloud,
-  nomDossier,
   utiliserEnvironnement,
   type Environnement,
 } from '@/lib/environnements';
 import { changerVersion, jusquA, nouvelleVersion } from '@/lib/versions';
 import { ActionsMessage } from './ActionsMessage';
-import {
-  CarteEnvironnements,
-  SelecteurEnvironnement,
-  cheminDuFichier,
-  useEtatEspace,
-} from './ChoixEnvironnement';
+import { CarteEnvironnements, cheminDuFichier, useEtatEspace } from './ChoixEnvironnement';
 import { PlanTaches } from './PlanTaches';
 import { Logo } from './Logo';
 import { PiecesJointes } from './PiecesJointes';
@@ -582,7 +576,6 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   }, []);
   const champ = useRef<HTMLInputElement>(null);
   const docInput = useRef<HTMLInputElement>(null);
-  const dossierInput = useRef<HTMLInputElement>(null);
   const mediaRecorder = useRef<MediaRecorder | null>(null);
   const chunksAudio = useRef<Blob[]>([]);
 
@@ -738,7 +731,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     if (dossierRequis && !dossier && !enCloud) {
       setErreur(
         espace.local
-          ? 'Choisis d’abord l’environnement de cette discussion (sous la barre de saisie).'
+          ? 'Choisis d’abord l’environnement de cette discussion (« Choisir un environnement », au-dessus de la barre de saisie).'
           : 'Choisis d’abord l’environnement de cette discussion : ton Cloud (connecte-toi à ton compte).',
       );
       return;
@@ -1089,7 +1082,6 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     }
     setPieces((p) => [...p, ...nouvelles]);
     if (docInput.current) docInput.current.value = '';
-    if (dossierInput.current) dossierInput.current.value = '';
     champ.current?.focus();
   }
 
@@ -1730,32 +1722,6 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
             tabIndex={-1}
             onChange={(e) => void importerFichiers(e.target.files)}
           />
-          {sixtouch && (
-            <>
-              <button
-                type="button"
-                className="seven-doc"
-                title="Ajouter un dossier"
-                aria-label="Ajouter un dossier"
-                disabled={occupe || enregistre}
-                onClick={() => dossierInput.current?.click()}
-              >
-                <span aria-hidden="true">📁</span>
-              </button>
-              <input
-                ref={(element) => {
-                  dossierInput.current = element;
-                  element?.setAttribute('webkitdirectory', '');
-                }}
-                type="file"
-                multiple
-                className="seven-doc-input"
-                aria-label="Choisir un dossier"
-                tabIndex={-1}
-                onChange={(e) => void importerFichiers(e.target.files)}
-              />
-            </>
-          )}
           <PiecesJointes
             pieces={pieces}
             enLecture={lectures}
@@ -1835,19 +1801,6 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
           )}
         </div>
         <div className="seven-sous-barre">
-          {choixEnvironnement && (
-            <SelecteurEnvironnement
-              actuel={
-                env ??
-                (dossierAncien
-                  ? { id: '', nom: nomDossier(dossierAncien), dossiers: [dossierAncien], maj: 0 }
-                  : undefined)
-              }
-              defaut={espace.defaut}
-              verrouille={messages.length > 0 || occupe}
-              onChoisi={choisirEnvironnement}
-            />
-          )}
           <ChoixModele
             skill={skill}
             onSkill={setSkill}
