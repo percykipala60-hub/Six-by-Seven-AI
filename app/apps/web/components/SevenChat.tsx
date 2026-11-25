@@ -354,7 +354,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   async function requete(url: string, init: RequestInit): Promise<Response> {
     const controleur = new AbortController();
     operation.current = controleur;
-    const delai = setTimeout(() => controleur.abort(new Error('Délai dépassé. Réessaie.')), 90000);
+    const delai = setTimeout(() => controleur.abort(new Error('Délai dépassé. Réessaie.')), 120000);
     try {
       const response = await fetch(url, { ...init, signal: controleur.signal });
       const body = await response.text();

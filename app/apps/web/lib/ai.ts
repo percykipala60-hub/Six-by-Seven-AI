@@ -332,7 +332,7 @@ export async function callChat(
   const providers = chain('redaction');
   if (!providers.length) throw new ProviderError("Aucun service d'IA n'est configuré.");
   // Une réponse longue (rapport de Cosinus) prend plus de temps à écrire : le délai suit la longueur demandée
-  // (environ 18 ms par jeton), sans descendre sous PROVIDER_TIMEOUT_MS. L'app attend 90 s au plus.
+  // (environ 18 ms par jeton), sans descendre sous PROVIDER_TIMEOUT_MS. L'app attend 120 s au plus.
   const timeout = Math.max(
     Number(process.env.PROVIDER_TIMEOUT_MS) || 30000,
     Math.min(80000, maxTokens * 18),

@@ -3,6 +3,7 @@ import { questionDeLieu } from './carte-rdc';
 import type { ImageJointe } from './api-schemas';
 import { consignesSkill, skillLong, type ChoixSkill } from './skills-cosinus';
 import { corrigerIdentite } from './identite';
+import { verifierReponse } from './verification-reponse';
 import {
   analysisPrompt,
   adjustPrompt,
@@ -105,7 +106,14 @@ export async function chat(
       });
       if (r.reponse.trim())
         return {
-          reponse: corrigerIdentite(r.reponse.trim()),
+          reponse: corrigerIdentite(
+            await verifierReponse({
+              question: user,
+              reponse: r.reponse.trim(),
+              preuves: r.lieux.length ? [JSON.stringify(r.lieux)] : [],
+              premium,
+            }),
+          ),
           demo: false,
           ...(r.lieux.length ? { lieux: r.lieux } : {}),
         };
@@ -129,7 +137,10 @@ export async function chat(
     )
   ).trim();
   if (!reponse) throw new ProviderError('La réponse de Six était vide. Réessaie.');
-  return { reponse: corrigerIdentite(reponse), demo: false };
+  return {
+    reponse: corrigerIdentite(await verifierReponse({ question: user, reponse, premium })),
+    demo: false,
+  };
 }
 
 function demoChat(question: string): string {
