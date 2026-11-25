@@ -9,6 +9,6 @@
     "typecheck": "node --check main.cjs && node --check preload.cjs"
   },
   "devDependencies": {
-    "electron": "45.3.4"
+    "electron": "45.4.1"
   }
 }
