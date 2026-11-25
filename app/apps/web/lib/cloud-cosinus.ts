@@ -34,7 +34,7 @@ const LOT = 40;
 export class ErreurCloud extends Error {}
 
 async function rest(jeton: string, chemin: string, init: RequestInit = {}): Promise<unknown> {
-  if (!URL_SUPABASE || !CLE) throw new ErreurCloud('Le Cloud n’est pas configuré sur ce serveur.');
+  if (!URL_SUPABASE || !CLE) throw new ErreurCloud('Le Cloud est indisponible pour le moment.');
   const res = await fetch(`${URL_SUPABASE}/rest/v1/${chemin}`, {
     ...init,
     headers: {

@@ -34,7 +34,8 @@ async function compte(req: Request) {
 export async function POST(req: Request) {
   const blocked = await guard(req);
   if (blocked) return blocked;
-  if (!adminDisponible()) return fail(503, 'Alertes de connexion non configurées sur ce serveur.');
+  if (!adminDisponible())
+    return fail(503, 'Les alertes de connexion sont indisponibles pour le moment.');
   const c = await compte(req);
   if (!c) return fail(401, 'Connexion requise.');
   const corps = Corps.safeParse(await readJson(req, 2_000));
