@@ -10374,3 +10374,17 @@ select.select.voix-select {
   border-color: transparent;
   box-shadow: none;
 }
+
+/* Texte sur plusieurs lignes : il prend toute la largeur, « + » et l'envoi restent sur la rangée du bas. */
+.seven-capsule.multi {
+  flex-wrap: wrap;
+  border-radius: 22px;
+}
+.seven-capsule.multi textarea {
+  order: -1;
+  flex: 1 0 100%;
+  padding: 8px 10px 4px;
+}
+.seven-capsule.multi .seven-doc {
+  margin-right: auto;
+}

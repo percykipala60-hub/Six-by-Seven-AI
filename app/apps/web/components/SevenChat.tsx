@@ -605,12 +605,15 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     fil.scrollTo({ top: fil.scrollHeight, behavior: glisser ? 'smooth' : 'auto' });
   }, []);
   const champ = useRef<HTMLTextAreaElement>(null);
+  const [multiligne, setMultiligne] = useState(false);
   // Beaucoup de texte : la barre grandit ligne par ligne (8 lignes au plus, puis elle défile).
   useEffect(() => {
     const el = champ.current;
     if (!el) return;
     el.style.height = 'auto';
     el.style.height = `${Math.min(el.scrollHeight, 200)}px`;
+    // Plus d'une ligne : le texte prend toute la largeur, les boutons passent sur une rangée dessous.
+    setMultiligne(el.scrollHeight > 48);
   }, [saisie]);
   const docInput = useRef<HTMLInputElement>(null);
   const mediaRecorder = useRef<MediaRecorder | null>(null);
@@ -1847,7 +1850,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
             ))}
           </ul>
         )}
-        <div className="seven-capsule">
+        <div className={`seven-capsule${multiligne ? ' multi' : ''}`}>
           <button
             type="button"
             className="seven-doc"
