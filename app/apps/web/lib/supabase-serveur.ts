@@ -231,3 +231,33 @@ export async function approuverQr(
   )) as unknown[];
   return Array.isArray(maj) && maj.length ? 'ok' : 'introuvable';
 }
+
+// ---------- Appareils connectés (Réglages) ----------
+
+export type AppareilCompte = {
+  appareil: string;
+  nom: string;
+  methode: string;
+  cree_le: string;
+  derniere_connexion: string;
+  connecte: boolean;
+};
+
+/** Appareils du compte (les plus récents d'abord), avec « connecte » : leur session existe encore. */
+export async function listerAppareils(userId: string): Promise<AppareilCompte[]> {
+  const lignes = await rest('rpc/six_appareils_lister', {
+    method: 'POST',
+    body: JSON.stringify({ p_user: userId }),
+  });
+  return Array.isArray(lignes) ? (lignes as AppareilCompte[]) : [];
+}
+
+/** Déconnecte un appareil du compte (sa session est supprimée ; il n'est pas bloqué). */
+export async function deconnecterAppareil(userId: string, appareil: string): Promise<boolean> {
+  return (
+    (await rest('rpc/six_appareil_deconnecter', {
+      method: 'POST',
+      body: JSON.stringify({ p_user: userId, p_appareil: appareil }),
+    })) === true
+  );
+}

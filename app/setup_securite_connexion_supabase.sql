@@ -146,3 +146,51 @@ revoke all on function public.six_qr_attendre(uuid, text) from public;
 grant execute on function public.six_qr_creer(text) to anon, authenticated;
 grant execute on function public.six_qr_lire(uuid, text) to anon, authenticated;
 grant execute on function public.six_qr_attendre(uuid, text) to anon, authenticated;
+
+-- ---------- 3. Appareils connectés (Réglages → Appareils connectés) ----------
+-- Liste des appareils du compte, avec « connecte » : sa session existe encore (pas déconnectée, pas expirée).
+-- Appelée seulement par le serveur de Six (clé service_role), pour le compte qui fait la demande.
+create or replace function public.six_appareils_lister(p_user uuid)
+returns table (appareil text, nom text, methode text, cree_le timestamptz, derniere_connexion timestamptz, connecte boolean)
+language sql
+stable
+security definer
+set search_path = public, auth
+as $$
+  select a.appareil, a.nom, a.methode, a.cree_le, a.derniere_connexion,
+         (a.session_id is not null and exists (select 1 from auth.sessions s where s.id = a.session_id))
+  from public.six_appareils a
+  where a.user_id = p_user and not a.bloque
+  order by a.derniere_connexion desc
+  limit 50;
+$$;
+
+-- Déconnecter un appareil du compte : sa session est supprimée (il ne peut plus la renouveler) ; l'appareil n'est
+-- pas bloqué et pourra se reconnecter normalement.
+create or replace function public.six_appareil_deconnecter(p_user uuid, p_appareil text)
+returns boolean
+language plpgsql
+security definer
+set search_path = public, auth
+as $$
+declare
+  v_session uuid;
+begin
+  select a.session_id into v_session from public.six_appareils a
+  where a.user_id = p_user and a.appareil = p_appareil;
+  if not found then
+    return false;
+  end if;
+  if v_session is not null then
+    delete from auth.sessions s where s.id = v_session and s.user_id = p_user;
+  end if;
+  update public.six_appareils a set session_id = null
+  where a.user_id = p_user and a.appareil = p_appareil;
+  return true;
+end;
+$$;
+
+revoke all on function public.six_appareils_lister(uuid) from public, anon, authenticated;
+revoke all on function public.six_appareil_deconnecter(uuid, text) from public, anon, authenticated;
+grant execute on function public.six_appareils_lister(uuid) to service_role;
+grant execute on function public.six_appareil_deconnecter(uuid, text) to service_role;

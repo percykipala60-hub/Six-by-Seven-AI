@@ -22,16 +22,14 @@ export function ReglagesSixTouch() {
 
   return (
     <>
-      <Groupe
-        titre="Espace de travail"
-        pied="Le dossier où Six lit tes fichiers et range ses documents. Il n'existe que sur ton ordinateur pour l'instant."
-      >
-        <LigneInfo
-          icon="dossier"
-          label="Dossier"
-          sous={dossier === null ? 'Vérification…' : dossier || 'Pas disponible sur cette version'}
-        />
-      </Groupe>
+      {dossier && (
+        <Groupe
+          titre="Espace de travail"
+          pied="Le dossier où Six lit tes fichiers et range ses documents."
+        >
+          <LigneInfo icon="dossier" label="Dossier" sous={dossier} />
+        </Groupe>
+      )}
 
       <Groupe titre="Navigateur">
         <Ligne

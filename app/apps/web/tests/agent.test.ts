@@ -215,7 +215,7 @@ describe('vigilance de la boucle', () => {
       ctx: { espace, corpus: true },
       surEtape: (e) => etapes.push(e),
     });
-    expect(etapes[0]).toBe('Skill : Documents');
+    expect(etapes[0]).toBe('Focus : Documents');
     expect(etapes[1]).toContain('Six relit tes anciens documents');
     const messages = appelAgent.mock.calls[0][1] as { role: string; nom?: string }[];
     expect(messages.map((m) => m.role)).toEqual(['user', 'assistant', 'tool']);
@@ -321,7 +321,7 @@ describe('étapes automatiques', () => {
       ctx: { espace, corpus: true },
       surEtape: (e) => etapes2.push(e),
     });
-    expect(etapes2).toEqual(['Skill : Documents']);
+    expect(etapes2).toEqual(['Focus : Documents']);
   });
 });
 
