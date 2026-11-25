@@ -5,11 +5,12 @@ import { Diapositives } from './Diapositives';
 import { Icon } from './Icon';
 import { THEMES, lirePresentation } from '@/lib/presentation';
 import {
-  LIBELLE_TYPE,
-  iconeArtefact,
+  LIBELLE_GENRE,
   blocsDocument,
+  documentApercu,
+  genreArtefact,
+  iconeArtefact,
   lireTableau,
-  nomFichier,
   typeMime,
   type Artefact,
 } from '@/lib/artefacts';
@@ -17,20 +18,23 @@ import {
 /**
  * Panneau d'un artefact (lib/artefacts.ts) : à côté de la discussion sur grand écran (comme le volet de Cosinus,
  * html[data-artefact] dans globals.css), en plein écran sur téléphone. Copier, télécharger, passer d'une version à
- * l'autre ; une page HTML s'affiche dans un cadre isolé (scripts permis, sans accès à l'app ni au réseau de l'app).
+ * l'autre (même nom de fichier plus loin dans la discussion). Une page s'affiche en aperçu statique : scripts,
+ * formulaires et ressources externes bloqués (documentApercu).
  *
  * Chargé à la demande (next/dynamic) : rien de ce code ne pèse sur l'ouverture du Chat.
  */
 export default function ArtefactPanneau({
-  artefact,
+  versions,
   version: versionInitiale,
   onFermer,
 }: {
-  artefact: Artefact;
+  /** Versions du même fichier, de la plus ancienne à la plus récente. */
+  versions: Artefact[];
   version?: number;
   onFermer: () => void;
 }) {
-  const dernier = artefact.versions.length - 1;
+  const dernier = versions.length - 1;
+  const nom = versions[0]?.nom;
   const [version, setVersion] = useState(versionInitiale ?? dernier);
   const [source, setSource] = useState(false); // HTML et tableau : voir le texte brut
   // Page HTML : aperçu sur ordinateur (toute la largeur du panneau) ou sur téléphone (390 px).
@@ -40,12 +44,14 @@ export default function ArtefactPanneau({
   useEffect(() => {
     setVersion(Math.min(versionInitiale ?? dernier, dernier));
     setSource(false);
-  }, [artefact.id, versionInitiale, dernier]);
-  const contenu = artefact.versions[Math.min(version, dernier)]?.contenu ?? '';
+  }, [nom, versionInitiale, dernier]);
+  const artefact = versions[Math.min(version, dernier)] ?? versions[dernier];
+  const contenu = artefact.contenu;
+  const genre = genreArtefact(artefact);
   // Présentation : diapositives lues dans le JSON de Six ; le thème se change ici (aperçu et fichier .pptx).
   const presentation = useMemo(
-    () => (artefact.type === 'presentation' ? lirePresentation(contenu) : null),
-    [artefact.type, contenu],
+    () => (genre === 'presentation' ? lirePresentation(contenu) : null),
+    [genre, contenu],
   );
   const [theme, setTheme] = useState('');
   useEffect(() => setTheme(presentation?.theme ?? ''), [presentation]);
@@ -78,7 +84,7 @@ export default function ArtefactPanneau({
     setExport('encours');
     try {
       const { telechargerPptx } = await import('@/lib/pptx');
-      await telechargerPptx(presentation, nomFichier(artefact), theme);
+      await telechargerPptx(presentation, artefact.nom, theme);
       setExport('');
     } catch {
       setExport('erreur');
@@ -93,7 +99,7 @@ export default function ArtefactPanneau({
     const url = URL.createObjectURL(new Blob([contenu], { type: typeMime(artefact) }));
     const a = document.createElement('a');
     a.href = url;
-    a.download = nomFichier(artefact);
+    a.download = artefact.nom;
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -101,27 +107,25 @@ export default function ArtefactPanneau({
   }
 
   const apercu =
-    artefact.type === 'html' ||
-    artefact.type === 'tableau' ||
-    (artefact.type === 'presentation' && presentation !== null);
+    genre === 'page' || genre === 'tableau' || (genre === 'presentation' && presentation !== null);
   return (
     <aside
       ref={panneau}
       className="volet artefact-panneau"
-      aria-label={`Artefact : ${artefact.titre}`}
+      aria-label={`Artefact : ${artefact.nom}`}
       tabIndex={-1}
     >
       <div className="artefact-tete">
         <span className="artefact-icone" aria-hidden="true">
-          <Icon name={iconeArtefact(artefact.type)} />
+          <Icon name={iconeArtefact(genre)} />
         </span>
         <div className="grow">
-          <h2 className="artefact-titre" title={artefact.titre}>
-            {artefact.titre}
+          <h2 className="artefact-titre" title={artefact.nom}>
+            {artefact.nom}
           </h2>
           <p className="artefact-sous">
-            {LIBELLE_TYPE[artefact.type]}
-            {artefact.langage && artefact.type === 'code' ? ` · ${artefact.langage}` : ''}
+            {LIBELLE_GENRE[genre]}
+            {artefact.langage && genre === 'code' ? ` · ${artefact.langage}` : ''}
           </p>
         </div>
         <button
@@ -135,7 +139,7 @@ export default function ArtefactPanneau({
         </button>
       </div>
       <div className="artefact-barre">
-        {artefact.versions.length > 1 && (
+        {versions.length > 1 && (
           <div className="artefact-versions" role="group" aria-label="Versions">
             <button
               type="button"
@@ -147,7 +151,7 @@ export default function ArtefactPanneau({
               <Icon name="back" size={16} />
             </button>
             <span aria-live="polite">
-              Version {Math.min(version, dernier) + 1} sur {artefact.versions.length}
+              Version {Math.min(version, dernier) + 1} sur {versions.length}
             </span>
             <button
               type="button"
@@ -168,11 +172,7 @@ export default function ArtefactPanneau({
               aria-pressed={!source}
               onClick={() => setSource(false)}
             >
-              {artefact.type === 'html'
-                ? 'Aperçu'
-                : artefact.type === 'presentation'
-                  ? 'Diapositives'
-                  : 'Tableau'}
+              {genre === 'page' ? 'Aperçu' : genre === 'presentation' ? 'Diapositives' : 'Tableau'}
             </button>
             <button
               type="button"
@@ -180,7 +180,7 @@ export default function ArtefactPanneau({
               aria-pressed={source}
               onClick={() => setSource(true)}
             >
-              {artefact.type === 'html' ? 'Code' : 'Texte'}
+              {genre === 'page' ? 'Code' : 'Texte'}
             </button>
           </div>
         )}
@@ -196,7 +196,7 @@ export default function ArtefactPanneau({
             </select>
           </label>
         )}
-        {artefact.type === 'html' && !source && (
+        {genre === 'page' && !source && (
           <div className="artefact-ecrans" role="group" aria-label="Taille de l’aperçu">
             <button
               type="button"
@@ -233,7 +233,7 @@ export default function ArtefactPanneau({
         <button
           type="button"
           className="volet-action"
-          aria-label={`Télécharger (${nomFichier(artefact)})`}
+          aria-label={`Télécharger (${artefact.nom})`}
           title={presentation ? 'Télécharger en PowerPoint (.pptx)' : 'Télécharger'}
           disabled={export_ === 'encours'}
           onClick={telecharger}
@@ -249,17 +249,17 @@ export default function ArtefactPanneau({
       <div className="artefact-corps">
         {presentation && !source ? (
           <Diapositives presentation={presentation} theme={theme || presentation.theme} />
-        ) : artefact.type === 'html' && !source ? (
+        ) : genre === 'page' && !source ? (
           <iframe
             className={`artefact-cadre${telephone ? ' artefact-cadre-telephone' : ''}`}
-            title={`Aperçu : ${artefact.titre}`}
-            sandbox="allow-scripts"
+            title={`Aperçu : ${artefact.nom}`}
+            sandbox=""
             referrerPolicy="no-referrer"
-            srcDoc={contenu}
+            srcDoc={documentApercu(contenu)}
           />
-        ) : artefact.type === 'tableau' && !source ? (
+        ) : genre === 'tableau' && !source ? (
           <Tableau texte={contenu} />
-        ) : artefact.type === 'document' ? (
+        ) : genre === 'document' ? (
           <Document texte={contenu} />
         ) : (
           <pre className="artefact-code">

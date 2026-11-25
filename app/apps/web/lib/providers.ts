@@ -1,12 +1,11 @@
 import { ProviderError, agentDisponible, callAI, callChat, hasChatAI, hasAI } from './ai';
 import { questionDeLieu } from './carte-rdc';
-import type { ImageJointe, ProjetBody } from './api-schemas';
+import type { ImageJointe } from './api-schemas';
+import { consignesSkill, skillLong, type ChoixSkill } from './skills-cosinus';
 import { corrigerIdentite } from './identite';
-import { consignesSite, demandeLivrableLong } from './styles-site';
 import {
   analysisPrompt,
   adjustPrompt,
-  contexteProjetSystem,
   parseAdjust,
   parseAnalysis,
   parseReplies,
@@ -87,7 +86,7 @@ export async function chat(
   premium = true,
   images?: ImageJointe[],
   mode: 'chat' | 'sixtouch' = 'chat',
-  projet?: ProjetBody,
+  skill: ChoixSkill = 'auto',
 ): Promise<ChatResult> {
   const user = messages[messages.length - 1]?.content ?? '';
   const history = messages.slice(0, -1);
@@ -98,7 +97,7 @@ export async function chat(
     try {
       const { repondreAvecCarte } = await import('./agent/carte');
       const r = await repondreAvecCarte({
-        system: sevenAiSystem('chat', true) + contexteProjetSystem(projet),
+        system: sevenAiSystem('chat', true),
         question: user,
         historique: history,
         images,
@@ -114,13 +113,17 @@ export async function chat(
       if (e instanceof ProviderError && /limite/i.test(e.message)) throw e;
     }
   }
+  // Site ou présentation : la méthode spécialisée s'applique aussi dans le Chat, et le fichier entier demande de la
+  // place. Les autres méthodes restent propres à Cosinus.
+  const long = skillLong(skill, user, Boolean(images?.length));
   const reponse = (
     await callChat(
-      sevenAiSystem(mode) + contexteProjetSystem(projet) + consignesSite(user),
+      sevenAiSystem(mode) +
+        (mode === 'sixtouch' || long ? consignesSkill(skill, user, Boolean(images?.length)) : ''),
       user,
       history,
       // Un rapport, un site ou une présentation demande plus de place qu'une réponse de discussion.
-      demandeLivrableLong(user) ? 4500 : mode === 'sixtouch' ? 4000 : 1500,
+      long ? 4500 : mode === 'sixtouch' ? 4000 : 1500,
       premium,
       images,
     )

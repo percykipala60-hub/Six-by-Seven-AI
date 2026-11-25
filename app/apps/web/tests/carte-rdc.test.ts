@@ -87,16 +87,18 @@ describe('outils de carte', () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async (url: URL | string) =>
-        String(url).includes('nominatim')
-          ? new Response(JSON.stringify([{ name: 'Gombe', lat: '-4.3053', lon: '15.3107' }]))
-          : new Response(
+        !String(url).includes('nominatim')
+          ? new Response(
               JSON.stringify({
                 elements: [
                   { lat: -4.32, lon: 15.32, tags: { name: 'Pharmacie loin' } },
                   { lat: -4.306, lon: 15.311, tags: { name: 'Pharmacie proche' } },
                 ],
               }),
-            ),
+            )
+          : String(url).includes('bounded=1')
+            ? new Response('[]')
+            : new Response(JSON.stringify([{ name: 'Gombe', lat: '-4.3053', lon: '15.3107' }])),
       ),
     );
     const r = await executerOutilCarte('lieux_proches_rdc', {
@@ -105,6 +107,36 @@ describe('outils de carte', () => {
     });
     expect(r.lieux.map((l) => l.nom)).toEqual(['Gombe', 'Pharmacie proche', 'Pharmacie loin']);
     expect(r.resultat).toMatch(/1\. Pharmacie proche/);
+  });
+
+  it('lieux_proches_rdc : Nominatim d’abord, sans attendre Overpass', async () => {
+    const appels: string[] = [];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: URL | string) => {
+        appels.push(String(url));
+        return String(url).includes('bounded=1')
+          ? new Response(
+              JSON.stringify([
+                {
+                  name: 'Pharmacie du Peuple',
+                  display_name: 'Pharmacie du Peuple, 67, Avenue Shaba, Kalamu',
+                  lat: '-4.3415',
+                  lon: '15.3062',
+                },
+                { display_name: 'Rue X, Pende, Kinshasa', lat: '-4.3401', lon: '15.3042' },
+              ]),
+            )
+          : new Response(JSON.stringify([{ name: 'Matonge', lat: '-4.3402', lon: '15.3160' }]));
+      }),
+    );
+    const r = await executerOutilCarte('lieux_proches_rdc', {
+      categorie: 'pharmacie',
+      pres_de: 'Matonge, Kinshasa',
+    });
+    expect(appels.some((u) => u.includes('overpass'))).toBe(false);
+    expect(r.lieux.map((l) => l.nom)).toEqual(['Matonge', 'Pharmacie du Peuple', 'Sans nom']);
+    expect(r.lieux[2].detail).toBe('Rue X, Pende');
   });
 
   it('service indisponible : message clair, pas d’exception', async () => {

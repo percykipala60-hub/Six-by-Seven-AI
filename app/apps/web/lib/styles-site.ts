@@ -1,7 +1,7 @@
 /**
- * Sites web (artefact de type « html ») : quand la personne demande un site ou une page, Six reçoit en plus un
- * catalogue de styles (palette, typographie, mise en page), inspirés de styles courants du web. Ces consignes ne
- * partent qu'avec une demande de site : le reste du temps, le prompt reste court (et en cache).
+ * Sites web : catalogue de styles (palette, typographie, mise en page), inspirés de styles courants du web. Il part
+ * avec les consignes de la méthode « Pages web » (lib/skills-cosinus.ts), seulement quand elle est choisie : le reste du
+ * temps, le prompt reste court (et en cache).
  */
 
 export type StyleSite = {
@@ -93,32 +93,8 @@ export const STYLES_SITE: StyleSite[] = [
   },
 ];
 
-/** La personne demande-t-elle un site ou une page web ? */
-export function demandeSite(question: string): boolean {
-  return /\b(site|landing|page d['’]accueil|page web|site web|vitrine|boutique en ligne|e-?commerce|portfolio|maquette web|page html)\b/i.test(
-    question,
-  );
-}
-
-/** Site ou présentation : une réponse longue (artefact entier), qui demande plus de place qu'une réponse de discussion. */
-export function demandeLivrableLong(question: string): boolean {
-  return (
-    demandeSite(question) ||
-    /\b(pr[ée]sentation|diaporama|powerpoint|pptx|slides?|expos[ée]|soutenance|pitch)\b/i.test(
-      question,
-    )
-  );
-}
-
-/** Consignes ajoutées au prompt quand la personne demande un site (vide sinon). */
-export function consignesSite(question: string): string {
-  if (!demandeSite(question)) return '';
-  return `
-
-Site web demandé : livre la page entière dans un artefact type="html".
-- Structure : en-tête (logo texte, navigation, bouton d'action), héros, 3 à 5 sections utiles au sujet, pied de page. Page responsive (une colonne sous 768 px), polices système (system-ui, Georgia pour les empattements), styles dans une balise <style>, aucun fichier ni lien externe, aucun script qui charge quoi que ce soit.
-- Images : aucune photo. Remplace-les par des visuels en dégradés CSS et formes SVG simples (paysage, produit, bâtiment), aux coins arrondis comme dans le style choisi.
-- Textes en français, concrets et adaptés à la personne ; aucun faux chiffre, faux avis ni faux nom : écris [à compléter].
-- Choisis le style le plus adapté au sujet (ou celui que la personne nomme), et respecte sa recette :
-${STYLES_SITE.map((s) => `  • ${s.id} — ${s.nom} (${s.pour}) : ${s.recette}`).join('\n')}`;
+/** Catalogue des styles, ajouté aux consignes de la méthode « Pages web » (lib/skills-cosinus.ts). */
+export function catalogueStyles(): string {
+  return `Styles de site : choisis le plus adapté au sujet (ou celui que la personne nomme) et respecte sa recette. Aucune photo : remplace-les par des visuels en dégradés CSS et formes SVG simples. Textes en français ; aucun faux chiffre, faux avis ni faux nom : écris [à compléter].
+${STYLES_SITE.map((s) => `• ${s.id} — ${s.nom} (${s.pour}) : ${s.recette}`).join('\n')}`;
 }

@@ -12,7 +12,8 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/ionic-team/capacitor-swift-pm.git", exact: "8.5.3"),
-        .package(name: "CapacitorKeyboard", path: "../../../../../node_modules/.pnpm/@capacitor+keyboard@8.0.6_@capacitor+core@8.5.3/node_modules/@capacitor/keyboard")
+        .package(name: "CapacitorKeyboard", path: "../../../../../node_modules/.pnpm/@capacitor+keyboard@8.0.6_@capacitor+core@8.5.3/node_modules/@capacitor/keyboard"),
+        .package(name: "CapgoCapacitorSpeechRecognition", path: "../../../../../node_modules/.pnpm/@capgo+capacitor-speech-rec_7adafbc6de23c77aa6df1cc060a2d381/node_modules/@capgo/capacitor-speech-recognition")
     ],
     targets: [
         .target(
@@ -20,7 +21,8 @@ let package = Package(
             dependencies: [
                 .product(name: "Capacitor", package: "capacitor-swift-pm"),
                 .product(name: "Cordova", package: "capacitor-swift-pm"),
-                .product(name: "CapacitorKeyboard", package: "CapacitorKeyboard")
+                .product(name: "CapacitorKeyboard", package: "CapacitorKeyboard"),
+                .product(name: "CapgoCapacitorSpeechRecognition", package: "CapgoCapacitorSpeechRecognition")
             ]
         )
     ]

@@ -102,6 +102,9 @@ importers:
       '@capacitor/keyboard':
         specifier: 8.0.6
         version: 8.0.6(@capacitor/core@8.5.3)
+      '@capgo/capacitor-speech-recognition':
+        specifier: 8.6.0
+        version: 8.6.0(@capacitor/core@8.5.3)
       '@supabase/supabase-js':
         specifier: 2.117.2
         version: 2.117.2
@@ -275,6 +278,11 @@ packages:
 
   '@capacitor/keyboard@8.0.6':
     resolution: {integrity: sha512-Bbe+9V0qaT6dzEFJEK7BUWR01l2+vZE8FM5ITF/WgKtx+G6eGZ6d5+YiSMRJBAK0VGjdO59v8yiQ10Doa5KyvQ==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
+
+  '@capgo/capacitor-speech-recognition@8.6.0':
+    resolution: {integrity: sha512-A5MpeVv64rthUZhvy/UwR1Zc9iPBrko/lKViQLsDmxpk8iJ8aJs7rB1znCc2If1Z/awCPrQo9YnpE6DupOeUpQ==}
     peerDependencies:
       '@capacitor/core': '>=8.0.0'
 
@@ -3216,6 +3224,10 @@ snapshots:
       '@capacitor/core': 8.5.3
 
   '@capacitor/keyboard@8.0.6(@capacitor/core@8.5.3)':
+    dependencies:
+      '@capacitor/core': 8.5.3
+
+  '@capgo/capacitor-speech-recognition@8.6.0(@capacitor/core@8.5.3)':
     dependencies:
       '@capacitor/core': 8.5.3
 

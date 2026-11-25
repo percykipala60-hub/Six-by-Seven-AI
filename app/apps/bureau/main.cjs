@@ -17,7 +17,18 @@
  * l'app transmet à la page de Six pour terminer la connexion.
  */
 const path = require('node:path');
-const { app, BrowserWindow, WebContentsView, ipcMain, shell, session, Menu } = require('electron');
+const { existsSync } = require('node:fs');
+const { spawn } = require('node:child_process');
+const {
+  app,
+  BrowserWindow,
+  WebContentsView,
+  ipcMain,
+  shell,
+  session,
+  Menu,
+  dialog,
+} = require('electron');
 
 /** Hauteur de la barre du haut de Six (barre.html), au-dessus de l'app. */
 const BARRE = 40;
@@ -25,6 +36,29 @@ const BARRE = 40;
 const URL_APP = process.env.SIX_URL || 'http://localhost:3000/cosinus';
 const ORIGINE_APP = new URL(URL_APP).origin;
 const PARTITION = 'persist:cosinus';
+let moteurVocal = null;
+
+async function demarrerMoteurVocal() {
+  if (!['localhost', '127.0.0.1'].includes(new URL(URL_APP).hostname)) return;
+  const racine = path.resolve(__dirname, '../../..');
+  const python = path.join(racine, '.local-tools/voice/Scripts/python.exe');
+  if (!existsSync(python)) return;
+  try {
+    const res = await fetch('http://127.0.0.1:8765/health', { signal: AbortSignal.timeout(1500) });
+    if (res.ok) return;
+  } catch {
+    /* Le moteur n'est pas encore démarré. */
+  }
+  moteurVocal = spawn(python, [path.join(racine, 'app/scripts/transcription-locale.py')], {
+    windowsHide: true,
+    stdio: 'ignore',
+    env: { ...process.env, HF_HOME: path.join(racine, '.local-tools/models') },
+  });
+  moteurVocal.on('error', () => {
+    moteurVocal = null;
+  });
+}
+app.on('before-quit', () => moteurVocal?.kill());
 
 /** @type {BrowserWindow | null} */
 let fenetre = null;
@@ -419,6 +453,46 @@ function creerFenetre() {
   placerAppli();
   fenetre.on('resize', placerAppli);
   const wc = appli.webContents;
+  let microAutorise = false;
+  const origineApp = (url) => {
+    try {
+      return new URL(url).origin === ORIGINE_APP;
+    } catch {
+      return false;
+    }
+  };
+  wc.session.setPermissionCheckHandler(
+    (demandeur, permission, origine) =>
+      demandeur === wc && origineApp(origine) && permission === 'media' && microAutorise,
+  );
+  wc.session.setPermissionRequestHandler(async (demandeur, permission, repondre, details) => {
+    if (
+      demandeur !== wc ||
+      !origineApp(details.requestingUrl) ||
+      permission !== 'media' ||
+      !details.mediaTypes?.length ||
+      details.mediaTypes.some((type) => type !== 'audio')
+    ) {
+      repondre(false);
+      return;
+    }
+    try {
+      if (!microAutorise) {
+        const choix = await dialog.showMessageBox(fenetre, {
+          type: 'question',
+          title: 'Microphone de Six',
+          message: 'Autoriser Six à utiliser le microphone pour les messages vocaux ?',
+          buttons: ['Autoriser', 'Refuser'],
+          defaultId: 1,
+          cancelId: 1,
+        });
+        microAutorise = choix.response === 0;
+      }
+      repondre(microAutorise);
+    } catch {
+      repondre(false);
+    }
+  });
   // L'app reste sur son origine, sauf le passage par la connexion (Supabase, Google, Apple), qui revient ensuite à
   // l'app ; le reste s'ouvre dans le navigateur par défaut de l'ordinateur.
   wc.on('will-navigate', (e, u) => {
@@ -481,6 +555,7 @@ else {
     recevoirLien(lien);
   });
   app.whenReady().then(() => {
+    void demarrerMoteurVocal();
     Menu.setApplicationMenu(null);
     preparerSessionNavigateur();
     ipcMain.handle('six:navigateur', piloter);

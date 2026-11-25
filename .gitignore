@@ -19,3 +19,5 @@ dist/
 # Clés privées Apple (Sign in with Apple, APNs) : ne jamais commiter
 *.p8
 AuthKey_*.zip
+
+.local-tools/

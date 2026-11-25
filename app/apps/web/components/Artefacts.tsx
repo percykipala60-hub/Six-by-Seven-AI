@@ -1,120 +1,68 @@
 'use client';
 
+import { useCallback, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { Icon } from './Icon';
-import {
-  LIBELLE_TYPE,
-  iconeArtefact,
-  retrouver,
-  type Artefact,
-  type ArtefactExtrait,
-  type Morceau,
-} from '@/lib/artefacts';
+import { LIBELLE_GENRE, genreArtefact, iconeArtefact, type Artefact } from '@/lib/artefacts';
+import styles from './Artefacts.module.css';
 
 /** Le panneau n'est chargé qu'à la première ouverture d'un artefact (réseau faible : rien de plus au démarrage). */
 export const ArtefactPanneau = dynamic(() => import('./ArtefactPanneau'), { ssr: false });
 
-export type ArtefactOuvert = { artefact: Artefact; version: number };
-
-/** Carte d'un artefact dans une bulle de réponse : un appui l'ouvre dans le panneau. */
-export function CarteArtefact({
-  artefact,
-  version,
-  incomplet,
-  ouvert,
-  onOuvrir,
-}: {
-  artefact: Artefact;
-  version: number;
-  incomplet?: boolean;
-  ouvert?: boolean;
-  onOuvrir: () => void;
-}) {
-  const plusieurs = artefact.versions.length > 1;
-  return (
-    <button
-      type="button"
-      className="artefact-carte"
-      aria-pressed={ouvert}
-      onClick={onOuvrir}
-      title="Ouvrir dans le panneau"
-    >
-      <span className="artefact-icone" aria-hidden="true">
-        <Icon name={iconeArtefact(artefact.type)} />
-      </span>
-      <span className="grow">
-        <b>{artefact.titre}</b>
-        <span className="artefact-sous">
-          {LIBELLE_TYPE[artefact.type]}
-          {plusieurs ? ` · version ${version + 1}` : ''}
-          {incomplet ? ' · coupé avant la fin' : ''}
-        </span>
-      </span>
-      <Icon name="chevron" size={16} />
-    </button>
-  );
-}
+/** Artefact ouvert dans le panneau : toutes les versions du fichier, et celle à montrer. */
+export type ArtefactOuvert = { versions: Artefact[]; version: number };
 
 /**
- * Contenu d'une réponse découpée (lib/artefacts.ts, decouper) : le texte comme avant, chaque artefact en carte.
- * `chat` et `artefacts` retrouvent la version gardée qui correspond à ce message.
+ * Cartes des artefacts d'une réponse. Un appui ouvre le panneau : celui de l'écran (`onOuvrir`, discussion) ou, sans
+ * lui, un panneau propre à ces cartes (résultat d'une tâche planifiée).
+ * `versions` : versions de chaque fichier dans la discussion (lib/artefacts.ts, versionsDe).
  */
-export function ContenuReponse({
-  morceaux,
-  chat,
-  artefacts,
+export function Artefacts({
+  fichiers,
+  versions,
   ouvert,
   onOuvrir,
 }: {
-  morceaux: Morceau[];
-  chat: string;
-  artefacts: Artefact[];
+  fichiers: Artefact[];
+  versions?: Map<string, Artefact[]>;
   ouvert?: ArtefactOuvert | null;
-  onOuvrir: (a: ArtefactOuvert) => void;
+  onOuvrir?: (a: ArtefactOuvert) => void;
 }) {
+  const [local, setLocal] = useState<ArtefactOuvert | null>(null);
+  const fermer = useCallback(() => setLocal(null), []);
+  const actif = onOuvrir ? ouvert : local;
   return (
-    <>
-      {morceaux.map((m, i) =>
-        m.genre === 'texte' ? (
-          <span key={i} className="artefact-texte">
-            {m.texte}
-          </span>
-        ) : (
-          <CarteAPartirDe
-            key={i}
-            extrait={m.artefact}
-            chat={chat}
-            artefacts={artefacts}
-            ouvert={ouvert}
-            onOuvrir={onOuvrir}
-          />
-        ),
+    <div className={styles.cartes}>
+      {fichiers.map((f, i) => {
+        const toutes = versions?.get(f.nom) ?? [f];
+        const trouvee = toutes.findIndex((v) => v.contenu === f.contenu);
+        const version = trouvee >= 0 ? trouvee : toutes.length - 1;
+        const genre = genreArtefact(f);
+        const estOuvert = actif?.versions[0]?.nom === f.nom && actif.version === version;
+        return (
+          <button
+            type="button"
+            key={`${f.nom}-${i}`}
+            className={styles.carte}
+            aria-pressed={estOuvert}
+            onClick={() => (onOuvrir ?? setLocal)({ versions: toutes, version })}
+          >
+            <span className={styles.icone} aria-hidden="true">
+              <Icon name={iconeArtefact(genre)} size={18} />
+            </span>
+            <span className={styles.nom}>
+              <strong>{f.nom}</strong>
+              <span>
+                {LIBELLE_GENRE[genre]}
+                {toutes.length > 1 ? ` · version ${version + 1}` : ''} · Ouvrir l’artefact
+              </span>
+            </span>
+          </button>
+        );
+      })}
+      {!onOuvrir && local && (
+        <ArtefactPanneau versions={local.versions} version={local.version} onFermer={fermer} />
       )}
-    </>
-  );
-}
-
-function CarteAPartirDe({
-  extrait,
-  chat,
-  artefacts,
-  ouvert,
-  onOuvrir,
-}: {
-  extrait: ArtefactExtrait;
-  chat: string;
-  artefacts: Artefact[];
-  ouvert?: ArtefactOuvert | null;
-  onOuvrir: (a: ArtefactOuvert) => void;
-}) {
-  const r = retrouver(artefacts, chat, extrait);
-  return (
-    <CarteArtefact
-      artefact={r.artefact}
-      version={r.version}
-      incomplet={extrait.incomplet}
-      ouvert={ouvert?.artefact.id === r.artefact.id && ouvert.version === r.version}
-      onOuvrir={() => onOuvrir(r)}
-    />
+    </div>
   );
 }

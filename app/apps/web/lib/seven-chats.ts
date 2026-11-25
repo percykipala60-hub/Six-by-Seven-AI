@@ -1,4 +1,3 @@
-import { effacerArtefactsDuChat, effacerTousLesArtefacts, rangerArtefacts } from './artefacts';
 import { memoireActive } from './memoire';
 import type { ChatMessage } from './types';
 
@@ -17,8 +16,7 @@ export type ChatSeven = {
   messages: ChatMessage[];
   /** Absent pour les discussions d'avant Cosinus : ce sont des discussions du Chat. */
   mode?: ModeChat;
-  /** Projet où la discussion est rangée (lib/projets.ts). */
-  projet?: string;
+  projetId?: string;
 };
 
 const CLE = 'seven-ai-chats';
@@ -89,7 +87,6 @@ export function lireChats(): ChatSeven[] {
         ...c,
         titre: typeof c.titre === 'string' ? c.titre : titreDe(c.messages),
         messages: messagesValides(c.messages),
-        projet: typeof c.projet === 'string' && c.projet ? c.projet : undefined,
       }))
       .sort((a, b) => b.maj - a.maj)
       .slice(0, MAX_CHATS);
@@ -103,63 +100,61 @@ export function lireChat(id: string): ChatSeven | undefined {
 }
 
 /**
- * Enregistre (ou met à jour) une discussion et la remonte en tête de liste. Sans `projet`, la discussion garde le
+ * Enregistre (ou met à jour) une discussion et la remonte en tête de liste. Sans `projetId`, la discussion garde le
  * projet où elle était rangée.
  */
 export function garderChat(
   id: string,
   messages: ChatMessage[],
   mode: ModeChat = 'chat',
-  projet?: string,
+  projetId?: string,
 ): void {
   if (!memoireActive() || messages.length === 0) return;
   const chats = lireChats();
-  const range = projet ?? chats.find((c) => c.id === id)?.projet;
+  const projet = projetId ?? chats.find((c) => c.id === id)?.projetId;
   const chat: ChatSeven = {
     id,
     titre: titreDe(messages),
     maj: Date.now(),
     messages: messages.slice(-MAX_MSG),
     ...(mode === 'sixtouch' ? { mode } : {}),
-    ...(range ? { projet: range } : {}),
+    ...(projet ? { projetId: projet } : {}),
   };
   ecrire([chat, ...chats.filter((c) => c.id !== id)]);
 }
 
 export function effacerChat(id: string): void {
   ecrire(lireChats().filter((c) => c.id !== id));
-  effacerArtefactsDuChat(id);
 }
 
-/** Discussions rangées dans un projet, les plus récentes d'abord. */
-export function chatsDuProjet(projet: string, chats = lireChats()): ChatSeven[] {
-  return chats.filter((c) => c.projet === projet);
+/** Discussions rangées dans un projet (lib/travail.ts), les plus récentes d'abord. */
+export function chatsDuProjet(projetId: string, chats = lireChats()): ChatSeven[] {
+  return chats.filter((c) => c.projetId === projetId);
 }
 
 /** Range une discussion dans un projet, ou l'en sort (projet vide). Sa place dans la liste ne change pas. */
-export function rangerChat(id: string, projet: string): void {
+export function rangerChat(id: string, projetId: string): void {
   const chats = lireChats();
   if (!chats.some((c) => c.id === id)) return;
   ecrire(
     chats.map((c) => {
       if (c.id !== id) return c;
       const reste = { ...c };
-      delete reste.projet;
-      return projet ? { ...reste, projet } : reste;
+      delete reste.projetId;
+      return projetId ? { ...reste, projetId } : reste;
     }),
   );
-  rangerArtefacts(id, projet || undefined);
 }
 
 /** Le projet est supprimé : ses discussions restent, hors projet. */
-export function sortirDuProjet(projet: string): void {
+export function sortirDuProjet(projetId: string): void {
   const chats = lireChats();
-  if (!chats.some((c) => c.projet === projet)) return;
+  if (!chats.some((c) => c.projetId === projetId)) return;
   ecrire(
     chats.map((c) => {
-      if (c.projet !== projet) return c;
+      if (c.projetId !== projetId) return c;
       const reste = { ...c };
-      delete reste.projet;
+      delete reste.projetId;
       return reste;
     }),
   );
@@ -172,7 +167,6 @@ export function effacerTousLesChats(): void {
   } catch {
     /* rien à effacer */
   }
-  effacerTousLesArtefacts();
   window.dispatchEvent(new Event(EVT));
 }
 

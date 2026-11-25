@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { DIAPOS_MAX, THEMES, lirePresentation, theme } from '@/lib/presentation';
 import { poserDiapositive } from '@/lib/presentation-mise-en-page';
 import { pptxEnOctets } from '@/lib/pptx';
-import { extraireArtefacts, nomFichier } from '@/lib/artefacts';
-import { sevenAiSystem } from '@/lib/prompt';
+import { extraireArtefacts, genreArtefact } from '@/lib/artefacts';
+import { consignesSkill } from '@/lib/skills-cosinus';
 
 const EXEMPLE = {
   theme: 'lilas',
@@ -94,13 +94,16 @@ describe('lecture d’une présentation', () => {
     expect(p?.titre).toBe('D0');
   });
 
-  it('est un type d’artefact téléchargé en .pptx', () => {
-    const [a] = extraireArtefacts(
-      `<artefact id="expose" type="presentation" titre="Exposé">${JSON.stringify(EXEMPLE)}</artefact>`,
+  it('est un artefact .pptx, demandé par la méthode « Présentations »', () => {
+    const { artefacts } = extraireArtefacts(
+      `Voici.\n\`\`\`presentation filename="expose.pptx"\n${JSON.stringify(EXEMPLE)}\n\`\`\``,
     );
-    expect(a.type).toBe('presentation');
-    expect(nomFichier(a)).toBe('Expose.pptx');
-    expect(sevenAiSystem('chat')).toContain('« presentation »');
+    expect(artefacts[0].nom).toBe('expose.pptx');
+    expect(genreArtefact(artefacts[0])).toBe('presentation');
+    expect(lirePresentation(artefacts[0].contenu)?.diapositives).toHaveLength(13);
+    const consignes = consignesSkill('auto', 'Prépare une présentation pour ma soutenance');
+    expect(consignes).toContain('filename="titre-court.pptx"');
+    expect(consignes).toContain('bordeaux (Bordeaux classique)');
   });
 });
 

@@ -60,34 +60,14 @@ export const ImageJointeSchema = z.object({
 });
 export type ImageJointe = z.infer<typeof ImageJointeSchema>;
 
-/**
- * Contexte d'un projet (lib/projets.ts) : consignes et documents, envoyés avec chaque message d'une discussion du
- * projet. Bornés ici comme sur l'appareil ; le texte des documents ne dépasse pas PROJET_DOCS_MAX en tout.
- */
-export const PROJET_INSTRUCTIONS_MAX = 4_000;
-export const PROJET_DOC_MAX = 12_000;
-export const PROJET_DOCS_MAX = 24_000;
-export const ProjetBodySchema = z.object({
-  nom: z.string().trim().min(1).max(60),
-  instructions: z.string().max(PROJET_INSTRUCTIONS_MAX).optional(),
-  documents: z
-    .array(
-      z.object({
-        nom: z.string().trim().min(1).max(120),
-        texte: z.string().min(1).max(PROJET_DOC_MAX),
-      }),
-    )
-    .max(10)
-    .refine((l) => l.reduce((n, d) => n + d.texte.length, 0) <= PROJET_DOCS_MAX)
-    .optional(),
-});
-export type ProjetBody = z.infer<typeof ProjetBodySchema>;
-
 export const ChatBodySchema = z.object({
   navigateurSession: z.string().uuid().optional(),
-  projet: ProjetBodySchema.optional(),
+  projetId: z.string().uuid().optional(),
   /** Espace de la discussion : absent = Chat ; « sixtouch » = consignes d'agent de travail. */
   mode: z.enum(['chat', 'sixtouch']).optional(),
+  skill: z
+    .enum(['auto', 'documents', 'code', 'web', 'presentations', 'donnees', 'images'])
+    .optional(),
   images: z
     .array(ImageJointeSchema)
     .max(CHAT_IMAGES_MAX)

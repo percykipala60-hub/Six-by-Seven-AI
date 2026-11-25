@@ -172,6 +172,53 @@ type ElementOverpass = {
   tags?: Record<string, string>;
 };
 
+/** Lieux d'une catégorie autour d'un point, par Nominatim (rapide) : un mot-clé OpenStreetMap par étiquette. */
+async function prochesParNominatim(
+  etiquettes: string[],
+  centre: { lat: number; lon: number },
+  rayon: number,
+): Promise<LieuCarte[]> {
+  const dLat = rayon / 111_000;
+  const dLon = rayon / (111_000 * Math.max(Math.cos((centre.lat * Math.PI) / 180), 0.2));
+  const lieux: LieuCarte[] = [];
+  for (const e of etiquettes) {
+    await attendreTour();
+    const u = new URL(NOMINATIM);
+    u.searchParams.set('q', e.split('=')[1].replace('_', ' '));
+    u.searchParams.set('countrycodes', 'cd');
+    u.searchParams.set('format', 'jsonv2');
+    u.searchParams.set('limit', '20');
+    u.searchParams.set('accept-language', 'fr');
+    u.searchParams.set('bounded', '1');
+    u.searchParams.set(
+      'viewbox',
+      [centre.lon - dLon, centre.lat + dLat, centre.lon + dLon, centre.lat - dLat]
+        .map((n) => n.toFixed(5))
+        .join(','),
+    );
+    const res = await fetch(u, {
+      headers: { 'user-agent': UA, accept: 'application/json' },
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!res.ok) throw new Error(`Nominatim ${res.status}`);
+    const brut = (await res.json()) as ResultatNominatim[];
+    for (const r of Array.isArray(brut) ? brut : []) {
+      const lat = Number(r.lat);
+      const lon = Number(r.lon);
+      if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
+      const complet = String(r.display_name ?? '');
+      const morceaux = complet.split(', ');
+      lieux.push({
+        nom: r.name ? String(r.name) : 'Sans nom',
+        lat,
+        lon,
+        detail: morceaux.slice(r.name ? 1 : 0, r.name ? 3 : 2).join(', ') || undefined,
+      });
+    }
+  }
+  return lieux.filter((l) => distanceKm(centre, l) * 1000 <= rayon * 1.05);
+}
+
 /** Lieux d'une catégorie autour d'un point (rayon en mètres), du plus proche au plus loin. */
 export async function lieuxProches(
   categorie: string,
@@ -184,6 +231,15 @@ export async function lieuxProches(
   const cle = `o:${categorie}:${centre.lat.toFixed(3)}:${centre.lon.toFixed(3)}:${r}`;
   const deja = enCache<LieuCarte[]>(cle);
   if (deja) return deja;
+  // Nominatim d'abord (rapide et stable) ; Overpass (plus complet mais souvent saturé) seulement s'il ne trouve rien.
+  const rapides = await prochesParNominatim(etiquettes, centre, r).catch(() => []);
+  if (rapides.length) {
+    const tries = lieuxUniques(rapides)
+      .sort((a, b) => distanceKm(centre, a) - distanceKm(centre, b))
+      .slice(0, PROCHES_MAX);
+    garder(cle, tries);
+    return tries;
+  }
   const filtres = etiquettes
     .map((e) => {
       const [k, v] = e.split('=');

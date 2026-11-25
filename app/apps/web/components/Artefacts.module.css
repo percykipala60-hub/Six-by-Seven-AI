@@ -1,0 +1,46 @@
+.cartes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+.carte {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 420px;
+  min-height: 56px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.carte[aria-pressed='true'] {
+  border-color: var(--accent-b);
+  box-shadow: 0 0 0 1px var(--accent-b);
+}
+.icone {
+  width: 36px;
+  height: 36px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--brand) 12%, var(--card));
+  color: var(--brand);
+}
+.nom {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.nom span {
+  font-size: 12px;
+  color: var(--muted);
+}
