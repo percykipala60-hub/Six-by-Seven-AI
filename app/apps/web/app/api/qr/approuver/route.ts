@@ -16,7 +16,7 @@ export async function POST(req: Request) {
   const blocked = await guard(req);
   if (blocked) return blocked;
   if (!adminDisponible())
-    return fail(503, 'La connexion par code QR n’est pas configurée sur ce serveur.');
+    return fail(503, 'La connexion par code QR est indisponible pour le moment.');
   const u = await utilisateurDeRequete(req);
   if (!u) return fail(401, 'Connecte-toi d’abord sur cet appareil.');
   const corps = Corps.safeParse(await readJson(req, 1_000));

@@ -22,7 +22,7 @@ export async function GET(req: Request) {
   const blocked = await guard(req);
   if (blocked) return blocked;
   if (!adminDisponible())
-    return fail(503, 'La liste des appareils n’est pas disponible sur ce serveur.');
+    return fail(503, 'La liste des appareils est indisponible pour le moment.');
   const u = await utilisateurDeRequete(req);
   if (!u) return fail(401, 'Connexion requise.');
   try {
@@ -36,7 +36,7 @@ export async function DELETE(req: Request) {
   const blocked = await guard(req);
   if (blocked) return blocked;
   if (!adminDisponible())
-    return fail(503, 'La gestion des appareils n’est pas disponible sur ce serveur.');
+    return fail(503, 'La gestion des appareils est indisponible pour le moment.');
   const u = await utilisateurDeRequete(req);
   if (!u) return fail(401, 'Connexion requise.');
   const appareil = new URL(req.url).searchParams.get('appareil') ?? '';

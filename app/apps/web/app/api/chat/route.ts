@@ -39,8 +39,7 @@ export async function GET() {
     {
       demo: !hasChatAI(),
       agent: agentDisponible(),
-      transcription:
-        Boolean(process.env.OPENAI_API_KEY?.trim()) || (await transcriptionLocaleDisponible()),
+      transcription: await transcriptionLocaleDisponible(),
     },
     { headers: { 'Cache-Control': 'no-store' } },
   );

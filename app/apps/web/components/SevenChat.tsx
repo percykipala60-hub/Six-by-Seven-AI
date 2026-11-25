@@ -1074,8 +1074,8 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       if (!pret) {
         setErreur(
           bureau
-            ? 'Le moteur vocal de Six ne répond pas sur cet ordinateur. Ferme puis rouvre l’app Six, et réessaie.'
-            : 'Le mode vocal n’est pas disponible dans ce navigateur. Essaie avec Chrome ou Edge.',
+            ? 'Le mode vocal est indisponible pour le moment.'
+            : 'Le mode vocal est indisponible pour le moment.',
         );
         return;
       }
@@ -1270,15 +1270,11 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         return;
       }
       if (estBureau()) {
-        setErreur(
-          'La dictée de l’application de bureau demande une transcription audio configurée sur le serveur.',
-        );
+        setErreur('La dictée est indisponible pour le moment.');
         return;
       }
       if (!dicteeDisponible()) {
-        setErreur(
-          'La dictée vocale n’est pas encore disponible sur cet appareil. Écris ton message en attendant.',
-        );
+        setErreur('La dictée est indisponible pour le moment.');
         return;
       }
       verrouMicro.current = true;
@@ -1406,15 +1402,12 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       if (!res.ok || !data.texte) throw new Error(data.error ?? 'Transcription impossible.');
       texte = data.texte.trim();
     } catch (e) {
-      // Serveur sans clé de transcription (Netlify, démo) : on retombe sur la reconnaissance
-      // vocale du navigateur (Web Speech API) pour dicter le message, sans clé côté serveur.
+      // Pas de moteur vocal sur le serveur : on retombe sur la dictée du navigateur (Web Speech API).
       const msg = e instanceof Error ? e.message : '';
       const serveurIndispo =
-        msg.includes('OPENAI_API_KEY') || msg.includes('Transcription impossible');
+        msg.includes('indisponible') || msg.includes('Transcription impossible');
       if (serveurIndispo && dicteeDisponible()) {
-        setErreur(
-          'Transcription serveur indisponible : dicte ton message avec le micro du navigateur.',
-        );
+        setErreur('');
         try {
           texte = (await dictee()).trim();
         } catch (err) {

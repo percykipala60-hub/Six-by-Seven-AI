@@ -2,9 +2,10 @@ import { NextResponse } from 'next/server';
 import { fail, guard } from '@/lib/http';
 import { urlTranscriptionLocale } from '@/lib/transcription-locale';
 
-// Message vocal Seven AI : transcription via le modèle audio d'OpenAI quand une clé est configurée.
-// Sans clé OpenAI, on le dit honnêtement (Claude ne transcrit pas l'audio) : jamais de fausse transcription.
+// Transcription d'un message vocal par le moteur vocal de Six (SIX_TRANSCRIPTION_LOCALE). Claude répond aux
+// messages mais ne transcrit pas la voix ; sans moteur, la dictée du navigateur ou du téléphone prend le relais.
 const TAILLE_MAX = 10 * 1024 * 1024; // 10 Mo
+const INDISPONIBLE = 'La dictée est indisponible pour le moment.';
 /** Langue de la dictée (Réglages → Voix) ; « auto » laisse le modèle la reconnaître. */
 const LANGUES = new Set(['fr', 'en', 'ln', 'sw', 'auto']);
 
@@ -44,46 +45,7 @@ export async function POST(req: Request) {
     }
   }
 
-  const key = (process.env.OPENAI_API_KEY ?? '').trim();
-  if (!key)
-    return fail(
-      503,
-      'La transcription vocale demande une clé OpenAI (OPENAI_API_KEY) côté serveur. En attendant, écris ton message.',
-    );
-
-  try {
-    const corps = new FormData();
-    const format = audio.type.split(';')[0]?.toLowerCase();
-    const extensions: Record<string, string> = {
-      'audio/webm': 'webm',
-      'audio/mp4': 'mp4',
-      'audio/m4a': 'm4a',
-      'audio/x-m4a': 'm4a',
-      'audio/wav': 'wav',
-      'audio/mpeg': 'mp3',
-      'audio/ogg': 'ogg',
-      'audio/flac': 'flac',
-    };
-    const extension = format && extensions[format];
-    if (!extension) return fail(415, 'Ce format audio ne peut pas être transcrit.');
-    corps.append('file', audio, `message.${extension}`);
-    corps.append('model', (process.env.OPENAI_TRANSCRIBE_MODEL ?? '').trim() || 'whisper-1');
-    corps.append('response_format', 'json');
-    if (langue !== 'auto') corps.append('language', langue);
-    const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-      method: 'POST',
-      headers: { authorization: `Bearer ${key}` },
-      body: corps,
-      signal: AbortSignal.timeout(30_000),
-    });
-    if (!res.ok)
-      return fail(502, "La transcription n'a pas abouti. Réessaie ou écris ton message.");
-    const data = (await res.json().catch(() => ({}))) as { text?: unknown };
-    const texte = typeof data.text === 'string' ? data.text.trim() : '';
-    if (!texte)
-      return fail(502, "Le message vocal n'a pas été compris. Réessaie plus distinctement.");
-    return NextResponse.json({ texte });
-  } catch {
-    return fail(502, "La transcription n'a pas abouti. Réessaie ou écris ton message.");
-  }
+  // Pas de moteur vocal sur ce serveur : la dictée passe par le navigateur ou le téléphone, sinon elle est
+  // simplement indisponible (aucun service extérieur ne reçoit la voix).
+  return fail(503, INDISPONIBLE);
 }

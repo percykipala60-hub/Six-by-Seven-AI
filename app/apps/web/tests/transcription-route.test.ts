@@ -29,8 +29,7 @@ afterEach(() => {
 });
 
 describe('route /api/chat/transcription', () => {
-  it('transcrit avec le moteur local sans clé OpenAI', async () => {
-    vi.stubEnv('OPENAI_API_KEY', '');
+  it('transcrit avec le moteur vocal de Six', async () => {
     vi.stubEnv('SIX_TRANSCRIPTION_LOCALE', 'http://127.0.0.1:8765');
     const appel = vi.fn().mockResolvedValue(Response.json({ texte: 'Bonjour Six' }));
     vi.stubGlobal('fetch', appel);
@@ -57,10 +56,13 @@ describe('route /api/chat/transcription', () => {
     expect((await demande(formAvec('m.webm', 'audio/webm', 0))).status).toBe(400);
   });
 
-  it('dit honnêtement 503 sans clé OpenAI plutôt que de tricher', async () => {
-    vi.stubEnv('OPENAI_API_KEY', '');
+  it('sans moteur vocal, dit simplement que la dictée est indisponible (aucun service extérieur)', async () => {
+    vi.stubEnv('SIX_TRANSCRIPTION_LOCALE', '');
+    const appel = vi.fn();
+    vi.stubGlobal('fetch', appel);
     const res = await demande(formAvec('m.webm', 'audio/webm'));
     expect(res.status).toBe(503);
-    expect((await res.json()).error).toMatch(/clé OpenAI/);
+    expect((await res.json()).error).toBe('La dictée est indisponible pour le moment.');
+    expect(appel).not.toHaveBeenCalled();
   });
 });
