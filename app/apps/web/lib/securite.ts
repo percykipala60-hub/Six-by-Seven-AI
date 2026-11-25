@@ -134,8 +134,13 @@ export async function signalerConnexion(jetonAcces: string): Promise<'ok' | 'blo
   }
 }
 
-/** Cet appareil a-t-il été bloqué depuis un e-mail d'alerte ? (false en cas de doute : hors ligne, serveur…) */
-export async function appareilBloque(jetonAcces: string): Promise<boolean> {
+/**
+ * État de cet appareil : bloqué depuis un e-mail d'alerte, ou déconnecté depuis un autre appareil (sa session a été
+ * fermée). En cas de doute (hors ligne, serveur…), ni l'un ni l'autre.
+ */
+export async function etatAppareil(
+  jetonAcces: string,
+): Promise<{ bloque: boolean; deconnecte: boolean }> {
   try {
     const r = await fetch(
       `/api/compte/connexion?appareil=${encodeURIComponent(identifiantAppareil())}`,
@@ -144,10 +149,11 @@ export async function appareilBloque(jetonAcces: string): Promise<boolean> {
         cache: 'no-store',
       },
     );
-    if (!r.ok) return false;
-    return ((await r.json()) as { bloque?: boolean }).bloque === true;
+    if (!r.ok) return { bloque: false, deconnecte: false };
+    const d = (await r.json()) as { bloque?: boolean; deconnecte?: boolean };
+    return { bloque: d.bloque === true, deconnecte: d.deconnecte === true };
   } catch {
-    return false;
+    return { bloque: false, deconnecte: false };
   }
 }
 
@@ -157,4 +163,13 @@ export function marquerBloque(oui: boolean): void {
 }
 export function etaitBloque(): boolean {
   return lire('local', CLE_BLOQUE) === '1';
+}
+
+/** Message montré sur l'écran de connexion après une déconnexion depuis un autre appareil (puis effacé). */
+const CLE_DISTANCE = 'six-deconnecte-a-distance';
+export function marquerDeconnecteADistance(oui: boolean): void {
+  ecrire('local', CLE_DISTANCE, oui ? '1' : null);
+}
+export function etaitDeconnecteADistance(): boolean {
+  return lire('local', CLE_DISTANCE) === '1';
 }

@@ -45,17 +45,35 @@ export function QrConnexion() {
   // Attente de l'approbation (toutes les 2 s) et compte à rebours.
   useEffect(() => {
     if (!demande || etat !== 'pret') return;
+    // Une vérification à la fois : sinon, pendant la connexion, une deuxième vérification voit le code « déjà
+    // utilisé », en demande un nouveau, et la session de Supabase (verrouillée pendant la connexion) se bloque.
+    let enCours = false;
+    let fini = false;
     const t = setInterval(() => {
       setReste(Math.max(0, Math.round((demande.expire - Date.now()) / 1000)));
-      void attendreDemandeQr(demande).then((r) => {
-        if (!actif.current) return;
-        if (r === 'connecte') setEtat('connexion');
-        else if (r === 'expire')
-          setDemande(null); // un nouveau code s'affiche
-        else if (r === 'refuse') setEtat('erreur');
-      });
+      if (enCours || fini) return;
+      enCours = true;
+      void attendreDemandeQr(demande)
+        .then((r) => {
+          if (!actif.current || fini) return;
+          if (r === 'connecte') {
+            fini = true;
+            setEtat('connexion');
+          } else if (r === 'expire')
+            setDemande(null); // un nouveau code s'affiche
+          else if (r === 'refuse') {
+            fini = true;
+            setEtat('erreur');
+          }
+        })
+        .finally(() => {
+          enCours = false;
+        });
     }, 2000);
-    return () => clearInterval(t);
+    return () => {
+      fini = true;
+      clearInterval(t);
+    };
   }, [demande, etat]);
 
   return (

@@ -9,7 +9,13 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { effacerMemoire, fusionner, lireMemoire, memoireActive, remplacerMemoire } from './memoire';
 import { CLE, CONNEXION_DISPONIBLE, URL_SUPABASE, supabase } from './supabase';
-import { appareilBloque, marquerBloque, noterMethode, signalerConnexion } from './securite';
+import {
+  etatAppareil,
+  marquerBloque,
+  marquerDeconnecteADistance,
+  noterMethode,
+  signalerConnexion,
+} from './securite';
 
 /**
  * Page du lien « Mot de passe oublié » : on y choisit le nouveau mot de passe (deux fois), puis on revient soi-même
@@ -867,14 +873,24 @@ async function deconnecterAppareilBloque(sb: SupabaseClient): Promise<void> {
   await sb.auth.signOut({ scope: 'local' }).catch(() => {});
 }
 
-/** Vérifie (au démarrage, toutes les 5 minutes et au retour sur l'app) que cet appareil n'a pas été bloqué. */
+/**
+ * Vérifie (au démarrage, chaque minute et au retour sur l'app) que cet appareil n'a été ni bloqué, ni déconnecté
+ * depuis un autre appareil (Réglages → Appareils connectés). Si sa session a été fermée, il se déconnecte aussitôt
+ * au lieu d'attendre la fin de son jeton.
+ */
 function surveillerBlocage(sb: SupabaseClient): void {
   const verifier = async () => {
     const jeton = (await sb.auth.getSession()).data.session?.access_token;
-    if (jeton && (await appareilBloque(jeton))) await deconnecterAppareilBloque(sb);
+    if (!jeton) return;
+    const etat = await etatAppareil(jeton);
+    if (etat.bloque) await deconnecterAppareilBloque(sb);
+    else if (etat.deconnecte) {
+      marquerDeconnecteADistance(true);
+      await sb.auth.signOut({ scope: 'local' }).catch(() => {});
+    }
   };
   void verifier();
-  setInterval(() => void verifier(), 5 * 60_000);
+  setInterval(() => void verifier(), 60_000);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') void verifier();
   });

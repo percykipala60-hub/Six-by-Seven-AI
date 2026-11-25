@@ -261,3 +261,24 @@ export async function deconnecterAppareil(userId: string, appareil: string): Pro
     })) === true
   );
 }
+
+/**
+ * La session d'un jeton existe-t-elle encore ? « fermee » : elle a été supprimée (déconnexion depuis un autre
+ * appareil, « Déconnecter tous les autres », blocage) ; « inconnue » : Supabase injoignable (on ne déconnecte pas).
+ */
+export async function etatSession(jeton: string): Promise<'active' | 'fermee' | 'inconnue'> {
+  if (!URL_SUPABASE || !CLE) return 'inconnue';
+  try {
+    const res = await fetch(`${URL_SUPABASE}/auth/v1/user`, {
+      headers: { apikey: CLE, authorization: `Bearer ${jeton}` },
+      cache: 'no-store',
+      signal: AbortSignal.timeout(5_000),
+    });
+    if (res.ok) return 'active';
+    // Seule une session supprimée compte : un jeton expiré ou invalide (« bad_jwt ») se renouvelle tout seul.
+    const d = (await res.json().catch(() => ({}))) as { error_code?: string };
+    return d.error_code === 'session_not_found' ? 'fermee' : 'inconnue';
+  } catch {
+    return 'inconnue';
+  }
+}
