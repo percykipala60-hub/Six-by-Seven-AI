@@ -186,7 +186,7 @@ export function TravailPage({ onglet }: { onglet: 'projets' | 'taches' }) {
                     </select>
                   </label>
                   <label>
-                    Skill
+                    Focus
                     <select name="skill">
                       <option value="auto">Automatique</option>
                       {SKILLS.map((s) => (

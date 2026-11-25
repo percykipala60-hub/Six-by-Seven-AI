@@ -244,7 +244,7 @@ Respecte ce style dans les documents que tu rédiges (plan, numérotation, ton, 
   const etapes: string[] = [];
   const methode = choisirSkill(skill, question, Boolean(images?.length));
   if (methode) {
-    const etape = `Skill : ${methode.nom}`;
+    const etape = `Focus : ${methode.nom}`;
     etapes.push(etape);
     surEtape(etape);
   }

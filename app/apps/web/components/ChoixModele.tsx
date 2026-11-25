@@ -6,7 +6,7 @@ import { SKILLS, nomSkill, type ChoixSkill } from '@/lib/skills-cosinus';
 
 /**
  * Sous la barre de saisie, à droite (comme le choix du modèle chez Claude) : le modèle qui répond et, dans Cosinus,
- * le skill (méthode de travail). Un seul modèle pour l'instant ; la liste s'allongera avec les prochains.
+ * le focus (méthode de travail). Un seul modèle pour l'instant ; la liste s'allongera avec les prochains.
  */
 export const MODELES = [{ id: 'six', nom: 'Six', sous: 'Le modèle de Six' }] as const;
 
@@ -91,7 +91,7 @@ export function ChoixModele({
                 aria-expanded={sousMenu}
                 onClick={() => setSousMenu((v) => !v)}
               >
-                <span>Skill</span>
+                <span>Focus</span>
                 <span className="modele-valeur">
                   {nomSkill(skill)}
                   <Icon name="suivant" size={14} stroke={2} />
@@ -100,7 +100,7 @@ export function ChoixModele({
             </>
           )}
           {avecSkills && sousMenu && (
-            <div className="modele-sous-menu" role="menu" aria-label="Skill">
+            <div className="modele-sous-menu" role="menu" aria-label="Focus">
               <p className="modele-note">La méthode de travail de Cosinus pour cette discussion.</p>
               {(['auto', ...SKILLS.map((s) => s.id)] as ChoixSkill[]).map((id) => (
                 <button

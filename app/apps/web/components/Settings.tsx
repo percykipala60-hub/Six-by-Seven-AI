@@ -285,7 +285,7 @@ const TITRES: Record<Exclude<Vue, ''>, string> = {
   notifications: 'Notifications des apps',
   raccourcis: 'Bulle et clavier',
   sixtouch: 'Cosinus',
-  skills: 'Skills',
+  skills: 'Focus',
   appareils: 'Appareils connectés',
 };
 const MODES: Record<Theme, string> = { auto: 'Auto', light: 'Clair', dark: 'Sombre' };
@@ -1036,9 +1036,9 @@ export function Settings() {
     {
       id: 'skills',
       icon: 'sparkles',
-      label: 'Skills',
+      label: 'Focus',
       sous: 'Méthode de travail de Cosinus par défaut',
-      cles: 'skills méthode documents code pages web présentations données images cosinus modèle',
+      cles: 'focus skills méthode documents code pages web présentations données images cosinus modèle',
     },
     {
       id: 'memoire',
