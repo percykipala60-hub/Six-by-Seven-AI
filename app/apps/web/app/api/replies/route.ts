@@ -15,7 +15,7 @@ const CHAMPS_REDACTION: Record<string, string> = {
 };
 
 export async function POST(req: Request) {
-  const blocked = await guard(req);
+  const blocked = await guard(req, true);
   if (blocked) return blocked;
   const b = await readJson(req);
   const parsed = RepliesBodySchema.safeParse(b);

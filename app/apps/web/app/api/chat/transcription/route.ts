@@ -7,7 +7,7 @@ import { urlTranscriptionLocale } from '@/lib/transcription-locale';
 const TAILLE_MAX = 10 * 1024 * 1024; // 10 Mo
 
 export async function POST(req: Request) {
-  const blocked = await guard(req);
+  const blocked = await guard(req, true);
   if (blocked) return blocked;
 
   let audio: unknown;

@@ -4,7 +4,7 @@ import { TopicsBodySchema } from '@/lib/api-schemas';
 import { topics } from '@/lib/providers';
 
 export async function POST(req: Request) {
-  const blocked = await guard(req);
+  const blocked = await guard(req, true);
   if (blocked) return blocked;
   const b = await readJson(req, 4_000);
   const parsed = TopicsBodySchema.safeParse(b);

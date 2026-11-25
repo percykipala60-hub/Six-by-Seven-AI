@@ -9,6 +9,11 @@ const reponses = vi.hoisted(() =>
 );
 
 vi.mock('@/lib/providers', () => ({ replies: reponses }));
+vi.mock('@/lib/supabase-serveur', async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  utilisateurDeRequete: async (req: Request) =>
+    req.headers.get('authorization') === 'Bearer test-token' ? { id: 'test-user' } : null,
+}));
 
 async function poster(body: unknown) {
   return POST(
@@ -16,6 +21,7 @@ async function poster(body: unknown) {
       method: 'POST',
       headers: {
         origin: 'http://localhost',
+        authorization: 'Bearer test-token',
         'content-type': 'application/json',
       },
       body: JSON.stringify(body),
@@ -25,6 +31,23 @@ async function poster(body: unknown) {
 
 describe('route de rédaction', () => {
   beforeEach(() => vi.clearAllMocks());
+
+  it('refuse un appelant sans session', async () => {
+    const response = await POST(
+      new Request('http://localhost/api/replies', {
+        method: 'POST',
+        headers: { origin: 'http://localhost', 'content-type': 'application/json' },
+        body: JSON.stringify({
+          conversation: 'Bonjour',
+          objectif: 'Répondre',
+          ton: 'amical',
+          longueur: 'courte',
+        }),
+      }),
+    );
+    expect(response.status).toBe(401);
+    expect(reponses).not.toHaveBeenCalled();
+  });
 
   it('accepte une rédaction sans préférence de style enregistrée', async () => {
     const response = await poster({

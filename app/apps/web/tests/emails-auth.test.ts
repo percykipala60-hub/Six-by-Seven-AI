@@ -91,4 +91,14 @@ describe('contenu des e-mails', () => {
       composerEmail({ ...base, email_action_type: 'invite' }, 'https://x.supabase.co'),
     ).toBeNull();
   });
+
+  it('envoie une notification sans code après un changement de mot de passe', () => {
+    const e = composerEmail(
+      { ...base, token: '', email_action_type: 'password_changed_notification' },
+      'https://x.supabase.co',
+    );
+    expect(e?.objet).toContain('mot de passe');
+    expect(e?.html).toContain('vient d’être modifié');
+    expect(e?.html).not.toContain('123456');
+  });
 });

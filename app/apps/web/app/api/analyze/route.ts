@@ -6,7 +6,7 @@ import { appelant, limitesGratuites, MESSAGE_LIMITE } from '@/lib/premium';
 import { depasse } from '@/lib/quotas';
 
 export async function POST(req: Request) {
-  const blocked = await guard(req);
+  const blocked = await guard(req, true);
   if (blocked) return blocked;
   const body = await readJson(req);
   const parsed = AnalyseBodySchema.safeParse(body);

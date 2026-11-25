@@ -31,7 +31,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const blocked = await guard(req);
+  const blocked = await guard(req, true);
   if (blocked) return blocked;
   // Des images (capture d'écran, images d'une vidéo) peuvent accompagner le message : le corps peut alors être plus gros, mais le texte de la
   // discussion garde sa limite habituelle (CHAT_MAX_BYTES).

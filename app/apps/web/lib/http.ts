@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { ProviderError } from './providers';
+import { utilisateurDeRequete } from './supabase-serveur';
 
 const WINDOW_MS = 60_000;
 const MAX_REQ = 20;
@@ -143,8 +144,10 @@ export function foreignOrigin(req: Request): boolean {
 }
 
 /** Contrôles communs à toutes les routes d'IA. Renvoie une réponse d'erreur, ou null si la requête peut continuer. */
-export async function guard(req: Request): Promise<NextResponse | null> {
+export async function guard(req: Request, compteRequis = false): Promise<NextResponse | null> {
   if (foreignOrigin(req)) return fail(403, 'Requête non autorisée.');
+  if (compteRequis && !(await utilisateurDeRequete(req)))
+    return fail(401, 'Connecte-toi pour utiliser Six.');
   try {
     if (await rateLimited(req)) return fail(429, 'Trop de demandes. Attends une minute.');
   } catch (error) {

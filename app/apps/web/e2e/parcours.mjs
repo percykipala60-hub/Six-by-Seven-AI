@@ -115,7 +115,7 @@ try {
     !/sk-[A-Za-z0-9]{10,}|ANTHROPIC_API_KEY|OPENAI_API_KEY/.test(html),
   );
 
-  // Cas limites de l'API
+  // Sans session, l'API d'IA refuse la demande avant de lire son contenu.
   const api = (corps) =>
     page.evaluate(
       async (c) =>
@@ -129,14 +129,14 @@ try {
       corps,
     );
   r.verifier(
-    'Conversation vide refusée (400)',
-    (await api(JSON.stringify({ conversation: '' }))) === 400,
+    'Conversation anonyme refusée (401)',
+    (await api(JSON.stringify({ conversation: '' }))) === 401,
   );
   r.verifier(
-    'Plus de 2000 caractères refusé (400)',
-    (await api(JSON.stringify({ conversation: 'a'.repeat(2001) }))) === 400,
+    'Conversation longue anonyme refusée (401)',
+    (await api(JSON.stringify({ conversation: 'a'.repeat(2001) }))) === 401,
   );
-  r.verifier('JSON invalide refusé (400)', (await api('pas du json')) === 400);
+  r.verifier('JSON anonyme refusé (401)', (await api('pas du json')) === 401);
 
   // Pages
   for (const chemin of ['/reglages', '/sujets', '/confidentialite', '/conditions', '/mentions']) {

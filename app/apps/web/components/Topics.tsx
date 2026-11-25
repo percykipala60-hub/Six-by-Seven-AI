@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { SITUATIONS, type Situation, type TopicsResult } from '@/lib/types';
 import { Icon } from './Icon';
 import { AppBar } from './AppBar';
+import { entetesCompte } from '@/lib/premium-client';
 
 async function copyText(text: string): Promise<boolean> {
   try {
@@ -52,7 +53,7 @@ export function Topics() {
     try {
       const res = await fetch('/api/topics', {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
+        headers: { 'content-type': 'application/json', ...(await entetesCompte()) },
         body: JSON.stringify({ situation, contexte }),
         signal: controller.signal,
       });
