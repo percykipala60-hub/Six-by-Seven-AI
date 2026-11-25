@@ -23,7 +23,7 @@
     "serve-lan": "bash scripts/serve-lan.sh"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.131.0",
+    "@anthropic-ai/sdk": "^1.12.0",
     "@capacitor/core": "8.5.3",
     "@capacitor/keyboard": "8.0.6",
     "@capgo/capacitor-speech-recognition": "8.6.0",
