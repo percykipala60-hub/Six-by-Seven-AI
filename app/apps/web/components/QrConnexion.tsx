@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { attendreDemandeQr, creerDemandeQr, lienQr, type DemandeQr } from '@/lib/qr-connexion';
+import { Logo } from './Logo';
 
 /**
- * Code QR de l'écran de connexion (comme Steam) : un appareil déjà connecté à Six le scanne (menu → « Scanner un
- * code QR ») et confirme ; cet appareil-ci se connecte alors au même compte, sans mot de passe. Le code change
+ * Code QR de l'écran de connexion (comme Steam), avec le « 6 » de Six au centre : un appareil déjà connecté le scanne
+ * (Réglages → Appareils connectés → « Associer un appareil ») et confirme ; cet appareil-ci se connecte alors au même compte, sans mot de passe. Le code change
  * toutes les 2 minutes et ne sert qu'une fois.
  */
 export function QrConnexion() {
@@ -27,7 +28,8 @@ export function QrConnexion() {
         const image = await QRCode.toString(lienQr(d), {
           type: 'svg',
           margin: 1,
-          errorCorrectionLevel: 'M',
+          // Correction maximale (H, 30 %) : le logo de Six au centre ne gêne pas la lecture.
+          errorCorrectionLevel: 'H',
           color: { dark: '#0f1a3a', light: '#ffffff' },
         });
         if (annule) return;
@@ -45,17 +47,35 @@ export function QrConnexion() {
   // Attente de l'approbation (toutes les 2 s) et compte à rebours.
   useEffect(() => {
     if (!demande || etat !== 'pret') return;
+    // Une vérification à la fois : sinon, pendant la connexion, une deuxième vérification voit le code « déjà
+    // utilisé », en demande un nouveau, et la session de Supabase (verrouillée pendant la connexion) se bloque.
+    let enCours = false;
+    let fini = false;
     const t = setInterval(() => {
       setReste(Math.max(0, Math.round((demande.expire - Date.now()) / 1000)));
-      void attendreDemandeQr(demande).then((r) => {
-        if (!actif.current) return;
-        if (r === 'connecte') setEtat('connexion');
-        else if (r === 'expire')
-          setDemande(null); // un nouveau code s'affiche
-        else if (r === 'refuse') setEtat('erreur');
-      });
+      if (enCours || fini) return;
+      enCours = true;
+      void attendreDemandeQr(demande)
+        .then((r) => {
+          if (!actif.current || fini) return;
+          if (r === 'connecte') {
+            fini = true;
+            setEtat('connexion');
+          } else if (r === 'expire')
+            setDemande(null); // un nouveau code s'affiche
+          else if (r === 'refuse') {
+            fini = true;
+            setEtat('erreur');
+          }
+        })
+        .finally(() => {
+          enCours = false;
+        });
     }, 2000);
-    return () => clearInterval(t);
+    return () => {
+      fini = true;
+      clearInterval(t);
+    };
   }, [demande, etat]);
 
   return (
@@ -63,13 +83,19 @@ export function QrConnexion() {
       <div className="qr-image" aria-label="Code QR de connexion" role="img">
         {etat === 'pret' || etat === 'connexion' ? (
           // SVG fabriqué sur l'appareil par la bibliothèque qrcode (aucun contenu venu d'ailleurs).
-          // eslint-disable-next-line @next/next/no-img-element -- image fabriquée sur l'appareil (data URL)
-          <img
-            src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`}
-            alt=""
-            width={136}
-            height={136}
-          />
+          <span className="qr-avec-logo">
+            {/* eslint-disable-next-line @next/next/no-img-element -- image fabriquée sur l'appareil (data URL) */}
+            <img
+              src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`}
+              alt=""
+              width={136}
+              height={136}
+            />
+            {/* Le « 6 » de Six au centre du code. */}
+            <span className="qr-logo" aria-hidden="true">
+              <Logo label="" small />
+            </span>
+          </span>
         ) : (
           <span className="qr-attente">{etat === 'erreur' ? '' : 'Préparation du code…'}</span>
         )}
@@ -90,7 +116,8 @@ export function QrConnexion() {
             <ol>
               <li>Ouvre Six sur un appareil déjà connecté (téléphone, ordinateur).</li>
               <li>
-                Menu → <strong>Scanner un code QR</strong>, puis vise ce code.
+                Réglages → <strong>Appareils connectés</strong> →{' '}
+                <strong>Associer un appareil</strong>, puis vise ce code.
               </li>
               <li>Confirme : cet appareil se connecte à ton compte.</li>
             </ol>

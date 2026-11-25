@@ -27,6 +27,7 @@ export function AppareilsVue() {
   const [scanner, setScanner] = useState(false);
   const [liste, setListe] = useState<Appareil[] | null>(null);
   const [cetAppareil, setCetAppareil] = useState('');
+  const [gestion, setGestion] = useState(false);
   const [erreur, setErreur] = useState('');
   const [occupe, setOccupe] = useState('');
   const [demande, demander] = useConfirmer();
@@ -45,6 +46,7 @@ export function AppareilsVue() {
     }
     setErreur('');
     setCetAppareil(r.cetAppareil);
+    setGestion(r.gestion);
     setListe(trierAppareils(r.appareils, r.cetAppareil));
   }, []);
   useEffect(() => {
@@ -88,20 +90,33 @@ export function AppareilsVue() {
 
       <Groupe
         titre="Où vous êtes connecté"
-        pied="Déconnecter un appareil ferme sa session : il devra se reconnecter pour utiliser votre compte."
+        pied={
+          gestion
+            ? 'Déconnecter un appareil ferme sa session : il devra se reconnecter pour utiliser votre compte.'
+            : undefined
+        }
       >
         {liste === null && !erreur && <LigneInfo icon="refresh" label="Chargement…" />}
         {liste?.map((a) => {
           const ici = a.appareil === cetAppareil;
           const sous = [
             ici ? 'Cet appareil' : `Dernière connexion : ${dateConnexion(a.derniere_connexion)}`,
-            a.methode && a.methode !== 'Connexion' ? a.methode : '',
+            a.role === 'principal' ? 'Principal' : a.role === 'hote' ? 'Hôte' : 'Par code QR',
+            a.methode && a.methode !== 'Connexion' && a.methode !== 'Code QR' ? a.methode : '',
           ]
             .filter(Boolean)
             .join(' · ');
-          return ici ? (
-            <LigneInfo key={a.appareil} icon="check" label={a.nom || 'Cet appareil'} sous={sous} />
-          ) : (
+          // Les autres appareils restent visibles ; seuls ceux que cet appareil peut déconnecter sont cliquables.
+          if (ici || !a.gerable)
+            return (
+              <LigneInfo
+                key={a.appareil}
+                icon={ici ? 'check' : 'phone'}
+                label={a.nom || (ici ? 'Cet appareil' : 'Appareil')}
+                sous={sous}
+              />
+            );
+          return (
             <Ligne
               key={a.appareil}
               icon="phone"
@@ -129,7 +144,7 @@ export function AppareilsVue() {
         {liste && autres.length === 0 && (
           <LigneInfo icon="shield" label="Aucun autre appareil connecté" />
         )}
-        {autres.length > 0 && (
+        {gestion && autres.some((a) => a.gerable) && (
           <Ligne
             icon="logout"
             danger

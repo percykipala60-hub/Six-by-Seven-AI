@@ -5,6 +5,7 @@ import {
   adminDisponible,
   appareilBloque,
   enregistrerConnexion,
+  etatSession,
   sessionDuJeton,
   utilisateurDeRequete,
 } from '@/lib/supabase-serveur';
@@ -69,6 +70,13 @@ export async function POST(req: Request) {
 export async function GET(req: Request) {
   const blocked = await guard(req);
   if (blocked) return blocked;
+  // Session fermée depuis un autre appareil : l'app se déconnecte (vérifié sans cache, même sans clé admin).
+  const jeton = /^Bearer\s+(\S+)$/.exec(req.headers.get('authorization') ?? '')?.[1];
+  if (jeton && (await etatSession(jeton)) === 'fermee')
+    return NextResponse.json(
+      { bloque: false, deconnecte: true },
+      { headers: { 'cache-control': 'no-store' } },
+    );
   if (!adminDisponible()) return NextResponse.json({ bloque: false });
   const c = await compte(req);
   if (!c) return fail(401, 'Connexion requise.');

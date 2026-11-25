@@ -6,8 +6,35 @@ vi.mock('@/lib/supabase-serveur', async (importOriginal) => ({
   ...(await importOriginal<Record<string, unknown>>()),
   adminDisponible: () => true,
   utilisateurDeRequete: async (req: Request) =>
-    req.headers.get('authorization') === 'Bearer test-token' ? { id: 'moi' } : null,
-  listerAppareils: async () => [],
+    ['Bearer test-token', 'Bearer jeton-qr'].includes(req.headers.get('authorization') ?? '')
+      ? { id: 'moi' }
+      : null,
+  // Deux appareils : « principal1 » (Google, session s1) et « qr000001 » (code QR, session s2).
+  listerAppareils: async () => [
+    {
+      appareil: 'principal1',
+      nom: 'PC',
+      methode: 'Google',
+      cree_le: '',
+      derniere_connexion: '2026-11-26T09:00:00Z',
+      connecte: true,
+    },
+    {
+      appareil: 'qr000001',
+      nom: 'Téléphone',
+      methode: 'Code QR',
+      cree_le: '',
+      derniere_connexion: '2026-11-26T10:00:00Z',
+      connecte: true,
+    },
+  ],
+  sessionsDesAppareils: async () =>
+    new Map([
+      ['principal1', 's1'],
+      ['qr000001', 's2'],
+    ]),
+  sessionDuJeton: (jeton: string) =>
+    jeton === 'test-token' ? 's1' : jeton === 'jeton-qr' ? 's2' : null,
   deconnecterAppareil: (...args: unknown[]) => deconnecter(...(args as [])),
 }));
 
@@ -68,19 +95,35 @@ describe('route des appareils', () => {
 
   it('demande d’être connecté', async () => {
     expect((await appel('GET', '', '')).status).toBe(401);
-    expect((await appel('DELETE', '?appareil=abcdefgh12', '')).status).toBe(401);
+    expect((await appel('DELETE', '?appareil=principal1&cible=qr000001', '')).status).toBe(401);
   });
 
-  it('liste les appareils du compte', async () => {
-    const r = await appel('GET');
+  it('tous les appareils voient la liste ; seul le principal peut gérer', async () => {
+    const r = await appel('GET', '?appareil=principal1');
     expect(r.status).toBe(200);
-    expect(await r.json()).toEqual({ appareils: [] });
+    const d = (await r.json()) as {
+      gestion: boolean;
+      appareils: { appareil: string; role: string; gerable: boolean }[];
+    };
+    expect(d.gestion).toBe(true);
+    expect(d.appareils.find((a) => a.appareil === 'qr000001')).toMatchObject({
+      role: 'secondaire',
+      gerable: true,
+    });
   });
 
-  it('refuse un identifiant d’appareil invalide, déconnecte un appareil valide du compte', async () => {
-    expect((await appel('DELETE', '?appareil=../../x')).status).toBe(400);
+  it('le principal déconnecte ; un appareil par code QR est refusé ; un faux appareil aussi', async () => {
+    expect((await appel('DELETE', '?appareil=principal1&cible=../../x')).status).toBe(400);
     expect(deconnecter).not.toHaveBeenCalled();
-    expect((await appel('DELETE', '?appareil=abcdefgh12')).status).toBe(200);
-    expect(deconnecter).toHaveBeenCalledWith('moi', 'abcdefgh12');
+    expect((await appel('DELETE', '?appareil=qr000001&cible=principal1', 'jeton-qr')).status).toBe(
+      403,
+    );
+    // Se faire passer pour le principal avec la session d'un autre appareil : refusé.
+    expect((await appel('DELETE', '?appareil=principal1&cible=qr000001', 'jeton-qr')).status).toBe(
+      403,
+    );
+    expect(deconnecter).not.toHaveBeenCalled();
+    expect((await appel('DELETE', '?appareil=principal1&cible=qr000001')).status).toBe(200);
+    expect(deconnecter).toHaveBeenCalledWith('moi', 'qr000001');
   });
 });

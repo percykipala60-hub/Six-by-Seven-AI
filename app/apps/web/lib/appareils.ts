@@ -3,7 +3,6 @@
 import { entetesCompte } from './premium-client';
 import { plateforme } from './plateforme';
 import { identifiantAppareil } from './securite';
-import { supabase } from './supabase';
 
 /**
  * Appareils connectés au compte (Réglages → Appareils connectés), comme dans Claude ou WhatsApp :
@@ -20,33 +19,44 @@ export type Appareil = {
   cree_le: string;
   derniere_connexion: string;
   connecte: boolean;
+  /** principal (mot de passe, Google…), hôte (plus ancien quand aucun principal n'est là) ou secondaire (code QR). */
+  role?: 'principal' | 'hote' | 'secondaire';
+  /** Cet appareil-ci a le droit de le déconnecter. */
+  gerable?: boolean;
 };
 
-export type ListeAppareils = { appareils: Appareil[]; cetAppareil: string } | { erreur: string };
+export type ListeAppareils =
+  { appareils: Appareil[]; cetAppareil: string; gestion: boolean } | { erreur: string };
 
 async function lireErreur(r: Response, defaut: string): Promise<string> {
   const d = (await r.json().catch(() => ({}))) as { error?: string };
   return d.error ?? defaut;
 }
 
+const ici = () => `appareil=${encodeURIComponent(identifiantAppareil())}`;
+
 export async function lireAppareils(): Promise<ListeAppareils> {
   try {
-    const r = await fetch('/api/compte/appareils', {
+    const r = await fetch(`/api/compte/appareils?${ici()}`, {
       headers: await entetesCompte(),
       cache: 'no-store',
     });
     if (!r.ok) return { erreur: await lireErreur(r, 'La liste des appareils est indisponible.') };
-    const d = (await r.json()) as { appareils?: Appareil[] };
-    return { appareils: d.appareils ?? [], cetAppareil: identifiantAppareil() };
+    const d = (await r.json()) as { appareils?: Appareil[]; gestion?: boolean };
+    return {
+      appareils: d.appareils ?? [],
+      cetAppareil: identifiantAppareil(),
+      gestion: d.gestion === true,
+    };
   } catch {
     return { erreur: 'La liste des appareils est indisponible (hors ligne ?).' };
   }
 }
 
-/** Déconnecte un autre appareil du compte. Renvoie un message d'erreur, ou null si c'est fait. */
-export async function deconnecterAppareil(appareil: string): Promise<string | null> {
+/** Déconnecte un autre appareil du compte (si cet appareil en a le droit). Message d'erreur, ou null si c'est fait. */
+export async function deconnecterAppareil(cible: string): Promise<string | null> {
   try {
-    const r = await fetch(`/api/compte/appareils?appareil=${encodeURIComponent(appareil)}`, {
+    const r = await fetch(`/api/compte/appareils?${ici()}&cible=${encodeURIComponent(cible)}`, {
       method: 'DELETE',
       headers: await entetesCompte(),
     });
@@ -56,13 +66,14 @@ export async function deconnecterAppareil(appareil: string): Promise<string | nu
   }
 }
 
-/** Déconnecte tous les autres appareils (cet appareil reste connecté). */
+/** Déconnecte tous les autres appareils que cet appareil a le droit de déconnecter. */
 export async function deconnecterAutresAppareils(): Promise<string | null> {
   try {
-    const sb = await supabase();
-    if (!sb) return 'Connexion requise.';
-    const { error } = await sb.auth.signOut({ scope: 'others' });
-    return error ? 'Déconnexion des autres appareils impossible.' : null;
+    const r = await fetch(`/api/compte/appareils?${ici()}&tous=1`, {
+      method: 'DELETE',
+      headers: await entetesCompte(),
+    });
+    return r.ok ? null : await lireErreur(r, 'Déconnexion des autres appareils impossible.');
   } catch {
     return 'Déconnexion des autres appareils impossible (hors ligne ?).';
   }

@@ -9,7 +9,13 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { effacerMemoire, fusionner, lireMemoire, memoireActive, remplacerMemoire } from './memoire';
 import { CLE, CONNEXION_DISPONIBLE, URL_SUPABASE, supabase } from './supabase';
-import { appareilBloque, marquerBloque, noterMethode, signalerConnexion } from './securite';
+import {
+  etatAppareil,
+  marquerBloque,
+  marquerDeconnecteADistance,
+  noterMethode,
+  signalerConnexion,
+} from './securite';
 
 /**
  * Page du lien « Mot de passe oublié » : on y choisit le nouveau mot de passe (deux fois), puis on revient soi-même
@@ -766,10 +772,14 @@ export async function verifierCode(
   return error ? messageErreur(error, id) : null;
 }
 
-/** Déconnexion : la mémoire reste sur cet appareil, elle n'est simplement plus synchronisée. */
+/**
+ * Déconnexion de CET appareil seulement : la mémoire reste sur l'appareil, elle n'est simplement plus synchronisée.
+ * « local » : sans précision, Supabase ferme les sessions de TOUS les appareils du compte (le téléphone qui sert à
+ * approuver les codes QR se retrouvait déconnecté sans le savoir).
+ */
 export async function deconnecter(): Promise<void> {
   const sb = await supabase();
-  await sb?.auth.signOut();
+  await sb?.auth.signOut({ scope: 'local' });
   try {
     localStorage.removeItem(SESSION);
   } catch {
@@ -867,14 +877,26 @@ async function deconnecterAppareilBloque(sb: SupabaseClient): Promise<void> {
   await sb.auth.signOut({ scope: 'local' }).catch(() => {});
 }
 
-/** Vérifie (au démarrage, toutes les 5 minutes et au retour sur l'app) que cet appareil n'a pas été bloqué. */
+/**
+ * Vérifie (au démarrage, chaque minute et au retour sur l'app) que cet appareil n'a été ni bloqué, ni déconnecté
+ * depuis un autre appareil (Réglages → Appareils connectés). Si sa session a été fermée, il se déconnecte aussitôt
+ * au lieu d'attendre la fin de son jeton.
+ */
 function surveillerBlocage(sb: SupabaseClient): void {
   const verifier = async () => {
     const jeton = (await sb.auth.getSession()).data.session?.access_token;
-    if (jeton && (await appareilBloque(jeton))) await deconnecterAppareilBloque(sb);
+    if (!jeton) return;
+    // Connexion pas encore enregistrée (serveur indisponible au moment de la connexion) : on réessaie.
+    if ((await signalerConnexion(jeton)) === 'bloque') return deconnecterAppareilBloque(sb);
+    const etat = await etatAppareil(jeton);
+    if (etat.bloque) await deconnecterAppareilBloque(sb);
+    else if (etat.deconnecte) {
+      marquerDeconnecteADistance(true);
+      await sb.auth.signOut({ scope: 'local' }).catch(() => {});
+    }
   };
   void verifier();
-  setInterval(() => void verifier(), 5 * 60_000);
+  setInterval(() => void verifier(), 60_000);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') void verifier();
   });

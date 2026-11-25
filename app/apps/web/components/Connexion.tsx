@@ -24,7 +24,12 @@ import {
   messageRetourRefuse,
 } from '@/lib/compte';
 import { LIEN_CONDITIONS, LIEN_CONFIDENTIALITE } from '@/lib/liens';
-import { etaitBloque, marquerBloque } from '@/lib/securite';
+import {
+  etaitBloque,
+  etaitDeconnecteADistance,
+  marquerBloque,
+  marquerDeconnecteADistance,
+} from '@/lib/securite';
 import { QrConnexion } from './QrConnexion';
 import { AppIcon } from './AppIcon';
 import { Icon } from './Icon';
@@ -159,6 +164,13 @@ export function FormulaireConnexion() {
   const [qrOuvert, setQrOuvert] = useState(false);
   // Appareil bloqué depuis l'e-mail d'alerte : on l'explique une fois.
   useEffect(() => {
+    if (etaitDeconnecteADistance()) {
+      marquerDeconnecteADistance(false);
+      setInfo(
+        'Cet appareil a été déconnecté depuis un autre appareil. Reconnecte-toi pour continuer.',
+      );
+      return;
+    }
     if (!etaitBloque()) return;
     marquerBloque(false);
     setErreur(
