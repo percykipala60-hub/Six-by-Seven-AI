@@ -55,6 +55,9 @@ import {
   LigneInterrupteur,
   LigneLien,
 } from './Liste';
+import { plateforme } from '@/lib/plateforme';
+import { AppareilsVue } from './Appareils';
+import { ReglagesSkills } from './ReglagesSkills';
 
 type Theme = 'auto' | 'light' | 'dark';
 // Chaque thème est montré comme le logo qu'il donne : fond, « 6 » et trait (mêmes valeurs que app/globals.css).
@@ -269,7 +272,9 @@ type Vue =
   | 'compte'
   | 'notifications'
   | 'raccourcis'
-  | 'sixtouch';
+  | 'sixtouch'
+  | 'skills'
+  | 'appareils';
 const TITRES: Record<Exclude<Vue, ''>, string> = {
   premium: 'Six Premium',
   theme: 'Thème',
@@ -280,6 +285,8 @@ const TITRES: Record<Exclude<Vue, ''>, string> = {
   notifications: 'Notifications des apps',
   raccourcis: 'Bulle et clavier',
   sixtouch: 'Cosinus',
+  skills: 'Skills',
+  appareils: 'Appareils connectés',
 };
 const MODES: Record<Theme, string> = { auto: 'Auto', light: 'Clair', dark: 'Sombre' };
 
@@ -625,10 +632,17 @@ export function Settings() {
   const [premium, setPremium] = useState(false);
   // Entrée Six Premium cachée tant que le paiement n'est pas ouvert (premium en veille).
   const [premiumOuvert, setPremiumOuvert] = useState(false);
-  // « Siri et raccourcis » : seulement dans l'app iPhone.
+  // Chaque version ne montre que ses réglages : « Siri et raccourcis » dans l'app iPhone, « Bulle et clavier » et
+  // « Notifications des apps » dans l'app Android, « Cosinus » (dossier de travail, navigateur) dans l'app de bureau.
   const [iphone, setIphone] = useState(false);
+  const [android, setAndroid] = useState(false);
+  const [bureau, setBureau] = useState(false);
   useEffect(() => {
     void surIPhoneNatif().then(setIphone);
+    void plateforme().then((p) => {
+      setAndroid(p === 'android');
+      setBureau(p === 'bureau');
+    });
   }, []);
   useEffect(() => {
     const lirePremium = () =>
@@ -948,6 +962,8 @@ export function Settings() {
       {vue === 'notifications' && <InterAppNotifications />}
       {vue === 'raccourcis' && <Raccourcis />}
       {vue === 'sixtouch' && <ReglagesSixTouch />}
+      {vue === 'appareils' && <AppareilsVue />}
+      {vue === 'skills' && <ReglagesSkills />}
     </>
   );
 
@@ -1006,12 +1022,23 @@ export function Settings() {
       sous: `${registre}, expressions, emojis`,
       cles: 'registre longueur emoji expressions ton',
     },
+    ...(bureau
+      ? [
+          {
+            id: 'sixtouch',
+            icon: 'sixtouch' as const,
+            label: 'Cosinus',
+            sous: 'Espace de travail, navigateur',
+            cles: 'cosinus sixtouch navigateur historique espace dossier agent fichiers',
+          },
+        ]
+      : []),
     {
-      id: 'sixtouch',
-      icon: 'sixtouch',
-      label: 'Cosinus',
-      sous: 'Espace de travail, navigateur',
-      cles: 'cosinus sixtouch navigateur historique espace dossier agent fichiers',
+      id: 'skills',
+      icon: 'sparkles',
+      label: 'Skills',
+      sous: 'Méthode de travail de Cosinus par défaut',
+      cles: 'skills méthode documents code pages web présentations données images cosinus modèle',
     },
     {
       id: 'memoire',
@@ -1021,12 +1048,23 @@ export function Settings() {
       cles: 'cloud mémoire synchroniser partager partages appareils contacts conversations gardées habitudes effacer premium',
     },
     {
-      id: 'raccourcis',
-      icon: 'phone',
-      label: 'Bulle et clavier',
-      sous: 'Répondre depuis n’importe quelle app (Android)',
-      cles: 'bulle flottante clavier raccourci rapide whatsapp',
+      id: 'appareils',
+      icon: 'qr',
+      label: 'Appareils connectés',
+      sous: 'Où vous êtes connecté, associer un appareil',
+      cles: 'appareils connectés sessions déconnecter code qr scanner associer lier téléphone ordinateur',
     },
+    ...(android
+      ? [
+          {
+            id: 'raccourcis',
+            icon: 'phone' as const,
+            label: 'Bulle et clavier',
+            sous: 'Répondre depuis n’importe quelle app',
+            cles: 'bulle flottante clavier raccourci rapide whatsapp',
+          },
+        ]
+      : []),
     ...(iphone
       ? [
           {
@@ -1039,13 +1077,17 @@ export function Settings() {
           },
         ]
       : []),
-    {
-      id: 'notifications',
-      icon: 'bell',
-      label: 'Notifications des apps',
-      sous: 'Messages reçus dans tes apps (Android)',
-      cles: 'notification android alertes',
-    },
+    ...(android
+      ? [
+          {
+            id: 'notifications',
+            icon: 'bell' as const,
+            label: 'Notifications des apps',
+            sous: 'Messages reçus dans tes apps',
+            cles: 'notification alertes',
+          },
+        ]
+      : []),
     {
       id: 'confidentialite',
       icon: 'lock',

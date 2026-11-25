@@ -9947,3 +9947,171 @@ div.seven-outils-ligne:not(.seven-outils-flottants) {
   justify-content: flex-end;
   gap: 8px;
 }
+
+/* ---------- Conversation vocale avec Six (bouton à côté du micro) ---------- */
+.seven-composer .seven-capsule button.seven-vocal.actif {
+  background: var(--brand);
+  color: #fff;
+}
+.seven-appel-etat {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 560px;
+  margin: 0 auto 8px;
+  padding: 6px 6px 6px 12px;
+  border: 1px solid color-mix(in srgb, var(--brand) 40%, var(--line));
+  border-radius: 999px;
+  color: var(--ink);
+  font-size: 0.86rem;
+}
+.seven-appel-etat > span:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+.seven-appel-onde {
+  display: grid;
+  color: var(--brand);
+  animation: retour-pulse 1.2s ease-in-out infinite;
+}
+.seven-composer .seven-appel-etat button {
+  min-height: 0;
+  padding: 5px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink) 10%, transparent);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.82rem;
+  box-shadow: none;
+  cursor: pointer;
+}
+.seven-projet {
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto 8px;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+/* ---------- Modèle et skill, sous la barre de saisie à droite (comme Claude) ---------- */
+.modele-choix {
+  position: relative;
+  margin-left: auto;
+}
+.seven-composer .modele-bouton {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: auto;
+  height: auto;
+  min-height: 0;
+  padding: 5px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.82rem;
+  box-shadow: none;
+  cursor: pointer;
+}
+.seven-composer .modele-bouton:hover:not(:disabled),
+.seven-composer .modele-bouton[aria-expanded='true'] {
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+}
+.seven-composer .modele-bouton:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.modele-bouton svg {
+  color: var(--muted);
+  transform: rotate(90deg);
+}
+.modele-skill {
+  color: var(--muted);
+}
+.modele-menu {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 6px);
+  z-index: 70;
+  display: flex;
+  flex-direction: column;
+  width: min(300px, calc(100vw - 32px));
+  max-height: min(460px, 70vh);
+  padding: 5px;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+  box-shadow: 0 14px 36px rgb(0 0 0 / 0.38);
+  text-align: left;
+}
+.modele-menu hr {
+  width: 100%;
+  margin: 4px 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+.seven-composer .modele-menu button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.9rem;
+  text-align: left;
+  box-shadow: none;
+  cursor: pointer;
+}
+.seven-composer .modele-menu button:hover,
+.seven-composer .modele-menu button[aria-expanded='true'] {
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+}
+.modele-menu button > svg {
+  flex: none;
+  color: var(--brand);
+}
+.modele-ligne {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.modele-ligne small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.76rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.modele-valeur {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+.modele-valeur svg {
+  color: var(--muted);
+}
+.modele-note {
+  margin: 4px 10px 6px;
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+.modele-sous-menu {
+  display: flex;
+  flex-direction: column;
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--line);
+}

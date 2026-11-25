@@ -39,7 +39,8 @@ import { PiecesJointes } from './PiecesJointes';
 import { ArtefactPanneau, Artefacts, type ArtefactOuvert } from './Artefacts';
 import { extraireArtefacts, versionsDe } from '@/lib/artefacts';
 import { extrairePdf } from '@/lib/lire-document';
-import { SKILLS, choisirSkill, type ChoixSkill } from '@/lib/skills-cosinus';
+import { lireSkillDefaut, type ChoixSkill } from '@/lib/skills-cosinus';
+import { ChoixModele } from './ChoixModele';
 import {
   BoutonsVolet,
   GRAND_VOLET,
@@ -275,6 +276,8 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   const router = useRouter();
   const sixtouch = mode === 'sixtouch';
   const [skill, setSkill] = useState<ChoixSkill>('auto');
+  // Skill de départ : celui choisi dans Réglages → Skills (lu après le premier rendu, comme tout réglage local).
+  useEffect(() => setSkill(lireSkillDefaut()), []);
   const base = sixtouch ? '/cosinus' : '/chat';
   // Volet d'outils à droite (navigateur, fichiers). Son onglet ouvert est gardé sur l'appareil : sur grand écran,
   // on le retrouve en revenant dans le Chat (sur téléphone il s'ouvrirait en plein écran, donc on ne le rouvre pas).
@@ -736,7 +739,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       setErreur(
         espace.local
           ? 'Choisis d’abord l’environnement de cette discussion (sous la barre de saisie).'
-          : 'Choisis d’abord l’environnement de cette discussion : ton Cloud (connecte-toi à ton compte), ou un dossier de l’ordinateur dans l’app de bureau.',
+          : 'Choisis d’abord l’environnement de cette discussion : ton Cloud (connecte-toi à ton compte).',
       );
       return;
     }
@@ -1418,8 +1421,10 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
                 <h1>On se met au travail ?</h1>
                 <p>
                   {dossierRequis
-                    ? 'Choisis l’environnement de cette discussion : un dossier de cet ordinateur, ou ton Cloud (en ligne, avec un dépôt GitHub si tu veux). Ailleurs sur l’ordinateur, je ne vais que si tu me le demandes.'
-                    : `Donne-moi une tâche : une recherche, l’analyse d’un document, d’une image ou d’une vidéo, un rapport. ${telephone ? 'Tes fichiers sont en haut à droite.' : 'Le navigateur et les fichiers sont en haut à droite.'}`}
+                    ? espace.local
+                      ? 'Choisis l’environnement de cette discussion : un dossier de cet ordinateur, ou ton Cloud (en ligne, avec un dépôt GitHub si tu veux). Ailleurs sur l’ordinateur, je ne vais que si tu me le demandes.'
+                      : 'Choisis l’environnement de cette discussion : ton Cloud, en ligne, avec un dépôt GitHub si tu veux.'
+                    : `Donne-moi une tâche : une recherche, l’analyse d’un document, d’une image ou d’une vidéo, un rapport. ${sansNavigateur ? 'Tes fichiers sont en haut à droite.' : 'Le navigateur et les fichiers sont en haut à droite.'}`}
                 </p>
                 {choixEnvironnement && (
                   <CarteEnvironnements
@@ -1662,64 +1667,21 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
           void importerFichiers(e.dataTransfer.files);
         }}
       >
-        <div className="seven-appel-barre" role="status" aria-live="polite">
-          {appel ? (
-            <>
-              <span>{etapeAppel || 'Appel en cours…'}</span>
-              <button type="button" onClick={raccrocher}>
-                Raccrocher
-              </button>
-            </>
-          ) : (
-            <button
-              type="button"
-              disabled={occupe || enregistre}
-              onClick={() => void lancerAppel()}
-            >
-              📞 Appeler Six
+        {appel && (
+          <div className="seven-appel-etat" role="status" aria-live="polite">
+            <span className="seven-appel-onde" aria-hidden="true">
+              <Icon name="vocal" size={16} stroke={2} />
+            </span>
+            <span>{etapeAppel || 'Conversation vocale en cours…'}</span>
+            <button type="button" onClick={raccrocher}>
+              Terminer
             </button>
-          )}
-        </div>
-        {!sixtouch && projetId && (
-          <p style={{ width: '100%', maxWidth: 560, margin: '0 auto 8px' }}>
+          </div>
+        )}
+        {projetId && (
+          <p className="seven-projet">
             Contexte du projet actif · <a href="/projets">Mes projets</a>
           </p>
-        )}
-        {sixtouch && (
-          <div style={{ width: '100%', maxWidth: 560, margin: '0 auto 8px' }}>
-            {projetId && (
-              <p>
-                Contexte du projet actif · <a href="/projets">Mes projets</a>
-              </p>
-            )}
-            <label htmlFor="cosinus-skill">Skill : </label>
-            <select
-              id="cosinus-skill"
-              value={skill}
-              disabled={occupe || enregistre}
-              onChange={(e) => setSkill(e.target.value as ChoixSkill)}
-              style={{
-                maxWidth: '100%',
-                minHeight: 44,
-                borderRadius: 10,
-                padding: '8px 12px',
-                color: 'inherit',
-                background: 'Canvas',
-              }}
-            >
-              <option value="auto">Automatique</option>
-              {SKILLS.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.nom}
-                </option>
-              ))}
-            </select>
-            <p style={{ margin: '4px 0', fontSize: 12, opacity: 0.75 }}>
-              {skill === 'auto'
-                ? 'Cosinus choisit une méthode selon ta demande.'
-                : choisirSkill(skill)?.description}
-            </p>
-          </div>
         )}
         {file.length > 0 && (
           <ul className="seven-file" aria-label="Messages en attente">
@@ -1846,20 +1808,34 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
               <Icon name="up" size={18} stroke={2} />
             </button>
           ) : occupe && !enregistre ? null : (
-            <button
-              type="button"
-              className={`seven-mic${enregistre ? ' rec' : ''}`}
-              aria-label={enregistre ? 'Arrêter le message vocal' : 'Envoyer un message vocal'}
-              title={enregistre ? 'Terminer le vocal' : 'Message vocal'}
-              disabled={micOccupe && !enregistre}
-              onClick={() => void basculerMicro()}
-            >
-              <Icon name={enregistre ? 'x' : 'mic'} size={20} stroke={1.75} />
-            </button>
+            <>
+              {!enregistre && (
+                <button
+                  type="button"
+                  className={`seven-vocal${appel ? ' actif' : ''}`}
+                  aria-label={appel ? 'Terminer la conversation vocale' : 'Parler avec Six'}
+                  title={appel ? 'Terminer la conversation vocale' : 'Parler avec Six (mode vocal)'}
+                  disabled={micOccupe && !appel}
+                  onClick={() => void lancerAppel()}
+                >
+                  <Icon name={appel ? 'x' : 'vocal'} size={20} stroke={1.9} />
+                </button>
+              )}
+              <button
+                type="button"
+                className={`seven-mic${enregistre ? ' rec' : ''}`}
+                aria-label={enregistre ? 'Arrêter le message vocal' : 'Envoyer un message vocal'}
+                title={enregistre ? 'Terminer le vocal' : 'Message vocal'}
+                disabled={micOccupe && !enregistre}
+                onClick={() => void basculerMicro()}
+              >
+                <Icon name={enregistre ? 'x' : 'mic'} size={20} stroke={1.75} />
+              </button>
+            </>
           )}
         </div>
-        {choixEnvironnement && (
-          <div className="seven-sous-barre">
+        <div className="seven-sous-barre">
+          {choixEnvironnement && (
             <SelecteurEnvironnement
               actuel={
                 env ??
@@ -1871,8 +1847,14 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
               verrouille={messages.length > 0 || occupe}
               onChoisi={choisirEnvironnement}
             />
-          </div>
-        )}
+          )}
+          <ChoixModele
+            skill={skill}
+            onSkill={setSkill}
+            avecSkills={sixtouch}
+            desactive={enregistre || appel}
+          />
+        </div>
         <p className="seven-mention">Six peut se tromper : vérifie les informations importantes.</p>
       </form>
     </main>

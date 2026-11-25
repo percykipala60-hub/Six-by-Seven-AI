@@ -13,7 +13,6 @@ import { AvatarContenu } from './AvatarContenu';
 import { LIEN_CONFIDENTIALITE } from '@/lib/liens';
 import { effacerChat, ecouterChats, lireChats, type ChatSeven } from '@/lib/seven-chats';
 import { Recents, type ElementRecent } from './Recents';
-import { ScannerQr } from './ScannerQr';
 import {
   effacerConversationGardee,
   ecouterConversations,
@@ -158,7 +157,6 @@ export function AppBar({
   const [demandeEffacer, demanderEffacer] = useConfirmer();
   // Trois éléments visibles par défaut sous chaque outil ; « Voir plus » déplie toute la liste.
   const [recherche, setRecherche] = useState('');
-  const [scanner, setScanner] = useState(false);
   const [rechercheOuverte, setRechercheOuverte] = useState(false);
   const [reponses, setReponses] = useState<ConversationGardee[]>([]);
   useEffect(() => {
@@ -353,7 +351,6 @@ export function AppBar({
       </header>
       <Rail page={page} onPanneau={() => setOpen(true)} onNouvelle={onNouvelle} />
       {demandeEffacer}
-      {scanner && <ScannerQr onFermer={() => setScanner(false)} />}
       <div
         className={`drawer-scrim${open ? ' open' : ''}`}
         onClick={() => setOpen(false)}
@@ -457,18 +454,6 @@ export function AppBar({
           apresLien={apresLien}
         />
         <nav aria-label="Réglages" className="drawer-nav drawer-bas">
-          {/* Connexion d'un autre appareil par code QR (comme Steam) : on scanne le code de son écran de connexion. */}
-          <button
-            type="button"
-            className="drawer-item"
-            onClick={() => {
-              apresLien();
-              setScanner(true);
-            }}
-          >
-            <Icon name="qr" />
-            <span>Scanner un code QR</span>
-          </button>
           {item('/reglages', 'reglages', <Icon name="sliders" />, 'Réglages')}
           <a
             href={LIEN_CONFIDENTIALITE}

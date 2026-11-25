@@ -94,3 +94,32 @@ export function skillLong(choix: ChoixSkill = 'auto', question = '', images = fa
   const id = choisirSkill(choix, question, images)?.id;
   return id === 'web' || id === 'presentations';
 }
+
+// ---------- Skill par défaut (Réglages → Skills), gardé sur l'appareil ----------
+
+const CLE_SKILL = 'six-skill-defaut';
+
+export function lireSkillDefaut(): ChoixSkill {
+  try {
+    const v = localStorage.getItem(CLE_SKILL);
+    return v && (SKILL_IDS as readonly string[]).includes(v) ? (v as SkillId) : 'auto';
+  } catch {
+    return 'auto';
+  }
+}
+
+export function ecrireSkillDefaut(choix: ChoixSkill): void {
+  try {
+    if (choix === 'auto') localStorage.removeItem(CLE_SKILL);
+    else localStorage.setItem(CLE_SKILL, choix);
+  } catch {
+    /* stockage bloqué : le choix vaut pour cette visite */
+  }
+}
+
+/** Nom affiché d'un choix : « Automatique », « Documents »… */
+export function nomSkill(choix: ChoixSkill): string {
+  return choix === 'auto'
+    ? 'Automatique'
+    : (SKILLS.find((s) => s.id === choix)?.nom ?? 'Automatique');
+}
