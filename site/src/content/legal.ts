@@ -171,7 +171,14 @@ export const legalPages: LegalPage[] = [
       {
         title: "6. Intelligence artificielle",
         body: [
-          "L'analyse et la rédaction font appel à des prestataires d'intelligence artificielle, actuellement Anthropic et, en secours, OpenAI. Seul le texte masqué leur est transmis ; ils appliquent leurs propres règles de traitement à leurs services.",
+          "L'analyse et la rédaction font appel à des prestataires d'intelligence artificielle, actuellement Anthropic et, en secours, OpenAI. Ils appliquent leurs propres règles de traitement à leurs services.",
+          {
+            list: [
+              "Dans Responsive (lecture d'une conversation ou d'une capture d'écran) : seul le texte masqué leur est transmis, comme décrit à la partie 3.",
+              "Dans le Chat et dans Cosinus : ce que vous écrivez, ainsi que les images et documents que vous joignez, leur est transmis tel quel, sans masquage, pour que Six puisse vous répondre. N'y mettez pas d'informations sensibles (mots de passe, codes reçus par SMS, données bancaires).",
+            ],
+          },
+          "Quand Cosinus cherche des publications ou lit une page web, seuls les mots de la recherche ou l'adresse de la page sont envoyés aux bases consultées (OpenAlex, Crossref, Semantic Scholar, HAL, arXiv, PubMed) ou au site concerné.",
           "Quand vous demandez un lieu en République démocratique du Congo, Six cherche ce lieu dans OpenStreetMap : seul le nom du lieu recherché est envoyé, par notre serveur, aux services publics d'OpenStreetMap (Nominatim et Overpass). La carte affichée sous la réponse est chargée depuis openstreetmap.org.",
         ],
       },
@@ -196,7 +203,7 @@ export const legalPages: LegalPage[] = [
       {
         title: "9. Transferts de données",
         body: [
-          "Certains prestataires sont établis aux États-Unis (intelligence artificielle, mesure d'audience du site). Seul le texte masqué est transmis aux prestataires d'intelligence artificielle.",
+          "Certains prestataires sont établis aux États-Unis (intelligence artificielle, mesure d'audience du site). Le texte transmis aux prestataires d'intelligence artificielle est masqué dans Responsive ; dans le Chat et Cosinus, il est transmis tel que vous l'écrivez (voir la partie 6).",
         ],
       },
       {
@@ -368,7 +375,10 @@ export const legalPages: LegalPage[] = [
       },
       {
         title: "Le modèle",
-        body: ["Le modèle d'IA utilisé par Six est fourni par Seven.AI. Il ne reçoit que la version masquée de tes conversations."],
+        body: [
+          "Six s'appuie sur des modèles d'IA d'Anthropic et, en secours, d'OpenAI, choisis et encadrés par Seven.AI.",
+          "Dans Responsive, le modèle ne reçoit que la version masquée de tes conversations. Dans le Chat et Cosinus, il reçoit ce que tu écris tel quel : n'y mets pas de mot de passe, de code ou de données bancaires.",
+        ],
       },
       {
         title: "Ses limites",
