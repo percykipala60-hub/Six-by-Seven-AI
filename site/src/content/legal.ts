@@ -13,7 +13,7 @@ export type LegalPage = {
 
 export const legalMeta = {
   eyebrow: "Informations légales",
-  updated: "Dernière mise à jour : 22 novembre 2026",
+  updated: "Dernière mise à jour : 25 novembre 2026",
   otherPages: "Autres documents",
   back: "Retour à l'accueil",
   manageCookies: "Gérer mes cookies",
@@ -172,6 +172,7 @@ export const legalPages: LegalPage[] = [
         title: "6. Intelligence artificielle",
         body: [
           "L'analyse et la rédaction font appel à des prestataires d'intelligence artificielle, actuellement Anthropic et, en secours, OpenAI. Seul le texte masqué leur est transmis ; ils appliquent leurs propres règles de traitement à leurs services.",
+          "Quand vous demandez un lieu en République démocratique du Congo, Six cherche ce lieu dans OpenStreetMap : seul le nom du lieu recherché est envoyé, par notre serveur, aux services publics d'OpenStreetMap (Nominatim et Overpass). La carte affichée sous la réponse est chargée depuis openstreetmap.org.",
         ],
       },
       {
@@ -189,7 +190,7 @@ export const legalPages: LegalPage[] = [
       {
         title: "8. Prestataires",
         body: [
-          "Le service s'appuie sur des prestataires qui traitent uniquement les données nécessaires à leur prestation : hébergement du site et de l'application (DigitalOcean, serveur situé à Francfort), nom de domaine (Cloudflare), comptes (Supabase, Paris) et intelligence artificielle (Anthropic, OpenAI). Vos données ne sont jamais cédées à des tiers à des fins commerciales.",
+          "Le service s'appuie sur des prestataires qui traitent uniquement les données nécessaires à leur prestation : hébergement du site et de l'application (DigitalOcean, serveur situé à Francfort), nom de domaine (Cloudflare), comptes (Supabase, Paris), envoi des e-mails de connexion (Resend), intelligence artificielle (Anthropic, OpenAI) et cartes (OpenStreetMap). Vos données ne sont jamais cédées à des tiers à des fins commerciales.",
         ],
       },
       {
