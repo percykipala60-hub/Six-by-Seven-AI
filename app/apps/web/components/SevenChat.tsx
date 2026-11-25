@@ -35,7 +35,6 @@ import { extraireArtefacts, versionsDe } from '@/lib/artefacts';
 import { extrairePdf } from '@/lib/lire-document';
 import { lireSkillDefaut, type ChoixSkill } from '@/lib/skills-cosinus';
 import { ChoixModele } from './ChoixModele';
-import { EnregistrementVocal } from './EnregistrementVocal';
 import { ecouterPhrase } from '@/lib/ecoute';
 import { bcp47, chargerVoix, choisirVoix, lirePreferencesVoix, phrases } from '@/lib/voix';
 import { VoixOrbe, type PhaseVoix } from './VoixOrbe';
@@ -564,8 +563,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   const appelActif = useRef(false);
   const ecouteAppel = useRef<AbortController | null>(null);
   const toucherSphere = useRef<(() => void) | null>(null);
-  const vocalAnnule = useRef(false);
-  const [fluxVocal, setFluxVocal] = useState<MediaStream | null>(null);
+  const envoiApresVocal = useRef(false);
   const finirLecture = useRef<(() => void) | null>(null);
   useEffect(
     () => () => {
@@ -1160,20 +1158,16 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   }
 
   // — Message vocal : enregistrement navigateur, transcription serveur, envoi auto. —
-  /** Message vocal : « Arrêter » efface l'audio, « Envoyer » le fait transcrire puis l'envoie. */
-  function arreterVocal() {
-    vocalAnnule.current = true;
-    mediaRecorder.current?.stop();
-  }
+  /** Message vocal : la flèche arrête l'enregistrement, le fait transcrire et l'envoie aussitôt. */
   function envoyerAudioVocal() {
-    vocalAnnule.current = false;
+    envoiApresVocal.current = true;
     mediaRecorder.current?.stop(); // la fin de l'enregistrement déclenche la transcription (onstop)
   }
 
   async function basculerMicro() {
     if (appelActif.current) return;
     if (enregistre) {
-      mediaRecorder.current?.stop(); // la fin déclenche l'envoi dans onstop
+      mediaRecorder.current?.stop(); // la fin déclenche la transcription dans onstop (texte dans la barre)
       return;
     }
     if (micOccupe || verrouMicro.current) return;
@@ -1190,9 +1184,11 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         verrouMicro.current = false;
         setMicOccupe(false);
       }
+      // Le texte dicté arrive dans la barre : la personne le relit, puis l'envoie avec la flèche.
       if (texte.trim()) {
-        setSaisie(texte.trim());
-        void envoyer(texte.trim(), undefined, undefined, pieces, true);
+        const dit = texte.trim();
+        setSaisie((avant) => (avant.trim() ? `${avant.trimEnd()} ${dit}` : dit));
+        champ.current?.focus();
       }
       return;
     }
@@ -1240,9 +1236,11 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         verrouMicro.current = false;
         setMicOccupe(false);
       }
+      // Le texte dicté arrive dans la barre : la personne le relit, puis l'envoie avec la flèche.
       if (texte.trim()) {
-        setSaisie(texte.trim());
-        void envoyer(texte.trim(), undefined, undefined, pieces, true);
+        const dit = texte.trim();
+        setSaisie((avant) => (avant.trim() ? `${avant.trimEnd()} ${dit}` : dit));
+        champ.current?.focus();
       }
       return;
     }
@@ -1282,19 +1280,14 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       mr.onstop = () => {
         mr.stream.getTracks().forEach((t) => t.stop());
         setEnregistre(false);
-        if (vocalAnnule.current) {
-          vocalAnnule.current = false;
-          return;
-        }
         const blob = new Blob(chunksAudio.current, { type: mr.mimeType || 'audio/webm' });
         if (blob.size === 0) {
           setErreur('Je n’ai reçu aucun son. Réessaie en parlant après le clic.');
           return;
         }
-        void envoyerVocal(blob);
+        void envoyerVocal(blob, envoiApresVocal.current);
       };
-      vocalAnnule.current = false;
-      setFluxVocal(flux ?? null);
+      envoiApresVocal.current = false;
       mr.start();
       setEnregistre(true);
     } catch (e) {
@@ -1310,7 +1303,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     }
   }
 
-  async function envoyerVocal(blob: Blob) {
+  async function envoyerVocal(blob: Blob, envoyerApres = false) {
     setMicOccupe(true);
     setErreur('');
     let texte = '';
@@ -1346,10 +1339,15 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     } finally {
       setMicOccupe(false);
     }
-    if (texte) {
+    if (!texte) return;
+    if (envoyerApres) {
       setSaisie(texte);
       void envoyer(texte, undefined, undefined, pieces, true);
+      return;
     }
+    // Micro réappuyé : le texte arrive dans la barre, à relire ou compléter avant d'envoyer.
+    setSaisie((s) => (s.trim() ? `${s.trimEnd()} ${texte}` : texte));
+    champ.current?.focus();
   }
 
   // Export PDF d'une réponse : le PDF est construit sur l'appareil (jsPDF, chargé à la demande).
@@ -1788,14 +1786,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
             ))}
           </ul>
         )}
-        <div className={`seven-capsule${enregistre ? ' en-vocal' : ''}`}>
-          {enregistre && (
-            <EnregistrementVocal
-              flux={fluxVocal}
-              onArreter={arreterVocal}
-              onEnvoyer={envoyerAudioVocal}
-            />
-          )}
+        <div className="seven-capsule">
           <button
             type="button"
             className="seven-doc"
@@ -1827,7 +1818,13 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
             value={saisie}
             onChange={(e) => setSaisie(e.target.value)}
             disabled={appel}
-            placeholder={occupe ? 'Écrire la suite (envoyée après la réponse)' : 'Demander à Six'}
+            placeholder={
+              enregistre
+                ? 'Je t’écoute… (micro : écrire ici, flèche : envoyer)'
+                : occupe
+                  ? 'Écrire la suite (envoyée après la réponse)'
+                  : 'Demander à Six'
+            }
             aria-label="Demander à Six"
             enterKeyHint="send"
             onPaste={(e) => {
@@ -1881,16 +1878,28 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
                   <Icon name={appel ? 'x' : 'vocal'} size={20} stroke={1.9} />
                 </button>
               )}
-              {!enregistre && (
+              <button
+                type="button"
+                className={`seven-mic${enregistre ? ' rec' : ''}`}
+                aria-pressed={enregistre}
+                aria-label={
+                  enregistre ? 'Arrêter et écrire le texte dans la barre' : 'Dicter un message'
+                }
+                title={enregistre ? 'Arrêter : le texte s’écrit dans la barre' : 'Dicter'}
+                disabled={micOccupe && !enregistre}
+                onClick={() => void basculerMicro()}
+              >
+                <Icon name="mic" size={20} stroke={1.9} />
+              </button>
+              {enregistre && (
                 <button
                   type="button"
-                  className="seven-mic"
-                  aria-label="Enregistrer un message vocal"
-                  title="Message vocal"
-                  disabled={micOccupe}
-                  onClick={() => void basculerMicro()}
+                  className="seven-envoyer"
+                  aria-label="Envoyer le message vocal"
+                  title="Envoyer"
+                  onClick={envoyerAudioVocal}
                 >
-                  <Icon name="mic" size={20} stroke={1.75} />
+                  <Icon name="up" size={18} stroke={2} />
                 </button>
               )}
             </>

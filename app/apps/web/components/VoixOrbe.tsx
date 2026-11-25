@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type CSSProperties } from 'react';
+import { Logo } from './Logo';
 import { plateforme } from '@/lib/plateforme';
 
 export type PhaseVoix = 'attente' | 'ecoute' | 'reflechit' | 'parle';
@@ -13,7 +14,8 @@ const LIBELLES: Record<PhaseVoix, string> = {
 };
 
 /**
- * Mode vocal : à la place de la discussion, une sphère qui réagit à la voix (comme le mode vocal de ChatGPT).
+ * Mode vocal : à la place de la discussion, six pétales lumineux en hexagone autour du logo de Six (le chiffre six),
+ * qui réagissent à la voix.
  * - Pendant l'écoute, elle suit le volume du micro (Web Audio, rien n'est enregistré ni envoyé) ;
  * - pendant la réflexion, elle respire lentement ; pendant la réponse de Six, elle ondule.
  * Sur iPhone et Android, la dictée native garde le micro pour elle : la sphère s'anime alors sans mesure.
@@ -97,7 +99,13 @@ export function VoixOrbe({
         onClick={onToucher}
       >
         <span className="voix-halo" />
-        <span className="voix-coeur" />
+        {/* Six pétales, en hexagone : le chiffre de Six. Ils s'écartent avec la voix. */}
+        {[0, 1, 2, 3, 4, 5].map((i) => (
+          <span key={i} className="voix-petale" style={{ '--i': i } as CSSProperties} />
+        ))}
+        <span className="voix-centre">
+          <Logo label="" />
+        </span>
       </button>
       <p className="voix-libelle">{LIBELLES[phase]}</p>
       <button type="button" className="voix-terminer" onClick={onTerminer}>
