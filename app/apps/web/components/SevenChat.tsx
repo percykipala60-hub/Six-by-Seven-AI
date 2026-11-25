@@ -35,6 +35,7 @@ import { extraireArtefacts, versionsDe } from '@/lib/artefacts';
 import { extrairePdf } from '@/lib/lire-document';
 import { lireSkillDefaut, type ChoixSkill } from '@/lib/skills-cosinus';
 import { ChoixModele } from './ChoixModele';
+import { VoixOrbe, type PhaseVoix } from './VoixOrbe';
 import {
   BoutonsVolet,
   GRAND_VOLET,
@@ -548,7 +549,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   const [memOn, setMemOn] = useState(false); // mémoire de Six active (gate de conservation de l'historique)
   const [enregistre, setEnregistre] = useState(false); // micro en cours d'enregistrement
   const [appel, setAppel] = useState(false);
-  const [etapeAppel, setEtapeAppel] = useState('');
+  const [phaseAppel, setPhaseAppel] = useState<PhaseVoix>('ecoute');
   const appelActif = useRef(false);
   const finirLecture = useRef<(() => void) | null>(null);
   useEffect(
@@ -937,7 +938,6 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     finirLecture.current?.();
     finirLecture.current = null;
     setAppel(false);
-    setEtapeAppel('');
   }
 
   async function lireReponse(texte: string): Promise<void> {
@@ -978,14 +978,14 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     setAppel(true);
     try {
       while (appelActif.current) {
-        setEtapeAppel('Je t’écoute…');
+        setPhaseAppel('ecoute');
         const phrase = (await dictee()).trim();
         if (!appelActif.current) break;
         if (!phrase) throw new Error('Je n’ai rien entendu. Réessaie.');
-        setEtapeAppel('Six prépare sa réponse…');
+        setPhaseAppel('reflechit');
         const reponse = await envoyerPendantAppel.current(phrase);
         if (!appelActif.current || !reponse) break;
-        setEtapeAppel('Six te répond…');
+        setPhaseAppel('parle');
         await lireReponse(reponse);
       }
     } catch (e) {
@@ -1402,7 +1402,9 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
           onFermer={fermerArtefact}
         />
       )}
-      <div className="seven-fil" ref={filRef} aria-live="polite">
+      {/* Mode vocal : la discussion laisse la place à une sphère qui réagit à la voix. */}
+      {appel && <VoixOrbe phase={phaseAppel} onTerminer={raccrocher} />}
+      <div className="seven-fil" ref={filRef} aria-live="polite" hidden={appel}>
         {messages.length === 0 && !occupe && (
           <div className="seven-vide">
             <span className="six-vide-logo" aria-hidden="true">
@@ -1659,17 +1661,6 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
           void importerFichiers(e.dataTransfer.files);
         }}
       >
-        {appel && (
-          <div className="seven-appel-etat" role="status" aria-live="polite">
-            <span className="seven-appel-onde" aria-hidden="true">
-              <Icon name="vocal" size={16} stroke={2} />
-            </span>
-            <span>{etapeAppel || 'Conversation vocale en cours…'}</span>
-            <button type="button" onClick={raccrocher}>
-              Terminer
-            </button>
-          </div>
-        )}
         {projetId && (
           <p className="seven-projet">
             Contexte du projet actif · <a href="/projets">Mes projets</a>

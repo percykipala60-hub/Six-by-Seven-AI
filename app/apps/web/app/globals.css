@@ -9953,39 +9953,6 @@ div.seven-outils-ligne:not(.seven-outils-flottants) {
   background: var(--brand);
   color: #fff;
 }
-.seven-appel-etat {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  max-width: 560px;
-  margin: 0 auto 8px;
-  padding: 6px 6px 6px 12px;
-  border: 1px solid color-mix(in srgb, var(--brand) 40%, var(--line));
-  border-radius: 999px;
-  color: var(--ink);
-  font-size: 0.86rem;
-}
-.seven-appel-etat > span:nth-child(2) {
-  flex: 1;
-  min-width: 0;
-}
-.seven-appel-onde {
-  display: grid;
-  color: var(--brand);
-  animation: retour-pulse 1.2s ease-in-out infinite;
-}
-.seven-composer .seven-appel-etat button {
-  min-height: 0;
-  padding: 5px 12px;
-  border: 0;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--ink) 10%, transparent);
-  color: var(--ink);
-  font: inherit;
-  font-size: 0.82rem;
-  box-shadow: none;
-  cursor: pointer;
-}
 .seven-projet {
   width: 100%;
   max-width: 560px;
@@ -10114,4 +10081,95 @@ div.seven-outils-ligne:not(.seven-outils-flottants) {
   margin-top: 4px;
   padding-top: 4px;
   border-top: 1px solid var(--line);
+}
+
+/* ---------- Mode vocal : sphère réactive à la voix (components/VoixOrbe.tsx) ---------- */
+.seven-fil[hidden] {
+  display: none;
+}
+.voix-scene {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 34px;
+  min-height: 0;
+  padding: 24px 16px;
+}
+.voix-orbe {
+  --niveau: 0;
+  position: relative;
+  width: min(46vw, 220px);
+  aspect-ratio: 1;
+  transform: scale(calc(0.9 + var(--niveau) * 0.35));
+  transition: transform 0.08s linear;
+}
+.voix-coeur,
+.voix-halo {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+}
+.voix-coeur {
+  background:
+    radial-gradient(circle at 32% 28%, rgb(255 255 255 / 0.85), transparent 34%),
+    radial-gradient(
+      circle at 70% 75%,
+      color-mix(in srgb, var(--brand) 55%, #7c4dff),
+      transparent 60%
+    ),
+    radial-gradient(circle at 50% 50%, var(--brand), color-mix(in srgb, var(--brand) 40%, #0b1020));
+  box-shadow:
+    inset 0 -18px 40px rgb(0 0 0 / 0.35),
+    0 0 calc(30px + var(--niveau) * 70px) color-mix(in srgb, var(--brand) 60%, transparent);
+  animation: voix-tourne 9s linear infinite;
+}
+.voix-halo {
+  inset: -14%;
+  background: radial-gradient(
+    circle,
+    color-mix(in srgb, var(--brand) 35%, transparent) 40%,
+    transparent 70%
+  );
+  opacity: calc(0.35 + var(--niveau) * 0.65);
+  filter: blur(14px);
+}
+.voix-orbe.reflechit .voix-coeur {
+  animation-duration: 3s;
+}
+@keyframes voix-tourne {
+  to {
+    rotate: 360deg;
+  }
+}
+.voix-libelle {
+  margin: 0;
+  color: var(--muted);
+  font-size: 1rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .voix-coeur {
+    animation: none;
+  }
+  .voix-orbe {
+    transition: none;
+  }
+}
+
+.voix-terminer {
+  height: 40px;
+  margin-top: -14px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 999px;
+  background: #e5484d;
+  color: #fff;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.voix-terminer:hover {
+  background: #d93d42;
 }

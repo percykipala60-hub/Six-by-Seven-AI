@@ -1,0 +1,92 @@
+'use client';
+
+import { useEffect, useRef } from 'react';
+import { plateforme } from '@/lib/plateforme';
+
+export type PhaseVoix = 'ecoute' | 'reflechit' | 'parle';
+
+const LIBELLES: Record<PhaseVoix, string> = {
+  ecoute: 'Je t’écoute…',
+  reflechit: 'Six réfléchit…',
+  parle: 'Six te répond…',
+};
+
+/**
+ * Mode vocal : à la place de la discussion, une sphère qui réagit à la voix (comme le mode vocal de ChatGPT).
+ * - Pendant l'écoute, elle suit le volume du micro (Web Audio, rien n'est enregistré ni envoyé) ;
+ * - pendant la réflexion, elle respire lentement ; pendant la réponse de Six, elle ondule.
+ * Sur iPhone et Android, la dictée native garde le micro pour elle : la sphère s'anime alors sans mesure.
+ */
+export function VoixOrbe({ phase, onTerminer }: { phase: PhaseVoix; onTerminer: () => void }) {
+  const orbe = useRef<HTMLDivElement>(null);
+  const phaseRef = useRef(phase);
+  phaseRef.current = phase;
+
+  useEffect(() => {
+    let arret = false;
+    let flux: MediaStream | null = null;
+    let contexte: AudioContext | null = null;
+    let image = 0;
+    let lisse = 0;
+
+    const dessiner = (analyseur: AnalyserNode | null, donnees: Uint8Array | null) => {
+      if (arret) return;
+      let niveau: number;
+      const t = performance.now() / 1000;
+      if (phaseRef.current === 'ecoute' && analyseur && donnees) {
+        analyseur.getByteTimeDomainData(donnees);
+        let somme = 0;
+        for (const v of donnees) somme += ((v - 128) / 128) ** 2;
+        niveau = Math.min(1, Math.sqrt(somme / donnees.length) * 4.5);
+      } else if (phaseRef.current === 'parle') {
+        niveau = 0.35 + 0.25 * Math.sin(t * 7) * Math.sin(t * 2.3);
+      } else if (phaseRef.current === 'ecoute') {
+        niveau = 0.15 + 0.1 * Math.sin(t * 3);
+      } else {
+        niveau = 0.08 + 0.06 * Math.sin(t * 1.6);
+      }
+      lisse += (niveau - lisse) * 0.2;
+      orbe.current?.style.setProperty('--niveau', lisse.toFixed(3));
+      image = requestAnimationFrame(() => dessiner(analyseur, donnees));
+    };
+
+    void (async () => {
+      const p = await plateforme();
+      if (p === 'ios' || p === 'android' || !navigator.mediaDevices?.getUserMedia) {
+        dessiner(null, null);
+        return;
+      }
+      try {
+        flux = await navigator.mediaDevices.getUserMedia({ audio: true });
+        if (arret) return;
+        contexte = new AudioContext();
+        const analyseur = contexte.createAnalyser();
+        analyseur.fftSize = 512;
+        contexte.createMediaStreamSource(flux).connect(analyseur);
+        dessiner(analyseur, new Uint8Array(analyseur.fftSize));
+      } catch {
+        dessiner(null, null);
+      }
+    })();
+
+    return () => {
+      arret = true;
+      cancelAnimationFrame(image);
+      flux?.getTracks().forEach((piste) => piste.stop());
+      void contexte?.close();
+    };
+  }, []);
+
+  return (
+    <div className="voix-scene" role="status" aria-live="polite">
+      <div ref={orbe} className={`voix-orbe ${phase}`} aria-hidden="true">
+        <span className="voix-halo" />
+        <span className="voix-coeur" />
+      </div>
+      <p className="voix-libelle">{LIBELLES[phase]}</p>
+      <button type="button" className="voix-terminer" onClick={onTerminer}>
+        Terminer
+      </button>
+    </div>
+  );
+}
