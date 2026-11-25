@@ -282,3 +282,11 @@ export async function etatSession(jeton: string): Promise<'active' | 'fermee' | 
     return 'inconnue';
   }
 }
+
+/** Session enregistrée pour chaque appareil du compte (pour reconnaître l'appareil qui fait une demande). */
+export async function sessionsDesAppareils(userId: string): Promise<Map<string, string | null>> {
+  const lignes = (await rest(
+    `six_appareils?select=appareil,session_id&user_id=eq.${encodeURIComponent(userId)}`,
+  )) as { appareil: string; session_id: string | null }[];
+  return new Map((lignes ?? []).map((l) => [l.appareil, l.session_id]));
+}

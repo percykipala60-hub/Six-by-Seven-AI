@@ -15,6 +15,7 @@ export type MethodeConnexion =
 const CLE_APPAREIL = 'six-appareil';
 const CLE_METHODE = 'six-methode-connexion';
 const CLE_SIGNALEE = 'six-session-signalee';
+const CLE_A_SIGNALER = 'six-session-a-signaler';
 export const CLE_BLOQUE = 'six-appareil-bloque';
 
 function lire(stockage: 'local' | 'session', cle: string): string | null {
@@ -118,9 +119,16 @@ export function sessionDuJeton(jeton: string): string | null {
 export async function signalerConnexion(jetonAcces: string): Promise<'ok' | 'bloque' | 'deja'> {
   const session = sessionDuJeton(jetonAcces);
   if (!session || lire('local', CLE_SIGNALEE) === session) return 'deja';
-  ecrire('local', CLE_SIGNALEE, session);
-  const methode = (lire('session', CLE_METHODE) as MethodeConnexion | null) ?? 'Connexion';
-  ecrire('session', CLE_METHODE, null);
+  // La méthode est gardée avec la session : si le serveur ne répond pas, on réessaie plus tard avec la même
+  // (une connexion par code QR ne doit jamais redevenir une connexion « principale »).
+  const enAttente = lire('local', CLE_A_SIGNALER)?.split('|');
+  let methode: MethodeConnexion;
+  if (enAttente?.[0] === session) methode = (enAttente[1] as MethodeConnexion) || 'Connexion';
+  else {
+    methode = (lire('session', CLE_METHODE) as MethodeConnexion | null) ?? 'Connexion';
+    ecrire('session', CLE_METHODE, null);
+    ecrire('local', CLE_A_SIGNALER, `${session}|${methode}`);
+  }
   try {
     const r = await fetch('/api/compte/connexion', {
       method: 'POST',
@@ -128,9 +136,14 @@ export async function signalerConnexion(jetonAcces: string): Promise<'ok' | 'blo
       body: JSON.stringify({ appareil: identifiantAppareil(), nom: nomCetAppareil(), methode }),
     });
     const d = (await r.json().catch(() => ({}))) as { bloque?: boolean };
+    // Enregistrée seulement si le serveur l'a vraiment reçue ; sinon on réessaiera (chaque minute).
+    if (r.ok || d.bloque) {
+      ecrire('local', CLE_SIGNALEE, session);
+      ecrire('local', CLE_A_SIGNALER, null);
+    }
     return d.bloque ? 'bloque' : 'ok';
   } catch {
-    return 'ok'; // hors ligne : la connexion reste valable, le serveur n'a simplement pas été prévenu
+    return 'ok'; // hors ligne : la connexion reste valable, on la signalera plus tard
   }
 }
 

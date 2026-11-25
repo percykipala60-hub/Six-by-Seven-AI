@@ -772,10 +772,14 @@ export async function verifierCode(
   return error ? messageErreur(error, id) : null;
 }
 
-/** Déconnexion : la mémoire reste sur cet appareil, elle n'est simplement plus synchronisée. */
+/**
+ * Déconnexion de CET appareil seulement : la mémoire reste sur l'appareil, elle n'est simplement plus synchronisée.
+ * « local » : sans précision, Supabase ferme les sessions de TOUS les appareils du compte (le téléphone qui sert à
+ * approuver les codes QR se retrouvait déconnecté sans le savoir).
+ */
 export async function deconnecter(): Promise<void> {
   const sb = await supabase();
-  await sb?.auth.signOut();
+  await sb?.auth.signOut({ scope: 'local' });
   try {
     localStorage.removeItem(SESSION);
   } catch {
@@ -882,6 +886,8 @@ function surveillerBlocage(sb: SupabaseClient): void {
   const verifier = async () => {
     const jeton = (await sb.auth.getSession()).data.session?.access_token;
     if (!jeton) return;
+    // Connexion pas encore enregistrée (serveur indisponible au moment de la connexion) : on réessaie.
+    if ((await signalerConnexion(jeton)) === 'bloque') return deconnecterAppareilBloque(sb);
     const etat = await etatAppareil(jeton);
     if (etat.bloque) await deconnecterAppareilBloque(sb);
     else if (etat.deconnecte) {
