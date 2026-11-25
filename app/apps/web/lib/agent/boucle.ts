@@ -1,5 +1,6 @@
 import { appelAgent } from '@/lib/ai';
 import { sevenAiSystem } from '@/lib/prompt';
+import { verifierReponse } from '@/lib/verification-reponse';
 import { consignesSkill, choisirSkill, type ChoixSkill } from '@/lib/skills-cosinus';
 import type { ChatMessage } from '@/lib/types';
 import { ficheStyle } from './memoire-documents';
@@ -248,6 +249,15 @@ Respecte ce style dans les documents que tu rédiges (plan, numérotation, ton, 
     surEtape(etape);
   }
   const fichiers: string[] = [];
+  const preuves: string[] = [];
+  const conclure = async (texte: string): Promise<ResultatAgent> => ({
+    reponse: sansMarkdown(
+      await verifierReponse({ question, reponse: texte, preuves, fichiers, premium }),
+    ),
+    etapes,
+    fichiers,
+    plan,
+  });
   let relance = false;
   let relanceAction = false;
   const utilisations = new Map<string, number>();
@@ -293,6 +303,7 @@ Respecte ce style dans les documents que tu rédiges (plan, numérotation, ton, 
       etapes.push(texte);
       surEtape(texte);
       const { resultat } = await executerOutil(appel.nom, appel.args, ctxTache);
+      preuves.push(`${appel.nom} : ${resultat}`);
       messages.push({ role: 'tool', id: appel.id, nom: appel.nom, content: resultat });
     }
   }
@@ -341,7 +352,7 @@ Respecte ce style dans les documents que tu rédiges (plan, numérotation, ton, 
       // La réponse finale termine la dernière tâche du plan (souvent « Rédiger la réponse »).
       const restantes = plan.filter((t) => !t.faite).length;
       if (restantes === 1) majPlan(cocherSuivante(plan));
-      return { reponse: sansMarkdown(r.texte), etapes, fichiers, plan };
+      return conclure(r.texte);
     }
     // Le plan d'abord : « planifier » passe avant les autres outils du même tour.
     const appels = [...r.appels.slice(0, OUTILS_PAR_TOUR)].sort(
@@ -372,6 +383,7 @@ Respecte ce style dans les documents que tu rédiges (plan, numérotation, ton, 
             }
           : await executerOutil(a.nom, a.args, ctxTache);
       if (crees) fichiers.push(...crees);
+      preuves.push(`${a.nom} : ${resultat}`);
       if (SOURCES_CONNUES.has(a.nom)) ctxTache.suivi?.vus.push(resultat);
       messages.push({ role: 'tool', id: a.id, nom: a.nom, content: resultat });
     }
@@ -386,12 +398,8 @@ Respecte ce style dans les documents que tu rédiges (plan, numérotation, ton, 
       "Tu as atteint le nombre maximal d'étapes. Réponds maintenant avec ce que tu as trouvé, sans utiliser d'outil, et dis ce qui reste à faire.",
   });
   const fin = await appelAgent(system, messages, [], JETONS_PAR_TOUR, premium, annulation);
-  return {
-    reponse:
-      sansMarkdown(fin.texte) ||
+  return conclure(
+    fin.texte ||
       "J'ai atteint le nombre maximal d'étapes sans terminer. Redonne-moi la tâche en la découpant en parties plus petites.",
-    etapes,
-    fichiers,
-    plan,
-  };
+  );
 }
