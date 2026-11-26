@@ -20,6 +20,8 @@ export type EtatNatif = {
 type PontBureau = {
   version: number;
   navigateur: {
+    /** Discussion affichée : ses propres onglets et son propre profil (cookies, connexions aux sites). */
+    contexte?: (contexte: string) => Promise<boolean>;
     afficher: (b: { x: number; y: number; largeur: number; hauteur: number }) => Promise<boolean>;
     cacher: () => Promise<boolean>;
     ouvrir: (url: string) => Promise<boolean>;
@@ -52,12 +54,15 @@ export function pontBureau(): PontBureau | null {
 }
 
 export function NavigateurNatif({
+  contexte,
   url,
   rechargement,
   onAdresse,
   poignee,
   masque,
 }: {
+  /** Discussion (« chat:… » ou « cosinus:… ») : rien ne se partage avec les autres discussions. */
+  contexte: string;
   url: string;
   rechargement: number;
   onAdresse: (url: string) => void;
@@ -71,6 +76,11 @@ export function NavigateurNatif({
   rappel.current = onAdresse;
   const derniere = useRef('');
   const pont = pontBureau();
+
+  // En premier (avant d'afficher ou d'ouvrir une page) : les onglets de cette discussion seulement.
+  useEffect(() => {
+    void pont?.navigateur.contexte?.(contexte);
+  }, [pont, contexte]);
 
   useImperativeHandle(
     poignee,

@@ -10459,3 +10459,145 @@ select.select.voix-select {
   height: 54px;
   border-radius: 10px;
 }
+
+/* Historique du navigateur : chaque entrée peut être retirée (croix au survol, toujours visible au toucher). */
+.volet-ligne-visite {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.volet-ligne-visite .volet-ligne {
+  flex: 1;
+  min-width: 0;
+  padding-right: 36px;
+}
+.volet-retirer {
+  position: absolute;
+  right: 6px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  opacity: 0;
+  cursor: pointer;
+}
+.volet-ligne-visite:hover .volet-retirer,
+.volet-retirer:focus-visible {
+  opacity: 1;
+}
+.volet-retirer:hover {
+  background: var(--line);
+  color: var(--ink);
+}
+@media (hover: none) {
+  .volet-retirer {
+    opacity: 1;
+  }
+}
+
+/* Page du lien de l'e-mail d'alerte (/compte/alerte) : carte centrée, pastille d'état, deux boutons symétriques. */
+.alerte-ecran {
+  align-items: center;
+}
+.alerte-carte {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  max-width: 460px;
+  padding: 32px 28px 28px;
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  background: var(--card);
+  text-align: center;
+}
+.alerte-marque {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.alerte-pastille {
+  display: grid;
+  place-items: center;
+  width: 68px;
+  height: 68px;
+  margin-top: 6px;
+  border-radius: 50%;
+}
+.alerte-pastille.alerte {
+  background: rgba(245, 166, 35, 0.16);
+  color: #f5a623;
+}
+.alerte-pastille.danger {
+  background: rgba(229, 72, 77, 0.16);
+  color: #e5484d;
+}
+.alerte-pastille.ok {
+  background: rgba(48, 164, 108, 0.16);
+  color: #30a46c;
+}
+.alerte-pastille.neutre {
+  background: var(--line);
+  color: var(--muted);
+}
+.alerte-titre {
+  margin: 0;
+  font-size: 1.45rem;
+  font-weight: 750;
+  letter-spacing: -0.01em;
+}
+.alerte-texte {
+  margin: 0;
+  max-width: 380px;
+  color: var(--muted);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+.alerte-boutons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+  margin-top: 8px;
+}
+.alerte-btn {
+  min-height: 48px;
+  padding: 12px 14px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.alerte-btn:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.alerte-btn.danger {
+  background: #e5484d;
+  color: #ffffff;
+}
+.alerte-btn.principal {
+  background: var(--brand);
+  color: #ffffff;
+}
+.alerte-btn.secondaire {
+  border-color: var(--line);
+  background: transparent;
+  color: var(--ink);
+}
+@media (max-width: 380px) {
+  .alerte-boutons {
+    grid-template-columns: 1fr;
+  }
+}

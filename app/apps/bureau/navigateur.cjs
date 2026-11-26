@@ -7,12 +7,25 @@
  * dans l'onglet actif, précédent / suivant / recharger, onglets (nouveau, choisir, fermer), rechercher dans la page,
  * zoom, et le menu « ⋯ » (menu natif, au-dessus de la page).
  *
- * Sécurité (inchangée) : profil séparé persist:cosinus, ni Node ni fichiers, aucune autorisation d'office,
+ * Chaque discussion (Chat ou Cosinus) a ses propres onglets et son propre profil (cookies, connexions aux sites) :
+ * rien ne passe d'une discussion à l'autre. L'app indique la discussion affichée (commande « contexte »).
+ *
+ * Sécurité (inchangée) : profils séparés de l'app, ni Node ni fichiers, aucune autorisation d'office,
  * téléchargements confiés au navigateur de l'ordinateur, seulement des pages http(s).
  */
+const { createHash } = require('node:crypto');
 const { WebContentsView, Menu, shell, clipboard, dialog, session, app } = require('electron');
 
+// Profil d'avant la séparation par discussion (et des pages ouvertes hors discussion).
 const PARTITION = 'persist:cosinus';
+const CONTEXTE = /^(chat|cosinus):[A-Za-z0-9_-]{1,80}$/;
+// Discussions gardées ouvertes en même temps ; au-delà, les onglets de la plus ancienne se ferment (ses cookies
+// restent dans son profil).
+const GROUPES_MAX = 6;
+const partitionDe = (contexte) =>
+  contexte === 'defaut'
+    ? PARTITION
+    : `persist:six-${createHash('sha256').update(contexte).digest('hex').slice(0, 24)}`;
 const ONGLETS_MAX = 12;
 const ZOOMS = [0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2, 2.5, 3];
 
@@ -33,9 +46,14 @@ const borne = (v, min, max) => Math.round(Math.min(max, Math.max(min, Number(v) 
  *           depuisApp: (e: import('electron').IpcMainInvokeEvent) => boolean }} ctx
  */
 function creerNavigateur(ctx) {
-  /** @type {Map<number, WebContentsView>} */
-  const onglets = new Map();
+  /** Onglets de la discussion affichée. @type {Map<number, WebContentsView>} */
+  let onglets = new Map();
   let actif = 0;
+  let contexte = 'defaut';
+  let partition = PARTITION;
+  /** Discussions mises de côté (les plus anciennes d'abord). @type {Map<string, { onglets: Map<number, WebContentsView>, actif: number }>} */
+  const groupes = new Map();
+  const preparees = new Set();
   let suivant = 1;
   let visible = false;
   let bornes = { x: 0, y: 0, width: 0, height: 0 };
@@ -77,8 +95,10 @@ function creerNavigateur(ctx) {
     }
   }
 
-  function preparerSession() {
-    const s = session.fromPartition(PARTITION);
+  function preparerSession(nom = PARTITION) {
+    if (preparees.has(nom)) return;
+    preparees.add(nom);
+    const s = session.fromPartition(nom);
     // Aucune autorisation accordée d'office (caméra, micro, position, notifications…).
     const permis = (p) => p === 'fullscreen' || p === 'clipboard-sanitized-write';
     s.setPermissionRequestHandler((_wc, p, rappel) => rappel(permis(p)));
@@ -96,7 +116,7 @@ function creerNavigateur(ctx) {
     if (onglets.size >= ONGLETS_MAX) fermerOnglet([...onglets.keys()][0]);
     const v = new WebContentsView({
       webPreferences: {
-        partition: PARTITION,
+        partition,
         sandbox: true,
         contextIsolation: true,
         nodeIntegration: false,
@@ -156,6 +176,38 @@ function creerNavigateur(ctx) {
     return id;
   }
 
+  function fermerVues(liste) {
+    for (const v of liste.values()) {
+      ctx.fenetre()?.contentView.removeChildView(v);
+      v.webContents.close();
+    }
+  }
+
+  /** Discussion affichée : ses onglets et son profil remplacent ceux de la précédente (mise de côté). */
+  function changerContexte(nouveau) {
+    if (nouveau === contexte) return;
+    vueActive()?.webContents.stopFindInPage('clearSelection');
+    for (const v of onglets.values()) v.setVisible(false);
+    groupes.delete(contexte);
+    groupes.set(contexte, { onglets, actif });
+    const g = groupes.get(nouveau) ?? { onglets: new Map(), actif: 0 };
+    groupes.delete(nouveau);
+    onglets = g.onglets;
+    actif = g.actif;
+    contexte = nouveau;
+    partition = partitionDe(nouveau);
+    preparerSession(partition);
+    while (groupes.size > GROUPES_MAX) {
+      const [plusAncien, vieux] = groupes.entries().next().value;
+      groupes.delete(plusAncien);
+      fermerVues(vieux.onglets);
+    }
+    if (!onglets.size) actif = nouvelOnglet();
+    placer();
+    envoyerEtat();
+    envoyerOnglets();
+  }
+
   function choisirOnglet(id) {
     if (!onglets.has(id)) return;
     vueActive()?.webContents.stopFindInPage('clearSelection');
@@ -202,12 +254,12 @@ function creerNavigateur(ctx) {
       defaultId: 1,
       cancelId: 1,
       title: 'Effacer les données de navigation',
-      message: 'Effacer les données du navigateur de Cosinus ?',
+      message: 'Effacer les données de navigation de cette discussion ?',
       detail:
-        'Les cookies, connexions aux sites, fichiers en cache et données des sites seront effacés. Vous serez déconnecté des sites ouverts dans ce navigateur.',
+        'Les cookies, connexions aux sites, fichiers en cache et données des sites de cette discussion seront effacés. Les autres discussions ne changent pas.',
     });
     if (response !== 0) return;
-    const s = session.fromPartition(PARTITION);
+    const s = session.fromPartition(partition);
     await s.clearStorageData();
     await s.clearCache();
     for (const v of onglets.values()) v.webContents.reload();
@@ -279,6 +331,11 @@ function creerNavigateur(ctx) {
   function piloter(evenement, c) {
     const f = ctx.fenetre();
     if (!ctx.depuisApp(evenement) || !f || !c || typeof c !== 'object') return false;
+    if (c.action === 'contexte') {
+      if (typeof c.contexte !== 'string' || !CONTEXTE.test(c.contexte)) return false;
+      changerContexte(c.contexte);
+      return true;
+    }
     if (!onglets.size) actif = nouvelOnglet();
     const w = vueActive()?.webContents;
     if (!w) return false;
@@ -364,6 +421,7 @@ function creerNavigateur(ctx) {
     },
     oublier: () => {
       onglets.clear();
+      groupes.clear();
       actif = 0;
     },
   };
