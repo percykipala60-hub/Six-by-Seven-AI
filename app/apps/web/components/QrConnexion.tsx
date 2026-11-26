@@ -14,6 +14,7 @@ export function QrConnexion() {
   const [svg, setSvg] = useState('');
   const [etat, setEtat] = useState<'chargement' | 'pret' | 'connexion' | 'erreur'>('chargement');
   const [reste, setReste] = useState(120);
+  const [essai, setEssai] = useState(0); // « Réessayer » : relance même si aucun code n'a encore été créé
   const actif = useRef(true);
 
   // Nouvelle demande (au départ, puis à chaque expiration).
@@ -42,7 +43,21 @@ export function QrConnexion() {
       annule = true;
       actif.current = false;
     };
-  }, [demande]);
+  }, [demande, essai]);
+
+  // Code indisponible (réseau) : nouvel essai tout seul après 5 s.
+  useEffect(() => {
+    if (etat !== 'erreur' || demande) return;
+    const t = setTimeout(() => setEssai((n) => n + 1), 5000);
+    return () => clearTimeout(t);
+  }, [etat, demande]);
+
+  // Confirmé : l'app bascule d'elle-même ; si l'écran reste figé, on recharge (la session est enregistrée).
+  useEffect(() => {
+    if (etat !== 'connexion') return;
+    const t = setTimeout(() => window.location.reload(), 4000);
+    return () => clearTimeout(t);
+  }, [etat]);
 
   // Attente de l'approbation (toutes les 2 s) et compte à rebours.
   useEffect(() => {
@@ -53,7 +68,14 @@ export function QrConnexion() {
     let fini = false;
     const t = setInterval(() => {
       setReste(Math.max(0, Math.round((demande.expire - Date.now()) / 1000)));
-      if (enCours || fini) return;
+      if (fini) return;
+      // Expiré : nouveau code, même si une vérification n'a pas encore répondu.
+      if (Date.now() > demande.expire) {
+        fini = true;
+        setDemande(null);
+        return;
+      }
+      if (enCours) return;
       enCours = true;
       void attendreDemandeQr(demande)
         .then((r) => {
@@ -106,7 +128,14 @@ export function QrConnexion() {
         ) : etat === 'erreur' ? (
           <p>
             Code QR indisponible pour le moment.{' '}
-            <button type="button" className="auth-lien" onClick={() => setDemande(null)}>
+            <button
+              type="button"
+              className="auth-lien"
+              onClick={() => {
+                setDemande(null);
+                setEssai((n) => n + 1);
+              }}
+            >
               Réessayer
             </button>
           </p>
