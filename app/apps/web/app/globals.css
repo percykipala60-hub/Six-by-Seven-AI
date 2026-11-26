@@ -9808,16 +9808,16 @@ div.seven-outils-ligne:not(.seven-outils-flottants) {
   display: grid;
   flex: none;
   place-items: center;
-  width: 148px;
-  height: 148px;
+  width: 216px;
+  height: 216px;
   padding: 6px;
   border-radius: 10px;
   background: #fff;
 }
 .qr-image svg {
   display: block;
-  width: 136px;
-  height: 136px;
+  width: 200px;
+  height: 200px;
 }
 .qr-attente {
   color: #5b6375;
@@ -10404,8 +10404,8 @@ select.select.voix-select {
 .qr-avec-logo {
   position: relative;
   display: block;
-  width: 136px;
-  height: 136px;
+  width: 200px;
+  height: 200px;
 }
 .qr-avec-logo img {
   display: block;
@@ -10418,15 +10418,15 @@ select.select.voix-select {
   left: 50%;
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
-  padding: 3px;
-  border-radius: 10px;
+  width: 50px;
+  height: 50px;
+  padding: 4px;
+  border-radius: 12px;
   background: #fff;
   transform: translate(-50%, -50%);
 }
 .qr-logo .logo.sm {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
 }
