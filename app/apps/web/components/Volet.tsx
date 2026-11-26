@@ -554,7 +554,10 @@ export function Volet({
   telephone,
   dossier = '',
   dossiers = [],
+  contexte,
 }: {
+  /** Discussion affichée (« chat:… » ou « cosinus:… ») : historique, onglets et session web lui sont propres. */
+  contexte: string;
   onglet: OngletVolet;
   onOnglet: (onglet: OngletVolet) => void;
   onFermer: () => void;
@@ -632,12 +635,24 @@ export function Volet({
 
   // ---- Navigateur : historique propre au volet, gardé sur l'appareil ----
   // Le volet n'existe que côté navigateur (il s'ouvre après le chargement) : on peut lire l'appareil dès le départ.
-  const [nav, setNav] = useState<Nav>(() =>
-    navPropre(lire<Nav>(CLE_NAV, { pile: [], pos: -1, visites: [] })),
+  // Chaque discussion a son historique : rien de ce qui est visité dans l'une ne s'affiche dans une autre.
+  const cleNav = `${CLE_NAV}:${contexte}`;
+  const lireNav = (cle: string) => navPropre(lire<Nav>(cle, { pile: [], pos: -1, visites: [] }));
+  const [navEtat, setNavBrut] = useState<{ cle: string; nav: Nav }>(() => ({
+    cle: cleNav,
+    nav: lireNav(cleNav),
+  }));
+  // Autre discussion : son propre historique (lu sur l'appareil) remplace celui de la précédente.
+  if (navEtat.cle !== cleNav) setNavBrut({ cle: cleNav, nav: lireNav(cleNav) });
+  const nav = navEtat.nav;
+  const setNav = useCallback(
+    (f: Nav | ((n: Nav) => Nav)) =>
+      setNavBrut((e) => ({ cle: e.cle, nav: typeof f === 'function' ? f(e.nav) : f })),
+    [],
   );
   useEffect(() => {
-    ecrire(CLE_NAV, nav);
-  }, [nav]);
+    ecrire(navEtat.cle, navEtat.nav);
+  }, [navEtat]);
   const url = nav.pos >= 0 ? (nav.pile[nav.pos] ?? '') : '';
   const [saisie, setSaisie] = useState('');
   const [rechargement, setRechargement] = useState(0);
@@ -657,8 +672,11 @@ export function Volet({
   const completRef = useRef<PoigneeNavigateur>(null);
   const [sessionAgent, setSessionAgent] = useState<string | undefined>(undefined);
   useEffect(() => {
+    setSessionAgent(undefined);
     const suivreAgent = () => {
-      const courant = JSON.parse(sessionStorage.getItem('six-navigateur-agent') || '{}') as {
+      const courant = JSON.parse(
+        sessionStorage.getItem(`six-navigateur-agent:${contexte}`) || '{}',
+      ) as {
         url?: string;
         session?: string;
       };
@@ -682,7 +700,7 @@ export function Volet({
     suivreAgent();
     window.addEventListener('six-navigateur-agent', suivreAgent);
     return () => window.removeEventListener('six-navigateur-agent', suivreAgent);
-  }, []);
+  }, [contexte, setNav]);
   // La vérification télécharge la page : seulement quand elle sert (affichage intégré, version en ligne, ou version
   // lecture demandée). Avec le navigateur complet, la page n'est pas téléchargée deux fois.
   const [lectureDemandee, setLectureDemandee] = useState(false);
@@ -859,10 +877,21 @@ export function Volet({
         </button>
       </h3>
       {nav.visites.map((v) => (
-        <button key={v} type="button" className="volet-ligne" onClick={() => ouvrir(v)}>
-          <Icon name={estRecherche(v) ? 'search' : 'globe'} size={15} stroke={1.8} />
-          <span>{libelle(v)}</span>
-        </button>
+        <div key={v} className="volet-ligne-visite">
+          <button type="button" className="volet-ligne" onClick={() => ouvrir(v)}>
+            <Icon name={estRecherche(v) ? 'search' : 'globe'} size={15} stroke={1.8} />
+            <span>{libelle(v)}</span>
+          </button>
+          <button
+            type="button"
+            className="volet-retirer"
+            aria-label={`Retirer « ${libelle(v)} » de l'historique`}
+            title="Retirer de l'historique"
+            onClick={() => setNav((n) => ({ ...n, visites: n.visites.filter((x) => x !== v) }))}
+          >
+            <Icon name="x" size={13} stroke={2} />
+          </button>
+        </div>
       ))}
     </div>
   );
@@ -1087,6 +1116,8 @@ export function Volet({
                 </article>
               ) : natif && url ? (
                 <NavigateurNatif
+                  key={contexte}
+                  contexte={contexte}
                   url={url}
                   rechargement={rechargement}
                   poignee={completRef}

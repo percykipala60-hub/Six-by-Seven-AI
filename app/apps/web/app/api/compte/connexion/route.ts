@@ -59,8 +59,14 @@ export async function POST(req: Request) {
         quand: new Date(),
         lienReponse: `${SITE}/compte/alerte?j=${encodeURIComponent(r.jeton)}`,
       });
-      envoye = await envoyerParResend(cle, c.u.email, objet, html).catch(() => false);
-    }
+      envoye = await envoyerParResend(cle, c.u.email, objet, html).catch((e: unknown) => {
+        console.warn(`[e-mail] Alerte de connexion non envoyée : ${String(e).slice(0, 200)}`);
+        return false;
+      });
+    } else if (r.nouvelle)
+      console.warn(
+        `[e-mail] Alerte de connexion non envoyée : ${cle ? 'compte sans adresse e-mail' : 'RESEND_API_KEY absente'}`,
+      );
     return NextResponse.json({ bloque: false, alerte: envoye });
   } catch {
     return fail(500, 'Enregistrement de la connexion impossible.');

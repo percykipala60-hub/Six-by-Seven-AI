@@ -242,21 +242,44 @@ export async function envoyerParResend(
     }),
     signal: AbortSignal.timeout(10_000),
   });
+  if (!r.ok) {
+    // Raison du refus dans le journal du serveur (domaine non vérifié, clé invalide…), sans clé ni adresse e-mail.
+    const d = (await r.json().catch(() => ({}))) as { name?: string; message?: string };
+    const raison = `${d.name ?? ''} ${d.message ?? ''}`
+      .replace(/[^\s@]+@[^\s@]+/g, '[e-mail]')
+      .slice(0, 200);
+    console.warn(`[e-mail] Resend a refusé l'envoi (${r.status}) : ${raison.trim()}`);
+  }
   return r.ok;
 }
 
 /* ---------- Alerte de connexion (envoyée par Six lui-même, pas par Supabase) ---------- */
 
-const bouton = (lien: string, texte: string, principal: boolean) =>
-  `<a href="${echapper(lien)}" style="display:inline-block;margin:0 8px 8px 0;padding:12px 20px;border-radius:10px;` +
-  (principal
-    ? 'background:#0f1a3a;color:#ffffff;border:1px solid #0f1a3a;'
-    : 'background:#ffffff;color:#0f1a3a;border:1px solid #c9cfdd;') +
-  `font-weight:700;font-size:15px;text-decoration:none">${texte}</a>`;
+/** Deux boutons de même largeur, côte à côte (tableau : rendu identique dans les messageries). */
+function deuxBoutons(
+  gauche: { lien: string; texte: string },
+  droite: { lien: string; texte: string },
+): string {
+  const cellule = (b: { lien: string; texte: string }, danger: boolean) =>
+    `<td width="50%" style="padding:0 6px" align="center">` +
+    `<a href="${echapper(b.lien)}" style="display:block;padding:14px 10px;border-radius:12px;text-align:center;` +
+    (danger
+      ? 'background:#c62828;color:#ffffff;border:1px solid #c62828;'
+      : 'background:#ffffff;color:#0f1a3a;border:1px solid #c9cfdd;') +
+    `font-weight:700;font-size:15px;line-height:1.2;text-decoration:none">${b.texte}</a></td>`;
+  return (
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" ` +
+    `style="margin:4px 0 8px;border-collapse:separate;table-layout:fixed"><tr>` +
+    cellule(gauche, true) +
+    cellule(droite, false) +
+    `</tr></table>`
+  );
+}
 
 /**
- * « Nouvelle connexion à votre compte » : méthode, appareil, date. Deux boutons : « Ce n'était pas moi » (bloque
- * cet appareil et coupe sa session) et « C'était moi ». Sans réponse, la connexion reste valable.
+ * Alerte « Nouvelle connexion à votre compte » : bandeau d'alerte, méthode, appareil, date. Deux boutons de même
+ * taille : « Ce n'était pas moi » (bloque cet appareil et coupe sa session) et « C'était moi ». Sans réponse, la
+ * connexion reste valable.
  */
 export function composerAlerteConnexion(a: {
   methode: string;
@@ -270,25 +293,31 @@ export function composerAlerteConnexion(a: {
     timeZone: 'Africa/Kinshasa',
   });
   const ligne = (titre: string, valeur: string) =>
-    `<tr><td style="padding:6px 12px 6px 0;font-size:14px;color:#5b6375">${titre}</td>` +
-    `<td style="padding:6px 0;font-size:14px;color:#1f2430;font-weight:600">${echapper(valeur)}</td></tr>`;
+    `<tr><td style="padding:8px 12px 8px 0;font-size:14px;color:#5b6375;white-space:nowrap;vertical-align:top">${titre}</td>` +
+    `<td style="padding:8px 0;font-size:14px;color:#1f2430;font-weight:600">${echapper(valeur)}</td></tr>`;
+  const bandeau =
+    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px">` +
+    `<tr><td style="padding:14px 16px;border-radius:12px;background:#fff4e5;border:1px solid #f5c26b;` +
+    `font-size:15px;line-height:1.5;color:#7a4100"><strong>⚠ Alerte de sécurité.</strong> ` +
+    `Quelqu’un vient de se connecter à votre compte Six. Vérifiez que c’est bien vous.</td></tr></table>`;
   return {
-    objet: 'Nouvelle connexion à votre compte Six',
+    objet: '⚠ Alerte de sécurité : nouvelle connexion à votre compte Six',
     html: page(
       'Nouvelle connexion à votre compte',
-      p('Une connexion à votre compte Six vient d’avoir lieu :') +
-        `<table style="margin:0 0 20px;border-collapse:collapse">` +
-        ligne('Méthode', a.methode) +
+      bandeau +
+        `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" ` +
+        `style="margin:0 0 22px;padding:8px 16px;border-radius:12px;background:#f3f5fa;border-collapse:separate">` +
         ligne('Appareil', a.appareil || 'Appareil inconnu') +
+        ligne('Méthode', a.methode) +
         ligne('Date', `${date} (heure de Kinshasa)`) +
         `</table>` +
         p(
-          'Si c’est bien vous, vous n’avez rien à faire. Si ce n’est pas vous, bloquez cet appareil : il sera déconnecté immédiatement.',
+          '<strong>Ce n’est pas vous ?</strong> Bloquez cet appareil : il sera déconnecté immédiatement. Si c’est bien vous, confirmez-le (ou ne faites rien).',
         ) +
-        `<p style="margin:4px 0 12px">` +
-        bouton(`${a.lienReponse}&r=non`, 'Ce n’était pas moi', true) +
-        bouton(`${a.lienReponse}&r=oui`, 'C’était moi', false) +
-        `</p>`,
+        deuxBoutons(
+          { lien: `${a.lienReponse}&r=non`, texte: 'Ce n’était pas moi' },
+          { lien: `${a.lienReponse}&r=oui`, texte: 'C’était moi' },
+        ),
       'Si vous n’êtes pas à l’origine de cette connexion, changez aussi votre mot de passe depuis l’écran de connexion (« Mot de passe oublié »). Ce lien ne fonctionne qu’une fois.',
     ),
   };

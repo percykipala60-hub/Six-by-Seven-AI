@@ -93,7 +93,8 @@ describe('route des appareils', () => {
     );
   };
 
-  it('demande d’être connecté', async () => {
+  // Premier test : charge la route à froid (lente quand la machine est occupée), d'où le délai plus long.
+  it('demande d’être connecté', { timeout: 20_000 }, async () => {
     expect((await appel('GET', '', '')).status).toBe(401);
     expect((await appel('DELETE', '?appareil=principal1&cible=qr000001', '')).status).toBe(401);
   });

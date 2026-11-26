@@ -29,6 +29,8 @@ contextBridge.exposeInMainWorld('sixBureau', {
     premierPlan: () => ipcRenderer.invoke('six:premier-plan'),
   },
   navigateur: {
+    /** Discussion affichée (« chat:… » ou « cosinus:… ») : ses propres onglets et son propre profil. */
+    contexte: (contexte) => piloter({ action: 'contexte', contexte }),
     afficher: (bornes) => piloter({ action: 'afficher', bornes }),
     cacher: () => piloter({ action: 'cacher' }),
     ouvrir: (url) => piloter({ action: 'ouvrir', url }),

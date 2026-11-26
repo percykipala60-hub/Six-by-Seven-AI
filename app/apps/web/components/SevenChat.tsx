@@ -411,6 +411,9 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   const envDemande = params.get('e') ?? ''; // Cosinus : nouvelle discussion dans cet environnement
   const dossierDemande = params.get('d') ?? ''; // (ancien lien : dans ce dossier)
   const chatId = useRef('');
+  // Navigateur de la discussion : historique, onglets et session web propres à chaque discussion (Chat ou Cosinus).
+  const contexteNav = () => `${sixtouch ? 'cosinus' : 'chat'}:${chatId.current || 'nouvelle'}`;
+  const cleAgent = () => `six-navigateur-agent:${contexteNav()}`;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [saisie, setSaisie] = useState('');
   const [occupe, setOccupe] = useState(false);
@@ -510,10 +513,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
           };
           if (o.type === 'plan' && Array.isArray(o.taches)) setPlanEnCours(o.taches);
           if (o.type === 'navigateur' && o.session && o.url) {
-            sessionStorage.setItem(
-              'six-navigateur-agent',
-              JSON.stringify({ session: o.session, url: o.url }),
-            );
+            sessionStorage.setItem(cleAgent(), JSON.stringify({ session: o.session, url: o.url }));
             // Seule l'app de bureau montre ce que Six fait dans le navigateur.
             if (estBureau()) setVoletBrut('navigateur');
             window.dispatchEvent(new Event('six-navigateur-agent'));
@@ -892,9 +892,8 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
               ...(navigateurChat
                 ? {
                     navigateur: true,
-                    navigateurSession: JSON.parse(
-                      sessionStorage.getItem('six-navigateur-agent') || '{}',
-                    ).session,
+                    navigateurSession: JSON.parse(sessionStorage.getItem(cleAgent()) || '{}')
+                      .session,
                   }
                 : {}),
               ...(sixtouch
@@ -905,9 +904,8 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
                     ...(appelActif.current ? { vocal: true } : {}),
                     ...(enCloud && env?.cloud ? { cloud: env.cloud } : dossier ? { dossier } : {}),
                     ...(lecture.length ? { dossiersLecture: lecture } : {}),
-                    navigateurSession: JSON.parse(
-                      sessionStorage.getItem('six-navigateur-agent') || '{}',
-                    ).session,
+                    navigateurSession: JSON.parse(sessionStorage.getItem(cleAgent()) || '{}')
+                      .session,
                   }
                 : {}),
               ...(images.length
@@ -1562,6 +1560,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       )}
       {(sixtouch || chatNavigateur) && volet && (
         <Volet
+          contexte={contexteNav()}
           onglet={volet}
           onOnglet={setVolet}
           onFermer={fermerVolet}
