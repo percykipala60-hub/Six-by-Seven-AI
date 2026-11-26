@@ -60,6 +60,7 @@ import { AppareilsVue } from './Appareils';
 import { GithubCloud } from './GithubCloud';
 import { ReglagesSkills } from './ReglagesSkills';
 import { ReglagesVoix } from './ReglagesVoix';
+import { ReglagesCapacites } from './ReglagesCapacites';
 
 type Theme = 'auto' | 'light' | 'dark';
 // Chaque thème est montré comme le logo qu'il donne : fond, « 6 » et trait (mêmes valeurs que app/globals.css).
@@ -277,6 +278,7 @@ type Vue =
   | 'sixtouch'
   | 'skills'
   | 'voix'
+  | 'capacites'
   | 'appareils';
 const TITRES: Record<Exclude<Vue, ''>, string> = {
   premium: 'Six Premium',
@@ -290,6 +292,7 @@ const TITRES: Record<Exclude<Vue, ''>, string> = {
   sixtouch: 'Cosinus',
   skills: 'Focus',
   voix: 'Voix',
+  capacites: 'Capacités',
   appareils: 'Appareils connectés',
 };
 const MODES: Record<Theme, string> = { auto: 'Auto', light: 'Clair', dark: 'Sombre' };
@@ -970,6 +973,7 @@ export function Settings() {
       {vue === 'appareils' && <AppareilsVue />}
       {vue === 'skills' && <ReglagesSkills />}
       {vue === 'voix' && <ReglagesVoix />}
+      {vue === 'capacites' && <ReglagesCapacites />}
     </>
   );
 
@@ -1039,6 +1043,13 @@ export function Settings() {
           },
         ]
       : []),
+    {
+      id: 'capacites',
+      icon: 'bulb',
+      label: 'Capacités',
+      sous: 'Artéfacts, graphiques, fichiers et Internet dans Cosinus',
+      cles: 'capacités artéfacts artefacts graphiques diagrammes fichiers créer modifier internet web sources navigateur',
+    },
     {
       id: 'voix',
       icon: 'vocal',

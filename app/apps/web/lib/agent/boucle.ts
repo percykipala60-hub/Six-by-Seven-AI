@@ -15,6 +15,13 @@ import { accesDeLaDemande } from './acces-pc';
 import { specialitesPour } from './specialites';
 import { cocherSuivante, creerPlan, resumePlan, type Tache } from './plan';
 import type { AppelOutil, ImageAgent, MessageAgent } from './types';
+import {
+  CAPACITES_DEFAUT,
+  consignesCapacites,
+  normaliserCapacites,
+  outilsRetires,
+  type Capacites,
+} from '@/lib/capacites';
 
 /**
  * Boucle de l'agent Cosinus : Six reçoit la tâche et ses outils, décide d'en utiliser, le serveur les exécute
@@ -172,6 +179,7 @@ export async function executerAgent({
   surPlan,
   annulation,
   skill = 'auto',
+  capacites = CAPACITES_DEFAUT,
 }: {
   historique: ChatMessage[];
   question: string;
@@ -183,12 +191,18 @@ export async function executerAgent({
   surPlan?: (plan: Tache[]) => void;
   annulation?: AbortSignal;
   skill?: ChoixSkill;
+  /** Réglages → Capacités : outils retirés et consignes ajoutées quand une capacité est coupée. */
+  capacites?: Capacites;
 }): Promise<ResultatAgent> {
+  capacites = normaliserCapacites(capacites);
+  const retires = outilsRetires(capacites);
   // « Ne l'enregistre pas » : on retire l'outil d'enregistrement pour cette tâche, au lieu de compter sur le modèle
   // (un petit modèle l'a déjà enregistré malgré la demande).
   // Formats demandés (« en Word », « en PDF ») : produits avec chaque rapport enregistré pendant la tâche.
   const ctxTache: ContexteOutils = {
     ...ctx,
+    // Internet coupé : le navigateur interne n'est pas donné à Six (ni ses consignes).
+    navigateur: retires.has('naviguer') ? undefined : ctx.navigateur,
     formats: formatsDemandes(question),
     // Hors du dossier de l'environnement : seulement ce que cette demande cite ou autorise (jamais de lui-même).
     // Les autres dossiers de l'environnement (ctx.horsDossier) restent lisibles, en plus de ce que la demande cite.
@@ -205,7 +219,7 @@ export async function executerAgent({
   const outils = [
     ...OUTILS_PLAN,
     ...definitionsOutils(ctxTache).filter(
-      (o) => o.nom !== 'ecrire_resultat' || !refusEnregistrement(question),
+      (o) => !retires.has(o.nom) && (o.nom !== 'ecrire_resultat' || !refusEnregistrement(question)),
     ),
   ];
   // La fiche de style apprise sur les documents de la personne s'ajoute seulement quand elle la demande (« dans mon
@@ -218,6 +232,7 @@ export async function executerAgent({
     sevenAiSystem(ctx.espace ? 'sixtouch' : 'chat', true) +
     consignesSkill(skill, question, Boolean(images?.length)) +
     CONSIGNE_PLAN +
+    consignesCapacites(capacites) +
     // Consignes détaillées des spécialités que la tâche concerne (rapports…), seulement quand elles servent.
     specialitesPour(
       question,
@@ -368,6 +383,16 @@ Respecte ce style dans les documents que tu rédiges (plan, numérotation, ton, 
       // Pas de plan encore : Six doit l'écrire avant d'agir (rappelé une seule fois, pour ne pas bloquer la tâche).
       if (!plan.length && !planReclame) {
         messages.push({ role: 'tool', id: a.id, nom: a.nom, content: REFUS_SANS_PLAN });
+        continue;
+      }
+      // Outil non proposé pour cette tâche (capacité coupée, enregistrement refusé) : jamais exécuté.
+      if (!outils.some((o) => o.nom === a.nom)) {
+        messages.push({
+          role: 'tool',
+          id: a.id,
+          nom: a.nom,
+          content: `Outil indisponible pour cette tâche : ${a.nom}. Continue sans lui.`,
+        });
         continue;
       }
       const texte = libelleEtape(a.nom, a.args);

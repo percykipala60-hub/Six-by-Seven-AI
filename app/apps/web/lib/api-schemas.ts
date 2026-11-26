@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CapacitesSchema } from './capacites';
 import { parseStyle } from './prompt';
 import { CANAUX, LONGUEURS, MAX_CHARS, SITUATIONS, TONS } from './types';
 
@@ -72,6 +73,8 @@ export const ChatBodySchema = z.object({
   skill: z
     .enum(['auto', 'documents', 'code', 'web', 'presentations', 'donnees', 'images'])
     .optional(),
+  /** Cosinus : capacités choisies dans Réglages → Capacités (absentes : tout est permis). */
+  capacites: CapacitesSchema.optional(),
   /** Cosinus : dossier de l'environnement de la discussion (chemin absolu, vérifié côté serveur). */
   dossier: z.string().max(400).optional(),
   /** Cosinus : autres dossiers de l'environnement (lecture seule, vérifiés côté serveur). */

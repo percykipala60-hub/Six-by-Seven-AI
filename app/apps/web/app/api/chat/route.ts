@@ -188,6 +188,7 @@ export async function POST(req: Request) {
             historique: messages.slice(0, -1),
             question: derniere.content,
             skill: parsed.data.skill,
+            capacites: parsed.data.capacites,
             images: parsed.data.images,
             premium: a.illimite,
             ctx: {

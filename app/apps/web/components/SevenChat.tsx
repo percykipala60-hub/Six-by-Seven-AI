@@ -31,6 +31,7 @@ import { PlanTaches } from './PlanTaches';
 import { Logo } from './Logo';
 import { PiecesJointes } from './PiecesJointes';
 import { ArtefactPanneau, Artefacts, type ArtefactOuvert } from './Artefacts';
+import { lireCapacites, normaliserCapacites } from '@/lib/capacites';
 import { extraireArtefacts, versionsDe } from '@/lib/artefacts';
 import { extrairePdf } from '@/lib/lire-document';
 import { lireSkillDefaut, type ChoixSkill } from '@/lib/skills-cosinus';
@@ -909,6 +910,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
                 ? {
                     mode: 'sixtouch',
                     skill,
+                    capacites: normaliserCapacites(lireCapacites()),
                     ...(projetId ? { projetId } : {}),
                     ...(appelActif.current ? { vocal: true } : {}),
                     ...(enCloud && env?.cloud ? { cloud: env.cloud } : dossier ? { dossier } : {}),
