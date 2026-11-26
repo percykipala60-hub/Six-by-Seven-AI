@@ -745,6 +745,10 @@ em {
   display: flex;
   flex-direction: column;
 }
+/* Écran de connexion : plus de place pour le formulaire et le code QR. */
+.app:has(.auth-screen) {
+  max-width: 680px;
+}
 .jeu {
   width: 100%;
   max-width: 480px;
@@ -3708,9 +3712,9 @@ a.avatar::after {
   flex-direction: column;
   gap: 14px;
   width: 100%;
-  max-width: 540px;
+  max-width: 620px;
   margin: 6px auto 0;
-  padding: 26px 28px;
+  padding: 28px 32px;
   border: 1px solid var(--line);
   border-radius: 22px;
   background: var(--card);
@@ -5694,7 +5698,7 @@ body {
   justify-content: center;
   min-height: 100dvh;
   width: 100%;
-  max-width: 480px;
+  max-width: 680px;
   margin: 0 auto;
   padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
 }
@@ -7548,8 +7552,33 @@ html.volet-glisse .volet-cadre {
   font-weight: 600;
 }
 .reglages-contenu {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
   min-width: 0;
   max-width: 760px;
+}
+/* Chaque groupe : titre lisible, liste dans une carte, texte d'aide à part. */
+.reglages-contenu .lg-titre {
+  padding-bottom: 8px;
+  color: var(--ink);
+  font-size: 0.92rem;
+  font-weight: 650;
+}
+.reglages-contenu .lg-liste {
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--card);
+}
+.reglages-contenu .lg-liste:empty {
+  display: none;
+}
+.reglages-contenu .lg-pied {
+  padding-top: 8px;
+}
+.reglages-contenu .reglages-contenu-titre {
+  margin-bottom: 0;
 }
 .reglages-contenu-titre {
   margin: 4px 0 20px;
