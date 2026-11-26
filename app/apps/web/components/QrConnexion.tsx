@@ -88,8 +88,8 @@ export function QrConnexion() {
             <img
               src={`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`}
               alt=""
-              width={200}
-              height={200}
+              width={260}
+              height={260}
             />
             {/* Le « 6 » de Six au centre du code. */}
             <span className="qr-logo" aria-hidden="true">
