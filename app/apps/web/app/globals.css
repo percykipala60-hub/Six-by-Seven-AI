@@ -10499,105 +10499,57 @@ select.select.voix-select {
   }
 }
 
-/* Page du lien de l'e-mail d'alerte (/compte/alerte) : carte centrée, pastille d'état, deux boutons symétriques. */
+/* Page du lien de l'e-mail d'alerte (/compte/alerte) : centrée, logo bien visible, actions en simple texte. */
 .alerte-ecran {
   align-items: center;
 }
-.alerte-carte {
+.alerte-page {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 14px;
   width: 100%;
-  max-width: 460px;
-  padding: 32px 28px 28px;
-  border: 1px solid var(--line);
-  border-radius: 24px;
-  background: var(--card);
+  max-width: 420px;
+  margin: 0 auto;
   text-align: center;
 }
-.alerte-marque {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--muted);
-  font-size: 0.8rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-.alerte-pastille {
-  display: grid;
-  place-items: center;
-  width: 68px;
-  height: 68px;
-  margin-top: 6px;
-  border-radius: 50%;
-}
-.alerte-pastille.alerte {
-  background: rgba(245, 166, 35, 0.16);
-  color: #f5a623;
-}
-.alerte-pastille.danger {
-  background: rgba(229, 72, 77, 0.16);
-  color: #e5484d;
-}
-.alerte-pastille.ok {
-  background: rgba(48, 164, 108, 0.16);
-  color: #30a46c;
-}
-.alerte-pastille.neutre {
-  background: var(--line);
-  color: var(--muted);
+.alerte-logo .logo {
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
 }
 .alerte-titre {
-  margin: 0;
-  font-size: 1.45rem;
-  font-weight: 750;
-  letter-spacing: -0.01em;
+  margin: 28px 0 10px;
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
 }
 .alerte-texte {
   margin: 0;
-  max-width: 380px;
   color: var(--muted);
-  font-size: 0.95rem;
-  line-height: 1.55;
+  font-size: 0.97rem;
+  line-height: 1.6;
 }
 .alerte-boutons {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  width: 100%;
-  margin-top: 8px;
+  display: flex;
+  justify-content: center;
+  gap: 32px;
+  margin-top: 28px;
 }
+/* Simples textes cliquables, sans fond ni cadre. */
 .alerte-btn {
-  min-height: 48px;
-  padding: 12px 14px;
-  border: 1px solid transparent;
-  border-radius: 14px;
-  font-size: 0.95rem;
-  font-weight: 700;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-size: 1rem;
+  font-weight: 600;
   cursor: pointer;
 }
-.alerte-btn:disabled {
-  opacity: 0.6;
-  cursor: default;
+.alerte-btn:hover {
+  text-decoration: underline;
+  text-underline-offset: 4px;
 }
 .alerte-btn.danger {
-  background: #e5484d;
-  color: #ffffff;
-}
-.alerte-btn.principal {
-  background: var(--brand);
-  color: #ffffff;
-}
-.alerte-btn.secondaire {
-  border-color: var(--line);
-  background: transparent;
-  color: var(--ink);
-}
-@media (max-width: 380px) {
-  .alerte-boutons {
-    grid-template-columns: 1fr;
-  }
+  color: #e5484d;
 }

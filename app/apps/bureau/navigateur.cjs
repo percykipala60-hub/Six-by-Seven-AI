@@ -9,11 +9,17 @@
  *
  * Chaque discussion (Chat ou Cosinus) a ses propres onglets et son propre profil (cookies, connexions aux sites) :
  * rien ne passe d'une discussion à l'autre. L'app indique la discussion affichée (commande « contexte »).
+ * Une discussion sans message est un brouillon (« chat:nouvelle », « cosinus:nouvelle ») : au premier message, l'app
+ * le transmet à la discussion (commande « contexte-adopter ») et un brouillon vierge repart.
+ * Les onglets de chaque discussion sont mémorisés (six-navigateur.json) : ils se rouvrent au retour, même après un
+ * redémarrage de l'app.
  *
  * Sécurité (inchangée) : profils séparés de l'app, ni Node ni fichiers, aucune autorisation d'office,
  * téléchargements confiés au navigateur de l'ordinateur, seulement des pages http(s).
  */
-const { createHash } = require('node:crypto');
+const { createHash, randomBytes } = require('node:crypto');
+const fs = require('node:fs');
+const path = require('node:path');
 const { WebContentsView, Menu, shell, clipboard, dialog, session, app } = require('electron');
 
 // Profil d'avant la séparation par discussion (et des pages ouvertes hors discussion).
@@ -22,10 +28,22 @@ const CONTEXTE = /^(chat|cosinus):[A-Za-z0-9_-]{1,80}$/;
 // Discussions gardées ouvertes en même temps ; au-delà, les onglets de la plus ancienne se ferment (ses cookies
 // restent dans son profil).
 const GROUPES_MAX = 6;
-const partitionDe = (contexte) =>
-  contexte === 'defaut'
-    ? PARTITION
-    : `persist:six-${createHash('sha256').update(contexte).digest('hex').slice(0, 24)}`;
+// Discussions dont les onglets sont mémorisés (les plus anciennes sont oubliées au-delà).
+const MEMOIRE_MAX = 300;
+
+/** Mémoire du navigateur : profil et onglets (adresses) de chaque discussion. */
+const fichierMemoire = () => path.join(app.getPath('userData'), 'six-navigateur.json');
+function lireMemoire() {
+  try {
+    const d = JSON.parse(fs.readFileSync(fichierMemoire(), 'utf8'));
+    return {
+      partitions: d && typeof d.partitions === 'object' ? d.partitions : {},
+      onglets: d && typeof d.onglets === 'object' ? d.onglets : {},
+    };
+  } catch {
+    return { partitions: {}, onglets: {} };
+  }
+}
 const ONGLETS_MAX = 12;
 const ZOOMS = [0.5, 0.67, 0.75, 0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2, 2.5, 3];
 
@@ -37,6 +55,7 @@ const web = (u) => {
     return false;
   }
 };
+const sans = (objet, cle) => Object.fromEntries(Object.entries(objet).filter(([c]) => c !== cle));
 const borne = (v, min, max) => Math.round(Math.min(max, Math.max(min, Number(v) || 0)));
 
 /**
@@ -54,6 +73,47 @@ function creerNavigateur(ctx) {
   /** Discussions mises de côté (les plus anciennes d'abord). @type {Map<string, { onglets: Map<number, WebContentsView>, actif: number }>} */
   const groupes = new Map();
   const preparees = new Set();
+  /** Adresse demandée à un onglet, gardée tant que sa page n'a pas encore d'adresse (chargement en cours). */
+  const voulues = new WeakMap();
+  const adresseDe = (v) => v.webContents.getURL() || voulues.get(v) || '';
+  /** @type {{ partitions: Record<string, string>, onglets: Record<string, { urls: string[], actif: number }> }} */
+  let memoire = null;
+  let minuterieMemoire = null;
+  const lireMem = () => (memoire ??= lireMemoire());
+  function sauverMemoire() {
+    clearTimeout(minuterieMemoire);
+    minuterieMemoire = setTimeout(() => {
+      const m = lireMem();
+      // Les plus anciennes d'abord (ordre d'insertion) : on ne garde que les dernières.
+      m.onglets = Object.fromEntries(Object.entries(m.onglets).slice(-MEMOIRE_MAX));
+      try {
+        fs.writeFileSync(fichierMemoire(), JSON.stringify(m));
+      } catch {
+        /* disque plein ou dossier en lecture seule : la mémoire reste pour cette session */
+      }
+    }, 600);
+  }
+  const partitionDe = (c) =>
+    c === 'defaut'
+      ? PARTITION
+      : (lireMem().partitions[c] ??
+        `persist:six-${createHash('sha256').update(c).digest('hex').slice(0, 24)}`);
+  /** Garde les adresses des onglets de la discussion affichée (rouverts au retour). */
+  function noterOnglets() {
+    if (contexte === 'defaut') return;
+    const m = lireMem();
+    const ids = [...onglets.keys()];
+    const urls = ids.map((id) => adresseDe(onglets.get(id)));
+    const gardes = urls.filter(web);
+    // Retirée puis remise : la discussion passe en dernier (la plus récente).
+    m.onglets = sans(m.onglets, contexte);
+    if (gardes.length)
+      m.onglets[contexte] = {
+        urls: gardes.slice(0, ONGLETS_MAX),
+        actif: Math.max(0, gardes.indexOf(urls[ids.indexOf(actif)])),
+      };
+    sauverMemoire();
+  }
   let suivant = 1;
   let visible = false;
   let bornes = { x: 0, y: 0, width: 0, height: 0 };
@@ -76,6 +136,7 @@ function creerNavigateur(ctx) {
   }
 
   function envoyerOnglets() {
+    noterOnglets();
     versApp('six:navigateur-onglets', {
       actif,
       onglets: [...onglets].map(([id, v]) => ({
@@ -171,7 +232,10 @@ function creerNavigateur(ctx) {
       e.preventDefault();
       maj();
     });
-    if (url && web(url)) void w.loadURL(url).catch(() => {});
+    if (url && web(url)) {
+      voulues.set(v, url);
+      void w.loadURL(url).catch(() => {});
+    }
     envoyerOnglets();
     return id;
   }
@@ -197,15 +261,40 @@ function creerNavigateur(ctx) {
     contexte = nouveau;
     partition = partitionDe(nouveau);
     preparerSession(partition);
+    // Au-delà, les onglets de la plus ancienne se ferment ; leurs adresses restent mémorisées (rouverts au retour).
     while (groupes.size > GROUPES_MAX) {
       const [plusAncien, vieux] = groupes.entries().next().value;
       groupes.delete(plusAncien);
       fermerVues(vieux.onglets);
     }
-    if (!onglets.size) actif = nouvelOnglet();
+    if (!onglets.size) {
+      // Retour sur une discussion : ses onglets mémorisés se rouvrent.
+      const m = lireMem().onglets[nouveau];
+      const urls = (m?.urls ?? []).filter(web).slice(0, ONGLETS_MAX);
+      const ids = urls.map((u) => nouvelOnglet(u));
+      actif = ids[Math.min(Math.max(0, Number(m?.actif) || 0), ids.length - 1)] ?? nouvelOnglet();
+    }
     placer();
     envoyerEtat();
     envoyerOnglets();
+  }
+
+  /**
+   * Premier message d'une discussion : son brouillon (onglets, profil, adresses mémorisées) devient le sien ; le
+   * brouillon repart vierge, avec un profil neuf.
+   */
+  function adopter(de, vers) {
+    const m = lireMem();
+    m.partitions[vers] = partitionDe(de);
+    m.partitions[de] = `persist:six-${randomBytes(12).toString('hex')}`;
+    if (m.onglets[de]) m.onglets[vers] = m.onglets[de];
+    m.onglets = sans(m.onglets, de);
+    if (contexte === de) contexte = vers;
+    else if (groupes.has(de)) {
+      groupes.set(vers, groupes.get(de));
+      groupes.delete(de);
+    }
+    sauverMemoire();
   }
 
   function choisirOnglet(id) {
@@ -336,6 +425,12 @@ function creerNavigateur(ctx) {
       changerContexte(c.contexte);
       return true;
     }
+    if (c.action === 'contexte-adopter') {
+      if (typeof c.de !== 'string' || typeof c.vers !== 'string') return false;
+      if (!CONTEXTE.test(c.de) || !CONTEXTE.test(c.vers) || c.de === c.vers) return false;
+      adopter(c.de, c.vers);
+      return true;
+    }
     if (!onglets.size) actif = nouvelOnglet();
     const w = vueActive()?.webContents;
     if (!w) return false;
@@ -362,7 +457,11 @@ function creerNavigateur(ctx) {
         return true;
       case 'ouvrir':
         if (typeof c.url !== 'string' || c.url.length > 4000 || !web(c.url)) return false;
-        if (w.getURL() !== c.url) void w.loadURL(c.url).catch(() => {});
+        if (w.getURL() !== c.url) {
+          const vue = vueActive();
+          if (vue) voulues.set(vue, c.url);
+          void w.loadURL(c.url).catch(() => {});
+        }
         return true;
       case 'retour':
         if (w.navigationHistory.canGoBack()) w.navigationHistory.goBack();
