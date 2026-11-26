@@ -53,7 +53,7 @@ describe('alerte de connexion', () => {
       quand: new Date('2026-11-25T10:00:00Z'),
       lienReponse: 'https://app.sixbysevenai.com/compte/alerte?j=abc',
     });
-    expect(objet).toBe('Nouvelle connexion à votre compte Six');
+    expect(objet).toBe('⚠ Alerte de sécurité : nouvelle connexion à votre compte Six');
     expect(html).toContain('Google');
     expect(html).toContain('j=abc&#38;r=non');
     expect(html).toContain('j=abc&#38;r=oui');
