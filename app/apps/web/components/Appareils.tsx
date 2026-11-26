@@ -50,7 +50,11 @@ export function AppareilsVue() {
     setListe(trierAppareils(r.appareils, r.cetAppareil));
   }, []);
   useEffect(() => {
-    if (connecte) void recharger();
+    if (!connecte) return;
+    void recharger();
+    // Un appareil qui vient de se connecter (ou de s'enregistrer) apparaît sans recharger la page.
+    const t = window.setInterval(() => void recharger(), 20_000);
+    return () => window.clearInterval(t);
   }, [connecte, recharger]);
 
   if (!connecte)

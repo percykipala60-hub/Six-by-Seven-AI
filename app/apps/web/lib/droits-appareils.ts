@@ -15,7 +15,11 @@ export type LigneAppareil = {
   connecte: boolean;
 };
 
-export const estPrincipal = (a: Pick<LigneAppareil, 'methode'>) => a.methode !== 'Code QR';
+/** Principal : connecté avec une méthode forte. « Code QR » et « Connexion » (méthode inconnue, p. ex. appareil
+ *  réenregistré sans s'être reconnecté) ne le sont pas ; ils peuvent quand même être l'hôte. */
+const METHODES_PRINCIPALES = new Set(['Mot de passe', 'Google', 'Apple', 'Code e-mail']);
+export const estPrincipal = (a: Pick<LigneAppareil, 'methode'>) =>
+  METHODES_PRINCIPALES.has(a.methode);
 
 export function droitsAppareils(
   liste: LigneAppareil[],

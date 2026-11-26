@@ -154,11 +154,17 @@ export async function enregistrerConnexion(c: {
   nom: string;
   methode: string;
   sessionId: string | null;
-}): Promise<{ jeton: string; bloque: boolean }> {
-  const existant = (await rest(
-    `six_appareils?select=bloque&user_id=eq.${encodeURIComponent(c.userId)}&appareil=eq.${encodeURIComponent(c.appareil)}`,
-  )) as { bloque: boolean }[];
-  if (existant?.[0]?.bloque) return { jeton: '', bloque: true };
+}): Promise<{ jeton: string; bloque: boolean; nouvelle: boolean }> {
+  const existant = (
+    (await rest(
+      `six_appareils?select=bloque,methode,session_id&user_id=eq.${encodeURIComponent(c.userId)}&appareil=eq.${encodeURIComponent(c.appareil)}`,
+    )) as { bloque: boolean; methode: string; session_id: string | null }[]
+  )?.[0];
+  if (existant?.bloque) return { jeton: '', bloque: true, nouvelle: false };
+  // Même session déjà connue : simple réenregistrement (pas une nouvelle connexion). Une méthode inconnue
+  // (« Connexion ») ne remplace jamais celle déjà enregistrée : un appareil connecté par QR le reste.
+  const nouvelle = !existant || !c.sessionId || existant.session_id !== c.sessionId;
+  const methode = c.methode === 'Connexion' && existant?.methode ? existant.methode : c.methode;
   const jeton = crypto.randomUUID().replace(/-/g, '') + crypto.randomUUID().replace(/-/g, '');
   await rest('six_appareils?on_conflict=user_id,appareil', {
     method: 'POST',
@@ -167,14 +173,14 @@ export async function enregistrerConnexion(c: {
       user_id: c.userId,
       appareil: c.appareil,
       nom: c.nom.slice(0, 120),
-      methode: c.methode.slice(0, 30),
+      methode: methode.slice(0, 30),
       session_id: c.sessionId,
       jeton_hash: await sha256(jeton),
       confirme: false,
       derniere_connexion: new Date().toISOString(),
     }),
   });
-  return { jeton, bloque: false };
+  return { jeton, bloque: false, nouvelle };
 }
 
 /** Cet appareil a-t-il été bloqué depuis un e-mail d'alerte ? */

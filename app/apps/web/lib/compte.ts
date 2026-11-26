@@ -883,7 +883,20 @@ async function deconnecterAppareilBloque(sb: SupabaseClient): Promise<void> {
  * au lieu d'attendre la fin de son jeton.
  */
 function surveillerBlocage(sb: SupabaseClient): void {
+  // Une vérification à la fois, au plus toutes les 20 s (certains téléphones annoncent « visible » en rafale).
+  let enCours = false;
+  let derniere = 0;
   const verifier = async () => {
+    if (enCours || Date.now() - derniere < 20_000) return;
+    enCours = true;
+    derniere = Date.now();
+    try {
+      await verifierUneFois();
+    } finally {
+      enCours = false;
+    }
+  };
+  const verifierUneFois = async () => {
     const jeton = (await sb.auth.getSession()).data.session?.access_token;
     if (!jeton) return;
     // Connexion pas encore enregistrée (serveur indisponible au moment de la connexion) : on réessaie.

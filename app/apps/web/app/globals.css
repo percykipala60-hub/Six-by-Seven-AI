@@ -3708,9 +3708,9 @@ a.avatar::after {
   flex-direction: column;
   gap: 14px;
   width: 100%;
-  max-width: 430px;
+  max-width: 540px;
   margin: 6px auto 0;
-  padding: 20px 18px;
+  padding: 26px 28px;
   border: 1px solid var(--line);
   border-radius: 22px;
   background: var(--card);
@@ -9798,9 +9798,9 @@ div.seven-outils-ligne:not(.seven-outils-flottants) {
 .qr-connexion {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 22px;
   margin: 4px 0 6px;
-  padding: 14px;
+  padding: 18px 20px;
   border: 1px solid var(--line);
   border-radius: 14px;
 }
@@ -9847,6 +9847,9 @@ div.seven-outils-ligne:not(.seven-outils-flottants) {
   font-size: 0.78rem;
 }
 @media (max-width: 420px) {
+  .auth-card {
+    padding: 20px 16px;
+  }
   .qr-connexion {
     flex-direction: column;
     text-align: left;
