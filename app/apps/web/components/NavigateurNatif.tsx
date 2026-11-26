@@ -22,6 +22,8 @@ type PontBureau = {
   navigateur: {
     /** Discussion affichée : ses propres onglets et son propre profil (cookies, connexions aux sites). */
     contexte?: (contexte: string) => Promise<boolean>;
+    /** Premier message d'une discussion : son brouillon de navigation devient le sien. */
+    adopter?: (de: string, vers: string) => Promise<boolean>;
     afficher: (b: { x: number; y: number; largeur: number; hauteur: number }) => Promise<boolean>;
     cacher: () => Promise<boolean>;
     ouvrir: (url: string) => Promise<boolean>;

@@ -48,6 +48,7 @@ import {
 import { VoixOrbe, type PhaseVoix } from './VoixOrbe';
 import {
   BoutonsVolet,
+  adopterBrouillonNav,
   GRAND_VOLET,
   Volet,
   garderOngletVolet,
@@ -412,8 +413,11 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   const dossierDemande = params.get('d') ?? ''; // (ancien lien : dans ce dossier)
   const chatId = useRef('');
   // Navigateur de la discussion : historique, onglets et session web propres à chaque discussion (Chat ou Cosinus).
-  const contexteNav = () => `${sixtouch ? 'cosinus' : 'chat'}:${chatId.current || 'nouvelle'}`;
-  const cleAgent = () => `six-navigateur-agent:${contexteNav()}`;
+  // Sans message, c'est le brouillon de l'espace (retrouvé en revenant) ; il passe à la discussion au premier message.
+  const espaceNav = sixtouch ? 'cosinus' : 'chat';
+  const contexteNav = (avecMessages: boolean) =>
+    `${espaceNav}:${avecMessages && chatId.current ? chatId.current : 'nouvelle'}`;
+  const cleAgent = () => `six-navigateur-agent:${contexteNav(nbMessages.current > 0)}`;
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [saisie, setSaisie] = useState('');
   const [occupe, setOccupe] = useState(false);
@@ -813,6 +817,11 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         'Réimporte le document pour continuer cette conversation, ou efface le fil pour commencer une nouvelle discussion.',
       );
       return;
+    }
+    // Premier message : le brouillon de navigation (pages, onglets, session) devient celui de cette discussion.
+    if (!ancien.length && chatId.current) {
+      adopterBrouillonNav(espaceNav, chatId.current);
+      nbMessages.current = 1;
     }
     // Ce qui part vers l'IA : la question, les documents complets, la description des images.
     let pourIA = question;
@@ -1560,7 +1569,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       )}
       {(sixtouch || chatNavigateur) && volet && (
         <Volet
-          contexte={contexteNav()}
+          contexte={contexteNav(messages.length > 0)}
           onglet={volet}
           onOnglet={setVolet}
           onFermer={fermerVolet}

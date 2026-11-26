@@ -31,6 +31,8 @@ contextBridge.exposeInMainWorld('sixBureau', {
   navigateur: {
     /** Discussion affichée (« chat:… » ou « cosinus:… ») : ses propres onglets et son propre profil. */
     contexte: (contexte) => piloter({ action: 'contexte', contexte }),
+    /** Premier message d'une discussion : son brouillon de navigation (« …:nouvelle ») devient le sien. */
+    adopter: (de, vers) => piloter({ action: 'contexte-adopter', de, vers }),
     afficher: (bornes) => piloter({ action: 'afficher', bornes }),
     cacher: () => piloter({ action: 'cacher' }),
     ouvrir: (url) => piloter({ action: 'ouvrir', url }),

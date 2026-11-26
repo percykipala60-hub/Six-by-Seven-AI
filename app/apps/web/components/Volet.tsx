@@ -543,6 +543,28 @@ function nomPourReponse(texte: string): string {
   return `six-${date}${mots ? `-${mots}` : ''}.md`;
 }
 
+/**
+ * Une discussion sans message navigue dans un brouillon (« chat:nouvelle », « cosinus:nouvelle ») qu'on retrouve en
+ * revenant. Au premier message, le brouillon (historique, session de Six, onglets et profil de l'app de bureau)
+ * devient celui de la discussion, et un brouillon vierge repart. À appeler avant d'afficher le premier message.
+ */
+export function adopterBrouillonNav(espace: 'chat' | 'cosinus', id: string): void {
+  if (!/^[A-Za-z0-9_-]{1,80}$/.test(id)) return;
+  const de = `${espace}:nouvelle`;
+  const vers = `${espace}:${id}`;
+  try {
+    const nav = localStorage.getItem(`${CLE_NAV}:${de}`);
+    if (nav) localStorage.setItem(`${CLE_NAV}:${vers}`, nav);
+    localStorage.removeItem(`${CLE_NAV}:${de}`);
+    const agent = sessionStorage.getItem(`six-navigateur-agent:${de}`);
+    if (agent) sessionStorage.setItem(`six-navigateur-agent:${vers}`, agent);
+    sessionStorage.removeItem(`six-navigateur-agent:${de}`);
+  } catch {
+    /* stockage bloqué : rien à transmettre */
+  }
+  void pontBureau()?.navigateur.adopter?.(de, vers);
+}
+
 export function Volet({
   onglet,
   onOnglet,
@@ -637,7 +659,12 @@ export function Volet({
   // Le volet n'existe que côté navigateur (il s'ouvre après le chargement) : on peut lire l'appareil dès le départ.
   // Chaque discussion a son historique : rien de ce qui est visité dans l'une ne s'affiche dans une autre.
   const cleNav = `${CLE_NAV}:${contexte}`;
-  const lireNav = (cle: string) => navPropre(lire<Nav>(cle, { pile: [], pos: -1, visites: [] }));
+  const vide: Nav = { pile: [], pos: -1, visites: [] };
+  // Brouillon jamais ouvert : il reprend l'historique commun d'avant la séparation par discussion (rien ne se perd).
+  const lireNav = (cle: string) =>
+    navPropre(
+      lire<Nav | null>(cle, null) ?? (cle.endsWith(':nouvelle') ? lire<Nav>(CLE_NAV, vide) : vide),
+    );
   const [navEtat, setNavBrut] = useState<{ cle: string; nav: Nav }>(() => ({
     cle: cleNav,
     nav: lireNav(cleNav),
