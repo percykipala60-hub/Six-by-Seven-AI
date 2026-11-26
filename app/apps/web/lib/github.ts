@@ -28,26 +28,33 @@ export async function lireGithub(): Promise<EtatGithub> {
   }
 }
 
-/** Part sur GitHub pour installer l'application et choisir ses dépôts. */
+/** Part sur GitHub : autoriser Six (puis, la première fois, installer l'application et choisir ses dépôts). */
 export function connecterGithub(adresse: string): void {
   window.location.assign(adresse);
 }
 
-/** Retour de GitHub : relie l'installation au compte (le serveur vérifie l'état). Message d'erreur, ou null. */
+/**
+ * Retour de GitHub : relie le compte (le serveur vérifie l'état). « relie », l'adresse où installer l'application
+ * (première fois : choisir ses dépôts), ou un message d'erreur.
+ */
 export async function terminerGithub(
   code: string,
   installation: string,
   etat: string,
-): Promise<string | null> {
+): Promise<{ relie: true } | { installer: string } | { erreur: string }> {
   try {
     const r = await fetch('/api/github', {
       method: 'POST',
       headers: { 'content-type': 'application/json', ...(await entetesCompte()) },
-      body: JSON.stringify({ code, installation, etat }),
+      body: JSON.stringify({ code, etat, ...(installation ? { installation } : {}) }),
     });
-    return r.ok ? null : await erreurDe(r, 'La liaison avec GitHub a échoué.');
+    if (!r.ok) return { erreur: await erreurDe(r, 'La liaison avec GitHub a échoué.') };
+    const d = (await r.json().catch(() => ({}))) as { relie?: boolean; installer?: string };
+    if (d.relie) return { relie: true };
+    if (d.installer?.startsWith('https://github.com/')) return { installer: d.installer };
+    return { erreur: 'La liaison avec GitHub a échoué.' };
   } catch {
-    return 'La liaison avec GitHub a échoué (hors ligne ?).';
+    return { erreur: 'La liaison avec GitHub a échoué (hors ligne ?).' };
   }
 }
 

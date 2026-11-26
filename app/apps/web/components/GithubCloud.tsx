@@ -19,7 +19,12 @@ export function GithubCloud() {
   useEffect(() => ecouterCompte(() => setConnecte(lireCompte().statut === 'connecte')), []);
   const recharger = useCallback(() => void lireGithub().then(setEtat), []);
   useEffect(() => {
-    if (connecte) recharger();
+    if (!connecte) return;
+    recharger();
+    // Dépôts changés sur GitHub : la liste se met à jour au retour dans Six.
+    const auRetour = () => document.visibilityState === 'visible' && recharger();
+    document.addEventListener('visibilitychange', auRetour);
+    return () => document.removeEventListener('visibilitychange', auRetour);
   }, [connecte, recharger]);
 
   if (!connecte || etat === null || 'erreur' in etat) return null;
@@ -33,7 +38,7 @@ export function GithubCloud() {
         <Ligne
           icon="partager"
           label="Connecter GitHub"
-          sous="Choisir les dépôts que Six peut utiliser"
+          sous="Autoriser Six, puis choisir vos dépôts"
           onClick={() => connecterGithub(etat.adresse)}
         />
       </Groupe>
