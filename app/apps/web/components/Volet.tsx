@@ -134,14 +134,19 @@ export function BoutonsVolet({
   ouvert,
   onBasculer,
   telephone,
+  seulement,
 }: {
   ouvert: OngletVolet | null;
   onBasculer: (onglet: OngletVolet) => void;
   telephone?: boolean;
+  /** Onglets proposés (le Chat n'a que le navigateur : pas d'espace de travail). */
+  seulement?: OngletVolet[];
 }) {
   return (
     <div className="volet-boutons" role="toolbar" aria-label="Outils">
-      {ONGLETS.filter((o) => !telephone || o.id === 'fichiers').map((o) => (
+      {ONGLETS.filter(
+        (o) => (!telephone || o.id === 'fichiers') && (!seulement || seulement.includes(o.id)),
+      ).map((o) => (
         <button
           key={o.id}
           type="button"

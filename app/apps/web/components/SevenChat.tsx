@@ -364,6 +364,8 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   // navigateur intégré) ; ailleurs, le volet de Cosinus n'a que les fichiers.
   const [bureau, setBureau] = useState(false);
   const sansNavigateur = telephone || !bureau;
+  // Chat de l'app de bureau : le navigateur interne est là (bouton globe), sans espace de travail.
+  const chatNavigateur = !sixtouch && !sansNavigateur;
   useEffect(() => {
     const surBureau = estBureau();
     setBureau(surBureau);
@@ -1540,15 +1542,19 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
           ) : undefined
         }
       />
-      {(sixtouch || messages.length > 0) && (
+      {(sixtouch || chatNavigateur || messages.length > 0) && (
         <div className="seven-outils-flottants seven-outils-ligne">
           {messages.length > 0 && <div className="volet-boutons">{partage}</div>}
           {sixtouch && (
             <BoutonsVolet ouvert={volet} onBasculer={basculerVolet} telephone={sansNavigateur} />
           )}
+          {/* Chat de l'app de bureau : le navigateur seulement (pas d'espace de travail ni de fichiers). */}
+          {chatNavigateur && (
+            <BoutonsVolet ouvert={volet} onBasculer={basculerVolet} seulement={['navigateur']} />
+          )}
         </div>
       )}
-      {sixtouch && volet && (
+      {(sixtouch || chatNavigateur) && volet && (
         <Volet
           onglet={volet}
           onOnglet={setVolet}
