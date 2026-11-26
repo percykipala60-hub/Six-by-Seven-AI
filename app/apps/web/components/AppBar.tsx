@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  useCallback,
   useEffect,
   useRef,
   useState,
@@ -10,6 +11,7 @@ import {
 import Link from 'next/link';
 import { ecouterCompte, lireCompte, type Compte } from '@/lib/compte';
 import { AvatarContenu } from './AvatarContenu';
+import { MenuCompte, useRaccourciReglages } from './MenuCompte';
 import { LIEN_CONFIDENTIALITE } from '@/lib/liens';
 import { effacerChat, ecouterChats, lireChats, type ChatSeven } from '@/lib/seven-chats';
 import { Recents, type ElementRecent } from './Recents';
@@ -39,9 +41,11 @@ type Page =
   | 'ton-juste'
   | 'coupe-arnaque';
 
-/** Bouton rond du profil : initiale (ou silhouette) et pastille d'état. */
-export function Avatar({ size = 36 }: { size?: number }) {
+/** Bouton rond du profil : initiale (ou silhouette) et pastille d'état. Ouvre le menu du compte. */
+export function Avatar({ size = 36, ancre = 'bas' }: { size?: number; ancre?: 'haut' | 'bas' }) {
   const [c, setC] = useState<Compte>({ statut: 'invite', prenom: '' });
+  const [menu, setMenu] = useState(false);
+  const fermer = useCallback(() => setMenu(false), []);
   useEffect(() => {
     const lire = () => setC(lireCompte());
     lire();
@@ -49,15 +53,21 @@ export function Avatar({ size = 36 }: { size?: number }) {
   }, []);
   const etat = c.statut === 'connecte' ? 'connecté' : 'invité, non connecté';
   return (
-    <Link
-      href="/reglages?v=compte"
-      className="avatar"
-      style={{ width: size, height: size }}
-      aria-label={`Profil${c.prenom ? ` de ${c.prenom}` : ''} : ${etat}`}
-    >
-      <AvatarContenu c={c} taille={Math.round(size * 0.5)} />
-      <span className={`avatar-dot${c.statut === 'connecte' ? ' on' : ''}`} aria-hidden="true" />
-    </Link>
+    <span className="avatar-ancre">
+      <button
+        type="button"
+        className="avatar"
+        style={{ width: size, height: size }}
+        aria-label={`Menu du compte${c.prenom ? ` de ${c.prenom}` : ''} : ${etat}`}
+        aria-haspopup="menu"
+        aria-expanded={menu}
+        onClick={() => setMenu((m) => !m)}
+      >
+        <AvatarContenu c={c} taille={Math.round(size * 0.5)} />
+        <span className={`avatar-dot${c.statut === 'connecte' ? ' on' : ''}`} aria-hidden="true" />
+      </button>
+      {menu && <MenuCompte compte={c} ancre={ancre} onFermer={fermer} />}
+    </span>
   );
 }
 
@@ -116,6 +126,7 @@ export function AppBar({
   chatActif?: string;
 }) {
   const [open, setOpenBrut] = useState(false);
+  useRaccourciReglages();
   // Grand écran (ordinateur, tablette à l'horizontale) : le menu devient un panneau fixe à gauche,
   // ouvert (libellés et listes) ou réduit (colonne d'icônes). Petit écran : menu glissant, comme avant.
   const grand = useGrandEcran();
@@ -569,7 +580,7 @@ function Rail({
       {lien('/taches', 'taches', 'file', 'Tâches planifiées')}
       <span className="rail-fin" aria-hidden="true" />
       {lien('/reglages', 'reglages', 'sliders', 'Réglages')}
-      <Avatar size={32} />
+      <Avatar size={32} ancre="haut" />
     </nav>
   );
 }
