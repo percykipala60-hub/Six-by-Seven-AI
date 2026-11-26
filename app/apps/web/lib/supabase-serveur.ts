@@ -290,3 +290,35 @@ export async function sessionsDesAppareils(userId: string): Promise<Map<string, 
   )) as { appareil: string; session_id: string | null }[];
   return new Map((lignes ?? []).map((l) => [l.appareil, l.session_id]));
 }
+
+// ---------- Lien entre le compte Six et l'application GitHub (table six_github, serveur seulement) ----------
+
+export type LienGithub = { installation_id: number; login: string; relie_le: string };
+
+export async function lireLienGithub(userId: string): Promise<LienGithub | null> {
+  const lignes = (await rest(
+    `six_github?select=installation_id,login,relie_le&user_id=eq.${encodeURIComponent(userId)}`,
+  )) as LienGithub[];
+  return lignes?.[0] ?? null;
+}
+
+export async function ecrireLienGithub(
+  userId: string,
+  installation: number,
+  login: string,
+): Promise<void> {
+  await rest('six_github?on_conflict=user_id', {
+    method: 'POST',
+    headers: { prefer: 'resolution=merge-duplicates,return=minimal' },
+    body: JSON.stringify({
+      user_id: userId,
+      installation_id: installation,
+      login: login.slice(0, 100),
+      relie_le: new Date().toISOString(),
+    }),
+  });
+}
+
+export async function supprimerLienGithub(userId: string): Promise<void> {
+  await rest(`six_github?user_id=eq.${encodeURIComponent(userId)}`, { method: 'DELETE' });
+}

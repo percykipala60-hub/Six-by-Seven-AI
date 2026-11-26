@@ -1,3 +1,5 @@
+import { githubDisponible, jetonInstallation } from '@/lib/github-app';
+import { adminDisponible, lireLienGithub } from '@/lib/supabase-serveur';
 import { NextResponse } from 'next/server';
 import { fail, guard, readJson } from '@/lib/http';
 import { utilisateurDeRequete } from '@/lib/supabase-serveur';
@@ -20,6 +22,13 @@ import {
  * tout passe avec sa session, donc chacun n'accède qu'à ses propres données. Mêmes paramètres que l'espace local
  * (« niveau », « f ») pour l'explorateur, avec « e » = l'environnement cloud.
  */
+/** Jeton de l'application GitHub de la personne, si elle a relié GitHub (sinon : dépôts publics seulement). */
+async function jetonGithubDe(userId: string): Promise<string | undefined> {
+  if (!githubDisponible() || !adminDisponible()) return undefined;
+  const lien = await lireLienGithub(userId).catch(() => null);
+  return lien ? jetonInstallation(lien.installation_id).catch(() => undefined) : undefined;
+}
+
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
@@ -118,7 +127,14 @@ export async function POST(req: Request) {
         branche,
       );
       const importe = depot
-        ? await importerDepotGithub(c.jeton, c.u.id, env.id, depot, branche)
+        ? await importerDepotGithub(
+            c.jeton,
+            c.u.id,
+            env.id,
+            depot,
+            branche,
+            await jetonGithubDe(c.u.id),
+          )
         : null;
       return NextResponse.json({ environnement: env, importe });
     }
@@ -126,7 +142,14 @@ export async function POST(req: Request) {
     if (b.action === 'importer') {
       if (!depot) return fail(400, 'Dépôt GitHub manquant.');
       return NextResponse.json({
-        importe: await importerDepotGithub(c.jeton, c.u.id, b.e, depot, branche),
+        importe: await importerDepotGithub(
+          c.jeton,
+          c.u.id,
+          b.e,
+          depot,
+          branche,
+          await jetonGithubDe(c.u.id),
+        ),
       });
     }
     if (typeof b.contenu !== 'string' || !b.contenu.trim()) return fail(400, 'Rien à enregistrer.');

@@ -281,32 +281,48 @@ export function fichiersDuZip(zip: Buffer): { nom: string; octets: Buffer }[] {
 
 const GITHUB_UA = { 'user-agent': 'Six-Cosinus', accept: 'application/vnd.github+json' };
 
-/** Importe un dépôt GitHub public dans l'environnement (fichiers de 2 Mo au plus, 400 au plus, 50 Mo en tout). */
+/**
+ * Importe un dépôt GitHub dans l'environnement (fichiers de 2 Mo au plus, 400 au plus, 50 Mo en tout). Avec le jeton
+ * de l'application GitHub de la personne (Réglages → Cloud → GitHub), les dépôts privés qu'elle a autorisés aussi.
+ */
 export async function importerDepotGithub(
   jeton: string,
   userId: string,
   env: string,
   depot: string,
   branche: string | null,
+  jetonGithub?: string,
 ): Promise<{ importes: number; branche: string }> {
+  const auth: Record<string, string> = jetonGithub
+    ? { authorization: `Bearer ${jetonGithub}` }
+    : {};
   if (!/^[A-Za-z0-9_.-]{1,100}\/[A-Za-z0-9_.-]{1,100}$/.test(depot))
     throw new ErreurCloud('Dépôt GitHub invalide : écris-le sous la forme proprietaire/depot.');
   const infos = await fetch(`https://api.github.com/repos/${depot}`, {
-    headers: GITHUB_UA,
+    headers: { ...GITHUB_UA, ...auth },
     signal: AbortSignal.timeout(15_000),
   });
   if (infos.status === 404)
     throw new ErreurCloud(
-      'Dépôt introuvable ou privé. Pour l’instant, seuls les dépôts publics s’importent.',
+      jetonGithub
+        ? 'Dépôt introuvable, ou pas autorisé pour Six : ajoute-le dans Réglages → Cloud → GitHub.'
+        : 'Dépôt introuvable ou privé. Pour un dépôt privé, connecte GitHub dans Réglages → Cloud.',
     );
   if (!infos.ok) throw new ErreurCloud('GitHub ne répond pas pour le moment. Réessaie.');
   const d = (await infos.json()) as { default_branch?: string; size?: number };
   if ((d.size ?? 0) > 200_000)
     throw new ErreurCloud('Dépôt trop gros pour le Cloud (200 Mo au plus).');
   const b = branche?.trim() || d.default_branch || 'main';
+  // Avec un jeton : l'archive passe par l'API (elle redirige vers un lien temporaire, dépôts privés compris).
   const zip = await fetch(
-    `https://codeload.github.com/${depot}/zip/refs/heads/${encodeURIComponent(b)}`,
-    { headers: { 'user-agent': 'Six-Cosinus' }, signal: AbortSignal.timeout(60_000) },
+    jetonGithub
+      ? `https://api.github.com/repos/${depot}/zipball/${encodeURIComponent(b)}`
+      : `https://codeload.github.com/${depot}/zip/refs/heads/${encodeURIComponent(b)}`,
+    {
+      headers: { 'user-agent': 'Six-Cosinus', ...auth },
+      redirect: 'follow',
+      signal: AbortSignal.timeout(60_000),
+    },
   );
   if (!zip.ok) throw new ErreurCloud(`Branche « ${b} » introuvable dans ${depot}.`);
   const fichiers = fichiersDuZip(Buffer.from(await zip.arrayBuffer()))
