@@ -21,6 +21,11 @@ import {
  * code QR affiché sur l'écran de connexion de l'autre appareil. Ailleurs, le bloc n'existe pas (chaque version ne
  * montre que ce qu'elle sait faire).
  */
+/** Téléphone ou tablette d'après son nom (« Android · Chrome », « iPhone · Safari »…), ordinateur sinon. */
+function iconeAppareil(nom: string): 'phone' | 'ordinateur' {
+  return /iphone|ipad|android|mobile|t[ée]l[ée]phone|tablette/i.test(nom) ? 'phone' : 'ordinateur';
+}
+
 export function AppareilsVue() {
   const [connecte, setConnecte] = useState(() => lireCompte().statut === 'connecte');
   const [telephone, setTelephone] = useState(false);
@@ -50,7 +55,11 @@ export function AppareilsVue() {
     setListe(trierAppareils(r.appareils, r.cetAppareil));
   }, []);
   useEffect(() => {
-    if (connecte) void recharger();
+    if (!connecte) return;
+    void recharger();
+    // Un appareil qui vient de se connecter (ou de s'enregistrer) apparaît sans recharger la page.
+    const t = window.setInterval(() => void recharger(), 20_000);
+    return () => window.clearInterval(t);
   }, [connecte, recharger]);
 
   if (!connecte)
@@ -61,6 +70,15 @@ export function AppareilsVue() {
     );
 
   const autres = (liste ?? []).filter((a) => a.appareil !== cetAppareil);
+  const ceLui = liste?.find((a) => a.appareil === cetAppareil);
+  const detail = (a: NonNullable<typeof liste>[number]) =>
+    [
+      a.appareil === cetAppareil ? '' : dateConnexion(a.derniere_connexion),
+      a.role === 'principal' ? 'Principal' : a.role === 'hote' ? 'Hôte' : 'Par code QR',
+      a.methode && a.methode !== 'Connexion' && a.methode !== 'Code QR' ? a.methode : '',
+    ]
+      .filter(Boolean)
+      .join(' · ');
 
   return (
     <>
@@ -88,8 +106,18 @@ export function AppareilsVue() {
         </Groupe>
       )}
 
+      {ceLui && (
+        <Groupe titre="Cet appareil">
+          <LigneInfo
+            icon={iconeAppareil(ceLui.nom)}
+            label={ceLui.nom || 'Cet appareil'}
+            sous={detail(ceLui)}
+          />
+        </Groupe>
+      )}
+
       <Groupe
-        titre="Où vous êtes connecté"
+        titre="Autres appareils"
         pied={
           gestion
             ? 'Déconnecter un appareil ferme sa session : il devra se reconnecter pour utiliser votre compte.'
@@ -97,29 +125,22 @@ export function AppareilsVue() {
         }
       >
         {liste === null && !erreur && <LigneInfo icon="refresh" label="Chargement…" />}
-        {liste?.map((a) => {
-          const ici = a.appareil === cetAppareil;
-          const sous = [
-            ici ? 'Cet appareil' : `Dernière connexion : ${dateConnexion(a.derniere_connexion)}`,
-            a.role === 'principal' ? 'Principal' : a.role === 'hote' ? 'Hôte' : 'Par code QR',
-            a.methode && a.methode !== 'Connexion' && a.methode !== 'Code QR' ? a.methode : '',
-          ]
-            .filter(Boolean)
-            .join(' · ');
+        {autres.map((a) => {
+          const sous = detail(a);
           // Les autres appareils restent visibles ; seuls ceux que cet appareil peut déconnecter sont cliquables.
-          if (ici || !a.gerable)
+          if (!a.gerable)
             return (
               <LigneInfo
                 key={a.appareil}
-                icon={ici ? 'check' : 'phone'}
-                label={a.nom || (ici ? 'Cet appareil' : 'Appareil')}
+                icon={iconeAppareil(a.nom)}
+                label={a.nom || 'Appareil'}
                 sous={sous}
               />
             );
           return (
             <Ligne
               key={a.appareil}
-              icon="phone"
+              icon={iconeAppareil(a.nom)}
               label={a.nom || 'Appareil'}
               sous={occupe === a.appareil ? 'Déconnexion…' : sous}
               disabled={Boolean(occupe)}

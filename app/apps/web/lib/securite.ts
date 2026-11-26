@@ -14,7 +14,9 @@ export type MethodeConnexion =
 
 const CLE_APPAREIL = 'six-appareil';
 const CLE_METHODE = 'six-methode-connexion';
-const CLE_SIGNALEE = 'six-session-signalee';
+// « v2 » : les anciennes versions marquaient une connexion comme signalée même quand le serveur la refusait ;
+// ce nouveau nom fait réenregistrer chaque appareil une fois.
+const CLE_SIGNALEE = 'six-session-signalee-v2';
 const CLE_A_SIGNALER = 'six-session-a-signaler';
 export const CLE_BLOQUE = 'six-appareil-bloque';
 
@@ -116,7 +118,19 @@ export function sessionDuJeton(jeton: string): string | null {
  * Signale une nouvelle connexion (une seule fois par session). Renvoie « bloque » si cet appareil a été bloqué
  * depuis un e-mail d'alerte : l'app doit alors se déconnecter.
  */
-export async function signalerConnexion(jetonAcces: string): Promise<'ok' | 'bloque' | 'deja'> {
+// Deux appels simultanés (démarrage + annonce de session) : un seul envoi au serveur.
+// Après un refus du serveur, on attend 30 s avant de réessayer (Supabase réannonce la session très souvent).
+let signalementEnCours: Promise<'ok' | 'bloque' | 'deja'> | null = null;
+let echecA = 0;
+export function signalerConnexion(jetonAcces: string): Promise<'ok' | 'bloque' | 'deja'> {
+  if (!signalementEnCours && Date.now() - echecA < 30_000) return Promise.resolve('ok');
+  signalementEnCours ??= signaler(jetonAcces).finally(() => {
+    signalementEnCours = null;
+  });
+  return signalementEnCours;
+}
+
+async function signaler(jetonAcces: string): Promise<'ok' | 'bloque' | 'deja'> {
   const session = sessionDuJeton(jetonAcces);
   if (!session || lire('local', CLE_SIGNALEE) === session) return 'deja';
   // La méthode est gardée avec la session : si le serveur ne répond pas, on réessaie plus tard avec la même
@@ -140,9 +154,10 @@ export async function signalerConnexion(jetonAcces: string): Promise<'ok' | 'blo
     if (r.ok || d.bloque) {
       ecrire('local', CLE_SIGNALEE, session);
       ecrire('local', CLE_A_SIGNALER, null);
-    }
+    } else echecA = Date.now();
     return d.bloque ? 'bloque' : 'ok';
   } catch {
+    echecA = Date.now();
     return 'ok'; // hors ligne : la connexion reste valable, on la signalera plus tard
   }
 }

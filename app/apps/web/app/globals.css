@@ -745,6 +745,10 @@ em {
   display: flex;
   flex-direction: column;
 }
+/* Écran de connexion : plus de place pour le formulaire et le code QR. */
+.app:has(.auth-screen) {
+  max-width: 880px;
+}
 .jeu {
   width: 100%;
   max-width: 480px;
@@ -3702,19 +3706,20 @@ a.avatar::after {
   color: var(--brand);
 }
 
-/* Carte d'authentification centrée. */
+/* Formulaire de connexion centré, sans cadre. */
 .auth-card {
   display: flex;
   flex-direction: column;
   gap: 14px;
   width: 100%;
-  max-width: 430px;
+  max-width: 460px;
   margin: 6px auto 0;
-  padding: 20px 18px;
-  border: 1px solid var(--line);
-  border-radius: 22px;
-  background: var(--card);
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.1);
+  padding: 16px 0;
+}
+/* Le bloc du code QR est plus large que le reste du formulaire (centré, il dépasse des deux côtés). */
+.auth-card .qr-connexion {
+  align-self: center;
+  width: min(700px, calc(100vw - 32px));
 }
 .auth-hero {
   display: flex;
@@ -4440,7 +4445,6 @@ body {
 .suggest-card,
 .profile-card,
 .group-list,
-.auth-card,
 .auth-social-btn:not(.solid) {
   background: var(--verre);
   border-color: var(--verre-trait);
@@ -5694,7 +5698,7 @@ body {
   justify-content: center;
   min-height: 100dvh;
   width: 100%;
-  max-width: 480px;
+  max-width: 880px;
   margin: 0 auto;
   padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
 }
@@ -7548,8 +7552,33 @@ html.volet-glisse .volet-cadre {
   font-weight: 600;
 }
 .reglages-contenu {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
   min-width: 0;
   max-width: 760px;
+}
+/* Chaque groupe : titre lisible, liste dans une carte, texte d'aide à part. */
+.reglages-contenu .lg-titre {
+  padding-bottom: 8px;
+  color: var(--ink);
+  font-size: 0.92rem;
+  font-weight: 650;
+}
+.reglages-contenu .lg-liste {
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--card);
+}
+.reglages-contenu .lg-liste:empty {
+  display: none;
+}
+.reglages-contenu .lg-pied {
+  padding-top: 8px;
+}
+.reglages-contenu .reglages-contenu-titre {
+  margin-bottom: 0;
 }
 .reglages-contenu-titre {
   margin: 4px 0 20px;
@@ -9798,9 +9827,9 @@ div.seven-outils-ligne:not(.seven-outils-flottants) {
 .qr-connexion {
   display: flex;
   align-items: center;
-  gap: 18px;
+  gap: 22px;
   margin: 4px 0 6px;
-  padding: 14px;
+  padding: 18px 20px;
   border: 1px solid var(--line);
   border-radius: 14px;
 }
@@ -9808,16 +9837,16 @@ div.seven-outils-ligne:not(.seven-outils-flottants) {
   display: grid;
   flex: none;
   place-items: center;
-  width: 148px;
-  height: 148px;
-  padding: 6px;
+  width: 276px;
+  height: 276px;
+  padding: 8px;
   border-radius: 10px;
   background: #fff;
 }
 .qr-image svg {
   display: block;
-  width: 136px;
-  height: 136px;
+  width: 260px;
+  height: 260px;
 }
 .qr-attente {
   color: #5b6375;
@@ -10404,8 +10433,8 @@ select.select.voix-select {
 .qr-avec-logo {
   position: relative;
   display: block;
-  width: 136px;
-  height: 136px;
+  width: 260px;
+  height: 260px;
 }
 .qr-avec-logo img {
   display: block;
@@ -10418,15 +10447,15 @@ select.select.voix-select {
   left: 50%;
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
-  padding: 3px;
-  border-radius: 10px;
+  width: 64px;
+  height: 64px;
+  padding: 5px;
+  border-radius: 12px;
   background: #fff;
   transform: translate(-50%, -50%);
 }
 .qr-logo .logo.sm {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
+  width: 54px;
+  height: 54px;
+  border-radius: 10px;
 }

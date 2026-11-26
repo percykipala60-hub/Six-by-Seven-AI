@@ -52,7 +52,7 @@ export async function POST(req: Request) {
     if (r.bloque) return NextResponse.json({ bloque: true });
     const cle = process.env.RESEND_API_KEY || '';
     let envoye = false;
-    if (cle && c.u.email) {
+    if (cle && c.u.email && r.nouvelle) {
       const { objet, html } = composerAlerteConnexion({
         methode: corps.data.methode,
         appareil: corps.data.nom,

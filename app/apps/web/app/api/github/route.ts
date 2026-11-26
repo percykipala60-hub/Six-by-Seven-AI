@@ -3,12 +3,13 @@ import { z } from 'zod';
 import { fail, guard, readJson } from '@/lib/http';
 import {
   ErreurGithub,
+  adresseAutorisation,
   adresseInstallation,
   depotsInstallation,
   etatSigne,
   etatValide,
   githubDisponible,
-  verifierInstallation,
+  installationDe,
 } from '@/lib/github-app';
 import {
   adminDisponible,
@@ -22,8 +23,9 @@ import {
  * GitHub dans le Cloud (Réglages → Cloud) :
  * - GET : relié ou non, le compte GitHub et les dépôts autorisés ; sinon l'adresse pour relier (avec un état signé
  *   par le serveur, lié au compte et daté : il marche même si le retour arrive dans un autre navigateur) ;
- * - POST { code, installation, etat } : retour de GitHub ; vérifie l'état et que l'installation appartient à la
- *   personne ;
+ * - POST { code, installation?, etat } : retour de GitHub (autorisation ou installation) ; vérifie l'état et que
+ *   l'installation appartient à la personne ; si l'application n'est installée nulle part, renvoie l'adresse
+ *   d'installation (choisir ses dépôts) ;
  * - DELETE : retire le lien côté Six (l'application se désinstalle depuis GitHub).
  */
 export const dynamic = 'force-dynamic';
@@ -33,7 +35,7 @@ const SANS_CACHE = { 'cache-control': 'no-store' };
 const INDISPONIBLE = 'La connexion à GitHub est indisponible pour le moment.';
 const Retour = z.object({
   code: z.string().min(8).max(200),
-  installation: z.coerce.number().int().positive(),
+  installation: z.coerce.number().int().positive().optional(),
   etat: z.string().min(10).max(200),
 });
 
@@ -47,7 +49,7 @@ export async function GET(req: Request) {
     const lien = await lireLienGithub(u.id);
     if (!lien) {
       return NextResponse.json(
-        { relie: false, adresse: adresseInstallation(etatSigne(u.id)) },
+        { relie: false, adresse: adresseAutorisation(etatSigne(u.id)) },
         { headers: SANS_CACHE },
       );
     }
@@ -56,7 +58,7 @@ export async function GET(req: Request) {
     if (!depots) {
       await supprimerLienGithub(u.id);
       return NextResponse.json(
-        { relie: false, adresse: adresseInstallation(etatSigne(u.id)) },
+        { relie: false, adresse: adresseAutorisation(etatSigne(u.id)) },
         { headers: SANS_CACHE },
       );
     }
@@ -89,8 +91,14 @@ export async function POST(req: Request) {
       'Ce lien de retour GitHub a expiré ou ne vient pas de ton compte. Recommence depuis Réglages → Cloud.',
     );
   try {
-    const { login } = await verifierInstallation(corps.data.code, corps.data.installation);
-    await ecrireLienGithub(u.id, corps.data.installation, login);
+    const { login, installation } = await installationDe(corps.data.code, corps.data.installation);
+    // Autorisée mais pas encore installée : on passe au choix des dépôts sur GitHub (même état signé).
+    if (!installation)
+      return NextResponse.json(
+        { relie: false, installer: adresseInstallation(corps.data.etat) },
+        { headers: SANS_CACHE },
+      );
+    await ecrireLienGithub(u.id, installation, login);
     return NextResponse.json({ relie: true, login }, { headers: SANS_CACHE });
   } catch (e) {
     return fail(

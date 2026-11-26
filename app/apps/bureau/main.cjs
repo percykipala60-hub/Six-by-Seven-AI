@@ -380,8 +380,9 @@ function creerFenetre() {
       repondre(false);
     }
   });
-  // L'app reste sur son origine, sauf le passage par la connexion (Supabase, Google, Apple), qui revient ensuite à
-  // l'app ; le reste s'ouvre dans le navigateur par défaut de l'ordinateur.
+  // L'app reste sur son origine, sauf le passage par la connexion (Supabase, Google, Apple) et par GitHub (relier ses
+  // dépôts : Réglages → Cloud), qui reviennent ensuite à l'app ; le reste s'ouvre dans le navigateur de l'ordinateur.
+  // Les pages de passage n'ont accès à rien : chaque demande à l'app de bureau vérifie l'origine (depuisApp).
   wc.on('will-navigate', (e, u) => {
     try {
       const cible = new URL(u);
@@ -390,7 +391,8 @@ function creerFenetre() {
         cible.protocol === 'https:' &&
         (cible.hostname.endsWith('.supabase.co') ||
           cible.hostname === 'accounts.google.com' ||
-          cible.hostname === 'appleid.apple.com')
+          cible.hostname === 'appleid.apple.com' ||
+          cible.hostname === 'github.com')
       )
         return;
     } catch {

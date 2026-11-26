@@ -27,6 +27,15 @@ export function githubDisponible(): boolean {
   );
 }
 
+/**
+ * Première étape (comme Claude) : la personne autorise Six sur GitHub. Si l'application est déjà installée sur son
+ * compte, la liaison est immédiate ; sinon, Six l'envoie ensuite sur la page d'installation.
+ */
+export function adresseAutorisation(etat: string): string {
+  const client = encodeURIComponent(env('GITHUB_APP_CLIENT_ID'));
+  return `https://github.com/login/oauth/authorize?client_id=${client}&state=${encodeURIComponent(etat)}`;
+}
+
 /** Adresse où la personne installe l'application et choisit ses dépôts. */
 export function adresseInstallation(etat: string): string {
   const slug = env('GITHUB_APP_SLUG') || 'six-by-seven';
@@ -70,13 +79,15 @@ export async function jetonInstallation(installation: number): Promise<string> {
 }
 
 /**
- * Retour de GitHub après l'installation : échange le code contre un jeton de la personne, puis vérifie que
- * l'installation annoncée lui appartient bien (sinon n'importe qui pourrait relier l'installation d'un autre).
+ * Retour de GitHub : échange le code contre un jeton de la personne, puis choisit l'installation de « Six by Seven »
+ * à laquelle elle a accès (celle annoncée par GitHub, sinon celle de son propre compte, sinon la première). Une
+ * installation annoncée qui n'est pas la sienne est refusée (personne ne relie l'installation d'un autre).
+ * installation: null si l'application n'est installée nulle part pour elle (il faut l'installer).
  */
-export async function verifierInstallation(
+export async function installationDe(
   code: string,
-  installation: number,
-): Promise<{ login: string }> {
+  annoncee?: number,
+): Promise<{ login: string; installation: number | null }> {
   const res = await fetch('https://github.com/login/oauth/access_token', {
     method: 'POST',
     headers: { accept: 'application/json', 'content-type': 'application/json' },
@@ -93,11 +104,19 @@ export async function verifierInstallation(
   const jeton = d.access_token;
   const [moi, liste] = await Promise.all([
     appel<{ login: string }>('/user', { jeton }),
-    appel<{ installations: { id: number }[] }>('/user/installations?per_page=100', { jeton }),
+    appel<{ installations: { id: number; account?: { login?: string } }[] }>(
+      '/user/installations?per_page=100',
+      { jeton },
+    ),
   ]);
-  if (!liste.installations.some((i) => i.id === installation))
-    throw new ErreurGithub('Cette installation GitHub n’appartient pas à ce compte.');
-  return { login: moi.login };
+  const toutes = liste.installations;
+  if (annoncee) {
+    if (!toutes.some((i) => i.id === annoncee))
+      throw new ErreurGithub('Cette installation GitHub n’appartient pas à ce compte.');
+    return { login: moi.login, installation: annoncee };
+  }
+  const sienne = toutes.find((i) => i.account?.login === moi.login) ?? toutes[0];
+  return { login: moi.login, installation: sienne?.id ?? null };
 }
 
 export type DepotGithub = { nom: string; prive: boolean; branche: string; maj: string };

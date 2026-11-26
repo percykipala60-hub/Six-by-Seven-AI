@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { terminerGithub } from '@/lib/github';
+import { lireGithub, terminerGithub } from '@/lib/github';
 
 /** Retour de GitHub après l'installation de « Six by Seven » : relie le compte, puis revient dans Réglages → Cloud. */
 export function RetourGithub() {
@@ -17,15 +17,22 @@ export function RetourGithub() {
     const code = params.get('code') ?? '';
     const installation = params.get('installation_id') ?? '';
     const etat = params.get('state') ?? '';
-    if (!code || !installation) {
-      setMessage(
-        'GitHub n’a pas envoyé d’autorisation. Recommence depuis Réglages → Cloud → Connecter GitHub.',
-      );
+    // Retour sans autorisation (réglages de l'application modifiés sur GitHub) : on repasse par l'autorisation,
+    // qui revient aussitôt si elle est déjà accordée.
+    if (!code) {
+      void lireGithub().then((e) => {
+        if ('relie' in e && e.relie) router.replace('/reglages?v=memoire');
+        else if ('adresse' in e) window.location.assign(e.adresse);
+        else setMessage('erreur' in e ? e.erreur : 'La liaison avec GitHub a échoué.');
+      });
       return;
     }
-    void terminerGithub(code, installation, etat).then((erreur) => {
-      if (erreur) setMessage(erreur);
-      else router.replace('/reglages?v=memoire');
+    void terminerGithub(code, installation, etat).then((r) => {
+      if ('relie' in r) router.replace('/reglages?v=memoire');
+      else if ('installer' in r) {
+        setMessage('Choisis les dépôts que Six peut utiliser…');
+        window.location.assign(r.installer);
+      } else setMessage(r.erreur);
     });
   }, [params, router]);
 

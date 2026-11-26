@@ -36,11 +36,31 @@ export function lireLienQr(texte: string): Pick<DemandeQr, 'id' | 'secret'> | nu
   }
 }
 
+/** Un appel au serveur qui ne répond pas ne doit jamais figer le code QR : au-delà du délai, il est abandonné. */
+function avecDelai<T>(p: PromiseLike<T>, ms: number): Promise<T> {
+  return new Promise<T>((resoudre, rejeter) => {
+    const t = setTimeout(() => rejeter(new Error('délai dépassé')), ms);
+    Promise.resolve(p).then(
+      (v) => {
+        clearTimeout(t);
+        resoudre(v);
+      },
+      (e: unknown) => {
+        clearTimeout(t);
+        rejeter(e instanceof Error ? e : new Error(String(e)));
+      },
+    );
+  });
+}
+
 /** Nouvelle demande de connexion (affichée en QR sur l'écran de connexion). */
 export async function creerDemandeQr(): Promise<DemandeQr> {
   const sb = await supabase();
   if (!sb) throw new Error('Connexion indisponible.');
-  const { data, error } = await sb.rpc('six_qr_creer', { p_appareil: nomCetAppareil() });
+  const { data, error } = await avecDelai(
+    sb.rpc('six_qr_creer', { p_appareil: nomCetAppareil() }),
+    10_000,
+  );
   const d = Array.isArray(data)
     ? (data[0] as { id: string; secret: string; expire_le: string })
     : null;
@@ -58,13 +78,26 @@ export async function attendreDemandeQr(
   if (Date.now() > d.expire) return 'expire';
   const sb = await supabase();
   if (!sb) return 'attente';
-  const { data, error } = await sb.rpc('six_qr_attendre', { p_id: d.id, p_secret: d.secret });
+  let reponse;
+  try {
+    reponse = await avecDelai(sb.rpc('six_qr_attendre', { p_id: d.id, p_secret: d.secret }), 8_000);
+  } catch {
+    return 'attente'; // pas de réponse : on revérifie au tour suivant
+  }
+  const { data, error } = reponse;
   const r = Array.isArray(data) ? (data[0] as { statut: string; token_hash: string | null }) : null;
   if (error || !r) return 'attente';
   if (r.statut === 'approuve' && r.token_hash) {
     noterMethode('Code QR');
-    const { error: e } = await sb.auth.verifyOtp({ token_hash: r.token_hash, type: 'magiclink' });
-    return e ? 'refuse' : 'connecte';
+    try {
+      const { error: e } = await avecDelai(
+        sb.auth.verifyOtp({ token_hash: r.token_hash, type: 'magiclink' }),
+        15_000,
+      );
+      return e ? 'refuse' : 'connecte';
+    } catch {
+      return 'connecte'; // réponse perdue : la session est peut-être déjà enregistrée, l'écran se recharge
+    }
   }
   if (r.statut === 'expire' || r.statut === 'inconnu' || r.statut === 'consomme') return 'expire';
   if (r.statut === 'refuse') return 'refuse';

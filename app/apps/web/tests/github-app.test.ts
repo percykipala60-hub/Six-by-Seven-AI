@@ -10,7 +10,10 @@ function reglages() {
   vi.stubEnv('GITHUB_APP_CLIENT_SECRET', 'secret-de-test-assez-long');
   vi.stubEnv('GITHUB_APP_PRIVATE_KEY_B64', Buffer.from(pem).toString('base64'));
 }
-afterEach(() => vi.unstubAllEnvs());
+afterEach(() => {
+  vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
+});
 
 describe('application GitHub « Six by Seven »', () => {
   it('signe son jeton avec sa clé privée (RS256, 9 minutes, émetteur = App ID)', async () => {
@@ -45,5 +48,47 @@ describe('application GitHub « Six by Seven »', () => {
     expect(adresseInstallation('a.b.c')).toBe(
       'https://github.com/apps/six-by-seven/installations/new?state=a.b.c',
     );
+  });
+
+  it('commence par l’autorisation de la personne (comme Claude)', async () => {
+    reglages();
+    const { adresseAutorisation } = await import('@/lib/github-app');
+    expect(adresseAutorisation('a.b.c')).toBe(
+      'https://github.com/login/oauth/authorize?client_id=Iv23test&state=a.b.c',
+    );
+  });
+
+  function github(installations: { id: number; account: { login: string } }[]) {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        const corps = url.endsWith('/access_token')
+          ? { access_token: 'jeton-personne' }
+          : url.endsWith('/user')
+            ? { login: 'percy' }
+            : { installations };
+        return new Response(JSON.stringify(corps), { status: 200 });
+      }),
+    );
+  }
+
+  it('relie l’installation déjà faite, sinon demande d’installer', async () => {
+    reglages();
+    const { installationDe } = await import('@/lib/github-app');
+    github([
+      { id: 11, account: { login: 'une-organisation' } },
+      { id: 22, account: { login: 'percy' } },
+    ]);
+    expect(await installationDe('code-de-test')).toEqual({ login: 'percy', installation: 22 });
+    github([]);
+    expect(await installationDe('code-de-test')).toEqual({ login: 'percy', installation: null });
+  });
+
+  it('refuse une installation annoncée qui n’est pas à la personne', async () => {
+    reglages();
+    const { installationDe } = await import('@/lib/github-app');
+    github([{ id: 22, account: { login: 'percy' } }]);
+    await expect(installationDe('code-de-test', 99)).rejects.toThrow(/n’appartient pas/);
+    expect(await installationDe('code-de-test', 22)).toEqual({ login: 'percy', installation: 22 });
   });
 });

@@ -622,8 +622,14 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     // Plus il y a de lignes, plus les coins se resserrent : la pilule devient peu à peu un carré arrondi.
     const lignes = Math.max(1, Math.round((Math.min(hauteur, 200) - 16) / 22));
     setRayon(Math.max(14, 26 - (lignes - 1) * 3));
+    // Plus d'une ligne : seuil tiré de la hauteur de ligne et des marges réelles du champ (sur téléphone, une seule
+    // ligne dépasse déjà 48 px). Champ vide : jamais multiligne, sinon la barre bascule sans fin.
+    const style = getComputedStyle(el);
+    const ligne = parseFloat(style.lineHeight) || 22;
+    const marges = (parseFloat(style.paddingTop) || 0) + (parseFloat(style.paddingBottom) || 0);
+    const plusieursLignes = saisie.length > 0 && hauteur > marges + ligne * 1.5;
     setMultiligne((avant) => {
-      if (!avant && hauteur > 48) {
+      if (!avant && plusieursLignes) {
         longueurMulti.current = saisie.length;
         return true;
       }
