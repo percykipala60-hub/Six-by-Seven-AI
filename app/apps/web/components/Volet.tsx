@@ -735,6 +735,11 @@ export function Volet({
   }, [url, rechargement, besoinVerif]);
   // Application de bureau (apps/bureau) : un vrai navigateur natif prend la place de la page, pour tous les sites.
   const [natif] = useState(() => Boolean(pontBureau()));
+  // La discussion est annoncée au navigateur dès que le volet s'affiche (même sans page ouverte) : la barre
+  // d'onglets ne montre jamais ceux d'une autre discussion.
+  useEffect(() => {
+    if (natif) void pontBureau()?.navigateur.contexte?.(contexte);
+  }, [natif, contexte]);
   const complet = !natif && Boolean(url) && !indispo && (!cadre || bloque);
   const pilote = natif || complet;
   const completIndisponible = (raison: string) => {

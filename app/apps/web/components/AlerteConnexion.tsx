@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Icon } from './Icon';
 import { Logo } from './Logo';
 
 /**
@@ -70,30 +69,22 @@ export function AlerteConnexion() {
             ? 'L’appareil qui vient de se connecter sera déconnecté immédiatement et ne pourra plus accéder à votre compte.'
             : 'Vous confirmez que cette connexion vient bien de vous.';
 
-  const ton =
-    etat === 'bloque'
-      ? 'danger'
-      : etat === 'confirme'
-        ? 'ok'
-        : etat === 'erreur'
-          ? 'neutre'
-          : 'alerte';
-  const icone = etat === 'confirme' ? 'check' : etat === 'bloque' ? 'lock' : 'alert';
-
   return (
     <main className="screen auth-screen alerte-ecran">
-      <div className="alerte-carte">
-        <div className="alerte-marque">
-          <Logo label="Six" small />
-          <span>Sécurité du compte</span>
-        </div>
-        <span className={`alerte-pastille ${ton}`} aria-hidden="true">
-          <Icon name={icone} size={30} stroke={2} />
-        </span>
+      <section className="alerte-page">
+        <Logo label="Six" small />
         <h1 className="alerte-titre">{titre}</h1>
         <p className="alerte-texte">{texte}</p>
         {(etat === 'choix' || etat === 'envoi') && jeton && (
           <div className="alerte-boutons">
+            <button
+              type="button"
+              className="alerte-btn secondaire"
+              disabled={etat === 'envoi'}
+              onClick={() => setReponse(reponse === 'non' ? 'oui' : 'non')}
+            >
+              {reponse === 'non' ? 'C’était moi' : 'Ce n’était pas moi'}
+            </button>
             <button
               type="button"
               className={`alerte-btn ${reponse === 'non' ? 'danger' : 'principal'}`}
@@ -104,25 +95,16 @@ export function AlerteConnexion() {
                 ? 'Un instant…'
                 : reponse === 'non'
                   ? 'Bloquer l’appareil'
-                  : 'Oui, c’était moi'}
-            </button>
-            <button
-              type="button"
-              className="alerte-btn secondaire"
-              disabled={etat === 'envoi'}
-              onClick={() => setReponse(reponse === 'non' ? 'oui' : 'non')}
-            >
-              {reponse === 'non' ? 'C’était moi' : 'Ce n’était pas moi'}
+                  : 'Confirmer'}
             </button>
           </div>
         )}
         {!jeton && etat === 'choix' && (
-          <div className="auth-alert-err" role="alert">
-            <Icon name="alert" size={18} />
-            <span>Lien incomplet. Utilisez le bouton de l’e-mail reçu.</span>
-          </div>
+          <p className="alerte-texte" role="alert">
+            Lien incomplet. Utilisez le bouton de l’e-mail reçu.
+          </p>
         )}
-      </div>
+      </section>
     </main>
   );
 }
