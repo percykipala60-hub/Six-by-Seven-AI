@@ -242,6 +242,14 @@ export async function envoyerParResend(
     }),
     signal: AbortSignal.timeout(10_000),
   });
+  if (!r.ok) {
+    // Raison du refus dans le journal du serveur (domaine non vérifié, clé invalide…), sans clé ni adresse e-mail.
+    const d = (await r.json().catch(() => ({}))) as { name?: string; message?: string };
+    const raison = `${d.name ?? ''} ${d.message ?? ''}`
+      .replace(/[^\s@]+@[^\s@]+/g, '[e-mail]')
+      .slice(0, 200);
+    console.warn(`[e-mail] Resend a refusé l'envoi (${r.status}) : ${raison.trim()}`);
+  }
   return r.ok;
 }
 
