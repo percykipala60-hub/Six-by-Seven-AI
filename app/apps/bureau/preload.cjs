@@ -28,6 +28,10 @@ contextBridge.exposeInMainWorld('sixBureau', {
     ouvrir: (url) => ipcRenderer.invoke('six:connexion', url),
     premierPlan: () => ipcRenderer.invoke('six:premier-plan'),
   },
+  /** Contrôle de l'ordinateur par l'agent (accords demandés à la personne par l'app de bureau). */
+  ordinateur: {
+    piloter: (commande) => ipcRenderer.invoke('six:ordinateur', commande),
+  },
   navigateur: {
     /** Discussion affichée (« chat:… » ou « cosinus:… ») : ses propres onglets et son propre profil. */
     contexte: (contexte) => piloter({ action: 'contexte', contexte }),

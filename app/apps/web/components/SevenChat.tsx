@@ -58,6 +58,7 @@ import {
 } from './Volet';
 import { memoireActive } from '@/lib/memoire';
 import { entetesCompte } from '@/lib/premium-client';
+import { executerOrdinateur, pontOrdinateur } from '@/lib/ordinateur-client';
 import { CHAT_MAX_BYTES, CHAT_MAX_CONTENT, CHAT_MAX_MESSAGES } from '@/lib/api-schemas';
 import { detecterOrdre } from '@/lib/seven-ordres';
 import type { ChatMessage, ChatResult, PieceAffichee } from '@/lib/types';
@@ -506,6 +507,8 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
           if (!ligne.trim()) continue;
           const o = JSON.parse(ligne) as {
             type: string;
+            id?: string;
+            args?: Record<string, unknown>;
             texte?: string;
             reponse?: string;
             etapes?: string[];
@@ -517,6 +520,10 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
             plan?: { texte: string; faite: boolean }[];
           };
           if (o.type === 'plan' && Array.isArray(o.taches)) setPlanEnCours(o.taches);
+          // L'agent demande une action sur l'ordinateur : l'app de bureau l'exécute (après l'accord de la personne)
+          // et le résultat repart vers l'agent, qui attend.
+          if (o.type === 'ordinateur' && typeof o.id === 'string')
+            void executerOrdinateur(o.id, o.args);
           if (o.type === 'navigateur' && o.session && o.url) {
             sessionStorage.setItem(cleAgent(), JSON.stringify({ session: o.session, url: o.url }));
             // Seule l'app de bureau montre ce que Six fait dans le navigateur.
@@ -893,10 +900,13 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       // Cosinus : le serveur donne à Six ses consignes d'agent de travail.
       // Chat de l'app de bureau : le navigateur interne existe, Six peut le piloter pour une demande web.
       const navigateurChat = !sixtouch && estBureau() && !appelActif.current;
+      // App de bureau : Six peut aussi piloter l'ordinateur (accords demandés par l'app, application par application).
+      const ordinateurDispo = estBureau() && Boolean(pontOrdinateur()) && !appelActif.current;
       const corps =
         images.length || sixtouch || projetId || navigateurChat || appelActif.current
           ? JSON.stringify({
               ...(JSON.parse(texteSeul) as object),
+              ...(ordinateurDispo ? { ordinateur: true } : {}),
               ...(!sixtouch && projetId ? { projetId } : {}),
               ...(!sixtouch && appelActif.current ? { vocal: true } : {}),
               ...(navigateurChat

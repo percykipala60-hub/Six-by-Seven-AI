@@ -21,6 +21,7 @@ const { existsSync } = require('node:fs');
 const { spawn } = require('node:child_process');
 const { app, BrowserWindow, WebContentsView, ipcMain, shell, Menu, dialog } = require('electron');
 const { creerNavigateur } = require('./navigateur.cjs');
+const { creerOrdinateur } = require('./ordinateur.cjs');
 
 /** Hauteur de la barre du haut de Six (barre.html), au-dessus de l'app. */
 const BARRE = 40;
@@ -49,7 +50,10 @@ async function demarrerMoteurVocal() {
     moteurVocal = null;
   });
 }
-app.on('before-quit', () => moteurVocal?.kill());
+app.on('before-quit', () => {
+  moteurVocal?.kill();
+  ordinateur.arreter();
+});
 
 /** @type {BrowserWindow | null} */
 let fenetre = null;
@@ -90,6 +94,9 @@ const navigateur = creerNavigateur({
   barre: BARRE,
   depuisApp,
 });
+
+// Contrôle de l'ordinateur par l'agent de Six (accords, interdits et arrêt d'urgence : ordinateur.cjs).
+const ordinateur = creerOrdinateur({ fenetre: () => fenetre });
 
 // ---------- Connexion par le navigateur de l'ordinateur ----------
 
@@ -460,6 +467,15 @@ else {
       void etatBarre();
     });
     ipcMain.handle('six:connexion', connexion);
+    // Agent de Six : contrôle de l'ordinateur. Réponse { ok, resultat } ou { ok: false, erreur } (lisible par l'agent).
+    ipcMain.handle('six:ordinateur', async (evenement, c) => {
+      if (!depuisApp(evenement)) return { ok: false, erreur: 'Origine refusée.' };
+      try {
+        return { ok: true, resultat: await ordinateur.piloter(c) };
+      } catch (e) {
+        return { ok: false, erreur: e instanceof Error ? e.message : String(e) };
+      }
+    });
     // Volet Fichiers : montrer un fichier dans l'Explorateur (seulement un fichier existant, chemin absolu ; rien
     // n'est ouvert ni exécuté).
     ipcMain.handle('six:montrer-fichier', (evenement, chemin) => {

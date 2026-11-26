@@ -1,4 +1,5 @@
 import { demandeNavigation } from '@/lib/agent/demande-navigation';
+import { demandeOrdinateur, demanderAuClient } from '@/lib/agent/pont-ordinateur';
 import { NextResponse } from 'next/server';
 import { fail, guard, providerFail, readJson } from '@/lib/http';
 import { CHAT_MAX_BYTES, CHAT_MAX_BYTES_AVEC_IMAGE, ChatBodySchema } from '@/lib/api-schemas';
@@ -83,13 +84,26 @@ export async function POST(req: Request) {
   // Chat de l'app de bureau : une demande qui passe par le web (ouvrir un site, chercher, cliquer…) est confiée à
   // l'agent avec le navigateur interne, sans espace de travail ni fichiers.
   const derniereQuestion = parsed.data.messages.at(-1)?.content ?? '';
+  // App de bureau, compte connecté : Six peut piloter l'ordinateur (le résultat de chaque action revient du même
+  // compte, voir lib/agent/pont-ordinateur.ts).
+  const compte = a.utilisateur?.id;
+  const ordinateurPermis =
+    parsed.data.ordinateur === true && Boolean(compte) && !process.env.VERCEL;
+  const ordinateurPour = (envoyer: (o: unknown) => void) =>
+    ordinateurPermis && compte
+      ? {
+          demander: (args: Record<string, unknown>) =>
+            demanderAuClient(compte, envoyer, args, req.signal),
+        }
+      : undefined;
   if (
     parsed.data.mode !== 'sixtouch' &&
     parsed.data.navigateur === true &&
     parsed.data.vocal !== true &&
     !process.env.VERCEL &&
     agentDisponible() &&
-    demandeNavigation(derniereQuestion)
+    (demandeNavigation(derniereQuestion) ||
+      (ordinateurPermis && demandeOrdinateur(derniereQuestion)))
   ) {
     const messages = parsed.data.messages;
     const encodeur = new TextEncoder();
@@ -104,6 +118,7 @@ export async function POST(req: Request) {
             premium: a.illimite,
             ctx: {
               espace: '', // le Chat n'a pas d'espace de travail
+              ordinateur: ordinateurPour(envoyer),
               navigateur: {
                 session: parsed.data.navigateurSession,
                 surEtat: (etat: { session: string; url: string }) =>
@@ -193,6 +208,7 @@ export async function POST(req: Request) {
             premium: a.illimite,
             ctx: {
               espace,
+              ordinateur: cloud ? undefined : ordinateurPour(envoyer),
               horsDossier: { toutLePc: false, chemins: lecture },
               corpus: !cloud && Boolean(espace) && (await corpusDisponible()),
               ...(espace && !cloud && !process.env.VERCEL

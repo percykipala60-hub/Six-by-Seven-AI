@@ -70,6 +70,8 @@ export const ChatBodySchema = z.object({
   vocal: z.boolean().optional(),
   /** Chat de l'app de bureau : le navigateur interne est là, Six peut le piloter pour une demande web. */
   navigateur: z.boolean().optional(),
+  /** App de bureau : Six peut piloter l'ordinateur (l'app demande l'accord de la personne pour chaque application). */
+  ordinateur: z.boolean().optional(),
   skill: z
     .enum(['auto', 'documents', 'code', 'web', 'presentations', 'donnees', 'images'])
     .optional(),
