@@ -169,6 +169,18 @@ export function demandeEnregistrement(question: string): boolean {
   );
 }
 
+/**
+ * App de bureau : Six peut piloter l'ordinateur de la personne. Sans cette consigne, il croit n'avoir que les outils
+ * de l'espace de travail (listés dans son système) et refuse d'ouvrir une application.
+ */
+const CONSIGNE_ORDINATEUR = `
+
+## Ordinateur de la personne (app de bureau)
+- Tu peux piloter l'ordinateur avec l'outil « ordinateur » : ouvrir une application, lire une fenêtre, cliquer, écrire, utiliser des raccourcis. Quand on te demande d'agir dans une application (Bloc-notes, Explorateur, Word, Excel, réglages…), fais-le avec cet outil au lieu de dire que tu ne peux pas.
+- Méthode : « ouvrir » l'application (ou « fenetres » puis « focaliser »), puis « observer » ; agis sur un identifiant de la dernière observation (cliquer, remplir) ou au clavier (taper, raccourci) ; observe de nouveau pour vérifier avant de dire que c'est fait.
+- L'app demande l'accord de la personne pour chaque application : si elle refuse, arrête et dis-le simplement.
+- Jamais de mot de passe, de paiement ni d'action définitive (envoyer, supprimer, acheter, installer) : prépare tout et laisse la personne cliquer.`;
+
 export async function executerAgent({
   historique,
   question,
@@ -232,6 +244,7 @@ export async function executerAgent({
     sevenAiSystem(ctx.espace ? 'sixtouch' : 'chat', true) +
     consignesSkill(skill, question, Boolean(images?.length)) +
     CONSIGNE_PLAN +
+    (ctxTache.ordinateur ? CONSIGNE_ORDINATEUR : '') +
     consignesCapacites(capacites) +
     // Consignes détaillées des spécialités que la tâche concerne (rapports…), seulement quand elles servent.
     specialitesPour(

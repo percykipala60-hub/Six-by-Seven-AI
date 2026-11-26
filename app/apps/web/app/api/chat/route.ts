@@ -89,6 +89,8 @@ export async function POST(req: Request) {
   const compte = a.utilisateur?.id;
   const ordinateurPermis =
     parsed.data.ordinateur === true && Boolean(compte) && !process.env.VERCEL;
+  if (process.env.NODE_ENV !== 'production' && parsed.data.ordinateur)
+    console.info(`[ordinateur] demandé par l'app de bureau ; compte connecté : ${Boolean(compte)}`);
   const ordinateurPour = (envoyer: (o: unknown) => void) =>
     ordinateurPermis && compte
       ? {

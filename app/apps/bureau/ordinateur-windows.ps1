@@ -18,6 +18,18 @@ public static class SixUtilisateur32 {
   [DllImport("user32.dll")] public static extern bool SetCursorPos(int x, int y);
   [DllImport("user32.dll")] public static extern void mouse_event(uint f, uint x, uint y, uint d, UIntPtr e);
   [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
+  [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr h);
+  [DllImport("user32.dll")] public static extern bool BringWindowToTop(IntPtr h);
+  [DllImport("user32.dll")] public static extern void keybd_event(byte vk, byte scan, uint flags, UIntPtr extra);
+  // Windows refuse qu'une application en arrière-plan passe une fenêtre devant : une touche Alt « fantôme » lève ce
+  // verrou (technique courante), puis la fenêtre est restaurée et mise au premier plan.
+  public static bool Devant(IntPtr h) {
+    if (IsIconic(h)) ShowWindow(h, 9);
+    keybd_event(0x12, 0, 0, UIntPtr.Zero);
+    keybd_event(0x12, 0, 2, UIntPtr.Zero);
+    BringWindowToTop(h);
+    return SetForegroundWindow(h);
+  }
 }
 '@
 
@@ -130,17 +142,30 @@ function Cliquer($id) {
 function Remplir($id, [string]$texte) {
   $e = Repere $id
   if ($e.Current.IsPassword) { throw 'Champ de mot de passe : laisse la personne le remplir.' }
-  $p = $null
-  if ($e.TryGetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern, [ref]$p) -and -not $p.Current.IsReadOnly) {
-    $p.SetValue($texte); return @{ fait = 'rempli' }
-  }
-  $e.SetFocus()
-  [System.Windows.Forms.SendKeys]::SendWait((Echapper-Touches $texte))
-  return @{ fait = 'tapé' }
+  # Devant la personne : la fenêtre passe au premier plan, le champ est vidé, puis le texte s'écrit sous ses yeux.
+  if ($script:fenetre) { [SixUtilisateur32]::Devant([IntPtr][int64]$script:fenetre.Current.NativeWindowHandle) | Out-Null }
+  try { $e.SetFocus() } catch { Clic-Souris $e }
+  Start-Sleep -Milliseconds 150
+  [System.Windows.Forms.SendKeys]::SendWait('^a')
+  [System.Windows.Forms.SendKeys]::SendWait('{DEL}')
+  Taper-Visible $texte
+  return @{ fait = 'rempli' }
 }
 
 # SendKeys donne un sens à + ^ % ~ ( ) { } [ ] : on les tape tels quels.
 function Echapper-Touches([string]$t) { return ($t -replace '([+^%~(){}\[\]])', '{$1}') }
+
+# Écrit devant la personne, par petits morceaux (on voit le texte s'écrire) ; un long texte va plus vite.
+function Taper-Visible([string]$texte) {
+  $morceau = if ($texte.Length -gt 600) { 12 } elseif ($texte.Length -gt 200) { 6 } else { 3 }
+  $texte = $texte -replace "`r`n", "`n"
+  for ($i = 0; $i -lt $texte.Length; $i += $morceau) {
+    $part = $texte.Substring($i, [Math]::Min($morceau, $texte.Length - $i))
+    $echappe = (Echapper-Touches $part) -replace "`n", '{ENTER}'
+    [System.Windows.Forms.SendKeys]::SendWait($echappe)
+    Start-Sleep -Milliseconds 18
+  }
+}
 
 function Raccourci([string]$touches) {
   $map = @{ 'ctrl' = '^'; 'control' = '^'; 'maj' = '+'; 'shift' = '+'; 'alt' = '%' }
@@ -158,10 +183,26 @@ function Raccourci([string]$touches) {
 }
 
 function Focaliser($handle) {
-  $h = [IntPtr][int64]$handle
-  [SixUtilisateur32]::ShowWindow($h, 9) | Out-Null   # restaurer si réduite
-  [SixUtilisateur32]::SetForegroundWindow($h) | Out-Null
-  return @{ fait = 'fenêtre au premier plan' }
+  $ok = [SixUtilisateur32]::Devant([IntPtr][int64]$handle)
+  Start-Sleep -Milliseconds 200
+  return @{ fait = 'fenêtre au premier plan'; devant = $ok }
+}
+
+# Ouvre une application et attend sa nouvelle fenêtre (jusqu'à 10 s), puis la met devant la personne.
+function Ouvrir([string]$chemin) {
+  $avant = @{}
+  foreach ($f in (Fenetres).fenetres) { $avant[[string]$f.fenetre] = $true }
+  Start-Process -FilePath $chemin
+  for ($i = 0; $i -lt 40; $i++) {
+    Start-Sleep -Milliseconds 250
+    $nouvelle = (Fenetres).fenetres | Where-Object { -not $avant.ContainsKey([string]$_.fenetre) } | Select-Object -First 1
+    if ($nouvelle) {
+      [SixUtilisateur32]::Devant([IntPtr][int64]$nouvelle.fenetre) | Out-Null
+      Start-Sleep -Milliseconds 300
+      return @{ fait = 'ouvert'; fenetre = $nouvelle.fenetre; app = $nouvelle.app; titre = $nouvelle.titre; chemin = $nouvelle.chemin }
+    }
+  }
+  return @{ fait = 'lancé (fenêtre pas encore visible)' }
 }
 
 function Premier-Plan {
@@ -187,11 +228,11 @@ while ($true) {
       'cible' { $r = Cible-Repere $c.element }
       'cliquer' { $r = Cliquer $c.element }
       'remplir' { $r = Remplir $c.element $c.texte }
-      'taper' { [System.Windows.Forms.SendKeys]::SendWait((Echapper-Touches ([string]$c.texte))); $r = @{ fait = 'tapé' } }
+      'taper' { Taper-Visible ([string]$c.texte); $r = @{ fait = 'tapé' } }
       'raccourci' { $r = Raccourci ([string]$c.touches) }
       'focaliser' { $r = Focaliser $c.fenetre }
       'premier_plan' { $r = Premier-Plan }
-      'ouvrir' { Start-Process -FilePath ([string]$c.chemin); $r = @{ fait = 'lancé' } }
+      'ouvrir' { $r = Ouvrir ([string]$c.chemin) }
       default { throw "Action inconnue : $($c.action)" }
     }
     $reponse = @{ id = $c.id; ok = $true; resultat = $r }

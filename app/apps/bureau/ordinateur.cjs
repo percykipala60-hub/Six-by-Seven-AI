@@ -260,6 +260,13 @@ function creerOrdinateur(ctx) {
   }
 
   let derniere = null; // application de la dernière observation (les repères lui appartiennent)
+  let fenetreActive = null; // fenêtre où Six travaille : remise devant la personne avant chaque action
+
+  /** Ramène la fenêtre de travail au premier plan (la personne voit ce que fait Six, même si elle a réduit Six). */
+  async function devant() {
+    if (fenetreActive)
+      await envoyer({ action: 'focaliser', fenetre: fenetreActive }).catch(() => {});
+  }
 
   async function capture() {
     const sources = await desktopCapturer.getSources({
@@ -307,11 +314,15 @@ function creerOrdinateur(ctx) {
         const f = await appDe(c.fenetre);
         await exigerApplication(f.app, f.chemin);
         await envoyer({ action: 'focaliser', fenetre: f.fenetre });
+        fenetreActive = f.fenetre;
         return { fait: 'fenêtre au premier plan', app: f.app, titre: f.titre };
       }
       case 'observer': {
-        const f = await appDe(c.fenetre);
+        if (!c.fenetre) await devant();
+        const f = await appDe(c.fenetre ?? fenetreActive ?? undefined);
         await exigerApplication(f.app, f.chemin);
+        fenetreActive = f.fenetre;
+        await devant();
         const r = await envoyer({ action: 'observer', fenetre: f.fenetre });
         derniere = String(r.app || '').toLowerCase();
         // Les valeurs des champs de mot de passe ne sont jamais lues ; on les signale seulement.
@@ -325,6 +336,7 @@ function creerOrdinateur(ctx) {
       }
       case 'cliquer':
       case 'remplir': {
+        await devant();
         const f = await appDe(undefined);
         await exigerApplication(f.app, f.chemin);
         if (!derniere || derniere !== String(f.app).toLowerCase())
@@ -347,6 +359,7 @@ function creerOrdinateur(ctx) {
         );
       }
       case 'taper': {
+        await devant();
         const f = await appDe(undefined);
         await exigerApplication(f.app, f.chemin);
         return envoyer({ action: 'taper', texte: String(c.texte ?? '').slice(0, 2000) });
@@ -354,6 +367,7 @@ function creerOrdinateur(ctx) {
       case 'raccourci': {
         const touches = String(c.touches || '').trim();
         if (!touches || RACCOURCIS_INTERDITS.test(touches)) throw new Error('Raccourci refusé.');
+        await devant();
         const f = await appDe(undefined);
         await exigerApplication(f.app, f.chemin);
         return envoyer({ action: 'raccourci', touches });
@@ -368,8 +382,15 @@ function creerOrdinateur(ctx) {
         if (!trouve) throw new Error(`Application « ${c.app} » introuvable dans le menu Démarrer.`);
         const [nom, chemin] = trouve;
         await exigerApplication(nom, '');
-        await envoyer({ action: 'ouvrir', chemin });
-        return { fait: 'lancé', app: nom };
+        const r = await envoyer({ action: 'ouvrir', chemin });
+        // La nouvelle fenêtre est devant la personne ; elle devient la fenêtre de travail (même accord pour son
+        // processus : la personne vient d'autoriser cette application).
+        if (r.fenetre) {
+          fenetreActive = r.fenetre;
+          if (r.app && !INTERDITES.has(String(r.app).toLowerCase()) && !estSixLuiMeme(r.chemin))
+            autorisees.add(String(r.app).toLowerCase());
+        }
+        return { fait: r.fait, app: nom, fenetre: r.fenetre, titre: r.titre };
       }
       default:
         throw new Error('Action inconnue.');
