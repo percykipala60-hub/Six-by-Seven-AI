@@ -3706,7 +3706,7 @@ a.avatar::after {
   color: var(--brand);
 }
 
-/* Carte d'authentification centrée. */
+/* Formulaire de connexion centré, sans cadre. */
 .auth-card {
   display: flex;
   flex-direction: column;
@@ -3714,11 +3714,7 @@ a.avatar::after {
   width: 100%;
   max-width: 780px;
   margin: 6px auto 0;
-  padding: 32px 40px;
-  border: 1px solid var(--line);
-  border-radius: 22px;
-  background: var(--card);
-  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.1);
+  padding: 16px 0;
 }
 .auth-hero {
   display: flex;
@@ -4444,7 +4440,6 @@ body {
 .suggest-card,
 .profile-card,
 .group-list,
-.auth-card,
 .auth-social-btn:not(.solid) {
   background: var(--verre);
   border-color: var(--verre-trait);
@@ -9876,9 +9871,6 @@ div.seven-outils-ligne:not(.seven-outils-flottants) {
   font-size: 0.78rem;
 }
 @media (max-width: 420px) {
-  .auth-card {
-    padding: 20px 16px;
-  }
   .qr-connexion {
     flex-direction: column;
     text-align: left;
