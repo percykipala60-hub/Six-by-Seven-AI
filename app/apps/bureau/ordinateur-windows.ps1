@@ -19,6 +19,7 @@ public static class SixUtilisateur32 {
   [DllImport("user32.dll")] public static extern void mouse_event(uint f, uint x, uint y, uint d, UIntPtr e);
   [DllImport("user32.dll")] public static extern uint GetWindowThreadProcessId(IntPtr h, out uint pid);
   [DllImport("user32.dll")] public static extern bool IsIconic(IntPtr h);
+  [DllImport("user32.dll")] public static extern bool PostMessage(IntPtr h, uint msg, IntPtr w, IntPtr l);
   [DllImport("user32.dll")] public static extern bool BringWindowToTop(IntPtr h);
   [DllImport("user32.dll")] public static extern void keybd_event(byte vk, byte scan, uint flags, UIntPtr extra);
   // Windows refuse qu'une application en arrière-plan passe une fenêtre devant : une touche Alt « fantôme » lève ce
@@ -188,11 +189,23 @@ function Focaliser($handle) {
   return @{ fait = 'fenêtre au premier plan'; devant = $ok }
 }
 
-# Ouvre une application et attend sa nouvelle fenêtre (jusqu'à 10 s), puis la met devant la personne.
-function Ouvrir([string]$chemin) {
+# Applications du menu Démarrer, classiques ET modernes (Bloc-notes, Calculatrice, Word…), avec leur identifiant.
+function Applications {
+  return @{ applications = @(Get-StartApps | ForEach-Object { @{ nom = $_.Name; id = $_.AppID } }) }
+}
+
+# Ferme normalement une fenêtre (comme la croix) : l'application demande d'enregistrer si besoin.
+function Fermer($handle) {
+  [SixUtilisateur32]::PostMessage([IntPtr][int64]$handle, 0x0010, [IntPtr]::Zero, [IntPtr]::Zero) | Out-Null
+  return @{ fait = 'fermeture demandée' }
+}
+
+# Ouvre une application (par son identifiant du menu Démarrer) et attend sa nouvelle fenêtre (jusqu'à 10 s), puis la
+# met devant la personne.
+function Ouvrir([string]$id) {
   $avant = @{}
   foreach ($f in (Fenetres).fenetres) { $avant[[string]$f.fenetre] = $true }
-  Start-Process -FilePath $chemin
+  Start-Process -FilePath 'explorer.exe' -ArgumentList "shell:AppsFolder\$id"
   for ($i = 0; $i -lt 40; $i++) {
     Start-Sleep -Milliseconds 250
     $nouvelle = (Fenetres).fenetres | Where-Object { -not $avant.ContainsKey([string]$_.fenetre) } | Select-Object -First 1
@@ -232,7 +245,9 @@ while ($true) {
       'raccourci' { $r = Raccourci ([string]$c.touches) }
       'focaliser' { $r = Focaliser $c.fenetre }
       'premier_plan' { $r = Premier-Plan }
-      'ouvrir' { $r = Ouvrir ([string]$c.chemin) }
+      'ouvrir' { $r = Ouvrir ([string]$c.appid) }
+      'applications' { $r = Applications }
+      'fermer' { $r = Fermer $c.fenetre }
       default { throw "Action inconnue : $($c.action)" }
     }
     $reponse = @{ id = $c.id; ok = $true; resultat = $r }

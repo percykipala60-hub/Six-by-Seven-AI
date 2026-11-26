@@ -13,7 +13,6 @@
  * Seule la page de l'app (même origine) peut envoyer des commandes (vérifié par depuisApp dans main.cjs).
  */
 const path = require('node:path');
-const fs = require('node:fs');
 const { spawn } = require('node:child_process');
 const { dialog, desktopCapturer, globalShortcut } = require('electron');
 
@@ -62,47 +61,67 @@ const ACTIONS = new Set([
   'focaliser',
   'ouvrir',
   'applications',
+  'fermer',
   'arreter',
   'etat',
 ]);
 const RACCOURCIS_INTERDITS = /^(ctrl\+alt\+(suppr|del)|alt\+f4\+?|win)/i;
 
-/** Raccourcis du menu Démarrer : nom affiché -> chemin du .lnk (pour « ouvrir » une application par son nom). */
-function raccourcisDemarrer() {
-  const dossiers = [
-    path.join(
-      process.env.ProgramData || 'C:\\ProgramData',
-      'Microsoft\\Windows\\Start Menu\\Programs',
-    ),
-    path.join(process.env.APPDATA || '', 'Microsoft\\Windows\\Start Menu\\Programs'),
-  ];
-  const trouves = new Map();
-  const parcourir = (d, profondeur) => {
-    if (profondeur > 3) return;
-    let entrees;
-    try {
-      entrees = fs.readdirSync(d, { withFileTypes: true });
-    } catch {
-      return;
-    }
-    for (const e of entrees) {
-      const p = path.join(d, e.name);
-      if (e.isDirectory()) parcourir(p, profondeur + 1);
-      else if (e.name.toLowerCase().endsWith('.lnk')) {
-        const nom = e.name.slice(0, -4);
-        if (!/uninstall|désinstaller|readme|help|aide de/i.test(nom)) trouves.set(nom, p);
-      }
-    }
-  };
-  for (const d of dossiers) parcourir(d, 0);
-  return trouves;
-}
 const sansAccents = (t) =>
   t
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[̀-ͯ]/g, '')
     .toLowerCase()
+    .replace(/[-_]+/g, ' ')
+    .replace(/\s+/g, ' ')
     .trim();
+// Noms courants -> nom affiché dans le menu Démarrer (Windows en français ou en anglais).
+const ALIAS = new Map([
+  ['bloc note', 'bloc notes'],
+  ['blocnote', 'bloc notes'],
+  ['blocnotes', 'bloc notes'],
+  ['notepad', 'bloc notes'],
+  ['calculator', 'calculatrice'],
+  ['calc', 'calculatrice'],
+  ['explorer', 'explorateur de fichiers'],
+  ['explorateur', 'explorateur de fichiers'],
+  ['file explorer', 'explorateur de fichiers'],
+  ['settings', 'parametres'],
+  ['reglages', 'parametres'],
+]);
+const echapperRegex = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/**
+ * Choisit l'application demandée dans le menu Démarrer : nom exact, puis début du nom, puis mot entier. Plusieurs
+ * candidates au même rang, ou aucune : erreur avec les noms possibles (Six ne devine jamais).
+ * @param {{ nom: string, id: string }[]} liste
+ */
+function trouverApplication(liste, demandeBrute) {
+  const d0 = sansAccents(String(demandeBrute || ''));
+  const d = ALIAS.get(d0) ?? d0;
+  if (!d) throw new Error('Nom d’application manquant.');
+  const motEntier = new RegExp(`(^| )${echapperRegex(d)}( |$)`);
+  const rang = (nom) => {
+    const n = sansAccents(nom);
+    if (n === d) return 3;
+    if (n.startsWith(`${d} `)) return 2;
+    return motEntier.test(n) ? 1 : 0;
+  };
+  const notes = liste.map((a) => ({ a, r: rang(a.nom) })).filter((x) => x.r > 0);
+  const meilleur = Math.max(0, ...notes.map((x) => x.r));
+  const choix = notes.filter((x) => x.r === meilleur);
+  if (choix.length === 1) return choix[0].a;
+  if (!choix.length) {
+    const debut = d.split(' ')[0];
+    const proches = liste.filter((a) => sansAccents(a.nom).includes(debut)).slice(0, 8);
+    throw new Error(
+      `Application « ${demandeBrute} » introuvable.${proches.length ? ` Noms proches : ${proches.map((a) => a.nom).join(', ')}.` : ' Utilise « applications » pour voir la liste.'}`,
+    );
+  }
+  throw new Error(
+    `Plusieurs applications correspondent à « ${demandeBrute} » : ${choix.map((x) => x.a.nom).join(', ')}. Précise laquelle.`,
+  );
+}
 
 /**
  * @param {{ fenetre: () => import('electron').BrowserWindow | null }} ctx
@@ -261,6 +280,16 @@ function creerOrdinateur(ctx) {
 
   let derniere = null; // application de la dernière observation (les repères lui appartiennent)
   let fenetreActive = null; // fenêtre où Six travaille : remise devant la personne avant chaque action
+  const ouvertesParSix = new Set(); // seules fenêtres que Six peut fermer (ouvertes par lui pendant ce lancement)
+  let applicationsCache = null;
+  async function applications() {
+    if (!applicationsCache || Date.now() - applicationsCache.quand > 5 * 60_000)
+      applicationsCache = {
+        quand: Date.now(),
+        liste: (await envoyer({ action: 'applications' })).applications,
+      };
+    return applicationsCache.liste;
+  }
 
   /** Ramène la fenêtre de travail au premier plan (la personne voit ce que fait Six, même si elle a réduit Six). */
   async function devant() {
@@ -296,7 +325,25 @@ function creerOrdinateur(ctx) {
     await exigerAccordGlobal();
     switch (c.action) {
       case 'applications':
-        return { applications: [...raccourcisDemarrer().keys()].sort().slice(0, 300) };
+        return {
+          applications: (await applications())
+            .map((a) => a.nom)
+            .sort()
+            .slice(0, 400),
+        };
+      case 'fermer': {
+        // Retour en arrière : seulement une fenêtre que Six a lui-même ouverte (fermeture normale, l'application
+        // propose d'enregistrer si besoin).
+        const cible = String(c.fenetre ?? fenetreActive ?? '');
+        if (!ouvertesParSix.has(cible))
+          throw new Error(
+            'Six ne ferme que les fenêtres qu’il a lui-même ouvertes : demande à la personne.',
+          );
+        await envoyer({ action: 'fermer', fenetre: cible });
+        ouvertesParSix.delete(cible);
+        if (fenetreActive === cible) fenetreActive = null;
+        return { fait: 'fermeture demandée (l’application peut proposer d’enregistrer)' };
+      }
       case 'fenetres': {
         const { fenetres } = await envoyer({ action: 'fenetres' });
         // Titres seulement pour les applications déjà autorisées : les autres ne montrent que leur nom.
@@ -373,24 +420,26 @@ function creerOrdinateur(ctx) {
         return envoyer({ action: 'raccourci', touches });
       }
       case 'ouvrir': {
-        const demande = sansAccents(String(c.app || ''));
-        if (!demande) throw new Error('Nom d’application manquant.');
-        const liste = [...raccourcisDemarrer()];
-        const trouve =
-          liste.find(([nom]) => sansAccents(nom) === demande) ??
-          liste.find(([nom]) => sansAccents(nom).includes(demande));
-        if (!trouve) throw new Error(`Application « ${c.app} » introuvable dans le menu Démarrer.`);
-        const [nom, chemin] = trouve;
+        const choix = trouverApplication(await applications(), c.app);
+        const nom = choix.nom;
         await exigerApplication(nom, '');
-        const r = await envoyer({ action: 'ouvrir', chemin });
+        const r = await envoyer({ action: 'ouvrir', appid: choix.id });
         // La nouvelle fenêtre est devant la personne ; elle devient la fenêtre de travail (même accord pour son
         // processus : la personne vient d'autoriser cette application).
         if (r.fenetre) {
-          fenetreActive = r.fenetre;
+          fenetreActive = String(r.fenetre);
+          ouvertesParSix.add(String(r.fenetre));
           if (r.app && !INTERDITES.has(String(r.app).toLowerCase()) && !estSixLuiMeme(r.chemin))
             autorisees.add(String(r.app).toLowerCase());
         }
-        return { fait: r.fait, app: nom, fenetre: r.fenetre, titre: r.titre };
+        // L'agent vérifie que c'est bien l'application demandée (sinon il ferme celle-ci et ouvre la bonne).
+        return {
+          fait: r.fait,
+          demande: String(c.app),
+          ouverte: nom,
+          fenetre: r.fenetre,
+          titre: r.titre,
+        };
       }
       default:
         throw new Error('Action inconnue.');
@@ -410,4 +459,4 @@ function creerOrdinateur(ctx) {
   };
 }
 
-module.exports = { creerOrdinateur, ENGAGEANT, INTERDITES };
+module.exports = { creerOrdinateur, trouverApplication, ENGAGEANT, INTERDITES };

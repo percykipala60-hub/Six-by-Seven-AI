@@ -179,8 +179,44 @@ const CONSIGNE_ORDINATEUR = `
 ## Ordinateur de la personne (app de bureau)
 - Tu peux piloter l'ordinateur avec l'outil « ordinateur » : ouvrir une application, lire une fenêtre, cliquer, écrire, utiliser des raccourcis. Quand on te demande d'agir dans une application (Bloc-notes, Explorateur, Word, Excel, réglages…), fais-le avec cet outil au lieu de dire que tu ne peux pas.
 - Méthode : « ouvrir » l'application (ou « fenetres » puis « focaliser »), puis « observer » ; agis sur un identifiant de la dernière observation (cliquer, remplir) ou au clavier (taper, raccourci) ; observe de nouveau pour vérifier avant de dire que c'est fait.
+- Après « ouvrir », regarde le champ « ouverte » du résultat : si ce n'est pas l'application demandée (par exemple Word au lieu du Bloc-notes), dis-le, « fermer » cette fenêtre et ouvre la bonne. Si l'application est introuvable, utilise les noms proches proposés ou demande à la personne.
+- Écoute la personne : si elle te corrige, reviens sur ton action au lieu de continuer.
+- Après chaque tâche du plan, appelle tache_faite.
 - L'app demande l'accord de la personne pour chaque application : si elle refuse, arrête et dis-le simplement.
 - Jamais de mot de passe, de paiement ni d'action définitive (envoyer, supprimer, acheter, installer) : prépare tout et laisse la personne cliquer.`;
+
+/**
+ * Numéros des tâches du plan réellement accomplies, d'après les actions faites et leurs résultats (une réponse courte,
+ * sans outil). Null si la réponse est illisible : le plan reste tel quel.
+ */
+async function tachesAccomplies(
+  plan: Tache[],
+  preuves: string[],
+  premium: boolean,
+  annulation?: AbortSignal,
+): Promise<Set<number> | null> {
+  const r = await appelAgent(
+    'Tu vérifies un plan de travail. Réponds seulement par les numéros des tâches réellement accomplies d’après les actions et leurs résultats, séparés par des virgules (par exemple « 1, 2 »), ou « aucune ». Une tâche dont le résultat montre un échec ou une erreur n’est pas accomplie.',
+    [
+      {
+        role: 'user',
+        content: `Plan :\n${plan.map((t, i) => `${i + 1}. ${t.texte}`).join('\n')}\n\nActions faites et résultats :\n${preuves
+          .map((p) => p.slice(0, 600))
+          .join('\n')
+          .slice(0, 6000)}`,
+      },
+    ],
+    [],
+    40,
+    premium,
+    annulation,
+  );
+  if (/aucune/i.test(r.texte)) return new Set();
+  const numeros = (r.texte.match(/\d+/g) ?? [])
+    .map(Number)
+    .filter((n) => n >= 1 && n <= plan.length);
+  return numeros.length ? new Set(numeros) : null;
+}
 
 export async function executerAgent({
   historique,
@@ -290,14 +326,23 @@ Respecte ce style dans les documents que tu rédiges (plan, numérotation, ton, 
   }
   const fichiers: string[] = [];
   const preuves: string[] = [];
-  const conclure = async (texte: string): Promise<ResultatAgent> => ({
-    reponse: sansMarkdown(
-      await verifierReponse({ question, reponse: texte, preuves, fichiers, premium }),
-    ),
-    etapes,
-    fichiers,
-    plan,
-  });
+  const conclure = async (texte: string): Promise<ResultatAgent> => {
+    // Plan pas entièrement coché alors que Six a agi : il relit son plan face à ce qu'il a réellement fait, et seules
+    // les tâches vraiment accomplies sont cochées (un petit modèle oublie souvent « tache_faite »).
+    if (plan.some((t) => !t.faite) && preuves.length) {
+      const faites = await tachesAccomplies(plan, preuves, premium, annulation).catch(() => null);
+      if (faites?.size)
+        majPlan(plan.map((t, i) => ({ ...t, faite: t.faite || faites.has(i + 1) })));
+    }
+    return {
+      reponse: sansMarkdown(
+        await verifierReponse({ question, reponse: texte, preuves, fichiers, premium }),
+      ),
+      etapes,
+      fichiers,
+      plan,
+    };
+  };
   let relance = false;
   let relanceAction = false;
   const utilisations = new Map<string, number>();
