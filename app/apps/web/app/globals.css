@@ -747,7 +747,7 @@ em {
 }
 /* Écran de connexion : plus de place pour le formulaire et le code QR. */
 .app:has(.auth-screen) {
-  max-width: 680px;
+  max-width: 880px;
 }
 .jeu {
   width: 100%;
@@ -3712,9 +3712,9 @@ a.avatar::after {
   flex-direction: column;
   gap: 14px;
   width: 100%;
-  max-width: 620px;
+  max-width: 780px;
   margin: 6px auto 0;
-  padding: 28px 32px;
+  padding: 32px 40px;
   border: 1px solid var(--line);
   border-radius: 22px;
   background: var(--card);
@@ -5698,7 +5698,7 @@ body {
   justify-content: center;
   min-height: 100dvh;
   width: 100%;
-  max-width: 680px;
+  max-width: 880px;
   margin: 0 auto;
   padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
 }
