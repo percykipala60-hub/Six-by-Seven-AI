@@ -255,31 +255,24 @@ export async function envoyerParResend(
 
 /* ---------- Alerte de connexion (envoyée par Six lui-même, pas par Supabase) ---------- */
 
-/** Deux boutons de même largeur, côte à côte (tableau : rendu identique dans les messageries). */
-function deuxBoutons(
+/** Deux réponses en simple texte, côte à côte et centrées (tableau : rendu identique dans les messageries). */
+function deuxLiens(
   gauche: { lien: string; texte: string },
-  droite: { lien: string; texte: string },
+  droite: { lien: string; texte: string; danger?: boolean },
 ): string {
-  const cellule = (b: { lien: string; texte: string }, danger: boolean) =>
-    `<td width="50%" style="padding:0 6px" align="center">` +
-    `<a href="${echapper(b.lien)}" style="display:block;padding:14px 10px;border-radius:12px;text-align:center;` +
-    (danger
-      ? 'background:#c62828;color:#ffffff;border:1px solid #c62828;'
-      : 'background:#ffffff;color:#0f1a3a;border:1px solid #c9cfdd;') +
-    `font-weight:700;font-size:15px;line-height:1.2;text-decoration:none">${b.texte}</a></td>`;
+  const lien = (l: { lien: string; texte: string; danger?: boolean }) =>
+    `<td style="padding:0 16px" align="center"><a href="${echapper(l.lien)}" style="font-size:16px;font-weight:700;` +
+    `text-decoration:none;color:${l.danger ? '#c62828' : '#0f1a3a'}">${l.texte}</a></td>`;
   return (
-    `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" ` +
-    `style="margin:4px 0 8px;border-collapse:separate;table-layout:fixed"><tr>` +
-    cellule(gauche, true) +
-    cellule(droite, false) +
-    `</tr></table>`
+    `<table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0" style="margin:8px auto 4px">` +
+    `<tr>${lien(gauche)}${lien(droite)}</tr></table>`
   );
 }
 
 /**
- * Alerte « Nouvelle connexion à votre compte » : bandeau d'alerte, méthode, appareil, date. Deux boutons de même
- * taille : « Ce n'était pas moi » (bloque cet appareil et coupe sa session) et « C'était moi ». Sans réponse, la
- * connexion reste valable.
+ * Alerte « Nouvelle connexion à votre compte » : bandeau d'alerte, appareil, méthode, date, puis « Était-ce vous ? »
+ * avec deux réponses en texte. « Non » mène à la page qui propose de bloquer l'appareil. Sans réponse, la connexion
+ * reste valable.
  */
 export function composerAlerteConnexion(a: {
   methode: string;
@@ -311,12 +304,10 @@ export function composerAlerteConnexion(a: {
         ligne('Méthode', a.methode) +
         ligne('Date', `${date} (heure de Kinshasa)`) +
         `</table>` +
-        p(
-          '<strong>Ce n’est pas vous ?</strong> Bloquez cet appareil : il sera déconnecté immédiatement. Si c’est bien vous, confirmez-le (ou ne faites rien).',
-        ) +
-        deuxBoutons(
-          { lien: `${a.lienReponse}&r=non`, texte: 'Ce n’était pas moi' },
-          { lien: `${a.lienReponse}&r=oui`, texte: 'C’était moi' },
+        `<p style="margin:0 0 6px;font-size:18px;font-weight:700;color:#0f1a3a;text-align:center">Était-ce vous ?</p>` +
+        deuxLiens(
+          { lien: `${a.lienReponse}&r=oui`, texte: 'Oui, c’était moi' },
+          { lien: `${a.lienReponse}&r=non`, texte: 'Non', danger: true },
         ),
       'Si vous n’êtes pas à l’origine de cette connexion, changez aussi votre mot de passe depuis l’écran de connexion (« Mot de passe oublié »). Ce lien ne fonctionne qu’une fois.',
     ),
