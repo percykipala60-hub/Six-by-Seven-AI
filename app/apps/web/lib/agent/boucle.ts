@@ -2,6 +2,7 @@ import { appelAgent } from '@/lib/ai';
 import { sevenAiSystem } from '@/lib/prompt';
 import { verifierReponse } from '@/lib/verification-reponse';
 import { consignesSkill, choisirSkill, type ChoixSkill } from '@/lib/skills-cosinus';
+import { demandeOrdinateur } from '@/lib/agent/pont-ordinateur';
 import type { ChatMessage } from '@/lib/types';
 import { ficheStyle } from './memoire-documents';
 import {
@@ -267,7 +268,18 @@ Respecte ce style dans les documents que tu rédiges (plan, numérotation, ton, 
       : '');
   const messages: MessageAgent[] = [
     ...historique.map((m) => ({ role: m.role, content: m.content }) as MessageAgent),
-    { role: 'user', content: question, ...(images?.length ? { images } : {}) },
+    {
+      role: 'user',
+      // Demande qui vise une application et ordinateur disponible : on le rappelle à Six dans la demande même (un
+      // petit modèle l'oublie sinon et répond qu'il n'a pas accès).
+      content:
+        ctxTache.ordinateur && demandeOrdinateur(question)
+          ? `${question}
+
+(Tu es dans l'app de bureau : fais-le avec l'outil « ordinateur » — ouvre l'application, observe la fenêtre, puis agis et vérifie.)`
+          : question,
+      ...(images?.length ? { images } : {}),
+    },
   ];
   const etapes: string[] = [];
   const methode = choisirSkill(skill, question, Boolean(images?.length));

@@ -50,6 +50,7 @@ describe('outil « ordinateur » de l’agent', () => {
   it('reconnaît les demandes qui visent l’ordinateur', () => {
     expect(demandeOrdinateur('Ouvre le Bloc-notes et écris une liste de courses')).toBe(true);
     expect(demandeOrdinateur('Dans Excel, fais la somme de la colonne B')).toBe(true);
+    expect(demandeOrdinateur('va dans le bloc note et écris une liste')).toBe(true);
     expect(demandeOrdinateur('Explique-moi la photosynthèse')).toBe(false);
   });
 });

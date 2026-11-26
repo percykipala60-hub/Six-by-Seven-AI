@@ -58,7 +58,7 @@ export function recevoirDuClient(compte: string, id: string, resultat: string): 
  * l'app de bureau confie alors la tâche à l'agent avec l'outil « ordinateur ».
  */
 const ORDINATEUR =
-  /\b(sur (mon|l['’]|cet) (ordinateur|ordi|pc)|application|appli|logiciel|fenêtre|bureau windows|menu démarrer|bloc-notes|notepad|explorateur|paint|calculatrice|excel|word|powerpoint|outlook|teams|vlc|spotify|réglages windows|paramètres windows|panneau de configuration|raccourci clavier|dans le dossier|ouvre le fichier)\b/i;
+  /\b(sur (mon|l['’]|cet) (ordinateur|ordi|pc)|application|appli|logiciel|fenêtre|bureau windows|menu démarrer|bloc[- ]?notes?|note ?pad|word ?pad|explorateur|paint|calculatrice|excel|word|powerpoint|outlook|teams|vlc|spotify|réglages windows|paramètres windows|panneau de configuration|raccourci clavier|dans le dossier|ouvre le fichier)\b/i;
 
 export function demandeOrdinateur(question: string): boolean {
   return ORDINATEUR.test(question);
