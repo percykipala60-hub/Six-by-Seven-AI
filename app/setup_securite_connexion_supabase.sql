@@ -194,3 +194,15 @@ revoke all on function public.six_appareils_lister(uuid) from public, anon, auth
 revoke all on function public.six_appareil_deconnecter(uuid, text) from public, anon, authenticated;
 grant execute on function public.six_appareils_lister(uuid) to service_role;
 grant execute on function public.six_appareil_deconnecter(uuid, text) to service_role;
+
+-- ---------- 4. GitHub (Réglages → Cloud → Connecter GitHub) ----------
+-- Lien entre un compte Six et l'installation de l'application GitHub « Six by Seven ». Seul le serveur de Six
+-- (clé service_role) lit et écrit ici ; aucun jeton GitHub n'est gardé (ils sont redemandés au besoin, 1 heure).
+create table if not exists public.six_github (
+  user_id uuid primary key references auth.users (id) on delete cascade,
+  installation_id bigint not null,
+  login text not null default '' check (char_length(login) <= 100),
+  relie_le timestamptz not null default now()
+);
+alter table public.six_github enable row level security;
+revoke all on table public.six_github from anon, authenticated;

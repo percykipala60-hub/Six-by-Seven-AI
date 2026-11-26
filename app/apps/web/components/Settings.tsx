@@ -57,6 +57,7 @@ import {
 } from './Liste';
 import { plateforme } from '@/lib/plateforme';
 import { AppareilsVue } from './Appareils';
+import { GithubCloud } from './GithubCloud';
 import { ReglagesSkills } from './ReglagesSkills';
 import { ReglagesVoix } from './ReglagesVoix';
 
@@ -957,6 +958,7 @@ export function Settings() {
       {vue === 'memoire' && (
         <>
           <CloudSix onPremium={() => ouvrir('premium')} />
+          <GithubCloud />
           <MemoireSix />
         </>
       )}
