@@ -1,11 +1,24 @@
 import { AsyncLocalStorage } from 'node:async_hooks';
 import type { UsageJetons } from './types';
 
-const mesure = new AsyncLocalStorage<{ usage?: UsageJetons }>();
+type Mesure = { usage?: UsageJetons; modele?: string };
+const mesure = new AsyncLocalStorage<Mesure>();
 
-export function mesurerJetons<T>(executer: (lire: () => UsageJetons | undefined) => T): T {
-  const demande: { usage?: UsageJetons } = {};
-  return mesure.run(demande, () => executer(() => demande.usage));
+export function mesurerJetons<T>(
+  executer: (lire: () => UsageJetons | undefined, lireModele: () => string | undefined) => T,
+): T {
+  const demande: Mesure = {};
+  return mesure.run(demande, () =>
+    executer(
+      () => demande.usage,
+      () => demande.modele,
+    ),
+  );
+}
+
+export function noterModele(modele: string) {
+  const demande = mesure.getStore();
+  if (demande && modele) demande.modele = modele;
 }
 
 export function compterJetons(entree?: number, sortie?: number) {

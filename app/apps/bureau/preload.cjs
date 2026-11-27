@@ -18,6 +18,7 @@ contextBridge.exposeInMainWorld('sixBureau', {
   montrerFichier: (chemin) => ipcRenderer.invoke('six:montrer-fichier', chemin),
   /** Cosinus : sélecteur de dossier de l'ordinateur ; renvoie le chemin choisi, ou null. */
   choisirDossier: () => ipcRenderer.invoke('six:choisir-dossier'),
+  ouvrirVSCode: (dossier) => ipcRenderer.invoke('six:ouvrir-vscode', dossier),
   /** Chemin complet d'un fichier glissé, collé ou choisi (affiché sur la carte de la pièce jointe). */
   cheminFichier: (fichier) => {
     try {

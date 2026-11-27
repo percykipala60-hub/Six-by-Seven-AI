@@ -67,3 +67,11 @@ export const VOIX_ELEVENLABS = [
 export function trouverVoixElevenLabs(selection: unknown) {
   return VOIX_ELEVENLABS.find((voix) => voix.selection === selection);
 }
+
+export const VOIX_ELEVENLABS_AUTO = 'elevenlabs:auto';
+
+export function voixElevenLabsPourLecture(selection: string, langue: LangueVoix) {
+  if (selection === VOIX_ELEVENLABS_AUTO) return VOIX_ELEVENLABS.find((v) => v.langue === langue);
+  const voix = trouverVoixElevenLabs(selection);
+  return voix?.langue === langue ? voix : undefined;
+}

@@ -15,11 +15,13 @@ export function ChoixModele({
   onSkill,
   avecSkills,
   desactive,
+  modeleActif,
 }: {
   skill: ChoixSkill;
   onSkill: (s: ChoixSkill) => void;
   avecSkills: boolean;
   desactive?: boolean;
+  modeleActif?: string;
 }) {
   const [ouvert, setOuvert] = useState(false);
   const [sousMenu, setSousMenu] = useState(false);
@@ -57,7 +59,16 @@ export function ChoixModele({
           setSousMenu(false);
         }}
       >
-        <span>{modele.nom}</span>
+        <span
+          className="modele-actif"
+          title={
+            modeleActif
+              ? `Dernier modèle utilisé : ${modeleActif}`
+              : 'Le modèle apparaît après la première réponse'
+          }
+        >
+          {modeleActif ?? modele.nom}
+        </span>
         {avecSkills && (
           <span className="modele-skill">{skill === 'auto' ? 'Auto' : nomSkill(skill)}</span>
         )}
@@ -75,7 +86,7 @@ export function ChoixModele({
             >
               <span className="modele-ligne">
                 <span>{m.nom}</span>
-                <small>{m.sous}</small>
+                <small>{modeleActif ? `Dernier modèle utilisé : ${modeleActif}` : m.sous}</small>
               </span>
               {m.id === modele.id && <Icon name="check" size={16} stroke={2} />}
             </button>

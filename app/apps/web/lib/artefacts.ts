@@ -21,9 +21,51 @@ const extensions: Record<string, string> = {
   jsx: 'jsx',
   tsx: 'tsx',
   presentation: 'pptx',
+  js: 'js',
+  ts: 'ts',
+  py: 'py',
+  bash: 'sh',
+  sh: 'sh',
+  powershell: 'ps1',
+  sql: 'sql',
+  java: 'java',
+  c: 'c',
+  cpp: 'cpp',
+  csharp: 'cs',
+  go: 'go',
+  rust: 'rs',
 };
 
-/** Les blocs complets seulement : aucun fichier tronqué pendant la génération. */
+/** Récupère un fichier brut lorsque son début et sa fin ressemblent au même langage. */
+function reconnaitreCodeBrut(texte: string): string | undefined {
+  const lignes = texte.trimEnd().split(/\r?\n/);
+  const debut = lignes[0]?.trim() ?? '';
+  const fin = lignes.at(-1)?.trim() ?? '';
+  if (
+    /^(?:(?:async )?def\s+\w+\s*\(|from\s+[\w.]+\s+import\s|import\s+[\w.]+\s*$|print\s*\()/.test(
+      debut,
+    ) &&
+    (/^\s+\S/.test(lignes.at(-1) ?? '') || /^(?:[\w.]+\([^\n]*\)|[)\]}])$/.test(fin))
+  )
+    return 'python';
+  if (
+    /^(?:SELECT\s|WITH\s+\w+\s+AS\s*\(|CREATE\s+TABLE\s|INSERT\s+INTO\s)/i.test(debut) &&
+    /;$/.test(fin)
+  )
+    return 'sql';
+  if (
+    /^(?:import\s.+\sfrom\s|(?:export\s+)?(?:interface\s+\w+\s*\{|type\s+\w+\s*=|(?:async\s+)?function\s+\w+\s*\(|(?:const|let|var)\s+\w+\s*(?:=|:))|console\.(?:log|warn|error)\s*\()/.test(
+      debut,
+    ) &&
+    /[;)}\]]$/.test(fin)
+  )
+    return /^(?:export\s+)?(?:interface\s|type\s|(?:const|let)\s+\w+\s*:)/.test(debut)
+      ? 'typescript'
+      : 'javascript';
+  return undefined;
+}
+
+/** Extrait les blocs de code complets et récupère certains fichiers livrés sans bloc. */
 export function extraireArtefacts(texte: string): { texte: string; artefacts: Artefact[] } {
   const artefacts: Artefact[] = [];
   const restant = texte.replace(
@@ -45,7 +87,41 @@ export function extraireArtefacts(texte: string): { texte: string; artefacts: Ar
       return '';
     },
   );
-  return { texte: restant.trim(), artefacts };
+  // Un bloc encore ouvert reste dans le message. Le HTML brut n’est repris que hors de ce bloc.
+  const blocOuvert = restant.search(/^\x60{3}[^\r\n]*$/m);
+  const avantBloc = blocOuvert < 0 ? restant : restant.slice(0, blocOuvert);
+  const suite = blocOuvert < 0 ? '' : restant.slice(blocOuvert);
+  const sansHtml = avantBloc.replace(
+    /^[^\S\r\n]*((?:<!doctype\s+html\s*>\s*)?<html(?=[\s>])[\s\S]*?<\/html\s*>)[^\S\r\n]*(?=\r?$)/gim,
+    (_, contenu: string) => {
+      let numero = artefacts.length + 1;
+      while (artefacts.some((a) => a.nom === `creation-${numero}.html`)) numero++;
+      artefacts.push({ nom: `creation-${numero}.html`, langage: 'html', contenu });
+      return '';
+    },
+  );
+  if (!artefacts.length && blocOuvert < 0) {
+    const propre = sansHtml.trim();
+    const separateur = /\r?\n[ \t]*\r?\n/.exec(propre);
+    const candidats = [{ contenu: propre, texte: '' }];
+    if (separateur)
+      candidats.push({
+        contenu: propre.slice(separateur.index + separateur[0].length),
+        texte: propre.slice(0, separateur.index).trim(),
+      });
+    for (const candidat of candidats) {
+      const langage = reconnaitreCodeBrut(candidat.contenu);
+      if (langage) {
+        return {
+          texte: candidat.texte,
+          artefacts: [
+            { nom: `creation-1.${extensions[langage]}`, langage, contenu: candidat.contenu },
+          ],
+        };
+      }
+    }
+  }
+  return { texte: (sansHtml + suite).trim(), artefacts };
 }
 
 /** Aucun script, accès réseau ou formulaire dans les aperçus générés. */

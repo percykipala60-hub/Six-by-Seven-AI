@@ -49,10 +49,14 @@ export async function GET() {
 }
 
 export function POST(req: Request) {
-  return mesurerJetons((lireUsage) => traiterChat(req, lireUsage));
+  return mesurerJetons((lireUsage, lireModele) => traiterChat(req, lireUsage, lireModele));
 }
 
-async function traiterChat(req: Request, lireUsage: () => UsageJetons | undefined) {
+async function traiterChat(
+  req: Request,
+  lireUsage: () => UsageJetons | undefined,
+  lireModele: () => string | undefined,
+) {
   const blocked = await guard(req, true);
   if (blocked) return blocked;
   // Des images (capture d'écran, images d'une vidéo) peuvent accompagner le message : le corps peut alors être plus gros, mais le texte de la
@@ -153,6 +157,7 @@ ${dernier.content}`;
             reponse: corrigerIdentite(r.reponse),
             etapes: r.etapes,
             usage: lireUsage(),
+            modele: lireModele(),
           });
         } catch (e) {
           envoyer({
@@ -259,6 +264,7 @@ ${dernier.content}`;
             fichiers: r.fichiers,
             plan: r.plan,
             usage: lireUsage(),
+            modele: lireModele(),
           });
         } catch (e) {
           envoyer({
@@ -301,7 +307,7 @@ ${dernier.content}`;
       parsed.data.skill,
       parsed.data.vocal === true,
     );
-    return NextResponse.json({ ...resultat, usage: lireUsage() });
+    return NextResponse.json({ ...resultat, usage: lireUsage(), modele: lireModele() });
   } catch (e) {
     return providerFail(e);
   }

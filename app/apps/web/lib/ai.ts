@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { MessageAgent, OutilSchema, ReponseAgent } from './agent/types';
-import { compterJetons } from './jetons-serveur';
+import { compterJetons, noterModele } from './jetons-serveur';
 
 // Les clés des fournisseurs ne vivent que dans les variables d'environnement du serveur :
 // jamais dans le code, jamais dans le navigateur (aucune variable NEXT_PUBLIC_), jamais dans les logs.
@@ -31,6 +31,7 @@ interface Provider {
     signal: AbortSignal,
     history?: ChatMessage[],
     images?: ImageJointe[],
+    surModele?: (modele: string) => void,
   ): Promise<string>;
 }
 
@@ -67,7 +68,7 @@ const claude: Provider = {
       : premium
         ? env('CLAUDE_MODEL_REDACTION') || 'claude-sonnet-5-5'
         : env('CLAUDE_MODEL_REDACTION_GRATUIT') || 'claude-haiku-4-5-20251001',
-  async call(model, system, user, maxTokens, signal, history, images) {
+  async call(model, system, user, maxTokens, signal, history, images, surModele) {
     const client = new Anthropic({
       apiKey: env('ANTHROPIC_API_KEY'),
       maxRetries: 0, // la bascule et la nouvelle tentative sont gérées par callAI et providers.ts
@@ -106,6 +107,7 @@ const claude: Provider = {
       );
       logUsage(msg.model, msg.usage);
       if (msg.stop_reason === 'refusal') throw new HttpFailure(451);
+      surModele?.(msg.model || model);
       return msg.content.map((b) => (b.type === 'text' ? b.text : '')).join('');
     } catch (e) {
       if (e instanceof HttpFailure) throw e;
@@ -129,7 +131,7 @@ function fournisseurCompatible(id: 'openai' | 'openrouter', label: string, url: 
     label,
     configured: (role) => Boolean(cle() && modele(role)),
     model: modele,
-    async call(model, system, user, maxTokens, signal, history, images) {
+    async call(model, system, user, maxTokens, signal, history, images, surModele) {
       const res = await fetch(url, {
         method: 'POST',
         signal,
@@ -162,10 +164,12 @@ function fournisseurCompatible(id: 'openai' | 'openrouter', label: string, url: 
       const data = (await res.json()) as {
         choices?: { message?: { content?: string } }[];
         usage?: { prompt_tokens?: number; completion_tokens?: number };
+        model?: string;
       };
       compterJetons(data.usage?.prompt_tokens, data.usage?.completion_tokens);
       const text = data.choices?.[0]?.message?.content;
       if (typeof text !== 'string') throw new HttpFailure(502);
+      surModele?.(typeof data.model === 'string' ? data.model : model);
       return text;
     },
   };
@@ -200,7 +204,7 @@ const local: Provider = {
   configured: () => Boolean(env('IA_LOCALE_MODELE')),
   model: (role) =>
     (role === 'analyse' && env('IA_LOCALE_MODELE_ANALYSE')) || env('IA_LOCALE_MODELE'),
-  async call(model, system, user, maxTokens, signal, history, images) {
+  async call(model, system, user, maxTokens, signal, history, images, surModele) {
     const base = (env('IA_LOCALE_URL') || 'http://127.0.0.1:11434').replace(/\/+$/, '');
     let res: Response;
     try {
@@ -234,10 +238,12 @@ const local: Provider = {
       message?: { content?: string };
       prompt_eval_count?: number;
       eval_count?: number;
+      model?: string;
     };
     compterJetons(data.prompt_eval_count, data.eval_count);
     const text = data.message?.content;
     if (typeof text !== 'string') throw new HttpFailure(502);
+    surModele?.(typeof data.model === 'string' ? data.model : model);
     return text;
   },
 };
@@ -385,6 +391,7 @@ export async function callChat(
         ctl.signal,
         history,
         images,
+        noterModele,
       );
     } catch (e) {
       lastStatus = e instanceof HttpFailure ? e.status : 0;
@@ -406,6 +413,7 @@ type AppelAvecOutils = (
   outils: OutilSchema[],
   maxTokens: number,
   signal: AbortSignal,
+  surModele: (modele: string) => void,
 ) => Promise<ReponseAgent>;
 
 const nouvelIdAppel = () => `appel_${Math.random().toString(36).slice(2, 10)}`;
@@ -418,6 +426,7 @@ const claudeOutils: AppelAvecOutils = async (
   outils,
   maxTokens,
   signal,
+  surModele,
 ) => {
   const client = new Anthropic({
     apiKey: env('ANTHROPIC_API_KEY'),
@@ -478,6 +487,7 @@ const claudeOutils: AppelAvecOutils = async (
     );
     logUsage(msg.model, msg.usage);
     if (msg.stop_reason === 'refusal') throw new HttpFailure(451);
+    surModele(msg.model || model);
     const texte = msg.content.map((b) => (b.type === 'text' ? b.text : '')).join('');
     const appels = msg.content.flatMap((b) =>
       b.type === 'tool_use'
@@ -494,7 +504,15 @@ const claudeOutils: AppelAvecOutils = async (
 };
 
 /** IA locale (Ollama) : champ « tools », réponses message.tool_calls, résultats en messages « tool ». */
-const localOutils: AppelAvecOutils = async (model, system, messages, outils, maxTokens, signal) => {
+const localOutils: AppelAvecOutils = async (
+  model,
+  system,
+  messages,
+  outils,
+  maxTokens,
+  signal,
+  surModele,
+) => {
   const base = (env('IA_LOCALE_URL') || 'http://127.0.0.1:11434').replace(/\/+$/, '');
   const msgs = [
     { role: 'system', content: system },
@@ -550,6 +568,7 @@ const localOutils: AppelAvecOutils = async (model, system, messages, outils, max
   const data = (await res.json()) as {
     prompt_eval_count?: number;
     eval_count?: number;
+    model?: string;
     message?: {
       content?: string;
       tool_calls?: { function?: { name?: string; arguments?: Record<string, unknown> | string } }[];
@@ -569,6 +588,7 @@ const localOutils: AppelAvecOutils = async (model, system, messages, outils, max
     }
     return [{ id: nouvelIdAppel(), nom, args }];
   });
+  surModele(typeof data.model === 'string' ? data.model : model);
   return { texte: data.message?.content ?? '', appels };
 };
 
@@ -617,6 +637,7 @@ export async function appelAgent(
         outils,
         maxTokens,
         ctl.signal,
+        noterModele,
       );
     } catch (e) {
       if (annulation?.aborted) throw new ProviderError('Tâche arrêtée.');

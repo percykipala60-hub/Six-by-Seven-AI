@@ -115,6 +115,28 @@ describe("fournisseurs d'IA", () => {
     ]);
   });
 
+  it('garde le modèle qui a répondu même si la relecture utilise un autre modèle', async () => {
+    vi.stubEnv('AI_PROVIDERS', 'openrouter');
+    vi.stubEnv('OPENROUTER_API_KEY', 'cle-test');
+    vi.stubEnv('OPENROUTER_MODEL', 'openai/modele-configure');
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce(
+          json({ model: 'openai/modele-reel', choices: [{ message: { content: 'réponse' } }] }),
+        )
+        .mockResolvedValueOnce(
+          json({ model: 'openai/relecture', choices: [{ message: { content: 'OK' } }] }),
+        ),
+    );
+    await mesurerJetons(async (_lire, lireModele) => {
+      await callChat('sys', 'demande', [], 100);
+      await callAI('analyse', 'sys', 'relecture', 100);
+      expect(lireModele()).toBe('openai/modele-reel');
+    });
+  });
+
   it("utilise Claude en premier et envoie la clé dans l'en-tête seulement", async () => {
     vi.stubEnv('ANTHROPIC_API_KEY', 'cle-claude-secrete');
     const fetchMock = vi.fn(async () => okClaude());
