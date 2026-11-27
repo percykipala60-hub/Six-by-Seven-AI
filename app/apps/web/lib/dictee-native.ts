@@ -23,7 +23,7 @@ export async function dicterSurTelephone(signal: AbortSignal): Promise<string> {
   verifierArret();
   if (!local.available) {
     throw new Error(
-      'La reconnaissance vocale locale en français est indisponible sur ce téléphone. Vérifie les langues de dictée téléchargées dans les réglages du téléphone.',
+      'La dictée locale est indisponible dans la langue choisie. Vérifie les langues de dictée téléchargées dans les réglages du téléphone.',
     );
   }
   let arreter: () => void = () => {};

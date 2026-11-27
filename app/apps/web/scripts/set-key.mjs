@@ -10,6 +10,7 @@ const FICHIER = process.env.ENV_FILE || join(root, '.env.local');
 const SERVICES = {
   claude: { variable: 'ANTHROPIC_API_KEY', nom: 'Claude (Anthropic)', debut: 'sk-ant-' },
   openai: { variable: 'OPENAI_API_KEY', nom: 'ChatGPT (OpenAI)', debut: 'sk-' },
+  openrouter: { variable: 'OPENROUTER_API_KEY', nom: 'OpenRouter', debut: 'sk-or-' },
 };
 
 const SAUT = String.fromCharCode(10);
@@ -80,11 +81,13 @@ function question(texte, { masque = false } = {}) {
 
 let choix = (process.argv[2] || '').toLowerCase();
 if (!SERVICES[choix]) {
-  choix = (await question('Service (claude ou openai) [claude] : ')).toLowerCase() || 'claude';
+  choix =
+    (await question('Service (claude, openai ou openrouter) [claude] : ')).toLowerCase() ||
+    'claude';
 }
 const service = SERVICES[choix];
 if (!service) {
-  console.error('Service inconnu : choisis claude ou openai.');
+  console.error('Service inconnu : choisis claude, openai ou openrouter.');
   process.exit(1);
 }
 

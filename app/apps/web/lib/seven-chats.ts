@@ -2,6 +2,8 @@ import { sans } from './objet';
 import { memoireActive } from './memoire';
 import type { ChatMessage } from './types';
 
+export const CLE_BROUILLON_PROJET = 'six-brouillon-projet';
+
 /**
  * Discussions avec Seven AI, gardées sur l'appareil (jamais envoyées sur le compte).
  * Comme avant, rien n'est gardé quand la mémoire de Six est coupée.

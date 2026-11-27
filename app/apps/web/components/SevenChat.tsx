@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { AppBar } from './AppBar';
 import { Icon } from './Icon';
 import { BoutonPartager } from './BoutonPartager';
-import { estBureau } from '@/lib/plateforme';
+import { estBureau, pontVoixBureau, transcrireSurBureau } from '@/lib/plateforme';
 import { CarteLieux } from './CarteLieux';
 import { lireDocx, texteDeBlocs } from '@/lib/docx';
 import { NOM_TEXTE_COLLE, extraitTexte, piecesDuCollage } from '@/lib/collage';
@@ -37,6 +37,9 @@ import { extrairePdf } from '@/lib/lire-document';
 import { lireSkillDefaut, type ChoixSkill } from '@/lib/skills-cosinus';
 import { ChoixModele } from './ChoixModele';
 import { ecouterPhrase } from '@/lib/ecoute';
+import { estLangueVoix, type LangueVoix } from '@/lib/langues-voix';
+import { lireAvecElevenLabs } from '@/lib/lecture-elevenlabs';
+import { trouverVoixElevenLabs } from '@/lib/voix-elevenlabs';
 import {
   audioMicro,
   bcp47,
@@ -45,6 +48,7 @@ import {
   estPhraseFantome,
   lirePreferencesVoix,
   passagesALire,
+  texteALire,
 } from '@/lib/voix';
 import { VoixOrbe, type PhaseVoix } from './VoixOrbe';
 import {
@@ -60,7 +64,7 @@ import { memoireActive } from '@/lib/memoire';
 import { entetesCompte } from '@/lib/premium-client';
 import { CHAT_MAX_BYTES, CHAT_MAX_CONTENT, CHAT_MAX_MESSAGES } from '@/lib/api-schemas';
 import { detecterOrdre } from '@/lib/seven-ordres';
-import type { ChatMessage, ChatResult, PieceAffichee } from '@/lib/types';
+import type { ChatMessage, ChatResult, PieceAffichee, UsageJetons } from '@/lib/types';
 import {
   ICONE_PIECE,
   IMAGES_MAX,
@@ -73,6 +77,7 @@ import {
 import {
   titreDe,
   MAX_MSG,
+  CLE_BROUILLON_PROJET,
   ecouterChats,
   garderChat,
   lireChat,
@@ -125,6 +130,29 @@ function TexteProgressif({ texte, onPas }: { texte: string; onPas?: () => void }
       <span aria-hidden="true">{morceaux.slice(0, n).join('')}</span>
       <span className="sr">{texte}</span>
     </>
+  );
+}
+
+const formatJetons = new Intl.NumberFormat('fr-FR');
+
+function CompteurJetons({
+  usage,
+  discussion = false,
+}: {
+  usage: UsageJetons;
+  discussion?: boolean;
+}) {
+  return (
+    <details className={`seven-jetons${discussion ? ' discussion' : ''}`}>
+      <summary>
+        {discussion ? 'Total des réponses affichées · ' : ''}
+        {formatJetons.format(usage.entree + usage.sortie)} jetons
+      </summary>
+      <p>
+        {formatJetons.format(usage.entree)} en entrée · {formatJetons.format(usage.sortie)} en
+        sortie
+      </p>
+    </details>
   );
 }
 
@@ -212,7 +240,7 @@ async function messageErreurDictee(e: unknown): Promise<string> {
   return 'La dictée a échoué. Réessaie, ou écris ton message.';
 }
 
-/** Écoute le micro et résout avec le texte dicté (une phrase, français). */
+/** Écoute le micro et résout avec le texte dicté selon les réglages de voix. */
 function dicterTexte(signal: AbortSignal): Promise<string> {
   const Ctor = constructeurReconnaissance();
   return new Promise((resolve, reject) => {
@@ -396,6 +424,8 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   const demandee = params.get('c') ?? ''; // discussion ouverte depuis le menu ; vide : nouvelle discussion
   // Projet de la discussion : celui où elle est rangée, sinon celui de l'adresse (/chat?projet=…, /cosinus?projet=…).
   const projetDemande = params.get('projet') ?? '';
+  const avecBrouillonProjet = params.get('brouillon') === '1';
+  const brouillonProjet = useRef<{ projetId: string; texte: string } | null>(null);
   const [projetId, setProjetId] = useState('');
   // Artefact ouvert dans le panneau, à côté de la discussion (un seul panneau à droite : il ferme le volet).
   const [artefactOuvert, setArtefactOuvert] = useState<ArtefactOuvert | null>(null);
@@ -508,6 +538,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
             type: string;
             texte?: string;
             reponse?: string;
+            usage?: UsageJetons;
             etapes?: string[];
             fichiers?: string[];
             error?: string;
@@ -532,6 +563,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
             return {
               reponse: o.reponse ?? '',
               demo: false,
+              usage: o.usage,
               etapes: o.etapes,
               fichiers: o.fichiers,
               plan: o.plan,
@@ -588,10 +620,13 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   const minuterieDirect = useRef(0);
   const enDirect = useRef<AbortController | null>(null);
   const finirLecture = useRef<(() => void) | null>(null);
+  const lectureElevenLabs = useRef<AbortController | null>(null);
+  const langueDetectee = useRef<LangueVoix | undefined>(undefined);
   useEffect(
     () => () => {
       appelActif.current = false;
       window.speechSynthesis?.cancel();
+      lectureElevenLabs.current?.abort();
       finirLecture.current?.();
     },
     [],
@@ -658,7 +693,24 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     setAnimee(-1);
     const historique = chat?.messages ?? [];
     setMessages(historique);
-    setSaisie('');
+    if (avecBrouillonProjet && !demandee && projetDemande) {
+      try {
+        const local = sessionStorage.getItem(CLE_BROUILLON_PROJET);
+        if (local) {
+          sessionStorage.removeItem(CLE_BROUILLON_PROJET);
+          const d = JSON.parse(local);
+          if (d?.projetId === projetDemande && typeof d.texte === 'string')
+            brouillonProjet.current = d;
+        }
+      } catch {
+        brouillonProjet.current = null;
+      }
+    } else {
+      brouillonProjet.current = null;
+    }
+    setSaisie(
+      brouillonProjet.current?.projetId === projetDemande ? brouillonProjet.current.texte : '',
+    );
     setErreur('');
     setDernierEchec(undefined);
     setFile([]);
@@ -683,7 +735,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     );
     setMemOn(memoireActive());
     if (window.matchMedia('(pointer: fine)').matches) champ.current?.focus();
-  }, [demandee, projetDemande, envDemande, dossierDemande]);
+  }, [demandee, projetDemande, envDemande, dossierDemande, avecBrouillonProjet]);
 
   useEffect(() => {
     const controleur = new AbortController();
@@ -691,7 +743,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       .then(async (res) => {
         if (!res.ok) throw new Error('État indisponible');
         const etat = (await res.json()) as { transcription: boolean };
-        setTranscription(etat.transcription);
+        setTranscription(await (pontVoixBureau()?.disponible() ?? etat.transcription));
       })
       .catch(() => {
         if (!controleur.signal.aborted)
@@ -955,6 +1007,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         role: 'assistant',
         date: Date.now(),
         content: data.reponse,
+        ...(data.usage ? { usage: data.usage } : {}),
         ...(data.etapes?.length ? { etapes: data.etapes } : {}),
         ...(data.fichiers?.length ? { fichiers: data.fichiers } : {}),
         ...(data.lieux?.length ? { lieux: data.lieux } : {}),
@@ -1021,6 +1074,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     toucherSphere.current?.();
     operation.current?.abort();
     window.speechSynthesis?.cancel();
+    lectureElevenLabs.current?.abort();
     finirLecture.current?.();
     finirLecture.current = null;
     setAppel(false);
@@ -1029,7 +1083,29 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   async function lireReponse(texte: string): Promise<void> {
     const synthese = window.speechSynthesis;
     const prefs = lirePreferencesVoix();
-    const voixChoisie = choisirVoix(await chargerVoix(), prefs);
+    const langue = prefs.langue === 'auto' ? (langueDetectee.current ?? 'auto') : prefs.langue;
+    const distante = trouverVoixElevenLabs(prefs.voix);
+    if (distante?.langue === langue) {
+      if (!appelActif.current) return;
+      const aLire = texteALire(texte);
+      if (!aLire) return;
+      const ctl = new AbortController();
+      lectureElevenLabs.current = ctl;
+      try {
+        await lireAvecElevenLabs(aLire, prefs.voix, prefs.vitesse, ctl.signal);
+      } catch (e) {
+        if (!ctl.signal.aborted)
+          throw new Error(
+            `Six ne peut pas lire avec ElevenLabs. ${e instanceof Error ? e.message : ''}`.trim(),
+            { cause: e },
+          );
+      } finally {
+        if (lectureElevenLabs.current === ctl) lectureElevenLabs.current = null;
+      }
+      return;
+    }
+    const voixChoisie = choisirVoix(await chargerVoix(), { ...prefs, langue });
+    if (!appelActif.current) return;
     // Par passages : un seul bloc très long se coupe sur certains appareils, phrase par phrase la voix hache.
     const morceaux = passagesALire(texte);
     await new Promise<void>((resolve, reject) => {
@@ -1042,40 +1118,63 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       };
       finirLecture.current = finir;
       if (!morceaux.length) return finir();
-      morceaux.forEach((morceau, i) => {
+      function lireMorceau(index: number) {
+        const morceau = morceaux[index];
+        if (!morceau || termine || !appelActif.current) return finir();
         const voix = new SpeechSynthesisUtterance(morceau);
-        voix.lang = voixChoisie?.lang ?? bcp47(prefs.langue);
+        voix.lang = voixChoisie?.lang ?? bcp47(langue);
         if (voixChoisie) voix.voice = voixChoisie;
         voix.rate = prefs.vitesse;
-        if (i === morceaux.length - 1) voix.onend = finir;
+        voix.onend = () => lireMorceau(index + 1);
         voix.onerror = (e) => {
           if (e.error === 'interrupted' || e.error === 'canceled' || !appelActif.current) finir();
-          else reject(new Error('Six ne peut pas lire sa réponse à voix haute sur cet appareil.'));
+          else {
+            termine = true;
+            finirLecture.current = null;
+            reject(
+              new Error(
+                'Six ne peut pas lire sa réponse dans cette langue. Vérifie les voix installées sur cet appareil.',
+              ),
+            );
+          }
         };
         synthese.speak(voix);
-      });
+      }
+      lireMorceau(0);
     });
   }
 
   /** Transcription d'une phrase du mode vocal par le serveur de Six. */
   async function transcrireAudio(audio: Blob): Promise<string> {
+    const langue = lirePreferencesVoix().langue;
     const form = new FormData();
     form.append('audio', audio);
-    form.append('langue', lirePreferencesVoix().langue);
-    const res = await fetch('/api/chat/transcription', {
-      method: 'POST',
-      headers: await entetesCompte(),
-      body: form,
-    });
-    const data = (await res.json().catch(() => ({}))) as { texte?: string; error?: string };
+    form.append('langue', langue);
+    const res =
+      (await transcrireSurBureau(audio, langue)) ??
+      (await fetch('/api/chat/transcription', {
+        method: 'POST',
+        headers: await entetesCompte(),
+        body: form,
+      }));
+    const data = (await res.json().catch(() => ({}))) as {
+      texte?: string;
+      langue?: LangueVoix;
+      error?: string;
+    };
     if (!res.ok) throw new Error(data.error ?? 'Six n’a pas pu transcrire ta phrase. Réessaie.');
+    langueDetectee.current =
+      estLangueVoix(data.langue) && data.langue !== 'auto' ? data.langue : undefined;
     return data.texte ?? '';
   }
 
   async function lancerAppel() {
     if (appelActif.current) return raccrocher();
     if (occupe || enregistre) return;
-    if (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined') {
+    if (
+      !trouverVoixElevenLabs(lirePreferencesVoix().voix) &&
+      (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined')
+    ) {
       setErreur('La lecture vocale n’est pas disponible sur cet appareil.');
       return;
     }
@@ -1084,10 +1183,11 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     const bureau = estBureau();
     const parMoteur = bureau || ((await plateforme()) === 'web' && !dicteeDisponible());
     if (parMoteur) {
-      const pret = await fetch('/api/chat', { cache: 'no-store' })
-        .then((r) => (r.ok ? (r.json() as Promise<{ transcription?: boolean }>) : null))
-        .then((d) => d?.transcription === true)
-        .catch(() => false);
+      const pret = await (pontVoixBureau()?.disponible() ??
+        fetch('/api/chat', { cache: 'no-store' })
+          .then((r) => (r.ok ? (r.json() as Promise<{ transcription?: boolean }>) : null))
+          .then((d) => d?.transcription === true)
+          .catch(() => false));
       if (!pret) {
         setErreur(
           bureau
@@ -1099,6 +1199,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     }
     setErreur('');
     appelActif.current = true;
+    langueDetectee.current = undefined;
     setAppel(true);
     // Le modèle se charge pendant que la personne dit sa première phrase (sinon la première réponse attend).
     void fetch('/api/chat/prechauffer', { method: 'POST' }).catch(() => {});
@@ -1270,11 +1371,13 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     if (estBureau() && serviceVocal !== true) {
       verrouMicro.current = true;
       try {
-        const res = await fetch('/api/chat', { signal: AbortSignal.timeout(5000) });
-        if (res.ok) {
-          serviceVocal = (await res.json()).transcription === true;
-          setTranscription(serviceVocal);
+        const pont = pontVoixBureau();
+        if (pont) serviceVocal = await pont.disponible();
+        else {
+          const res = await fetch('/api/chat', { signal: AbortSignal.timeout(5000) });
+          if (res.ok) serviceVocal = (await res.json()).transcription === true;
         }
+        setTranscription(serviceVocal);
       } catch {
         /* Le message de disponibilité ci-dessous permet de réessayer. */
       } finally {
@@ -1385,16 +1488,26 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     enDirect.current = controleur;
     try {
       const form = new FormData();
-      form.append('audio', new Blob(chunksAudio.current, { type: mr.mimeType || 'audio/webm' }));
-      form.append('langue', lirePreferencesVoix().langue);
-      const res = await fetch('/api/chat/transcription', {
-        method: 'POST',
-        headers: await entetesCompte(),
-        body: form,
-        signal: controleur.signal,
-      });
+      const audio = new Blob(chunksAudio.current, { type: mr.mimeType || 'audio/webm' });
+      const langue = lirePreferencesVoix().langue;
+      form.append('audio', audio);
+      form.append('langue', langue);
+      const res =
+        (await transcrireSurBureau(audio, langue)) ??
+        (await fetch('/api/chat/transcription', {
+          method: 'POST',
+          headers: await entetesCompte(),
+          body: form,
+          signal: controleur.signal,
+        }));
       const data = (await res.json().catch(() => ({}))) as { texte?: string };
-      if (res.ok && data.texte && !estPhraseFantome(data.texte) && mr.state === 'recording')
+      if (
+        !controleur.signal.aborted &&
+        res.ok &&
+        data.texte &&
+        !estPhraseFantome(data.texte) &&
+        mr.state === 'recording'
+      )
         setSaisie(joindreTexte(saisieAvantVocal.current, data.texte.trim()));
     } catch {
       /* aperçu seulement : le texte final arrive à l'arrêt */
@@ -1409,12 +1522,16 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     let texte = '';
     try {
       const form = new FormData();
+      const langue = lirePreferencesVoix().langue;
       form.append('audio', blob);
-      const res = await requete(
-        '/api/chat/transcription',
-        { method: 'POST', headers: await entetesCompte(), body: form },
-        operationMicro,
-      );
+      form.append('langue', langue);
+      const res =
+        (await transcrireSurBureau(blob, langue)) ??
+        (await requete(
+          '/api/chat/transcription',
+          { method: 'POST', headers: await entetesCompte(), body: form },
+          operationMicro,
+        ));
       const data = (await res.json().catch(() => ({}))) as { texte?: string; error?: string };
       if (!res.ok || !data.texte) throw new Error(data.error ?? 'Transcription impossible.');
       texte = data.texte.trim();
@@ -1521,6 +1638,13 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   }
 
   // Partager la discussion par le Cloud (Six Premium).
+  const usageDiscussion = messages.reduce<UsageJetons | undefined>((total, message) => {
+    if (!message.usage) return total;
+    return {
+      entree: (total?.entree ?? 0) + message.usage.entree,
+      sortie: (total?.sortie ?? 0) + message.usage.sortie,
+    };
+  }, undefined);
   const partage = (
     <BoutonPartager titre={titreDe(messages)} messages={messages} onErreur={setErreur} />
   );
@@ -1750,10 +1874,12 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
               {m.role === 'assistant' && m.lieux && m.lieux.length > 0 && (
                 <CarteLieux lieux={m.lieux} />
               )}
+              {m.role === 'assistant' && m.usage && <CompteurJetons usage={m.usage} />}
             </div>
           );
         })}
 
+        {usageDiscussion && <CompteurJetons usage={usageDiscussion} discussion />}
         {enAttente && (
           <div className="seven-msg user">
             <PiecesJointes pieces={attentePieces} petit />

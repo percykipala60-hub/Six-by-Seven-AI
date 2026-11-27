@@ -2585,8 +2585,13 @@ button.avatar::after {
 .drawer-new svg {
   color: var(--brand);
 }
-.drawer-profile {
+.drawer-profile-ancre {
+  position: relative;
   margin-top: auto;
+  flex: none;
+}
+.drawer-profile {
+  width: 100%;
   display: flex;
   align-items: center;
   gap: 12px;
@@ -2594,7 +2599,10 @@ button.avatar::after {
   border-radius: 16px;
   background: var(--panel2);
   color: var(--ink);
-  text-decoration: none;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
 }
 .drawer-profile b,
 .profile-card b {
@@ -2738,6 +2746,26 @@ button.avatar::after {
   color: #c0392b;
   font-size: 13px;
   text-align: center;
+}
+.seven-jetons {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+.seven-jetons summary {
+  cursor: pointer;
+  width: fit-content;
+  max-width: 100%;
+}
+.seven-jetons p {
+  margin: 4px 0 0;
+}
+.seven-jetons.discussion {
+  align-self: center;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 6px 10px;
+  background: var(--card);
 }
 .seven-note-demo {
   margin: 0;
@@ -6082,11 +6110,6 @@ body {
 }
 .drawer-sous .drawer-chat[aria-current='page'] {
   color: var(--ink);
-}
-/* Réglages et confidentialité poussés en bas du menu, au-dessus du profil. */
-.drawer-bas {
-  margin-top: auto;
-  padding-top: 10px;
 }
 .drawer-voir-plus {
   align-self: flex-start;
@@ -10607,6 +10630,11 @@ button.avatar {
 .menu-compte-bas {
   top: calc(100% + 8px);
   right: 0;
+}
+.menu-compte-panneau {
+  bottom: calc(100% + 8px);
+  left: 0;
+  max-width: 100%;
 }
 .menu-compte-haut {
   bottom: 0;

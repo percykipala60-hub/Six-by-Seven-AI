@@ -44,26 +44,34 @@ if (env('ANTHROPIC_API_KEY')) {
   console.log('Claude : ANTHROPIC_API_KEY absente (ignoré).');
 }
 
-if (env('OPENAI_API_KEY')) {
+for (const [prefixe, nom, url] of [
+  ['OPENAI', 'ChatGPT', 'https://api.openai.com/v1/chat/completions'],
+  ['OPENROUTER', 'OpenRouter', 'https://openrouter.ai/api/v1/chat/completions'],
+]) {
+  const cle = env(`${prefixe}_API_KEY`);
+  if (!cle) {
+    console.log(`${nom} : ${prefixe}_API_KEY absente (ignoré).`);
+    continue;
+  }
   const models = [
-    ['analyse', env('OPENAI_MODEL_ANALYSE') || env('OPENAI_MODEL')],
-    ['rédaction', env('OPENAI_MODEL_REDACTION') || env('OPENAI_MODEL')],
+    ['analyse', env(`${prefixe}_MODEL_ANALYSE`) || env(`${prefixe}_MODEL`)],
+    ['rédaction', env(`${prefixe}_MODEL_REDACTION`) || env(`${prefixe}_MODEL`)],
   ];
   for (const [role, model] of models) {
     if (!model) {
       console.log(
-        `ChatGPT / ${role} : aucun modèle défini (OPENAI_MODEL ou OPENAI_MODEL_${role === 'analyse' ? 'ANALYSE' : 'REDACTION'}).`,
+        `${nom} / ${role} : aucun modèle défini (${prefixe}_MODEL ou ${prefixe}_MODEL_${role === 'analyse' ? 'ANALYSE' : 'REDACTION'}).`,
       );
       continue;
     }
     checks.push({
-      nom: `ChatGPT / ${role} / ${model}`,
+      nom: `${nom} / ${role} / ${model}`,
       run: () =>
-        fetch('https://api.openai.com/v1/chat/completions', {
+        fetch(url, {
           method: 'POST',
           headers: {
             'content-type': 'application/json',
-            authorization: `Bearer ${env('OPENAI_API_KEY')}`,
+            authorization: `Bearer ${cle}`,
           },
           body: JSON.stringify({
             model,
@@ -73,8 +81,6 @@ if (env('OPENAI_API_KEY')) {
         }),
     });
   }
-} else {
-  console.log('ChatGPT : OPENAI_API_KEY absente (ignoré).');
 }
 
 const HINTS = {

@@ -26,10 +26,13 @@ Il n'y a **qu'une seule app** : `apps/web` (Next.js). Les autres versions l'emba
 
 ## Lancer la version ordinateur
 
+Depuis `app`, la commande `corepack pnpm bureau` ouvre Six sur le serveur public. Pour développer en local, démarre le serveur web puis lance Electron avec `SIX_URL`.
+
 ```powershell
 Set-Location C:\Users\omen\Downloads\SIX\app; corepack pnpm --dir apps/web dev
 ```
 
 ```powershell
-Set-Location C:\Users\omen\Downloads\SIX\app; corepack pnpm bureau
+$env:SIX_URL = 'http://localhost:3000/cosinus'
+corepack pnpm bureau
 ```

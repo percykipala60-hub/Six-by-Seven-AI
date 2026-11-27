@@ -47,6 +47,25 @@ describe('route /api/chat/transcription', () => {
     );
   });
 
+  it.each(['es', 'de', 'zh', 'auto'])(
+    'transmet le choix %s et restitue la langue reconnue',
+    async (langue) => {
+      vi.stubEnv('SIX_TRANSCRIPTION_LOCALE', 'http://127.0.0.1:8765');
+      const detectee = langue === 'auto' ? 'de' : langue;
+      const appel = vi.fn().mockResolvedValue(Response.json({ texte: 'Six', langue: detectee }));
+      vi.stubGlobal('fetch', appel);
+      const form = formAvec('m.webm', 'audio/webm');
+      form.append('langue', langue);
+      const res = await demande(form);
+      expect(res.status).toBe(200);
+      expect(await res.json()).toEqual({ texte: 'Six', langue: detectee });
+      expect(appel).toHaveBeenCalledWith(
+        `http://127.0.0.1:8765/transcribe?langue=${langue}`,
+        expect.objectContaining({ method: 'POST' }),
+      );
+    },
+  );
+
   it('refuse les envois sans fichier audio', async () => {
     expect((await demande(new FormData())).status).toBe(400);
     expect((await demande(formAvec('doc.pdf', 'application/pdf'))).status).toBe(400);

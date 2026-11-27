@@ -30,11 +30,21 @@ export { CONNEXION_DISPONIBLE };
 const KEY = 'six-compte'; // { prenom }
 const SESSION = 'six-session'; // { id, identifiant } : copie locale de la session, pour un affichage immédiat
 const EVT = 'six-compte';
+const PREFIXE_PHOTO = 'six-photo-profil:';
+const TAILLE_PHOTO_MAX = 131072;
+let versionPhoto = 0;
+let photoEnEcriture = false;
 const SYNC = 'six-memoire-sync'; // '1' : la personne a autorisé la copie de sa mémoire sur son compte
 
 export type Compte =
-  | { statut: 'invite'; prenom: string }
-  | { statut: 'connecte'; prenom: string; identifiant: string; photo?: string };
+  | { statut: 'invite'; prenom: string; photo?: string; photoPersonnalisee?: boolean }
+  | {
+      statut: 'connecte';
+      prenom: string;
+      identifiant: string;
+      photo?: string;
+      photoPersonnalisee?: boolean;
+    };
 
 function lireJson(k: string): Record<string, unknown> {
   try {
@@ -53,11 +63,135 @@ export function lireCompte(): Compte {
   const p = lireJson(KEY).prenom;
   const prenom = typeof p === 'string' ? p.trim().slice(0, 30) : '';
   const s = lireJson(SESSION);
+  const locale = lireJson(clePhoto(s)).photo;
+  const personnalisation = photoProfilValide(locale)
+    ? { photo: locale, photoPersonnalisee: true }
+    : {};
   if (CONNEXION_DISPONIBLE && typeof s.identifiant === 'string' && s.identifiant) {
     const photo = photoSure(s.photo);
-    return { statut: 'connecte', prenom, identifiant: s.identifiant, ...(photo ? { photo } : {}) };
+    return {
+      statut: 'connecte',
+      prenom,
+      identifiant: s.identifiant,
+      ...(photo ? { photo } : {}),
+      ...personnalisation,
+    };
   }
-  return { statut: 'invite', prenom };
+  return { statut: 'invite', prenom, ...personnalisation };
+}
+
+function clePhoto(session = lireJson(SESSION)): string {
+  return (
+    PREFIXE_PHOTO +
+    (CONNEXION_DISPONIBLE && typeof session.id === 'string' && session.id
+      ? `compte:${session.id}`
+      : 'invite')
+  );
+}
+
+function photoProfilValide(photo: unknown): photo is string {
+  return (
+    typeof photo === 'string' &&
+    photo.length <= TAILLE_PHOTO_MAX &&
+    /^data:image\/jpeg;base64,[A-Za-z0-9+/]+={0,2}$/.test(photo)
+  );
+}
+
+function conserverPhoto(cle: string, photo: string | null, synchronisee = false) {
+  if (photo) localStorage.setItem(cle, JSON.stringify({ photo, synchronisee }));
+  else localStorage.removeItem(cle);
+  annoncer();
+}
+
+async function retrouverPhotoProfil(sb: SupabaseClient, id: string) {
+  if (photoEnEcriture) return;
+  const version = ++versionPhoto;
+  const cle = clePhoto();
+  const active = () => version === versionPhoto && lireJson(SESSION).id === id;
+  try {
+    const table = sb.from('photos_profil');
+    const { data, error } = await table.select('photo').eq('user_id', id).maybeSingle();
+    if (error || !active()) return;
+    if (data) {
+      conserverPhoto(cle, photoProfilValide(data.photo) ? data.photo : null, true);
+      return;
+    }
+
+    // Une ancienne photo locale rejoint le compte seulement si aucune photo distante n'a été choisie.
+    const locale = lireJson(cle);
+    if (!locale.synchronisee && photoProfilValide(locale.photo)) {
+      const { data: copie, error: erreurCopie } = await table
+        .upsert(
+          { user_id: id, photo: locale.photo },
+          { onConflict: 'user_id', ignoreDuplicates: true },
+        )
+        .select('photo')
+        .maybeSingle();
+      if (!erreurCopie && copie && active()) conserverPhoto(cle, locale.photo, true);
+    }
+  } catch {
+    // Une lecture hors ligne conserve la dernière photo connue.
+  }
+}
+
+export async function modifierPhotoProfil(fichier?: File): Promise<void> {
+  const cle = clePhoto();
+  const id = lireCompte().statut === 'connecte' ? lireJson(SESSION).id : undefined;
+  const photo = fichier ? await preparerPhotoProfil(fichier) : null;
+  if (cle !== clePhoto()) throw new Error('Le compte a changé. Choisis de nouveau ta photo.');
+  if (typeof id !== 'string') {
+    if (lireCompte().statut === 'connecte')
+      throw new Error('Reconnecte-toi pour modifier ta photo.');
+    conserverPhoto(cle, photo);
+    return;
+  }
+
+  ++versionPhoto;
+  photoEnEcriture = true;
+  try {
+    const sb = await supabase();
+    if (!sb) throw new Error('Reconnecte-toi pour modifier ta photo.');
+    const { error } = await sb.from('photos_profil').upsert({ user_id: id, photo });
+    if (error) throw new Error('La photo n’a pas pu être synchronisée. Réessaie dans un instant.');
+    if (cle === clePhoto()) conserverPhoto(cle, photo, true);
+  } finally {
+    photoEnEcriture = false;
+  }
+}
+
+async function preparerPhotoProfil(fichier: File): Promise<string> {
+  if (fichier.size > 10 * 1024 * 1024) throw new Error('Choisis une image de 10 Mo maximum.');
+  if (!['image/jpeg', 'image/png', 'image/webp'].includes(fichier.type)) {
+    throw new Error('Choisis une image JPEG, PNG ou WebP.');
+  }
+  const image = await createImageBitmap(fichier).catch(() => {
+    throw new Error('Cette image ne peut pas être ouverte.');
+  });
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = canvas.height = 256;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('Impossible de préparer la photo.');
+    const cote = Math.min(image.width, image.height);
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, 256, 256);
+    ctx.drawImage(
+      image,
+      (image.width - cote) / 2,
+      (image.height - cote) / 2,
+      cote,
+      cote,
+      0,
+      0,
+      256,
+      256,
+    );
+    const photo = canvas.toDataURL('image/jpeg', 0.85);
+    if (!photoProfilValide(photo)) throw new Error('Impossible de préparer la photo.');
+    return photo;
+  } finally {
+    image.close();
+  }
 }
 
 /** Photo de profil fournie par Google ou Apple : seulement une adresse https, sinon rien. */
@@ -89,7 +223,12 @@ export function ecrirePrenom(prenom: string): void {
 /** S'abonne aux changements de compte (autre écran, autre onglet). */
 export function ecouterCompte(f: () => void): () => void {
   const onStorage = (e: StorageEvent) =>
-    (e.key === KEY || e.key === SESSION || e.key === SYNC) && f();
+    (e.key === null ||
+      e.key === KEY ||
+      e.key === SESSION ||
+      e.key === SYNC ||
+      e.key.startsWith(PREFIXE_PHOTO)) &&
+    f();
   window.addEventListener(EVT, f);
   window.addEventListener('storage', onStorage);
   return () => {
@@ -978,6 +1117,7 @@ export async function demarrerCompte(): Promise<void> {
         });
       }, 0);
       const id = session.user.id;
+      setTimeout(() => void retrouverPhotoProfil(sb, id), 0);
       if (!synchronises.has(id)) {
         synchronises.add(id);
         setTimeout(() => void synchroniser(sb, id), 0);

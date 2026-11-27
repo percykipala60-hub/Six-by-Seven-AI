@@ -8,7 +8,7 @@ from faster_whisper import WhisperModel
 
 # Modèle Whisper (licence MIT) : « base » par défaut ; « small » comprend mieux mais pèse ~460 Mo de plus.
 model = WhisperModel(os.environ.get('SIX_WHISPER_MODELE', 'base'), device='cpu', compute_type='int8')
-LANGUES = {'fr', 'en', 'ln', 'sw'}
+LANGUES = {'fr', 'en', 'es', 'de', 'zh', 'ln', 'sw'}
 
 
 class Transcription(BaseHTTPRequestHandler):
@@ -40,15 +40,16 @@ class Transcription(BaseHTTPRequestHandler):
             audio = self.rfile.read(size)
             demandee = parse_qs(adresse.query).get('langue', ['fr'])[0]
             langue = demandee if demandee in LANGUES else None  # « auto » : Whisper reconnaît la langue
-            segments, _info = model.transcribe(
+            segments, info = model.transcribe(
                 io.BytesIO(audio),
                 language=langue,
                 vad_filter=True,
                 beam_size=5,
                 # Le nom de l'assistant, pour qu'il soit écrit « Six » et non « 6 ».
-                initial_prompt="Conversation avec Six, l'assistant.",
+                initial_prompt="Six",
             )
-            self.repondre(200, {'texte': ' '.join(s.text.strip() for s in segments).strip()})
+            self.repondre(200, {'texte': ' '.join(s.text.strip() for s in segments).strip(),
+                               'langue': info.language})
         except Exception:
             self.repondre(422, {'error': 'Audio illisible.'})
 

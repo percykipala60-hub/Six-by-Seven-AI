@@ -24,6 +24,8 @@ import { corrigerIdentite } from '@/lib/identite';
 import { transcriptionLocaleDisponible } from '@/lib/transcription-locale';
 import { modifierTravail } from '@/lib/travail-serveur';
 import { contexteDuProjet } from '@/lib/travail';
+import { mesurerJetons } from '@/lib/jetons-serveur';
+import type { UsageJetons } from '@/lib/types';
 
 // Calculé à chaque demande : sinon Next fige la réponse au moment de la construction de l'app,
 // quand les clés du serveur (deploy/.env) ne sont pas encore chargées, et l'app se croit en démonstration.
@@ -45,7 +47,11 @@ export async function GET() {
   );
 }
 
-export async function POST(req: Request) {
+export function POST(req: Request) {
+  return mesurerJetons((lireUsage) => traiterChat(req, lireUsage));
+}
+
+async function traiterChat(req: Request, lireUsage: () => UsageJetons | undefined) {
   const blocked = await guard(req, true);
   if (blocked) return blocked;
   // Des images (capture d'écran, images d'une vidéo) peuvent accompagner le message : le corps peut alors être plus gros, mais le texte de la
@@ -113,7 +119,12 @@ export async function POST(req: Request) {
             surEtape: (texte) => envoyer({ type: 'etape', texte }),
             annulation: req.signal,
           });
-          envoyer({ type: 'fin', reponse: corrigerIdentite(r.reponse), etapes: r.etapes });
+          envoyer({
+            type: 'fin',
+            reponse: corrigerIdentite(r.reponse),
+            etapes: r.etapes,
+            usage: lireUsage(),
+          });
         } catch (e) {
           envoyer({
             type: 'erreur',
@@ -217,6 +228,7 @@ export async function POST(req: Request) {
             etapes: r.etapes,
             fichiers: r.fichiers,
             plan: r.plan,
+            usage: lireUsage(),
           });
         } catch (e) {
           envoyer({
@@ -251,16 +263,15 @@ export async function POST(req: Request) {
     });
   }
   try {
-    return NextResponse.json(
-      await chat(
-        parsed.data.messages,
-        a.illimite,
-        parsed.data.images,
-        parsed.data.mode,
-        parsed.data.skill,
-        parsed.data.vocal === true,
-      ),
+    const resultat = await chat(
+      parsed.data.messages,
+      a.illimite,
+      parsed.data.images,
+      parsed.data.mode,
+      parsed.data.skill,
+      parsed.data.vocal === true,
     );
+    return NextResponse.json({ ...resultat, usage: lireUsage() });
   } catch (e) {
     return providerFail(e);
   }

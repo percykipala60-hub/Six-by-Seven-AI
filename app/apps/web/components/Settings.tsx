@@ -27,6 +27,7 @@ import {
   demanderCodeChangementMdp,
   ecouterCompte,
   ecrirePrenom,
+  modifierPhotoProfil,
   enRecuperation,
   lireCompte,
   oublierMemoireDuCompte,
@@ -306,6 +307,21 @@ function CompteVue() {
   const [demande, demander] = useConfirmer();
   const [c, setC] = useState<Compte>({ statut: 'invite', prenom: '' });
   const [prenom, setPrenom] = useState('');
+  const champPhoto = useRef<HTMLInputElement>(null);
+  const [photoEnCours, setPhotoEnCours] = useState(false);
+  const [erreurPhoto, setErreurPhoto] = useState('');
+
+  async function changerPhoto(fichier?: File) {
+    setPhotoEnCours(true);
+    setErreurPhoto('');
+    try {
+      await modifierPhotoProfil(fichier);
+    } catch (e) {
+      setErreurPhoto(e instanceof Error ? e.message : 'Impossible de modifier la photo.');
+    } finally {
+      setPhotoEnCours(false);
+    }
+  }
 
   // Champs de saisie
   const [showPwd, setShowPwd] = useState(false);
@@ -408,10 +424,47 @@ function CompteVue() {
         titre="Profil"
         pied={
           c.statut === 'connecte'
-            ? 'Ton prénom est gardé sur ton compte, pour que Six te salue sur tous tes appareils.'
+            ? 'Ton prénom et ta photo de profil sont synchronisés sur les appareils connectés à ce compte.'
             : 'Gardé sur cet appareil seulement.'
         }
       >
+        <div className="lg-ligne lg-statique lg-saisie">
+          <span className="lg-label lg-cle">Photo de profil</span>
+          <input
+            ref={champPhoto}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            hidden
+            onChange={(e) => {
+              const fichier = e.currentTarget.files?.[0];
+              e.currentTarget.value = '';
+              if (fichier) void changerPhoto(fichier);
+            }}
+          />
+          <button
+            type="button"
+            className="btn"
+            disabled={photoEnCours}
+            onClick={() => champPhoto.current?.click()}
+          >
+            {c.photoPersonnalisee ? 'Changer la photo' : 'Ajouter une photo'}
+          </button>
+          {c.photoPersonnalisee && (
+            <button
+              type="button"
+              className="btn"
+              disabled={photoEnCours}
+              onClick={() => void changerPhoto()}
+            >
+              Retirer la photo
+            </button>
+          )}
+        </div>
+        {erreurPhoto && (
+          <p role="alert" className="auth-alert-erreur">
+            {erreurPhoto}
+          </p>
+        )}
         <div className="lg-ligne lg-statique lg-saisie">
           <label htmlFor="prenom" className="lg-label lg-cle">
             Prénom
