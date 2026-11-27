@@ -46,7 +46,7 @@ async function withRetry<T>(call: () => Promise<string>, parse: (t: string) => T
   }
   throw lastError instanceof ProviderError
     ? lastError
-    : new ProviderError("La réponse de l'IA était invalide. Réessaie.");
+    : new ProviderError("La réponse de l'IA était invalide. Réessayez.");
 }
 
 export async function analyze(conversation: string): Promise<Analysis> {
@@ -146,7 +146,7 @@ export async function chat(
       images,
     )
   ).trim();
-  if (!reponse) throw new ProviderError('La réponse de Six était vide. Réessaie.');
+  if (!reponse) throw new ProviderError('La réponse de Six était vide. Réessayez.');
   // Mode vocal : la réponse est lue tout de suite. La relecture (un second appel au modèle) doublerait l'attente
   // pour quelques phrases de conversation sans outil ni fichier.
   if (vocal) return { reponse: corrigerIdentite(reponse), demo: false };

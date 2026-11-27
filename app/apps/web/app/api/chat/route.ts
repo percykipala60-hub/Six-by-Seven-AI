@@ -31,9 +31,9 @@ import { contexteDuProjet } from '@/lib/travail';
 export const dynamic = 'force-dynamic';
 
 const SANS_ENVIRONNEMENT =
-  'Choisis d’abord l’environnement de cette discussion : un dossier de l’ordinateur, ou ton Cloud.';
+  'Choisissez d’abord l’environnement de cette discussion : un dossier de l’ordinateur, ou votre Cloud.';
 const DOSSIER_REFUSE =
-  'Ce dossier de travail est introuvable ou inaccessible. Choisis un autre dossier pour cette discussion.';
+  'Ce dossier de travail est introuvable ou inaccessible. Choisissez un autre dossier pour cette discussion.';
 
 export async function GET() {
   return NextResponse.json(
@@ -52,18 +52,31 @@ export async function POST(req: Request) {
   // Des images (capture d'écran, images d'une vidéo) peuvent accompagner le message : le corps peut alors être plus gros, mais le texte de la
   // discussion garde sa limite habituelle (CHAT_MAX_BYTES).
   const b = await readJson(req, CHAT_MAX_BYTES_AVEC_IMAGE);
-  if (!b) return fail(400, 'Requête illisible ou trop volumineuse. Raccourcis ton message.');
+  if (!b) return fail(400, 'Requête illisible ou trop volumineuse. Raccourcissez votre message.');
   const parsed = ChatBodySchema.safeParse(b);
   if (!parsed.success) return fail(400, 'Les messages du chat sont invalides.');
   const tailleTexte = new TextEncoder().encode(
     JSON.stringify({ messages: parsed.data.messages }),
   ).length;
   if (tailleTexte > CHAT_MAX_BYTES)
-    return fail(400, 'Requête illisible ou trop volumineuse. Raccourcis ton message.');
+    return fail(400, 'Requête illisible ou trop volumineuse. Raccourcissez votre message.');
   const a = await appelant(req);
+  // Question telle que tapée : elle seule décide s'il faut naviguer ou piloter l'ordinateur.
+  const questionBrute = parsed.data.messages.at(-1)?.content ?? '';
+  // Réglages → Votre Six : les préférences écrites par la personne précèdent sa demande (des données, pas des ordres
+  // qui changeraient les règles de Six).
+  if (parsed.data.preferences) {
+    const dernier = parsed.data.messages.at(-1);
+    if (dernier)
+      dernier.content = `Préférences de la personne (Réglages → Votre Six), à respecter sauf demande contraire :
+${parsed.data.preferences}
+
+Demande actuelle :
+${dernier.content}`;
+  }
   // Projet (Chat et Cosinus) : son contexte et ses documents, lus sur le serveur, précèdent la demande.
   if (parsed.data.projetId) {
-    if (!a.utilisateur) return fail(401, 'Connecte-toi pour utiliser ce projet.');
+    if (!a.utilisateur) return fail(401, 'Connectez-vous pour utiliser ce projet.');
     const proprietaire = a.utilisateur.id;
     try {
       const projet = await modifierTravail((e) =>
@@ -104,8 +117,7 @@ export async function POST(req: Request) {
     parsed.data.vocal !== true &&
     !process.env.VERCEL &&
     agentDisponible() &&
-    (demandeNavigation(derniereQuestion) ||
-      (ordinateurPermis && demandeOrdinateur(derniereQuestion)))
+    (demandeNavigation(questionBrute) || (ordinateurPermis && demandeOrdinateur(questionBrute)))
   ) {
     const messages = parsed.data.messages;
     const encodeur = new TextEncoder();
@@ -134,7 +146,7 @@ export async function POST(req: Request) {
         } catch (e) {
           envoyer({
             type: 'erreur',
-            error: e instanceof ProviderError ? e.message : 'Erreur inattendue. Réessaie.',
+            error: e instanceof ProviderError ? e.message : 'Erreur inattendue. Réessayez.',
           });
         } finally {
           c.close();
@@ -167,7 +179,7 @@ export async function POST(req: Request) {
       const u = await utilisateurDeRequete(req);
       const jeton = /^Bearer\s+(\S+)$/.exec(req.headers.get('authorization') ?? '')?.[1];
       if (!u || !jeton)
-        return fail(401, 'Connecte-toi à ton compte Six pour travailler dans le Cloud.');
+        return fail(401, 'Connectez-vous à votre compte Six pour travailler dans le Cloud.');
       try {
         const envs = await environnementsCloud(jeton, u.id);
         const env =
@@ -231,7 +243,7 @@ export async function POST(req: Request) {
             type: 'fin',
             reponse:
               corrigerIdentite(r.reponse) ||
-              'Travail terminé, mais Six n’a pas écrit de résumé. Regarde tes fichiers.',
+              'Travail terminé, mais Six n’a pas écrit de résumé. Regardez vos fichiers.',
             etapes: r.etapes,
             fichiers: r.fichiers,
             plan: r.plan,
@@ -239,7 +251,7 @@ export async function POST(req: Request) {
         } catch (e) {
           envoyer({
             type: 'erreur',
-            error: e instanceof ProviderError ? e.message : 'Erreur inattendue. Réessaie.',
+            error: e instanceof ProviderError ? e.message : 'Erreur inattendue. Réessayez.',
           });
         }
         if (cloud) {

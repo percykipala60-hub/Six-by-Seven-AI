@@ -29,6 +29,10 @@ export type EtatPremium = {
   apple?: boolean;
   /** Paiement pas encore ouvert : pas de limites, l'entrée Six Premium est cachée. */
   veille: boolean;
+  /** Utilisations du jour (analyses dans Responsive, messages dans Chat et Cosinus). */
+  utilise?: { analyses: number; messages: number };
+  /** Prochaine remise à zéro des compteurs (ISO). */
+  remiseAZero?: string;
 };
 
 export async function lireEtatPremium(): Promise<EtatPremium | null> {

@@ -25,7 +25,7 @@ export async function GET(req: Request) {
   const utilisateur = await utilisateurDeRequete(req);
   if (!utilisateur)
     return NextResponse.json(
-      { error: 'Connecte-toi pour retrouver tes projets et tes tâches.' },
+      { error: 'Connectez-vous pour retrouver vos projets et vos tâches.' },
       { status: 401 },
     );
   if (!travailDisponible())
@@ -59,7 +59,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Stockage non configuré.' }, { status: 503 });
   const parsed = commande.safeParse(await readJson(req, 100000));
   if (!parsed.success)
-    return NextResponse.json({ error: 'Vérifie les champs du formulaire.' }, { status: 400 });
+    return NextResponse.json({ error: 'Vérifiez les champs du formulaire.' }, { status: 400 });
   const c = parsed.data;
   try {
     const resultat = await modifierTravail((e) => {
@@ -89,7 +89,7 @@ export async function POST(req: Request) {
         )
           throw new Error('Le moteur de planification n’est pas actif.');
         if (Date.parse(c.donnees.prochaine) <= Date.now())
-          throw new Error('Choisis une date dans le futur.');
+          throw new Error('Choisissez une date dans le futur.');
         if (e.taches.filter((t) => t.proprietaire === utilisateur.id).length >= 50)
           throw new Error('Limite de 50 tâches atteinte.');
         if (
@@ -112,7 +112,7 @@ export async function POST(req: Request) {
         if (t.execution && !t.execution.fin)
           throw new Error('Cette tâche est en cours d’exécution.');
         if (c.etat === 'active' && t.etat === 'terminee')
-          throw new Error('Crée une nouvelle tâche pour la relancer.');
+          throw new Error('Créez une nouvelle tâche pour la relancer.');
         t.etat = c.etat;
         return t;
       }

@@ -66,6 +66,8 @@ export const ChatBodySchema = z.object({
   projetId: z.string().uuid().optional(),
   /** Espace de la discussion : absent = Chat ; « sixtouch » = consignes d'agent de travail. */
   mode: z.enum(['chat', 'sixtouch']).optional(),
+  /** Réglages → Votre Six : ce que Six doit savoir de la personne (écrit par elle, gardé sur l'appareil). */
+  preferences: z.string().trim().max(1500).optional(),
   /** Mode vocal : réponse orale courte, sans relecture (elle doublerait l'attente). */
   vocal: z.boolean().optional(),
   /** Chat de l'app de bureau : le navigateur interne est là, Six peut le piloter pour une demande web. */

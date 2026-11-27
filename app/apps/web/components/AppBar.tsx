@@ -12,7 +12,6 @@ import Link from 'next/link';
 import { ecouterCompte, lireCompte, type Compte } from '@/lib/compte';
 import { AvatarContenu } from './AvatarContenu';
 import { MenuCompte, useRaccourciReglages } from './MenuCompte';
-import { LIEN_CONFIDENTIALITE } from '@/lib/liens';
 import { effacerChat, ecouterChats, lireChats, type ChatSeven } from '@/lib/seven-chats';
 import { Recents, type ElementRecent } from './Recents';
 import {
@@ -100,7 +99,7 @@ function ChoixMode({ actif }: { actif: 'six' | 'seven' | 'sixtouch' }) {
         href="/cosinus"
         className="choix-mode-btn"
         aria-current={actif === 'sixtouch' ? 'page' : undefined}
-        aria-label="Cosinus : Six travaille pour toi (navigateur, fichiers)"
+        aria-label="Cosinus : Six travaille pour vous (navigateur, fichiers)"
         title="Cosinus"
       >
         <Icon name="sixtouch" size={18} stroke={1.75} />
@@ -464,23 +463,10 @@ export function AppBar({
           recherche={recherche}
           apresLien={apresLien}
         />
-        <nav aria-label="Réglages" className="drawer-nav drawer-bas">
-          {item('/reglages', 'reglages', <Icon name="sliders" />, 'Réglages')}
-          <a
-            href={LIEN_CONFIDENTIALITE}
-            className="drawer-item"
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={apresLien}
-          >
-            <Icon name="lock" />
-            <span>Confidentialité</span>
-          </a>
-        </nav>
         <Suivis />
-        <Link href="/reglages?v=compte" className="drawer-profile" onClick={apresLien}>
-          <ProfilLigne />
-        </Link>
+        {/* Comme dans Claude : le compte en bas du panneau ; un clic ouvre la petite liste (paramètres, utilisation,
+            aide, applications, déconnexion) juste au-dessus. */}
+        <ProfilMenu />
       </div>
     </>
   );
@@ -592,26 +578,37 @@ function titreReponse(g: ConversationGardee): string {
   return g.canal ? `${g.canal} · ${court}` : court || 'Réponse';
 }
 
-function ProfilLigne() {
+function ProfilMenu() {
   const [c, setC] = useState<Compte>({ statut: 'invite', prenom: '' });
+  const [menu, setMenu] = useState(false);
+  const fermer = useCallback(() => setMenu(false), []);
   useEffect(() => {
     const lire = () => setC(lireCompte());
     lire();
     return ecouterCompte(lire);
   }, []);
   return (
-    <>
-      <span className="avatar avatar-static" aria-hidden="true">
-        <AvatarContenu c={c} taille={18} />
-        <span className={`avatar-dot${c.statut === 'connecte' ? ' on' : ''}`} />
-      </span>
-      <span className="grow">
-        <b>{c.prenom || 'Invité'}</b>
-        <span className="muted small">
-          {c.statut === 'connecte' ? c.identifiant : 'Non connecté, tout reste ici'}
+    <div className="drawer-profile-ancre">
+      <button
+        type="button"
+        className="drawer-profile"
+        aria-haspopup="menu"
+        aria-expanded={menu}
+        onClick={() => setMenu((m) => !m)}
+      >
+        <span className="avatar avatar-static" aria-hidden="true">
+          <AvatarContenu c={c} taille={18} />
+          <span className={`avatar-dot${c.statut === 'connecte' ? ' on' : ''}`} />
         </span>
-      </span>
-      <Icon name="chevron" size={18} />
-    </>
+        <span className="grow">
+          <b>{c.prenom || 'Invité'}</b>
+          <span className="muted small">
+            {c.statut === 'connecte' ? c.identifiant : 'Non connecté, tout reste ici'}
+          </span>
+        </span>
+        <Icon name="trier" size={16} />
+      </button>
+      {menu && <MenuCompte compte={c} ancre="dessus" onFermer={fermer} />}
+    </div>
   );
 }

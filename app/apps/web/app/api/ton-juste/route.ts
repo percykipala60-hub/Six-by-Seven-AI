@@ -14,9 +14,9 @@ export async function POST(req: Request) {
   if ('erreur' in lu) return fail(400, lu.erreur);
   // Sans clé, pas de fausse note : la progression du joueur ne doit reposer que sur de vraies évaluations.
   if (!hasAI())
-    return fail(503, "Le jeu n'est pas encore relié à l'IA de Six. Réessaie plus tard.");
+    return fail(503, "Le jeu n'est pas encore relié à l'IA de Six. Réessayez plus tard.");
   if (plafondJeu())
-    return fail(503, "Le jeu a atteint sa limite d'évaluations pour aujourd'hui. Reviens demain.");
+    return fail(503, "Le jeu a atteint sa limite d'évaluations pour aujourd'hui. Revenez demain.");
   try {
     return NextResponse.json(await evaluer(lu.level, lu.playerAnswer));
   } catch (e) {

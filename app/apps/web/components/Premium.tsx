@@ -88,18 +88,18 @@ export function PremiumVue() {
   }
 
   if (charge) return <p className="lg-pied">Chargement…</p>;
-  if (!etat) return <p className="lg-pied">Pas de réseau. Réessaie dans un instant.</p>;
+  if (!etat) return <p className="lg-pied">Pas de réseau. Réessayez dans un instant.</p>;
 
   const limites = etat.limites;
 
   return (
     <>
       <Groupe
-        titre={etat.premium ? 'Ton premium' : 'Ce que Six Premium ajoute'}
+        titre={etat.premium ? 'Votre premium' : 'Ce que Six Premium ajoute'}
         pied={
           etat.premium
             ? 'Un nouveau pass s’ajoute à la fin de celui-ci.'
-            : 'Pas d’abonnement ni de prélèvement automatique : tu paies un pass, puis tu renouvelles si tu veux.'
+            : 'Pas d’abonnement ni de prélèvement automatique : vous payez un pass, puis vous renouvelez si vous le souhaitez.'
         }
       >
         {etat.premium && (
@@ -128,8 +128,8 @@ export function PremiumVue() {
         <LigneInfo icon="bulb" label="Le meilleur modèle d’IA" sous="Des réponses plus fines" />
         <LigneInfo
           icon="refresh"
-          label="Ta mémoire sur tous tes appareils"
-          sous="Habitudes, contacts et rappels. Jamais tes conversations."
+          label="Votre mémoire sur tous vos appareils"
+          sous="Habitudes, contacts et rappels. Jamais vos conversations."
         />
       </Groupe>
 
@@ -148,7 +148,7 @@ export function PremiumVue() {
 
       {natif && appleIci && etat.apple && etat.connecte ? (
         <>
-          <Groupe titre="Choisis ton pass">
+          <Groupe titre="Choisissez votre pass">
             <div role="radiogroup" aria-label="Pass" className="lg-contenu">
               {etat.offres.map((o) => (
                 <LigneChoix
@@ -179,22 +179,22 @@ export function PremiumVue() {
               Restaurer mes achats
             </button>
             <p className="lg-sous">
-              Paiement par ton identifiant Apple (Apple Pay ou moyen enregistré). Pass sans
-              renouvellement automatique. En achetant, tu acceptes les conditions d’utilisation de
+              Paiement par votre identifiant Apple (Apple Pay ou moyen enregistré). Pass sans
+              renouvellement automatique. En achetant, vous acceptez les conditions d’utilisation de
               Six.
             </p>
           </div>
         </>
       ) : natif ? (
         <p className="lg-pied">
-          L’achat n’est pas proposé dans l’application. Un premium déjà actif sur ton compte
+          L’achat n’est pas proposé dans l’application. Un premium déjà actif sur votre compte
           s’active ici automatiquement.
         </p>
       ) : !etat.connecte ? (
-        <p className="lg-pied">Connecte-toi pour passer à Six Premium.</p>
+        <p className="lg-pied">Connectez-vous pour passer à Six Premium.</p>
       ) : (
         <p className="lg-pied">
-          Six Premium s’achète dans l’app iPhone. Un premium actif sur ton compte s’active ici
+          Six Premium s’achète dans l’app iPhone. Un premium actif sur votre compte s’active ici
           automatiquement.
         </p>
       )}

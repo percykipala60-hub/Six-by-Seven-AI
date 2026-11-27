@@ -1,5 +1,7 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
+
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from 'react';
 import { DEFAULT_STYLE, clearStyle, loadStyle, saveStyle } from '@/lib/style';
 import {
@@ -14,7 +16,6 @@ import {
 import { effacerConversations, lireConversations } from '@/lib/conversations';
 import { applyThemeIcon, hasNativeThemeIconError } from '@/lib/theme-icon';
 import { appliquerMode, lireAccent, TOUJOURS_CLAIR } from '@/lib/theme-ids';
-import { LIEN_CONDITIONS, LIEN_CONFIDENTIALITE } from '@/lib/liens';
 import { FONDS, fondValide, type FondId } from './Fond';
 import themeColors from '@/lib/theme-colors.json';
 import type { UserStyle } from '@/lib/types';
@@ -40,7 +41,7 @@ import { useConfirmer } from './Confirmer';
 import { Icon, type IconName } from './Icon';
 import { InterAppNotifications, InterAppOnboarding } from './InterAppNotifications';
 import { Raccourcis } from './Raccourcis';
-import { EVT_PREMIUM, PremiumVue } from './Premium';
+import { EVT_PREMIUM } from './Premium';
 import { CloudSix } from './CloudSix';
 import { lireEtatPremium } from '@/lib/premium-client';
 import { ouvrirRaccourcisIOS, surIPhoneNatif } from '@/lib/raccourcis-ios';
@@ -50,10 +51,8 @@ import {
   Ligne,
   BoutonTexte,
   LigneInfo,
-  Separateur,
   LigneChoix,
   LigneInterrupteur,
-  LigneLien,
 } from './Liste';
 import { plateforme } from '@/lib/plateforme';
 import { AppareilsVue } from './Appareils';
@@ -61,6 +60,16 @@ import { GithubCloud } from './GithubCloud';
 import { ReglagesSkills } from './ReglagesSkills';
 import { ReglagesVoix } from './ReglagesVoix';
 import { ReglagesCapacites } from './ReglagesCapacites';
+import {
+  BureauVue,
+  ConfidentialiteVue,
+  ExporterDonnees,
+  FacturationVue,
+  InstructionsSix,
+  NotificationsSixVue,
+  UtilisationVue,
+} from './ReglagesPlus';
+import { ecrireAcces, lireAcces, type ACCES } from '@/lib/accessibilite';
 
 type Theme = 'auto' | 'light' | 'dark';
 // Chaque thème est montré comme le logo qu'il donne : fond, « 6 » et trait (mêmes valeurs que app/globals.css).
@@ -145,7 +154,7 @@ function MemoireSix() {
         titre="Mémoire sur cet appareil"
         pied={
           on
-            ? "Six apprend de tes choix pour écrire comme toi et se souvient de tes contacts. Tout reste sur cet appareil ; ce qu'il apprend est oublié après 90 jours."
+            ? "Six apprend de vos choix pour écrire comme vous et se souvient de vos contacts. Tout reste sur cet appareil ; ce qu'il apprend est oublié après 90 jours."
             : 'Six oublie tout à chaque conversation. Rien n’est gardé sur cet appareil.'
         }
       >
@@ -160,7 +169,7 @@ function MemoireSix() {
               demander({
                 titre: 'Couper la mémoire ?',
                 texte:
-                  "Six oubliera ce qu'il a appris, tes notes sur tes contacts et tes conversations gardées sur cet appareil. On ne peut pas revenir en arrière.",
+                  "Six oubliera ce qu'il a appris, vos notes sur vos contacts et vos conversations gardées sur cet appareil. On ne peut pas revenir en arrière.",
                 action: 'Couper et tout effacer',
                 danger: true,
                 onConfirmer: () => activerMemoire(false),
@@ -193,10 +202,10 @@ function MemoireSix() {
             )}
           </Groupe>
           <Groupe
-            titre="Tes contacts"
+            titre="Vos contacts"
             pied={
               m.contacts.length
-                ? 'Ce que tu as noté sur chaque personne. Envoyé avec ta demande, nom masqué.'
+                ? 'Ce que vous avez noté sur chaque personne. Envoyé avec votre demande, nom masqué.'
                 : 'Pendant une conversation, touche « Ce que Six sait de… » pour noter qui est la personne.'
             }
           >
@@ -220,7 +229,7 @@ function MemoireSix() {
           </Groupe>
           <Groupe
             titre="Sur cet appareil"
-            pied="Tes conversations terminées restent ici tant que tu les gardes. Tu peux aussi les effacer une par une depuis l’accueil."
+            pied="Vos conversations terminées restent ici tant que vous les gardez. Vous pouvez aussi les effacer une par une depuis l’accueil."
           >
             <LigneInfo icon="chat" label="Conversations gardées" valeur={nbConv} />
             <LigneInfo icon="bell" label="Suivis en attente" valeur={m.suivis.length} />
@@ -251,7 +260,7 @@ function MemoireSix() {
                 demander({
                   titre: 'Effacer la mémoire de Six ?',
                   texte:
-                    'Six oubliera tes habitudes, tes notes sur tes contacts et tes suivis. La mémoire reste activée et recommencera à apprendre.',
+                    'Six oubliera vos habitudes, vos notes sur vos contacts et vos suivis. La mémoire reste activée et recommencera à apprendre.',
                   action: 'Effacer',
                   danger: true,
                   onConfirmer: effacerMemoire,
@@ -267,33 +276,49 @@ function MemoireSix() {
 
 type Vue =
   | ''
-  | 'premium'
-  | 'theme'
-  | 'police'
-  | 'style'
-  | 'memoire'
   | 'compte'
-  | 'notifications'
-  | 'raccourcis'
-  | 'sixtouch'
-  | 'skills'
-  | 'voix'
+  | 'facturation'
+  | 'utilisation'
+  | 'apparence'
+  | 'votre-six'
   | 'capacites'
-  | 'appareils';
+  | 'voix'
+  | 'notifications'
+  | 'confidentialite'
+  | 'focus'
+  | 'cosinus'
+  | 'cloud'
+  | 'appareils'
+  | 'bureau'
+  | 'apps'
+  | 'raccourcis';
 const TITRES: Record<Exclude<Vue, ''>, string> = {
-  premium: 'Six Premium',
-  theme: 'Thème',
-  police: 'Police',
-  style: "Mon style d'écriture",
-  memoire: 'Cloud',
   compte: 'Compte',
-  notifications: 'Notifications des apps',
-  raccourcis: 'Bulle et clavier',
-  sixtouch: 'Cosinus',
-  skills: 'Focus',
-  voix: 'Voix',
+  facturation: 'Facturation',
+  utilisation: 'Utilisation',
+  apparence: 'Apparence',
+  'votre-six': 'Votre Six',
   capacites: 'Capacités',
+  voix: 'Voix et dictée',
+  notifications: 'Notifications',
+  confidentialite: 'Confidentialité',
+  focus: 'Focus',
+  cosinus: 'Cosinus',
+  cloud: 'Cloud et partages',
   appareils: 'Appareils connectés',
+  bureau: 'Application de bureau',
+  apps: 'Notifications des apps',
+  raccourcis: 'Bulle et clavier',
+};
+/** Anciennes adresses des réglages (liens déjà partagés, ordres vocaux) : elles mènent à la nouvelle section. */
+const ALIAS: Record<string, Exclude<Vue, ''>> = {
+  theme: 'apparence',
+  police: 'apparence',
+  style: 'votre-six',
+  memoire: 'cloud',
+  premium: 'facturation',
+  sixtouch: 'cosinus',
+  skills: 'focus',
 };
 const MODES: Record<Theme, string> = { auto: 'Auto', light: 'Clair', dark: 'Sombre' };
 
@@ -385,7 +410,7 @@ function CompteVue() {
     else {
       setCodeMdpEnvoye(true);
       setAttente(60);
-      setInfo('Un code vient de partir à l’adresse de ton compte.');
+      setInfo('Un code vient de partir à l’adresse de votre compte.');
     }
   }
 
@@ -408,7 +433,7 @@ function CompteVue() {
         titre="Profil"
         pied={
           c.statut === 'connecte'
-            ? 'Ton prénom est gardé sur ton compte, pour que Six te salue sur tous tes appareils.'
+            ? 'Votre prénom est gardé sur votre compte, pour que Six vous salue sur tous vos appareils.'
             : 'Gardé sur cet appareil seulement.'
         }
       >
@@ -424,7 +449,7 @@ function CompteVue() {
             value={prenom}
             onChange={(e) => setPrenom(e.target.value)}
             onBlur={() => ecrirePrenom(prenom)}
-            placeholder="Pour que Six te salue"
+            placeholder="Pour que Six vous salue"
           />
         </div>
       </Groupe>
@@ -560,7 +585,7 @@ function CompteVue() {
                 demander({
                   titre: 'Effacer la mémoire partout ?',
                   texte:
-                    'Ta mémoire sera effacée de ton compte et de cet appareil : habitudes, notes sur tes contacts et suivis. On ne peut pas revenir en arrière.',
+                    'Votre mémoire sera effacée de votre compte et de cet appareil : habitudes, notes sur vos contacts et suivis. On ne peut pas revenir en arrière.',
                   action: 'Tout effacer',
                   danger: true,
                   onConfirmer: async () => {
@@ -579,7 +604,7 @@ function CompteVue() {
                 demander({
                   titre: 'Se déconnecter ?',
                   texte:
-                    'Ta mémoire reste sur cet appareil. Tu pourras te reconnecter à tout moment avec ton adresse e-mail.',
+                    'Votre mémoire reste sur cet appareil. Vous pourrez vous reconnecter à tout moment avec votre adresse e-mail.',
                   action: 'Se déconnecter',
                   onConfirmer: async () => {
                     await deconnecter();
@@ -594,7 +619,7 @@ function CompteVue() {
         <div className="group-list pad">
           <b>Connexion</b>
           <p className="muted small">
-            La connexion n&apos;est pas configurée sur cette version. Tu utilises Six en invité :
+            La connexion n&apos;est pas configurée sur cette version. Vous utilisez Six en invité :
             tout reste sur cet appareil.
           </p>
         </div>
@@ -603,10 +628,108 @@ function CompteVue() {
   );
 }
 
+/** Petit choix à deux ou trois boutons, au bout d'une rangée. */
+function ChoixRangee<V extends string>({
+  label,
+  options,
+  valeur,
+  onChoisir,
+}: {
+  label: string;
+  options: readonly (readonly [V, string])[];
+  valeur: V;
+  onChoisir: (v: V) => void;
+}) {
+  return (
+    <div className="seg seg-rangee" role="group" aria-label={label}>
+      {options.map(([v, nom]) => (
+        <button key={v} type="button" aria-pressed={valeur === v} onClick={() => onChoisir(v)}>
+          {nom}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** Accessibilité : moins d'animations, plus de contraste, conversation plus large sur ordinateur. */
+function Accessibilite({ grand }: { grand: boolean }) {
+  type V<R extends keyof typeof ACCES> = (typeof ACCES)[R]['valeurs'][number];
+  const [mouvement, setMouvement] = useState<V<'mouvement'>>('systeme');
+  const [contraste, setContraste] = useState<V<'contraste'>>('systeme');
+  const [largeur, setLargeur] = useState<V<'largeur'>>('etroite');
+  useEffect(() => {
+    setMouvement(lireAcces('mouvement'));
+    setContraste(lireAcces('contraste'));
+    setLargeur(lireAcces('largeur'));
+  }, []);
+  return (
+    <Groupe titre="Accessibilité" pied="Ces réglages restent sur cet appareil.">
+      <LigneInfo
+        label="Mouvement"
+        sous="Moins d’animations dans Six, ou comme le demande votre appareil."
+        valeur={
+          <ChoixRangee
+            label="Mouvement"
+            options={[
+              ['systeme', 'Appareil'],
+              ['reduit', 'Réduit'],
+            ]}
+            valeur={mouvement}
+            onChoisir={(v) => {
+              setMouvement(v);
+              ecrireAcces('mouvement', v);
+            }}
+          />
+        }
+      />
+      <LigneInfo
+        label="Contraste"
+        sous="Textes gris et traits plus foncés, plus faciles à lire."
+        valeur={
+          <ChoixRangee
+            label="Contraste"
+            options={[
+              ['systeme', 'Appareil'],
+              ['eleve', 'Élevé'],
+            ]}
+            valeur={contraste}
+            onChoisir={(v) => {
+              setContraste(v);
+              ecrireAcces('contraste', v);
+            }}
+          />
+        }
+      />
+      {grand && (
+        <LigneInfo
+          label="Largeur de la conversation"
+          sous="Sur grand écran, dans Chat et Responsive."
+          valeur={
+            <ChoixRangee
+              label="Largeur de la conversation"
+              options={[
+                ['etroite', 'Étroite'],
+                ['moyenne', 'Moyenne'],
+                ['large', 'Large'],
+              ]}
+              valeur={largeur}
+              onChoisir={(v) => {
+                setLargeur(v);
+                ecrireAcces('largeur', v);
+              }}
+            />
+          }
+        />
+      )}
+    </Groupe>
+  );
+}
+
 export function Settings() {
+  const router = useRouter();
   const [demande, demander] = useConfirmer();
   const dedans = useRef(false); // vrai quand la sous-page a été ouverte depuis la liste : Retour revient en arrière
-  // Sous-page courante (« ?v=theme » etc.) lue depuis l'URL dans un effet, sans useSearchParams :
+  // Sous-page courante (« ?v=apparence » etc.) lue depuis l'URL dans un effet, sans useSearchParams :
   // plus de re-render de secours côté client (source intermittente d'hydratation #418).
   const [vue, setVue] = useState<Vue>('');
   // Grand écran : sections à gauche, section ouverte à droite (comme les réglages d'un ordinateur).
@@ -620,7 +743,8 @@ export function Settings() {
   }, []);
   useEffect(() => {
     const lireUrl = () => {
-      const v = new URLSearchParams(window.location.search).get('v') ?? '';
+      const brut = new URLSearchParams(window.location.search).get('v') ?? '';
+      const v = ALIAS[brut] ?? brut;
       setVue(v in TITRES ? (v as Vue) : '');
     };
     lireUrl();
@@ -637,8 +761,6 @@ export function Settings() {
   const [compte, setCompte] = useState<Compte>({ statut: 'invite', prenom: '' });
   const [recherche, setRecherche] = useState('');
   const [premium, setPremium] = useState(false);
-  // Entrée Six Premium cachée tant que le paiement n'est pas ouvert (premium en veille).
-  const [premiumOuvert, setPremiumOuvert] = useState(false);
   // Chaque version ne montre que ses réglages : « Siri et raccourcis » dans l'app iPhone, « Bulle et clavier » et
   // « Notifications des apps » dans l'app Android, « Cosinus » (dossier de travail, navigateur) dans l'app de bureau.
   const [iphone, setIphone] = useState(false);
@@ -655,7 +777,6 @@ export function Settings() {
     const lirePremium = () =>
       void lireEtatPremium().then((e) => {
         setPremium(Boolean(e?.premium));
-        setPremiumOuvert(Boolean(e && !e.veille));
       });
     lirePremium();
     window.addEventListener(EVT_PREMIUM, lirePremium);
@@ -755,7 +876,7 @@ export function Settings() {
   // Contenu d'une section : sous-page sur téléphone, panneau de droite sur grand écran.
   const contenuVue = (vue: Exclude<Vue, ''>) => (
     <>
-      {vue === 'theme' && (
+      {vue === 'apparence' && (
         <>
           <div className="apercu" aria-label="Aperçu du thème">
             <p className="apercu-in">On dit quoi pour samedi ?</p>
@@ -765,7 +886,7 @@ export function Settings() {
             titre="Apparence"
             pied={
               TOUJOURS_CLAIR.has(accent)
-                ? 'Le thème Rose reste toujours clair. Ton choix revient si tu changes de couleur.'
+                ? 'Le thème Rose reste toujours clair. Votre choix revient si vous changez de couleur.'
                 : undefined
             }
           >
@@ -819,33 +940,36 @@ export function Settings() {
             titre="Ambiances"
             pied={
               themeIconError
-                ? "Six n'a pas pu changer son icône. Relance l'application puis réessaie."
+                ? "Six n'a pas pu changer son icône. Relancez l'application puis réessayez."
                 : "La couleur change toute l'app : fonds, boutons et icône. Ce réglage reste sur cet appareil."
             }
           >
             <Pastilles liste={AMBIANCES} choisi={accent} onChoisir={applyAccent} />
           </Groupe>
+          <Groupe
+            titre="Police"
+            pied="Si votre appareil n’a pas la police, Six affiche la plus proche."
+          >
+            <div role="radiogroup" aria-label="Police" className="lg-contenu">
+              {POLICES.map((p) => (
+                <LigneChoix
+                  key={p.id}
+                  label={<span style={{ fontFamily: p.family }}>{p.label}</span>}
+                  choisi={police === p.id}
+                  onClick={() => applyPolice(p.id)}
+                />
+              ))}
+            </div>
+          </Groupe>
+          <Accessibilite grand={grand} />
         </>
       )}
-      {vue === 'police' && (
-        <Groupe pied="Si ton appareil n’a pas la police, Six affiche la plus proche.">
-          <div role="radiogroup" aria-label="Police" className="lg-contenu">
-            {POLICES.map((p) => (
-              <LigneChoix
-                key={p.id}
-                label={<span style={{ fontFamily: p.family }}>{p.label}</span>}
-                choisi={police === p.id}
-                onClick={() => applyPolice(p.id)}
-              />
-            ))}
-          </div>
-        </Groupe>
-      )}
-      {vue === 'style' && (
+      {vue === 'votre-six' && (
         <>
+          <InstructionsSix />
           <Groupe
-            titre="Ta façon d’écrire"
-            pied="Six s’en sert pour écrire comme toi. Ce réglage reste sur cet appareil."
+            titre="Votre façon d’écrire"
+            pied="Six s’en sert pour écrire comme vous. Ce réglage reste sur cet appareil."
           >
             <div className="lg-bloc">
               <label htmlFor="deco" className="lg-label">
@@ -888,7 +1012,7 @@ export function Settings() {
               onChange={(on) => updateStyle({ ...style, emojis: on })}
             />
           </Groupe>
-          <Groupe titre="Tes expressions" pied="Jusqu’à 5 expressions que tu utilises souvent.">
+          <Groupe titre="Vos expressions" pied="Jusqu’à 5 expressions que vous utilisez souvent.">
             {style.expressions.map((x) => (
               <LigneInfo
                 key={x}
@@ -942,9 +1066,9 @@ export function Settings() {
               label="Effacer mon style"
               onClick={() =>
                 demander({
-                  titre: 'Effacer ton style ?',
+                  titre: 'Effacer votre style ?',
                   texte:
-                    'Ton registre, ta longueur préférée et tes expressions reviendront aux réglages de départ.',
+                    'Votre registre, votre longueur préférée et vos expressions reviendront aux réglages de départ.',
                   action: 'Effacer',
                   danger: true,
                   onConfirmer: () => {
@@ -955,23 +1079,30 @@ export function Settings() {
               }
             />
           </Groupe>
+          <MemoireSix />
+          <ExporterDonnees />
           {demande}
         </>
       )}
-      {vue === 'memoire' && (
+      {vue === 'cloud' && (
         <>
-          <CloudSix onPremium={() => ouvrir('premium')} />
+          <CloudSix onPremium={() => ouvrir('facturation')} />
           <GithubCloud />
-          <MemoireSix />
         </>
       )}
-      {vue === 'premium' && <PremiumVue />}
+      {vue === 'facturation' && <FacturationVue />}
+      {vue === 'utilisation' && <UtilisationVue onOuvrir={(v) => ouvrir(v as Vue)} />}
       {vue === 'compte' && <CompteVue />}
-      {vue === 'notifications' && <InterAppNotifications />}
+      {vue === 'notifications' && (
+        <NotificationsSixVue android={android} onOuvrir={(v) => ouvrir(v as Vue)} />
+      )}
+      {vue === 'confidentialite' && <ConfidentialiteVue onOuvrir={(v) => ouvrir(v as Vue)} />}
+      {vue === 'bureau' && <BureauVue />}
+      {vue === 'apps' && <InterAppNotifications />}
       {vue === 'raccourcis' && <Raccourcis />}
-      {vue === 'sixtouch' && <ReglagesSixTouch />}
+      {vue === 'cosinus' && <ReglagesSixTouch />}
       {vue === 'appareils' && <AppareilsVue />}
-      {vue === 'skills' && <ReglagesSkills />}
+      {vue === 'focus' && <ReglagesSkills />}
       {vue === 'voix' && <ReglagesVoix />}
       {vue === 'capacites' && <ReglagesCapacites />}
     </>
@@ -989,248 +1120,328 @@ export function Settings() {
   const couleur = [...ACCENTS, ...AMBIANCES].find((a) => a.id === accent)?.label ?? 'Bleu';
   const registre =
     style.decontracte >= 66 ? 'Décontracté' : style.decontracte <= 33 ? 'Formel' : 'Équilibré';
-  // Entrées de la liste, avec des mots-clés pour la recherche.
-  const entrees: {
-    id: string;
+  /**
+   * Sections, rangées comme les réglages d'un assistant d'IA : sur ordinateur en quatre groupes (compte, préférences,
+   * outils, appareil) ; sur téléphone en deux (« Compte » et « Application »). Mots-clés pour la recherche.
+   */
+  type Entree = {
+    id: Exclude<Vue, ''> | 'siri';
     icon: IconName;
     label: string;
     sous?: string;
     cles: string;
-    href?: string;
-    externe?: boolean;
+    groupe: 1 | 2 | 3 | 4;
+    mobile: 'compte' | 'app';
     action?: () => void;
-  }[] = [
-    ...(premiumOuvert || premium
-      ? [
-          {
-            id: 'premium',
-            icon: 'sparkles' as const,
-            label: 'Six Premium',
-            sous: premium ? 'Actif' : 'Sans limite, meilleur modèle, mémoire partout',
-            cles: 'premium abonnement payer paiement mobile money carte pass limite',
-          },
-        ]
-      : []),
+  };
+  const entrees: Entree[] = [
     {
-      id: 'theme',
+      id: 'facturation',
+      icon: 'sparkles',
+      label: 'Facturation',
+      sous: premium ? 'Six Premium' : 'Gratuit',
+      cles: 'facturation forfait premium abonnement payer paiement pass prix',
+      groupe: 1,
+      mobile: 'compte',
+    },
+    {
+      id: 'utilisation',
+      icon: 'horloge',
+      label: 'Utilisation',
+      sous: 'Messages et analyses du jour',
+      cles: 'utilisation limite quota messages analyses compteur jour',
+      groupe: 1,
+      mobile: 'compte',
+    },
+    {
+      id: 'apparence',
       icon: 'palette',
-      label: 'Thème',
-      sous: `${couleur}, ${TOUJOURS_CLAIR.has(accent) ? 'toujours clair' : MODES[theme].toLowerCase()}, fond ${FONDS.find((f) => f.id === fond)?.label.toLowerCase()}`,
-      cles: 'couleur clair sombre apparence ambiance',
+      label: 'Apparence',
+      sous: `${couleur}, ${TOUJOURS_CLAIR.has(accent) ? 'toujours clair' : MODES[theme].toLowerCase()}, ${POLICES.find((p) => p.id === police)?.court ?? 'Appareil'}`,
+      cles: 'apparence thème couleur clair sombre fond ambiance police accessibilité contraste mouvement animation largeur',
+      groupe: 2,
+      mobile: 'app',
     },
     {
-      id: 'police',
-      icon: 'type',
-      label: 'Police',
-      sous: POLICES.find((p) => p.id === police)?.label,
-      cles: 'texte écriture caractères',
+      id: 'votre-six',
+      icon: 'memoire',
+      label: 'Votre Six',
+      sous: `Préférences, ${registre.toLowerCase()}, mémoire`,
+      cles: 'votre six préférences instructions personnalisation style écriture registre longueur emoji expressions mémoire contacts habitudes exporter',
+      groupe: 2,
+      mobile: 'app',
     },
-    {
-      id: 'style',
-      icon: 'pencil',
-      label: 'Mon style d’écriture',
-      sous: `${registre}, expressions, emojis`,
-      cles: 'registre longueur emoji expressions ton',
-    },
-    ...(bureau
-      ? [
-          {
-            id: 'sixtouch',
-            icon: 'sixtouch' as const,
-            label: 'Cosinus',
-            sous: 'Espace de travail, navigateur',
-            cles: 'cosinus sixtouch navigateur historique espace dossier agent fichiers',
-          },
-        ]
-      : []),
     {
       id: 'capacites',
       icon: 'bulb',
       label: 'Capacités',
-      sous: 'Artéfacts, graphiques, fichiers et Internet dans Cosinus',
+      sous: 'Artéfacts, graphiques, fichiers, Internet',
       cles: 'capacités artéfacts artefacts graphiques diagrammes fichiers créer modifier internet web sources navigateur',
+      groupe: 2,
+      mobile: 'app',
     },
     {
       id: 'voix',
       icon: 'vocal',
-      label: 'Voix',
+      label: 'Voix et dictée',
       sous: 'Voix de Six, langue, mode vocal',
       cles: 'voix vocal parler langue lecture vitesse dictée micro écoute sphère',
+      groupe: 2,
+      mobile: 'app',
     },
     {
-      id: 'skills',
+      id: 'notifications',
+      icon: 'bell',
+      label: 'Notifications',
+      sous: 'Fin de réponse, alertes de connexion',
+      cles: 'notifications alertes fin réponse e-mail connexion',
+      groupe: 2,
+      mobile: 'compte',
+    },
+    {
+      id: 'confidentialite',
+      icon: 'lock',
+      label: 'Confidentialité',
+      sous: 'Vos données, export, documents',
+      cles: 'confidentialité données vie privée exporter politique conditions mentions',
+      groupe: 2,
+      mobile: 'compte',
+    },
+    {
+      id: 'focus',
       icon: 'sparkles',
       label: 'Focus',
-      sous: 'Méthode de travail de Cosinus par défaut',
-      cles: 'focus skills méthode documents code pages web présentations données images cosinus modèle',
+      sous: 'Méthode de travail de Cosinus',
+      cles: 'focus skills méthode documents code pages web présentations données images cosinus',
+      groupe: 3,
+      mobile: 'app',
     },
+    ...(bureau
+      ? [
+          {
+            id: 'cosinus' as const,
+            icon: 'sixtouch' as const,
+            label: 'Cosinus',
+            sous: 'Espace de travail, navigateur',
+            cles: 'cosinus navigateur historique espace dossier agent fichiers terminal',
+            groupe: 3 as const,
+            mobile: 'app' as const,
+          },
+        ]
+      : []),
     {
-      id: 'memoire',
+      id: 'cloud',
       icon: 'cloud',
-      label: 'Cloud',
-      sous: 'Synchronisation, partages et mémoire de Six',
-      cles: 'cloud mémoire synchroniser partager partages appareils contacts conversations gardées habitudes effacer premium',
+      label: 'Cloud et partages',
+      sous: 'Synchronisation, liens partagés, GitHub',
+      cles: 'cloud synchroniser partager partages liens github dépôt premium',
+      groupe: 3,
+      mobile: 'compte',
     },
     {
       id: 'appareils',
-      icon: 'qr',
+      icon: 'appareils',
       label: 'Appareils connectés',
-      sous: 'Où vous êtes connecté, associer un appareil',
-      cles: 'appareils connectés sessions déconnecter code qr scanner associer lier téléphone ordinateur',
+      sous: 'Où votre compte est ouvert, code QR',
+      cles: 'appareils connectés sessions déconnecter code qr scanner associer',
+      groupe: 3,
+      mobile: 'compte',
     },
+    ...(bureau
+      ? [
+          {
+            id: 'bureau' as const,
+            icon: 'ordinateur' as const,
+            label: 'Application de bureau',
+            sous: 'Démarrage, veille, version',
+            cles: 'application bureau ordinateur démarrage veille éveillé version raccourcis',
+            groupe: 4 as const,
+            mobile: 'app' as const,
+          },
+        ]
+      : []),
     ...(android
       ? [
           {
-            id: 'raccourcis',
+            id: 'raccourcis' as const,
             icon: 'phone' as const,
             label: 'Bulle et clavier',
             sous: 'Répondre depuis n’importe quelle app',
             cles: 'bulle flottante clavier raccourci rapide whatsapp',
+            groupe: 4 as const,
+            mobile: 'app' as const,
+          },
+          {
+            id: 'apps' as const,
+            icon: 'bell' as const,
+            label: 'Notifications des apps',
+            sous: 'Messages reçus dans vos apps',
+            cles: 'notification apps whatsapp sms alertes android',
+            groupe: 4 as const,
+            mobile: 'app' as const,
           },
         ]
       : []),
     ...(iphone
       ? [
           {
-            id: 'siri',
+            id: 'siri' as const,
             icon: 'mic' as const,
             label: 'Siri et raccourcis',
             sous: 'Bouton Action, écran verrouillé, AssistiveTouch',
-            cles: 'siri raccourcis shortcuts bouton action assistivetouch iphone centre de contrôle',
+            cles: 'siri raccourcis shortcuts bouton action assistivetouch iphone',
+            groupe: 4 as const,
+            mobile: 'app' as const,
             action: () => void ouvrirRaccourcisIOS(),
           },
         ]
       : []),
-    ...(android
-      ? [
-          {
-            id: 'notifications',
-            icon: 'bell' as const,
-            label: 'Notifications des apps',
-            sous: 'Messages reçus dans tes apps',
-            cles: 'notification alertes',
-          },
-        ]
-      : []),
-    {
-      id: 'confidentialite',
-      icon: 'lock',
-      label: 'Confidentialité',
-      sous: 'Ce que Six traite et comment l’effacer',
-      cles: 'données vie privée politique',
-      href: LIEN_CONFIDENTIALITE,
-      externe: true,
-    },
-    {
-      id: 'conditions',
-      icon: 'balance',
-      label: 'Conditions et mentions légales',
-      sous: 'Règles d’utilisation, éditeur, hébergement',
-      cles: 'cgu conditions mentions légales éditeur hébergeur',
-      href: LIEN_CONDITIONS,
-      externe: true,
-    },
   ];
   const normaliser = (t: string) => t.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
   const q = normaliser(recherche.trim());
-  const correspond = (e: (typeof entrees)[number]) =>
+  const correspond = (e: Entree) =>
     !q || normaliser(`${e.label} ${e.sous ?? ''} ${e.cles}`).includes(q);
+  const choisir = (e: Entree) => (e.action ? e.action() : ouvrir(e.id as Vue));
+  const demanderDeconnexion = () =>
+    demander({
+      titre: 'Se déconnecter ?',
+      texte:
+        'Votre mémoire reste sur cet appareil. Vous pourrez vous reconnecter à tout moment avec votre adresse e-mail.',
+      action: 'Se déconnecter',
+      onConfirmer: () => deconnecter(),
+    });
+  // Fermer les paramètres : retour à l'écran d'où l'on venait (ou au Chat si on est arrivé directement).
+  const fermer = () => {
+    if (window.history.length > 1) window.history.back();
+    else router.push('/chat');
+  };
+
   if (grand) {
     const actif: Exclude<Vue, ''> = vue || 'compte';
+    const visibles = entrees.filter(correspond);
     return (
       <>
         <AppBar page="reglages" titre="" />
         <main className="screen settings reglages-grand">
-          <nav className="reglages-menu" aria-label="Sections des réglages">
-            <h1 className="reglages-menu-titre">Réglages</h1>
-            <div className="lg-recherche">
-              <Icon name="search" size={16} />
-              <input
-                type="search"
-                value={recherche}
-                onChange={(e) => setRecherche(e.target.value)}
-                placeholder="Rechercher"
-                aria-label="Rechercher un réglage"
-              />
+          <div className="reglages-fenetre" role="region" aria-labelledby="reglages-nom">
+            <header className="reglages-fenetre-tete">
+              <h1 id="reglages-nom">Paramètres</h1>
+              <button
+                type="button"
+                className="appbar-btn"
+                aria-label="Fermer les paramètres"
+                onClick={fermer}
+              >
+                <Icon name="x" size={18} />
+              </button>
+            </header>
+            <div className="reglages-fenetre-corps">
+              <nav className="reglages-menu" aria-label="Sections des paramètres">
+                <div className="lg-recherche">
+                  <Icon name="search" size={16} />
+                  <input
+                    type="search"
+                    value={recherche}
+                    onChange={(e) => setRecherche(e.target.value)}
+                    placeholder="Rechercher"
+                    aria-label="Rechercher un réglage"
+                  />
+                </div>
+                <div className="reglages-groupe">
+                  {!q && (
+                    <button
+                      type="button"
+                      className="reglages-entree"
+                      aria-current={actif === 'compte' ? 'page' : undefined}
+                      onClick={() => ouvrir('compte')}
+                    >
+                      <Icon name="user" size={18} />
+                      <span className="reglages-entree-txt">Compte</span>
+                    </button>
+                  )}
+                  {visibles
+                    .filter((e) => e.groupe === 1)
+                    .map((e) => (
+                      <button
+                        key={e.id}
+                        type="button"
+                        className="reglages-entree"
+                        aria-current={actif === e.id ? 'page' : undefined}
+                        onClick={() => choisir(e)}
+                      >
+                        <Icon name={e.icon} size={18} />
+                        <span className="reglages-entree-txt">{e.label}</span>
+                      </button>
+                    ))}
+                </div>
+                {([2, 3, 4] as const).map((g) => {
+                  const liste = visibles.filter((e) => e.groupe === g);
+                  if (!liste.length) return null;
+                  return (
+                    <div key={g} className="reglages-groupe">
+                      {liste.map((e) => (
+                        <button
+                          key={e.id}
+                          type="button"
+                          className="reglages-entree"
+                          aria-current={actif === e.id ? 'page' : undefined}
+                          onClick={() => choisir(e)}
+                        >
+                          <Icon name={e.icon} size={18} />
+                          <span className="reglages-entree-txt">{e.label}</span>
+                        </button>
+                      ))}
+                    </div>
+                  );
+                })}
+                {q && !visibles.length && <p className="lg-pied">Aucun réglage ne correspond.</p>}
+              </nav>
+              <section className="reglages-contenu" aria-labelledby="reglages-titre">
+                <h2 id="reglages-titre" className="reglages-contenu-titre">
+                  {TITRES[actif]}
+                </h2>
+                {contenuVue(actif)}
+              </section>
             </div>
-            {!q && (
-              <button
-                type="button"
-                className="reglages-entree reglages-profil"
-                aria-current={actif === 'compte' ? 'page' : undefined}
-                onClick={() => ouvrir('compte')}
-              >
-                <span className="avatar lg-avatar" aria-hidden="true">
-                  <AvatarContenu c={compte} taille={22} trait={1.75} />
-                </span>
-                <span className="reglages-entree-txt">{compte.prenom || 'Invité'}</span>
-              </button>
-            )}
-            {entrees.filter(correspond).map((e) =>
-              e.href ? (
-                <a
-                  key={e.id}
-                  className="reglages-entree"
-                  href={e.href}
-                  target={e.externe ? '_blank' : undefined}
-                  rel={e.externe ? 'noopener noreferrer' : undefined}
-                >
-                  <Icon name={e.icon} size={18} />
-                  <span className="reglages-entree-txt">{e.label}</span>
-                  {e.externe && <Icon name="up" size={13} />}
-                </a>
-              ) : (
-                <button
-                  key={e.id}
-                  type="button"
-                  className="reglages-entree"
-                  aria-current={actif === e.id ? 'page' : undefined}
-                  onClick={() => (e.action ? e.action() : ouvrir(e.id as Vue))}
-                >
-                  <Icon name={e.icon} size={18} />
-                  <span className="reglages-entree-txt">{e.label}</span>
-                </button>
-              ),
-            )}
-            {q && !entrees.some(correspond) && (
-              <p className="lg-pied">Aucun réglage ne correspond.</p>
-            )}
-            {compte.statut === 'connecte' && (
-              <button
-                type="button"
-                className="reglages-entree danger"
-                onClick={() =>
-                  demander({
-                    titre: 'Se déconnecter ?',
-                    texte:
-                      'Ta mémoire reste sur cet appareil. Tu pourras te reconnecter à tout moment avec ton adresse e-mail.',
-                    action: 'Se déconnecter',
-                    onConfirmer: () => deconnecter(),
-                  })
-                }
-              >
-                <Icon name="logout" size={18} />
-                <span className="reglages-entree-txt">Se déconnecter</span>
-              </button>
-            )}
-          </nav>
-          <section className="reglages-contenu" aria-labelledby="reglages-titre">
-            <h2 id="reglages-titre" className="reglages-contenu-titre">
-              {TITRES[actif]}
-            </h2>
-            {contenuVue(actif)}
-          </section>
+          </div>
           {demande}
         </main>
       </>
     );
   }
 
+  // Téléphone : comme les réglages d'une app d'IA mobile — le compte en tête, puis « Compte » et « Application »,
+  // l'apparence en trois vignettes, et la déconnexion en bas.
+  const groupeMobile = (titre: string, cle: 'compte' | 'app') => {
+    const liste = entrees.filter((e) => e.mobile === cle && correspond(e));
+    if (!liste.length) return null;
+    return (
+      <Groupe titre={titre}>
+        {cle === 'compte' && !q && (
+          <Ligne
+            icon="user"
+            label="Profil"
+            sous="Prénom, mot de passe, mémoire du compte"
+            onClick={() => ouvrir('compte')}
+          />
+        )}
+        {liste.map((e) => (
+          <Ligne
+            key={e.id}
+            icon={e.icon}
+            label={e.label}
+            sous={e.sous}
+            onClick={() => choisir(e)}
+          />
+        ))}
+      </Groupe>
+    );
+  };
   return (
     <>
       <AppBar page="reglages" titre="" />
       <main className="screen settings lg-page">
-        <h1 className="lg-grand-titre">Réglages</h1>
+        <h1 className="lg-grand-titre">Paramètres</h1>
         <div className="lg-recherche">
           <Icon name="search" size={16} />
           <input
@@ -1243,70 +1454,58 @@ export function Settings() {
         </div>
 
         {!q && (
-          <>
-            <button type="button" className="lg-ligne lg-profil" onClick={() => ouvrir('compte')}>
-              <span className="avatar lg-avatar" aria-hidden="true">
-                <AvatarContenu c={compte} taille={28} trait={1.75} />
+          <button type="button" className="lg-ligne lg-profil" onClick={() => ouvrir('compte')}>
+            <span className="avatar lg-avatar" aria-hidden="true">
+              <AvatarContenu c={compte} taille={28} trait={1.75} />
+            </span>
+            <span className="lg-txt">
+              <span className="lg-profil-nom">{compte.prenom || 'Invité'}</span>
+              <span className="lg-sous">
+                {compte.statut === 'connecte'
+                  ? `${compte.identifiant} · ${premium ? 'Premium' : 'Gratuit'}`
+                  : 'Mode invité, tout reste sur cet appareil'}
               </span>
-              <span className="lg-txt">
-                <span className="lg-profil-nom">{compte.prenom || 'Invité'}</span>
-                <span className="lg-sous">
-                  {compte.statut === 'connecte'
-                    ? compte.identifiant
-                    : 'Mode invité, tout reste sur cet appareil'}
-                </span>
-              </span>
-            </button>
-            <Separateur />
-          </>
+            </span>
+          </button>
         )}
 
-        <div className="lg-liste">
-          {entrees
-            .filter(correspond)
-            .map((e) =>
-              e.href ? (
-                <LigneLien
-                  key={e.id}
-                  href={e.href}
-                  externe={e.externe}
-                  icon={e.icon}
-                  label={e.label}
-                  sous={e.sous}
-                />
-              ) : (
-                <Ligne
-                  key={e.id}
-                  icon={e.icon}
-                  label={e.label}
-                  sous={e.sous}
-                  onClick={() => (e.action ? e.action() : ouvrir(e.id as Vue))}
-                />
-              ),
-            )}
-        </div>
+        {groupeMobile('Compte', 'compte')}
+        {groupeMobile('Application', 'app')}
         {q && !entrees.some(correspond) && <p className="lg-pied">Aucun réglage ne correspond.</p>}
 
-        {!q && compte.statut === 'connecte' && (
-          <>
-            <Separateur />
-            <Ligne
-              icon="logout"
-              danger
-              label="Se déconnecter"
-              onClick={() =>
-                demander({
-                  titre: 'Se déconnecter ?',
-                  texte:
-                    'Ta mémoire reste sur cet appareil. Tu pourras te reconnecter à tout moment avec ton adresse e-mail.',
-                  action: 'Se déconnecter',
-                  onConfirmer: () => deconnecter(),
-                })
-              }
-            />
-            {demande}
-          </>
+        {!q && (
+          <Groupe titre="Apparence">
+            <div className="modes" role="radiogroup" aria-label="Apparence">
+              {(['light', 'dark', 'auto'] as const).map((m) => (
+                <button
+                  key={m}
+                  type="button"
+                  role="radio"
+                  aria-checked={theme === m}
+                  className="mode"
+                  onClick={() => applyTheme(m)}
+                >
+                  <span className={`mode-ecran mode-${m}`} aria-hidden="true">
+                    <i />
+                    <i />
+                    <i />
+                  </span>
+                  <span className="mode-nom">{MODES[m]}</span>
+                  <span className="mode-coche" aria-hidden="true">
+                    {theme === m && <Icon name="check" size={13} stroke={3} />}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </Groupe>
         )}
+
+        {!q && compte.statut === 'connecte' && (
+          <Groupe>
+            <Ligne icon="logout" danger label="Se déconnecter" onClick={demanderDeconnexion} />
+          </Groupe>
+        )}
+        {demande}
       </main>
     </>
   );

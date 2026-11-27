@@ -53,7 +53,7 @@ export function NouveauMotDePasse() {
       if (error) {
         setErreur(
           /same|different/i.test(error.message)
-            ? 'Choisis un mot de passe différent de l’ancien.'
+            ? 'Choisissez un mot de passe différent de l’ancien.'
             : 'Le lien a expiré. Redemande un lien depuis l’écran de connexion de Six.',
         );
         return;
@@ -62,7 +62,7 @@ export function NouveauMotDePasse() {
       await sb.auth.signOut({ scope: 'global' }).catch(() => {});
       setEtat('fini');
     } catch {
-      setErreur('Pas de réseau. Réessaie dans un instant.');
+      setErreur('Pas de réseau. Réessayez dans un instant.');
     } finally {
       setEnvoi(false);
     }
@@ -83,12 +83,12 @@ export function NouveauMotDePasse() {
           </h2>
           <p>
             {etat === 'fini'
-              ? 'Retourne maintenant dans l’application Six et connecte-toi avec ton nouveau mot de passe. Tes appareils déjà connectés ont été déconnectés par sécurité.'
+              ? 'Retournez maintenant dans l’application Six et connectez-vous avec votre nouveau mot de passe. Vos appareils déjà connectés ont été déconnectés par sécurité.'
               : etat === 'invalide'
-                ? 'Ce lien n’est plus valable (il ne sert qu’une fois, pendant 10 minutes). Redemande-en un depuis l’écran de connexion de Six, avec « Mot de passe oublié ».'
+                ? 'Ce lien n’est plus valable (il ne sert qu’une fois, pendant 10 minutes). Redemandez-en un depuis l’écran de connexion de Six, avec « Mot de passe oublié ».'
                 : etat === 'chargement'
                   ? 'Vérification du lien…'
-                  : 'Écris ton nouveau mot de passe deux fois, puis confirme.'}
+                  : 'Écrivez votre nouveau mot de passe deux fois, puis confirmez.'}
           </p>
         </div>
         {etat === 'formulaire' && (
@@ -143,7 +143,7 @@ export function NouveauMotDePasse() {
         {etat === 'fini' && (
           <div className="auth-alert-succes" role="status">
             <Icon name="check" size={18} />
-            <span>Tu peux fermer cette page.</span>
+            <span>Vous pouvez fermer cette page.</span>
           </div>
         )}
       </div>

@@ -66,6 +66,30 @@ export async function depasse(
   }
 }
 
+/** Utilisations du jour, sans en compter une de plus (écran Utilisation des réglages). 0 si le compteur est muet. */
+export async function utilise(type: TypeQuota, cleAppelant: string): Promise<number> {
+  const jour = new Date().toISOString().slice(0, 10);
+  const sel = env('RATE_LIMIT_HASH_SECRET') || 'six-quotas';
+  const cle = `six:quota:${type}:${jour}:${await hacher(`${sel}:${cleAppelant}`)}`;
+  const url = env('UPSTASH_REDIS_REST_URL');
+  const jeton = env('UPSTASH_REDIS_REST_TOKEN');
+  if (!url || !jeton) return memoire.get(cle) ?? 0;
+  try {
+    const res = await fetch(`${new URL(url).origin}/pipeline`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${jeton}`, 'content-type': 'application/json' },
+      body: JSON.stringify([['GET', cle]]),
+      cache: 'no-store',
+      signal: AbortSignal.timeout(3_000),
+    });
+    if (!res.ok) return 0;
+    const r = (await res.json()) as { result?: unknown }[];
+    return Number(r?.[0]?.result ?? 0) || 0;
+  } catch {
+    return 0;
+  }
+}
+
 /** Vide les compteurs en mémoire (tests). */
 export function viderQuotas(): void {
   memoire.clear();

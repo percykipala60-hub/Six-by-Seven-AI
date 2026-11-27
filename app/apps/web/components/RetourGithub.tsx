@@ -30,7 +30,7 @@ export function RetourGithub() {
     void terminerGithub(code, installation, etat).then((r) => {
       if ('relie' in r) router.replace('/reglages?v=memoire');
       else if ('installer' in r) {
-        setMessage('Choisis les dépôts que Six peut utiliser…');
+        setMessage('Choisissez les dépôts que Six peut utiliser…');
         window.location.assign(r.installer);
       } else setMessage(r.erreur);
     });

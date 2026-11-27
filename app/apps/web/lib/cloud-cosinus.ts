@@ -308,7 +308,7 @@ export async function importerDepotGithub(
         ? 'Dépôt introuvable, ou pas autorisé pour Six : ajoute-le dans Réglages → Cloud → GitHub.'
         : 'Dépôt introuvable ou privé. Pour un dépôt privé, connecte GitHub dans Réglages → Cloud.',
     );
-  if (!infos.ok) throw new ErreurCloud('GitHub ne répond pas pour le moment. Réessaie.');
+  if (!infos.ok) throw new ErreurCloud('GitHub ne répond pas pour le moment. Réessayez.');
   const d = (await infos.json()) as { default_branch?: string; size?: number };
   if ((d.size ?? 0) > 200_000)
     throw new ErreurCloud('Dépôt trop gros pour le Cloud (200 Mo au plus).');

@@ -75,7 +75,7 @@ export function ScannerQr({ onFermer }: { onFermer: () => void }) {
         const nom = e instanceof DOMException ? e.name : '';
         setErreur(
           nom === 'NotAllowedError' || nom === 'SecurityError'
-            ? 'Accès à la caméra refusé. Autorise la caméra pour Six, puis réessaie.'
+            ? 'Accès à la caméra refusé. Autorisez la caméra pour Six, puis réessayez.'
             : nom === 'NotFoundError'
               ? 'Aucune caméra trouvée sur cet appareil.'
               : e instanceof Error && e.message
@@ -170,7 +170,7 @@ export function ApprobationQr({ demande, onFini }: { demande: Demande; onFini?: 
         <div className="auth-alert-succes" role="status">
           <Icon name="check" size={18} />
           <span>
-            C’est fait : « {info.appareil || 'l’appareil'} » se connecte à ton compte. Tu vas
+            C’est fait : « {info.appareil || 'l’appareil'} » se connecte à votre compte. Vous allez
             recevoir un e-mail de confirmation.
           </span>
         </div>
@@ -188,11 +188,11 @@ export function ApprobationQr({ demande, onFini }: { demande: Demande; onFini?: 
         <span>{info.appareil || 'Appareil inconnu'}</span>
       </p>
       <p>
-        Cet appareil demande à se connecter à <strong>ton</strong> compte Six.
+        Cet appareil demande à se connecter à <strong>votre</strong> compte Six.
       </p>
       <p className="scanner-attention">
-        Ne confirme que si ce code s’affiche sur un écran à toi, devant toi. Personne de Six ne te
-        demandera jamais de scanner un code.
+        Ne confirmez que si ce code s’affiche sur un écran à vous, devant vous. Personne de Six ne
+        vous demandera jamais de scanner un code.
       </p>
       {erreur && <p className="seven-erreur">{erreur}</p>}
       <div className="scanner-boutons">

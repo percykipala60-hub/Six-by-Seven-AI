@@ -22,7 +22,7 @@ export async function POST(req: Request) {
   if (!appleOuvert()) return fail(503, 'Les achats dans l’app ne sont pas encore ouverts.');
 
   const a = await appelant(req);
-  if (!a.utilisateur) return fail(401, 'Connecte-toi pour passer à Six Premium.');
+  if (!a.utilisateur) return fail(401, 'Connectez-vous pour passer à Six Premium.');
 
   const parsed = AchatAppleBodySchema.safeParse(await readJson(req, 25_000));
   if (!parsed.success) return fail(400, 'Achat illisible.');
@@ -32,7 +32,7 @@ export async function POST(req: Request) {
     transaction = verifierTransactionApple(parsed.data.jws);
   } catch (e) {
     if (e instanceof AchatAppleInvalide) return fail(400, 'Achat non reconnu par Apple.');
-    return fail(500, 'Erreur inattendue. Réessaie.');
+    return fail(500, 'Erreur inattendue. Réessayez.');
   }
 
   const c = controlerTransactionApple(transaction, {
@@ -72,7 +72,7 @@ export async function POST(req: Request) {
     console.error('[premium] activation de l’achat Apple impossible');
     return fail(
       503,
-      'L’achat n’a pas pu être enregistré. Réessaie : tu ne seras pas débité deux fois.',
+      'L’achat n’a pas pu être enregistré. Réessayez : vous ne serez pas débité deux fois.',
     );
   }
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { mouvementReduit } from '@/lib/accessibilite';
 
 /**
  * Fond animé de Six, choisi dans Réglages > Thème (attribut data-fond de la page) :
@@ -184,7 +185,7 @@ export function Fond() {
     const ctx = canvas?.getContext('2d');
     if (!canvas || !ctx) return;
     const root = document.documentElement;
-    const immobile = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let immobile = mouvementReduit();
     let largeur = 0;
     let hauteur = 0;
     let image = 0;
@@ -238,10 +239,19 @@ export function Fond() {
       redimensionner(); // la toile peut redevenir visible (après le fond uni)
       dessiner(horloge);
     };
-    const observateur = new MutationObserver(surTheme);
+    const observateur = new MutationObserver(() => {
+      // Mouvement réduit choisi ou retiré dans les réglages : le fond s'arrête ou repart.
+      const calme = mouvementReduit();
+      if (calme !== immobile) {
+        immobile = calme;
+        cancelAnimationFrame(image);
+        if (!immobile) image = requestAnimationFrame(boucle);
+      }
+      surTheme();
+    });
     observateur.observe(root, {
       attributes: true,
-      attributeFilter: ['data-theme', 'data-accent', 'data-fond'],
+      attributeFilter: ['data-theme', 'data-accent', 'data-fond', 'data-mouvement'],
     });
     const modeSysteme = window.matchMedia('(prefers-color-scheme: dark)');
     modeSysteme.addEventListener('change', surTheme);

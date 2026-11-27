@@ -80,7 +80,7 @@ export function Rapide() {
     } catch (e) {
       setErreur(
         e instanceof TypeError
-          ? 'Pas de réseau. Réessaie dans un instant.'
+          ? 'Pas de réseau. Réessayez dans un instant.'
           : e instanceof Error
             ? e.message
             : 'Six n’a pas pu répondre.',
@@ -144,9 +144,9 @@ export function Rapide() {
           }}
         >
           <p className="rapide-aide">
-            Copie le message dans ta messagerie, puis rouvre Six. Ou colle-le ici :
+            Copiez le message dans votre messagerie, puis rouvrez Six. Ou collez-le ici :
           </p>
-          <textarea name="message" rows={3} placeholder="Colle le message…" />
+          <textarea name="message" rows={3} placeholder="Collez le message…" />
           <button type="submit" className="act">
             Proposer des réponses
           </button>
@@ -199,7 +199,7 @@ export function Rapide() {
       )}
       {erreur && <p className="rapide-aide">{erreur}</p>}
       <p className="rapide-pied">
-        <Icon name="lock" size={12} /> Masqué sur ton appareil avant l’envoi
+        <Icon name="lock" size={12} /> Masqué sur votre appareil avant l’envoi
       </p>
     </main>
   );

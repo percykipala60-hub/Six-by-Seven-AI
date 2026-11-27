@@ -319,7 +319,7 @@ export function libelleEtape(nom: string, args: Record<string, unknown>): string
     case 'lister_espace':
       return "Six regarde les fichiers de l'espace de travail";
     case 'chercher_mes_documents':
-      return `Six relit tes anciens documents : « ${s('requete')} »`;
+      return `Six relit vos anciens documents : « ${s('requete')} »`;
     case 'lire_fichier':
       return `Six lit « ${s('chemin')} »`;
     case 'lister_dossier':

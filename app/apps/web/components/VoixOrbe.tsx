@@ -8,10 +8,10 @@ import { audioMicro } from '@/lib/voix';
 export type PhaseVoix = 'attente' | 'ecoute' | 'reflechit' | 'parle';
 
 const LIBELLES: Record<PhaseVoix, string> = {
-  attente: 'Touche la sphère pour parler',
-  ecoute: 'Je t’écoute…',
+  attente: 'Touchez la sphère pour parler',
+  ecoute: 'Je vous écoute…',
   reflechit: 'Six réfléchit…',
-  parle: 'Six te répond…',
+  parle: 'Six vous répond…',
 };
 
 /**

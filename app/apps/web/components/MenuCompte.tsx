@@ -87,8 +87,11 @@ export function MenuCompte({
   onFermer,
 }: {
   compte: Compte;
-  /** Où s'ouvre le menu : au-dessus de l'avatar (panneau de gauche) ou en dessous (barre du haut). */
-  ancre: 'haut' | 'bas';
+  /**
+   * Où s'ouvre le menu : à droite de l'avatar de la barre verticale (« haut »), sous l'avatar de la barre du haut
+   * (« bas »), ou au-dessus du compte en bas du panneau de gauche (« dessus », comme dans Claude).
+   */
+  ancre: 'haut' | 'bas' | 'dessus';
   onFermer: () => void;
 }) {
   const boite = useRef<HTMLDivElement>(null);
@@ -134,6 +137,9 @@ export function MenuCompte({
         <Element icon="sliders" href="/reglages" onClick={onFermer} apres={<kbd>{CTRL} ,</kbd>}>
           Paramètres
         </Element>
+        <Element icon="horloge" href="/reglages?v=utilisation" onClick={onFermer}>
+          Utilisation
+        </Element>
         <Element icon="clavier" onClick={() => setRaccourcis(true)}>
           Raccourcis clavier
         </Element>
@@ -171,7 +177,7 @@ export function MenuCompte({
         )}
         <hr />
         {mettreANiveau && (
-          <Element icon="haut" href="/reglages?v=premium" onClick={onFermer}>
+          <Element icon="haut" href="/reglages?v=facturation" onClick={onFermer}>
             Mettre le forfait à niveau
           </Element>
         )}
@@ -187,7 +193,7 @@ export function MenuCompte({
                 demander({
                   titre: 'Se déconnecter ?',
                   texte:
-                    'Ta mémoire reste sur cet appareil. Tu pourras te reconnecter à tout moment avec ton adresse e-mail.',
+                    'Votre mémoire reste sur cet appareil. Vous pourrez vous reconnecter à tout moment avec votre adresse e-mail.',
                   action: 'Se déconnecter',
                   onConfirmer: async () => {
                     await deconnecter();

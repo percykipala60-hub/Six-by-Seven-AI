@@ -117,15 +117,15 @@ const ACCUEIL: Record<Moment, { mot: string; phrase: string }> = {
   matin: { mot: 'Bonjour', phrase: 'Par quel message commence-t-on aujourd’hui ?' },
   'apres-midi': {
     mot: 'Bon après-midi',
-    phrase: 'Un message attend ta réponse ? Six t’aide à trouver les mots.',
+    phrase: 'Un message attend votre réponse ? Six vous aide à trouver les mots.',
   },
   soir: {
     mot: 'Bonsoir',
-    phrase: 'Une conversation à reprendre ? Colle-la, Six s’occupe du reste.',
+    phrase: 'Une conversation à reprendre ? Collez-la, Six s’occupe du reste.',
   },
   nuit: {
     mot: 'Bonne nuit',
-    phrase: 'Rien ne presse : prépare ta réponse maintenant, envoie-la quand tu veux.',
+    phrase: 'Rien ne presse : préparez votre réponse maintenant, envoyez-la quand vous voulez.',
   },
 };
 
@@ -149,9 +149,9 @@ export const MDP_MIN_INSCRIPTION = 8;
 
 /** Message d'erreur d'un nouveau mot de passe, ou null s'il convient. */
 export function erreurMotDePasse(motDePasse: string): string | null {
-  if (!motDePasse) return 'Choisis un mot de passe.';
+  if (!motDePasse) return 'Choisissez un mot de passe.';
   if (motDePasse.length < MDP_MIN_INSCRIPTION)
-    return `Choisis un mot de passe d’au moins ${MDP_MIN_INSCRIPTION} caractères.`;
+    return `Choisissez un mot de passe d’au moins ${MDP_MIN_INSCRIPTION} caractères.`;
   return null;
 }
 
@@ -195,14 +195,14 @@ function messageErreur(
 ): string {
   const m = (e?.message ?? '').toLowerCase();
   if (m.includes('rate') || e?.status === 429)
-    return 'Trop de tentatives. Attends quelques minutes, puis réessaie.';
+    return 'Trop de tentatives. Attendez quelques minutes, puis réessayez.';
   if (m.includes('expired') || m.includes('invalid') || m.includes('token'))
     return "Ce code n'est pas bon ou a expiré. Vérifie-le, ou demande un nouveau code.";
   if (m.includes('fetch') || m.includes('network'))
-    return 'Pas de réseau. Réessaie dans un instant.';
+    return 'Pas de réseau. Réessayez dans un instant.';
   if (m.includes('sending') || m.includes('email') || (e?.status ?? 0) >= 500)
-    return "L'e-mail n'a pas pu partir. Réessaie dans quelques minutes.";
-  return "Une erreur est survenue. Vérifie l'adresse e-mail et réessaie.";
+    return "L'e-mail n'a pas pu partir. Réessayez dans quelques minutes.";
+  return "Une erreur est survenue. Vérifiez l'adresse e-mail et réessayez.";
 }
 
 /**
@@ -228,7 +228,7 @@ export async function connecterParMotDePasse(
   motDePasse: string,
 ): Promise<ResultatEtape> {
   const id = lireIdentifiant(email);
-  if (!id) return { erreur: 'Écris une adresse e-mail valide.' };
+  if (!id) return { erreur: 'Écrivez une adresse e-mail valide.' };
   if (!motDePasse || motDePasse.length < 6)
     return { erreur: 'Le mot de passe doit comporter au moins 6 caractères.' };
 
@@ -276,11 +276,11 @@ export async function inscrire(
   const p = prenom.trim().slice(0, 30);
   if (!p)
     return {
-      error: 'Indique ton prénom pour que Six te reconnaisse.',
+      error: 'Indiquez votre prénom pour que Six vous reconnaisse.',
       confirmationRequise: false,
     };
   const id = lireIdentifiant(email);
-  if (!id) return { error: 'Écris une adresse e-mail valide.', confirmationRequise: false };
+  if (!id) return { error: 'Écrivez une adresse e-mail valide.', confirmationRequise: false };
   if (!accepteConditions) {
     return {
       error:
@@ -314,7 +314,7 @@ export async function inscrire(
     const m = error.message.toLowerCase();
     if (m.includes('already registered') || m.includes('unique')) {
       return {
-        error: 'Un compte existe déjà avec cette adresse e-mail. Connecte-toi directement.',
+        error: 'Un compte existe déjà avec cette adresse e-mail. Connectez-vous directement.',
         confirmationRequise: false,
       };
     }
@@ -324,7 +324,7 @@ export async function inscrire(
   // Adresse déjà confirmée : Supabase répond sans erreur (pour ne rien révéler) mais n'envoie rien.
   if (data.user && data.user.identities?.length === 0) {
     return {
-      error: 'Un compte existe déjà avec cette adresse e-mail. Connecte-toi directement.',
+      error: 'Un compte existe déjà avec cette adresse e-mail. Connectez-vous directement.',
       confirmationRequise: false,
     };
   }
@@ -339,7 +339,7 @@ export async function inscrire(
 /** Réinitialisation du mot de passe par e-mail. */
 export async function reinitialiserMotDePasse(email: string): Promise<string | null> {
   const id = lireIdentifiant(email);
-  if (!id) return 'Écris une adresse e-mail valide.';
+  if (!id) return 'Écrivez une adresse e-mail valide.';
 
   const sb = await supabase();
   if (!sb) return "La connexion n'est pas disponible pour le moment.";
@@ -363,9 +363,9 @@ export const RETOUR_OAUTH_APP = 'six://auth';
 export function messageRetourRefuse(description: string, fournisseur?: string): string {
   const qui = fournisseur ? `avec ${fournisseur} ` : '';
   if (/exchange external code|invalid_client|client secret/i.test(description))
-    return `La connexion ${qui}est momentanément indisponible (réglage du serveur à mettre à jour). Utilise ton adresse e-mail en attendant.`;
+    return `La connexion ${qui}est momentanément indisponible (réglage du serveur à mettre à jour). Utilisez votre adresse e-mail en attendant.`;
   if (/access_denied|cancel|denied/i.test(description)) return `Connexion ${qui}annulée.`;
-  return `La connexion ${qui}n’a pas abouti. Réessaie, ou utilise ton adresse e-mail.`;
+  return `La connexion ${qui}n’a pas abouti. Réessayez, ou utilisez votre adresse e-mail.`;
 }
 
 /** Erreur de connexion laissée par Supabase dans l'adresse de la page (retour du fournisseur), ou ''. */
@@ -562,7 +562,7 @@ export async function connecterAvecFournisseur(
   noterMethode(nom);
   if (!(await fournisseursActifs())[fournisseur]) {
     return {
-      erreur: `La connexion avec ${nom} n’est pas encore disponible. Utilise ton adresse e-mail.`,
+      erreur: `La connexion avec ${nom} n’est pas encore disponible. Utilisez votre adresse e-mail.`,
       info: null,
     };
   }
@@ -570,7 +570,7 @@ export async function connecterAvecFournisseur(
   if (natif === 'ancienne-app') {
     // Build iPhone sans la fenêtre de connexion : Safari ne reviendrait jamais dans l'app.
     return {
-      erreur: `La connexion avec ${nom} demande la dernière version de Six. Mets l'app à jour, ou utilise ton adresse e-mail.`,
+      erreur: `La connexion avec ${nom} demande la dernière version de Six. Mettez l'app à jour, ou utilisez votre adresse e-mail.`,
       info: null,
     };
   }
@@ -599,7 +599,7 @@ export async function connecterAvecFournisseur(
       const m = error.message.toLowerCase();
       if (m.includes('not enabled') || m.includes('provider') || m.includes('unsupported')) {
         return {
-          erreur: `La connexion avec ${nom} n’est pas encore activée. Utilise ton adresse e-mail en attendant.`,
+          erreur: `La connexion avec ${nom} n’est pas encore activée. Utilisez votre adresse e-mail en attendant.`,
           info: null,
         };
       }
@@ -607,7 +607,7 @@ export async function connecterAvecFournisseur(
     }
     if (!data.url) {
       return {
-        erreur: `La connexion avec ${nom} n’a pas pu s’ouvrir. Vérifie ta connexion, puis réessaie.`,
+        erreur: `La connexion avec ${nom} n’a pas pu s’ouvrir. Vérifiez votre connexion, puis réessayez.`,
         info: null,
       };
     }
@@ -646,7 +646,7 @@ export async function connecterAvecFournisseur(
     if (fenetre) fenetre.opener = null;
     if (!fenetre) {
       return {
-        erreur: `La fenêtre ${nom} a été bloquée par le navigateur. Autorise les fenêtres pop-up pour Six, ou utilise ton adresse e-mail.`,
+        erreur: `La fenêtre ${nom} a été bloquée par le navigateur. Autorisez les fenêtres pop-up pour Six, ou utilisez votre adresse e-mail.`,
         info: null,
       };
     }
@@ -657,7 +657,7 @@ export async function connecterAvecFournisseur(
     };
   } catch {
     return {
-      erreur: `La connexion avec ${nom} n’a pas pu s’ouvrir. Vérifie ta connexion, puis réessaie.`,
+      erreur: `La connexion avec ${nom} n’a pas pu s’ouvrir. Vérifiez votre connexion, puis réessayez.`,
       info: null,
     };
   }
@@ -666,7 +666,7 @@ export async function connecterAvecFournisseur(
 /** Renvoie l'e-mail de confirmation d'inscription (lien reçu après la création du compte). */
 export async function renvoyerConfirmation(email: string): Promise<string | null> {
   const id = lireIdentifiant(email);
-  if (!id) return 'Écris une adresse e-mail valide.';
+  if (!id) return 'Écrivez une adresse e-mail valide.';
   const sb = await supabase();
   if (!sb) return "La connexion n'est pas disponible pour le moment.";
   const { error } = await sb.auth.resend({
@@ -724,12 +724,12 @@ export async function changerMotDePasse(
   nouveau: string,
   code: string,
 ): Promise<string | null> {
-  if (!ancien) return 'Entre ton mot de passe actuel.';
+  if (!ancien) return 'Entrez votre mot de passe actuel.';
   const err = erreurMotDePasse(nouveau);
   if (err) return err;
-  if (ancien === nouveau) return 'Choisis un mot de passe différent de l’actuel.';
+  if (ancien === nouveau) return 'Choisissez un mot de passe différent de l’actuel.';
   const nonce = code.replace(/\D/g, '');
-  if (nonce.length !== 6) return 'Entre les 6 chiffres du code reçu par e-mail.';
+  if (nonce.length !== 6) return 'Entrez les 6 chiffres du code reçu par e-mail.';
   const sb = await supabase();
   if (!sb) return "La connexion n'est pas disponible pour le moment.";
   const { error } = await sb.auth.updateUser({
@@ -742,7 +742,7 @@ export async function changerMotDePasse(
     if (m.includes('current password') || m.includes('current_password'))
       return 'Mot de passe actuel incorrect.';
     if (m.includes('same') || m.includes('different'))
-      return 'Choisis un mot de passe différent de l’actuel.';
+      return 'Choisissez un mot de passe différent de l’actuel.';
     return messageErreur(error);
   }
   return null;
@@ -758,9 +758,9 @@ export async function verifierCode(
   type: TypeCode,
 ): Promise<string | null> {
   const id = lireIdentifiant(email);
-  if (!id) return 'Écris une adresse e-mail valide.';
+  if (!id) return 'Écrivez une adresse e-mail valide.';
   const token = code.replace(/\D/g, '');
-  if (token.length !== 6) return 'Entre les 6 chiffres du code reçu par e-mail.';
+  if (token.length !== 6) return 'Entrez les 6 chiffres du code reçu par e-mail.';
   const sb = await supabase();
   if (!sb) return "La connexion n'est pas disponible pour le moment.";
   noterMethode('Code e-mail');
@@ -792,9 +792,9 @@ export async function deconnecter(): Promise<void> {
 export async function oublierMemoireDuCompte(): Promise<string | null> {
   const sb = await supabase();
   const id = lireJson(SESSION).id;
-  if (!sb || typeof id !== 'string') return "Tu n'es pas connecté.";
+  if (!sb || typeof id !== 'string') return "Vous n'êtes pas connecté.";
   const { error } = await sb.from('memoires').delete().eq('user_id', id);
-  if (error) return "La mémoire du compte n'a pas pu être effacée. Réessaie.";
+  if (error) return "La mémoire du compte n'a pas pu être effacée. Réessayez.";
   effacerMemoire();
   return null;
 }
@@ -819,7 +819,7 @@ export async function autoriserSync(on: boolean): Promise<string | null> {
     if (on) localStorage.setItem(SYNC, '1');
     else localStorage.removeItem(SYNC);
   } catch {
-    return "Six n'a pas pu enregistrer ton choix sur cet appareil.";
+    return "Six n'a pas pu enregistrer votre choix sur cet appareil.";
   }
   annoncer();
   const sb = await supabase();
@@ -830,7 +830,7 @@ export async function autoriserSync(on: boolean): Promise<string | null> {
     return null;
   }
   const { error } = await sb.from('memoires').delete().eq('user_id', id);
-  return error ? "La copie sur ton compte n'a pas pu être effacée. Réessaie." : null;
+  return error ? "La copie sur votre compte n'a pas pu être effacée. Réessayez." : null;
 }
 
 let demarre = false;
@@ -899,7 +899,7 @@ function surveillerBlocage(sb: SupabaseClient): void {
   const verifierUneFois = async () => {
     const jeton = (await sb.auth.getSession()).data.session?.access_token;
     if (!jeton) return;
-    // Connexion pas encore enregistrée (serveur indisponible au moment de la connexion) : on réessaie.
+    // Connexion pas encore enregistrée (serveur indisponible au moment de la connexion) : on réessayez.
     if ((await signalerConnexion(jeton)) === 'bloque') return deconnecterAppareilBloque(sb);
     const etat = await etatAppareil(jeton);
     if (etat.bloque) await deconnecterAppareilBloque(sb);

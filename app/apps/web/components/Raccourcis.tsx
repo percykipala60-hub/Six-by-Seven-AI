@@ -55,7 +55,7 @@ export function Raccourcis() {
       if (on && !etat?.overlayAccess) {
         await Natif.requestOverlayAccess();
         setMessage(
-          'Autorise « Afficher par-dessus les autres applications » pour Six, puis reviens ici.',
+          'Autorisez « Afficher par-dessus les autres applications » pour Six, puis revenez ici.',
         );
       } else {
         await Natif.setBubbleEnabled({ enabled: on });
@@ -73,7 +73,7 @@ export function Raccourcis() {
           <LigneInfo
             icon="phone"
             label="Disponible sur Android"
-            sous="Installe l’application Six pour les utiliser"
+            sous="Installez l’application Six pour les utiliser"
           />
         </Groupe>
         <Comment />
@@ -85,7 +85,7 @@ export function Raccourcis() {
     <>
       <Groupe
         titre="Bulle Six"
-        pied="Copie un message dans ta messagerie, puis touche la bulle : Six propose trois réponses. Fais-la glisser pour la déplacer, tout en bas pour la fermer."
+        pied="Copiez un message dans votre messagerie, puis touchez la bulle : Six propose trois réponses. Faites-la glisser pour la déplacer, tout en bas pour la fermer."
       >
         <LigneInterrupteur
           id="bulle"
@@ -103,7 +103,7 @@ export function Raccourcis() {
 
       <Groupe
         titre="Clavier Six"
-        pied="Dans ta messagerie : copie le message reçu, passe sur le clavier Six, touche « Réponses de Six ». La réponse choisie s’écrit dans le champ ; le globe ramène ton clavier habituel."
+        pied="Dans votre messagerie : copiez le message reçu, passez sur le clavier Six, touchez « Réponses de Six ». La réponse choisie s’écrit dans le champ ; le globe ramène votre clavier habituel."
       >
         <Ligne
           icon="type"
@@ -119,7 +119,7 @@ export function Raccourcis() {
           <Ligne
             icon="refresh"
             label="Changer de clavier maintenant"
-            sous="Choisir le clavier Six ou ton clavier habituel"
+            sous="Choisir le clavier Six ou votre clavier habituel"
             onClick={() => void Natif.showKeyboardPicker()}
           />
         )}
@@ -135,8 +135,8 @@ function Comment() {
     <section className="lg">
       <h2 className="lg-titre">Confidentialité</h2>
       <p className="lg-pied">
-        Six ne lit le message copié qu’au moment où tu touches la bulle ou le bouton du clavier. Il
-        est masqué sur ton appareil avant l’envoi, et rien n’est envoyé sans ton geste.
+        Six ne lit le message copié qu’au moment où vous touchez la bulle ou le bouton du clavier.
+        Il est masqué sur votre appareil avant l’envoi, et rien n’est envoyé sans votre geste.
       </p>
     </section>
   );

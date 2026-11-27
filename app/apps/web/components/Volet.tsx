@@ -12,6 +12,7 @@ import {
 } from 'react';
 import { Icon } from './Icon';
 import { Explorateur } from './Explorateur';
+import { Terminal, terminalDisponible } from './Terminal';
 import { recuperer } from '@/lib/recuperer';
 import type { ChatMessage } from '@/lib/types';
 import type { PageLecture } from '@/lib/page-lecture';
@@ -39,9 +40,10 @@ import { entetesCompte } from '@/lib/premium-client';
  * Historique, largeur et onglet ouvert sont gardés sur l'appareil.
  */
 
-export type OngletVolet = 'navigateur' | 'fichiers';
+export type OngletVolet = 'navigateur' | 'fichiers' | 'terminal';
 
-const ONGLETS: { id: OngletVolet; label: string; icone: 'globe' | 'file' }[] = [
+const ONGLETS: { id: OngletVolet; label: string; icone: 'globe' | 'file' | 'terminal' }[] = [
+  { id: 'terminal', label: 'Terminal', icone: 'terminal' },
   { id: 'navigateur', label: 'Navigateur', icone: 'globe' },
   { id: 'fichiers', label: 'Fichiers', icone: 'file' },
 ];
@@ -56,6 +58,9 @@ const LARGEUR_MIN = 380;
 const DISCUSSION_MIN = 340; // place gardée à la discussion, à côté du volet
 const BARRE_VERTICALE = 64;
 export const GRAND_VOLET = '(min-width: 768px)';
+const CLE_TERMINAL = 'six-volet-terminal';
+const HAUTEUR_TERMINAL_DEFAUT = 260;
+const HAUTEUR_TERMINAL_MIN = 120;
 
 type Nav = { pile: string[]; pos: number; visites: string[] };
 
@@ -134,26 +139,34 @@ export function BoutonsVolet({
   ouvert,
   onBasculer,
   telephone,
+  empile,
   seulement,
 }: {
   ouvert: OngletVolet | null;
   onBasculer: (onglet: OngletVolet) => void;
+  /** Terminal empilé sous le panneau ouvert (son bouton est alors en relief aussi). */
+  empile?: boolean;
   telephone?: boolean;
   /** Onglets proposés (le Chat n'a que le navigateur : pas d'espace de travail). */
   seulement?: OngletVolet[];
 }) {
+  const actif = (id: OngletVolet) => ouvert === id || (id === 'terminal' && Boolean(empile));
   return (
     <div className="volet-boutons" role="toolbar" aria-label="Outils">
       {ONGLETS.filter(
-        (o) => (!telephone || o.id === 'fichiers') && (!seulement || seulement.includes(o.id)),
+        (o) =>
+          (!telephone || o.id === 'fichiers') &&
+          (!seulement || seulement.includes(o.id)) &&
+          // Le terminal n'existe que dans l'app de bureau, et seulement dans Cosinus.
+          (o.id !== 'terminal' || (!seulement && terminalDisponible())),
       ).map((o) => (
         <button
           key={o.id}
           type="button"
           className="volet-bouton"
-          aria-pressed={ouvert === o.id}
-          aria-label={ouvert === o.id ? `Fermer ${o.label.toLowerCase()}` : o.label}
-          title={ouvert === o.id ? `${o.label} (cliquer pour fermer)` : o.label}
+          aria-pressed={actif(o.id)}
+          aria-label={actif(o.id) ? `Fermer ${o.label.toLowerCase()}` : o.label}
+          title={actif(o.id) ? `${o.label} (cliquer pour fermer)` : o.label}
           onClick={() => onBasculer(o.id)}
         >
           <Icon name={o.icone} size={19} stroke={1.8} />
@@ -435,7 +448,7 @@ function Annotations({
                   // eslint-disable-next-line jsx-a11y/no-autofocus
                   autoFocus
                   aria-label={`Note ${m.n}`}
-                  placeholder="Ta note"
+                  placeholder="Votre note"
                   value={m.note}
                   onChange={(e) =>
                     setMarques((ms) =>
@@ -577,7 +590,12 @@ export function Volet({
   dossier = '',
   dossiers = [],
   contexte,
+  empile = false,
+  onFermerTerminal,
 }: {
+  /** Terminal ouvert sous le navigateur ou les fichiers (deux panneaux empilés, séparateur réglable). */
+  empile?: boolean;
+  onFermerTerminal?: () => void;
   /** Discussion affichée (« chat:… » ou « cosinus:… ») : historique, onglets et session web lui sont propres. */
   contexte: string;
   onglet: OngletVolet;
@@ -653,6 +671,51 @@ export function Volet({
       avantAgrandi.current = largeur;
       fixerLargeur(largeurMax());
     }
+  };
+
+  // ---- Terminal empilé : hauteur réglable (séparateur horizontal), gardée sur l'appareil ----
+  const [hauteurTerminal, setHauteurTerminal] = useState(() =>
+    lire<number>(CLE_TERMINAL, HAUTEUR_TERMINAL_DEFAUT),
+  );
+  const [terminalAgrandi, setTerminalAgrandi] = useState(false);
+  const asideRef = useRef<HTMLElement | null>(null);
+  const bornerHauteur = (h: number) => {
+    const total = asideRef.current?.clientHeight ?? window.innerHeight;
+    return Math.round(Math.max(HAUTEUR_TERMINAL_MIN, Math.min(total - HAUTEUR_TERMINAL_MIN, h)));
+  };
+  const fixerHauteur = (h: number) => {
+    const b = bornerHauteur(h);
+    setHauteurTerminal(b);
+    ecrire(CLE_TERMINAL, b);
+  };
+  const debutGlisseTerminal = (e: ReactPointerEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    const depart = { y: e.clientY, h: hauteurTerminal };
+    let courante = hauteurTerminal;
+    const html = document.documentElement;
+    html.classList.add('volet-glisse', 'volet-glisse-h');
+    const bouger = (ev: PointerEvent) => {
+      courante = bornerHauteur(depart.h + depart.y - ev.clientY);
+      setHauteurTerminal(courante);
+    };
+    const finir = () => {
+      window.removeEventListener('pointermove', bouger);
+      window.removeEventListener('pointerup', finir);
+      window.removeEventListener('pointercancel', finir);
+      html.classList.remove('volet-glisse', 'volet-glisse-h');
+      fixerHauteur(courante);
+    };
+    window.addEventListener('pointermove', bouger);
+    window.addEventListener('pointerup', finir);
+    window.addEventListener('pointercancel', finir);
+  };
+  const clavierSeparateur = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    const pas = e.shiftKey ? 80 : 24;
+    if (e.key === 'ArrowUp') fixerHauteur(hauteurTerminal + pas);
+    else if (e.key === 'ArrowDown') fixerHauteur(hauteurTerminal - pas);
+    else return;
+    e.preventDefault();
   };
 
   // ---- Navigateur : historique propre au volet, gardé sur l'appareil ----
@@ -929,8 +992,16 @@ export function Volet({
   );
 
   const navigateur = onglet === 'navigateur' && !telephone;
+  const terminal = onglet === 'terminal' && !telephone;
+  // Terminal visible : seul dans le volet, ou empilé sous le navigateur ou les fichiers.
+  const avecTerminal = terminal || (empile && !telephone);
+  const terminalSeul = terminal || (avecTerminal && terminalAgrandi);
   return (
-    <aside className="volet" aria-label={navigateur ? 'Navigateur' : 'Fichiers'}>
+    <aside
+      ref={asideRef}
+      className="volet"
+      aria-label={navigateur ? 'Navigateur' : terminal ? 'Terminal' : 'Fichiers'}
+    >
       {/* Un séparateur qui prend le focus et porte une valeur est un élément interactif selon ARIA (poignée de
           redimensionnement) ; la règle de lint ne connaît pas ce cas. */}
       {/* eslint-disable jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/no-noninteractive-tabindex */}
@@ -948,7 +1019,9 @@ export function Volet({
       />
       {/* eslint-enable jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/no-noninteractive-tabindex */}
 
-      {navigateur ? (
+      {/* Trois places fixes (panneau principal, séparateur, terminal) : le terminal garde ses shells quand il passe
+          de seul à empilé, et inversement. */}
+      {terminalSeul ? null : navigateur ? (
         <div className="volet-corps volet-nav">
           {natif && (
             <OngletsNatifs
@@ -1194,9 +1267,9 @@ export function Volet({
           ) : (
             <div className="volet-vide">
               <Icon name="globe" size={28} stroke={1.5} />
-              <p>Tape une adresse ou une recherche.</p>
+              <p>Tapez une adresse ou une recherche.</p>
               <p className="volet-vide-sous">
-                Bientôt, Six naviguera ici pour faire ses recherches, et tu verras chaque page
+                Bientôt, Six naviguera ici pour faire ses recherches, et vous verrez chaque page
                 qu&apos;il consulte.
               </p>
               {listeVisites}
@@ -1297,6 +1370,42 @@ export function Volet({
               />
             </>
           )}
+        </div>
+      )}
+      {/* Poignée de redimensionnement (séparateur interactif selon ARIA) : même exception que la poignée du bord. */}
+      {/* eslint-disable jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/no-noninteractive-tabindex */}
+      {avecTerminal && !terminalSeul && (
+        <div
+          className="volet-separateur"
+          role="separator"
+          aria-orientation="horizontal"
+          aria-label="Hauteur du terminal (flèches haut et bas)"
+          aria-valuenow={hauteurTerminal}
+          tabIndex={0}
+          onPointerDown={debutGlisseTerminal}
+          onKeyDown={clavierSeparateur}
+          onDoubleClick={() => setTerminalAgrandi(true)}
+        />
+      )}
+      {/* eslint-enable jsx-a11y/no-noninteractive-element-interactions, jsx-a11y/no-noninteractive-tabindex */}
+      {avecTerminal && (
+        <div
+          className="volet-corps volet-terminal"
+          style={terminalSeul ? undefined : { flex: 'none', height: hauteurTerminal }}
+        >
+          <Terminal
+            dossier={dossier || dossiers[0] || ''}
+            agrandi={terminal ? agrandi : terminalAgrandi}
+            onAgrandir={terminal ? basculerAgrandi : () => setTerminalAgrandi((a) => !a)}
+            onFermer={
+              terminal
+                ? onFermer
+                : () => {
+                    setTerminalAgrandi(false);
+                    onFermerTerminal?.();
+                  }
+            }
+          />
         </div>
       )}
     </aside>

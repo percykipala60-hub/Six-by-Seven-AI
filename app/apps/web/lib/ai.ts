@@ -253,8 +253,8 @@ export function activeProviders(): {
 }
 
 function friendly(status: number): string {
-  if (status === 429) return "Le service d'IA est très demandé. Réessaie dans un instant.";
-  return "Le service d'IA ne répond pas pour le moment. Réessaie dans un instant.";
+  if (status === 429) return "Le service d'IA est très demandé. Réessayez dans un instant.";
+  return "Le service d'IA ne répond pas pour le moment. Réessayez dans un instant.";
 }
 
 /**
@@ -298,7 +298,7 @@ export async function callAI(
     if (dailyLimitReached()) {
       console.error('[ia] plafond quotidien AI_DAILY_LIMIT atteint');
       throw new ProviderError(
-        "Six a atteint sa limite d'utilisation pour aujourd'hui. Réessaie demain.",
+        "Six a atteint sa limite d'utilisation pour aujourd'hui. Réessayez demain.",
       );
     }
     const ctl = new AbortController();
@@ -343,7 +343,7 @@ export async function callChat(
     if (dailyLimitReached()) {
       console.error('[ia] plafond quotidien AI_DAILY_LIMIT atteint');
       throw new ProviderError(
-        "Six a atteint sa limite d'utilisation pour aujourd'hui. Réessaie demain.",
+        "Six a atteint sa limite d'utilisation pour aujourd'hui. Réessayez demain.",
       );
     }
     const ctl = new AbortController();
@@ -571,7 +571,7 @@ export async function appelAgent(
     if (dailyLimitReached()) {
       console.error('[ia] plafond quotidien AI_DAILY_LIMIT atteint');
       throw new ProviderError(
-        "Six a atteint sa limite d'utilisation pour aujourd'hui. Réessaie demain.",
+        "Six a atteint sa limite d'utilisation pour aujourd'hui. Réessayez demain.",
       );
     }
     const ctl = new AbortController();

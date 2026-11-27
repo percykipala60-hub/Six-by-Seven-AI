@@ -41,11 +41,13 @@ export function InterAppOnboarding({ connected }: { connected: boolean }) {
   const [error, setError] = useState('');
 
   useEffect(() => {
+    // Proposé seulement dans l'app Android : ailleurs, Six ne peut pas lire les notifications des autres apps.
+    if (!/android/i.test(navigator.userAgent)) return;
     try {
       setDismissed(localStorage.getItem(ONBOARDING_KEY) === 'true');
     } catch {
       setDismissed(false);
-      setError('Six ne peut pas mémoriser ton choix sur cet appareil.');
+      setError('Six ne peut pas mémoriser votre choix sur cet appareil.');
     }
   }, []);
 
@@ -56,7 +58,7 @@ export function InterAppOnboarding({ connected }: { connected: boolean }) {
       setError('');
     } catch {
       setError(
-        "Six n'a pas pu mémoriser ton choix. Tu peux fermer cet écran et le régler plus tard.",
+        "Six n'a pas pu mémoriser votre choix. Vous pouvez fermer cet écran et le régler plus tard.",
       );
     }
   }
@@ -65,7 +67,7 @@ export function InterAppOnboarding({ connected }: { connected: boolean }) {
     try {
       localStorage.setItem(ONBOARDING_KEY, 'true');
       setDismissed(true);
-      const cible = '/reglages?v=notifications';
+      const cible = '/reglages?v=apps';
       if (window.location.pathname === '/reglages') {
         // Déjà dans Réglages : la page ne relit l'URL qu'au chargement et sur « popstate ».
         // router.push ne change que la query, donc rien ne bougeait : on prévient la page.
@@ -76,7 +78,7 @@ export function InterAppOnboarding({ connected }: { connected: boolean }) {
       }
     } catch {
       setError(
-        "Six n'a pas pu mémoriser ton choix. Réessaie ou ouvre Notifications des apps dans Réglages.",
+        "Six n'a pas pu mémoriser votre choix. Réessayez ou ouvrez Notifications des apps dans Réglages.",
       );
     }
   }
@@ -85,12 +87,12 @@ export function InterAppOnboarding({ connected }: { connected: boolean }) {
   return (
     <section className="card stack" aria-labelledby="inter-app-onboarding">
       <b id="inter-app-onboarding">
-        Tu veux aussi recevoir les notifications de tes apps dans Six ?
+        Voulez-vous aussi recevoir les notifications de vos apps dans Six ?
       </b>
       <p className="muted small">
-        Sur Android, tu choisis les apps et autorises séparément l&apos;accès aux notifications et
-        la bulle flottante. Les messages restent sur cet appareil et ne sont jamais envoyés à
-        l&apos;IA sans ton action.
+        Sur Android, vous choisissez les apps et autorisez séparément l&apos;accès aux notifications
+        et la bulle flottante. Les messages restent sur cet appareil et ne sont jamais envoyés à
+        l&apos;IA sans votre action.
       </p>
       {error && (
         <p className="err" role="alert">
@@ -164,7 +166,7 @@ export function InterAppNotifications() {
         localStorage.setItem(ONBOARDING_KEY, 'true');
       } catch {
         setInfo(
-          'Tes applications sont enregistrées sur Android. Six ne peut pas mémoriser la fin de la présentation.',
+          'Vos applications sont enregistrées sur Android. Six ne peut pas mémoriser la fin de la présentation.',
         );
       }
       const current = await SixInterApp.getStatus();
@@ -232,7 +234,7 @@ export function InterAppNotifications() {
         <p className="muted small">
           Cette intégration nécessite l&apos;application Android installée. Les navigateurs et iOS
           n&apos;autorisent pas Six à lire les notifications de WhatsApp, Instagram ou d&apos;autres
-          apps. Tu peux toujours partager manuellement une conversation vers Six.
+          apps. Vous pouvez toujours partager manuellement une conversation vers Six.
         </p>
       </section>
     );
@@ -241,7 +243,7 @@ export function InterAppNotifications() {
   return (
     <div className="stack">
       <section className="group-list pad stack" aria-labelledby="notification-choice">
-        <b id="notification-choice">Choisis les applications</b>
+        <b id="notification-choice">Choisissez les applications</b>
         <p className="muted small">
           Six ne lit que les notifications des apps cochées et conserve les 25 plus récentes sur cet
           appareil. L&apos;accès peut être retiré à tout moment dans les réglages Android.
@@ -302,8 +304,8 @@ export function InterAppNotifications() {
           )}
         </div>
         <p className="muted small">
-          Le contenu reste local. Choisis « Préparer dans Six » pour l&apos;importer; il ne sera
-          envoyé à l&apos;IA qu&apos;après ton action dans le parcours d&apos;analyse.
+          Le contenu reste local. Choisissez « Préparer dans Six » pour l&apos;importer; il ne sera
+          envoyé à l&apos;IA qu&apos;après votre action dans le parcours d&apos;analyse.
         </p>
         {items.length === 0 ? (
           <p className="muted small">Aucune notification enregistrée.</p>
@@ -407,7 +409,7 @@ export function InterAppLaunchHandler() {
     const openInbox = () => {
       void SixInterApp.consumeOpenInbox()
         .then(({ open }) => {
-          if (active && open) router.push('/reglages?v=notifications');
+          if (active && open) router.push('/reglages?v=apps');
         })
         .catch((cause: unknown) => {
           if (active) {

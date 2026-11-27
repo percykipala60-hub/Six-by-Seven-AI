@@ -60,7 +60,7 @@ async function toCanvas(file: File): Promise<HTMLCanvasElement> {
   try {
     bitmap = await createImageBitmap(file);
   } catch {
-    throw new OcrError("Cette image n'a pas pu être ouverte. Essaie une capture en PNG ou JPG.");
+    throw new OcrError("Cette image n'a pas pu être ouverte. Essayez une capture en PNG ou JPG.");
   }
   const scale =
     bitmap.width > MAX_WIDTH
@@ -141,12 +141,13 @@ export async function readScreenshots(
   files: File[],
   onProgress: (pct: number) => void,
 ): Promise<string> {
-  if (!files.length) throw new OcrError("Choisis au moins une capture d'écran.");
-  if (files.length > MAX_IMAGES) throw new OcrError(`Choisis ${MAX_IMAGES} captures au maximum.`);
+  if (!files.length) throw new OcrError("Choisissez au moins une capture d'écran.");
+  if (files.length > MAX_IMAGES)
+    throw new OcrError(`Choisissez ${MAX_IMAGES} captures au maximum.`);
   for (const f of files) {
-    if (!f.type.startsWith('image/')) throw new OcrError('Choisis des images (PNG ou JPG).');
+    if (!f.type.startsWith('image/')) throw new OcrError('Choisissez des images (PNG ou JPG).');
     if (f.size > MAX_IMAGE_BYTES)
-      throw new OcrError("Une image est trop lourde. Utilise une capture d'écran normale.");
+      throw new OcrError("Une image est trop lourde. Utilisez une capture d'écran normale.");
   }
 
   let current = 0;
@@ -179,11 +180,11 @@ export async function readScreenshots(
       current += 1;
     }
     if (!parts.length)
-      throw new OcrError('Aucun texte lisible sur la capture. Essaie une capture plus nette.');
+      throw new OcrError('Aucun texte lisible sur la capture. Essayez une capture plus nette.');
     return parts.join('\n');
   } catch (e) {
     if (e instanceof OcrError) throw e;
-    throw new OcrError('La lecture de la capture a échoué. Colle le texte à la place.');
+    throw new OcrError('La lecture de la capture a échoué. Collez le texte à la place.');
   } finally {
     suivi = () => {};
     mettreEnRepos();

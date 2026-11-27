@@ -5,7 +5,7 @@ import { Flow } from '@/components/Flow';
 export const metadata: Metadata = {
   title: 'Responsive — Six',
   description:
-    'Colle une conversation : Six repère les arnaques, explique le vrai sens et propose trois réponses.',
+    'Collez une conversation : Six repère les arnaques, explique le vrai sens et propose trois réponses.',
 };
 
 export default function Page() {

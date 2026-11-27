@@ -127,8 +127,8 @@ export async function approuverDemandeQr(
     });
     if (r.ok) return null;
     const e = (await r.json().catch(() => ({}))) as { error?: string };
-    return e.error ?? 'Connexion impossible pour le moment. Réessaie.';
+    return e.error ?? 'Connexion impossible pour le moment. Réessayez.';
   } catch {
-    return 'Pas de réseau. Réessaie dans un instant.';
+    return 'Pas de réseau. Réessayez dans un instant.';
   }
 }

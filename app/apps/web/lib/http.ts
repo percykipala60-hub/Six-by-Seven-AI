@@ -147,15 +147,15 @@ export function foreignOrigin(req: Request): boolean {
 export async function guard(req: Request, compteRequis = false): Promise<NextResponse | null> {
   if (foreignOrigin(req)) return fail(403, 'Requête non autorisée.');
   if (compteRequis && !(await utilisateurDeRequete(req)))
-    return fail(401, 'Connecte-toi pour utiliser Six.');
+    return fail(401, 'Connectez-vous pour utiliser Six.');
   try {
-    if (await rateLimited(req)) return fail(429, 'Trop de demandes. Attends une minute.');
+    if (await rateLimited(req)) return fail(429, 'Trop de demandes. Attendez une minute.');
   } catch (error) {
     console.error(
       '[rate-limit] protection distribuée indisponible',
       error instanceof Error ? error.name : 'UnknownError',
     );
-    return fail(503, 'La protection est temporairement indisponible. Réessaie dans un instant.');
+    return fail(503, 'La protection est temporairement indisponible. Réessayez dans un instant.');
   }
   return null;
 }
@@ -202,5 +202,5 @@ export async function readJson(
 
 export function providerFail(e: unknown): NextResponse {
   if (e instanceof ProviderError) return fail(502, e.message);
-  return fail(500, 'Erreur inattendue. Réessaie.');
+  return fail(500, 'Erreur inattendue. Réessayez.');
 }

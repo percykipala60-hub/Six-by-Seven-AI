@@ -32,7 +32,7 @@ async function garde(req: Request) {
 
 const ABSENT = "L'espace de travail de Cosinus n'existe qu'en local pour l'instant.";
 
-const DOSSIER_REFUSE = 'Dossier introuvable ou inaccessible. Choisis un autre dossier.';
+const DOSSIER_REFUSE = 'Dossier introuvable ou inaccessible. Choisissez un autre dossier.';
 
 /**
  * Local seulement : la demande vient de cet ordinateur (sauf SIXTOUCH_DISTANT=1). « d » : dossier de

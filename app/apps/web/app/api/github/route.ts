@@ -88,7 +88,7 @@ export async function POST(req: Request) {
   if (!etatValide(corps.data.etat, u.id))
     return fail(
       403,
-      'Ce lien de retour GitHub a expiré ou ne vient pas de ton compte. Recommence depuis Réglages → Cloud.',
+      'Ce lien de retour GitHub a expiré ou ne vient pas de votre compte. Recommencez depuis Réglages → Cloud.',
     );
   try {
     const { login, installation } = await installationDe(corps.data.code, corps.data.installation);

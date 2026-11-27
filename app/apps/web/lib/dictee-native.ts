@@ -9,7 +9,7 @@ export async function dicterSurTelephone(signal: AbortSignal): Promise<string> {
   };
   verifierArret();
   if (!Capacitor.isPluginAvailable('SpeechRecognition')) {
-    throw new Error('Mets Six à jour pour utiliser le micro natif du téléphone.');
+    throw new Error('Mettez Six à jour pour utiliser le micro natif du téléphone.');
   }
   let permission = await SpeechRecognition.checkPermissions();
   verifierArret();
@@ -23,7 +23,7 @@ export async function dicterSurTelephone(signal: AbortSignal): Promise<string> {
   verifierArret();
   if (!local.available) {
     throw new Error(
-      'La reconnaissance vocale locale en français est indisponible sur ce téléphone. Vérifie les langues de dictée téléchargées dans les réglages du téléphone.',
+      'La reconnaissance vocale locale en français est indisponible sur ce téléphone. Vérifiez les langues de dictée téléchargées dans les réglages du téléphone.',
     );
   }
   let arreter: () => void = () => {};
