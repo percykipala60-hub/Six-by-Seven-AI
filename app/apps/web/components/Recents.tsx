@@ -17,6 +17,8 @@ import {
   basculerReplie,
   ecouterEnvironnements,
   grouperParEnvironnement,
+  groupeVisible,
+  masquerGroupe,
   lireEnvironnements,
   lireReplies,
   retirerEnvironnement,
@@ -229,62 +231,75 @@ export function Recents({
       })),
       envs,
     );
-    contenu = groupes.map((g) => {
-      // Comme les dossiers de Claude : un environnement sans discussion reste replié (une seule ligne) ; l'ouvrir
-      // montre « Aucune discussion · Retirer ».
-      const bascule = dossiersReplies.includes(g.id);
-      const ferme = g.chats.length ? bascule : !bascule;
-      const nouvelle = g.environnement
-        ? `/cosinus?e=${encodeURIComponent(g.id)}`
-        : g.dossier
-          ? `/cosinus?d=${encodeURIComponent(g.dossier)}`
-          : '';
-      return (
-        <div className="recents-dossier" key={g.id}>
-          <div className="recents-dossier-tete">
-            <button
-              type="button"
-              className="recents-dossier-titre"
-              aria-expanded={!ferme}
-              title={
-                g.environnement?.dossiers.join('\n') || g.dossier || 'Discussions sans dossier'
-              }
-              onClick={() => basculerReplie(g.id)}
-            >
-              <span>{g.nom}</span>
-              <Icon name="down" size={13} stroke={2} />
-            </button>
-            {nouvelle && (
-              <Link
-                href={nouvelle}
-                className="recents-dossier-nouvelle"
-                aria-label={`Nouvelle discussion dans ${g.nom}`}
-                title="Nouvelle discussion dans cet environnement"
-                onClick={apresLien}
+    contenu = groupes
+      .filter((g) => g.id === '-' || groupeVisible(g))
+      .map((g) => {
+        // Comme les dossiers de Claude : un environnement sans discussion reste replié (une seule ligne) ; l'ouvrir
+        // montre « Aucune discussion · Retirer ».
+        const bascule = dossiersReplies.includes(g.id);
+        const ferme = g.chats.length ? bascule : !bascule;
+        const nouvelle = g.environnement
+          ? `/cosinus?e=${encodeURIComponent(g.id)}`
+          : g.dossier
+            ? `/cosinus?d=${encodeURIComponent(g.dossier)}`
+            : '';
+        return (
+          <div className="recents-dossier" key={g.id}>
+            <div className="recents-dossier-tete">
+              <button
+                type="button"
+                className="recents-dossier-titre"
+                aria-expanded={!ferme}
+                title={
+                  g.environnement?.dossiers.join('\n') || g.dossier || 'Discussions sans dossier'
+                }
+                onClick={() => basculerReplie(g.id)}
               >
-                <Icon name="plus" size={14} stroke={2} />
-              </Link>
-            )}
+                <span>{g.nom}</span>
+                <Icon name="down" size={13} stroke={2} />
+              </button>
+              {g.id !== '-' && (
+                <button
+                  type="button"
+                  className="recents-dossier-nouvelle"
+                  aria-label={`Retirer ${g.nom} de la liste`}
+                  title="Retirer de la liste (le dossier et ses fichiers restent sur l’ordinateur)"
+                  onClick={() => masquerGroupe(g)}
+                >
+                  <Icon name="x" size={13} stroke={2} />
+                </button>
+              )}
+              {nouvelle && (
+                <Link
+                  href={nouvelle}
+                  className="recents-dossier-nouvelle"
+                  aria-label={`Nouvelle discussion dans ${g.nom}`}
+                  title="Nouvelle discussion dans cet environnement"
+                  onClick={apresLien}
+                >
+                  <Icon name="plus" size={14} stroke={2} />
+                </Link>
+              )}
+            </div>
+            {!ferme &&
+              (g.chats.length ? (
+                g.chats.map(ligne)
+              ) : (
+                <p className="recents-vide">
+                  Aucune discussion
+                  {g.environnement && (
+                    <>
+                      {' · '}
+                      <button type="button" onClick={() => retirerEnvironnement(g.id)}>
+                        Retirer
+                      </button>
+                    </>
+                  )}
+                </p>
+              ))}
           </div>
-          {!ferme &&
-            (g.chats.length ? (
-              g.chats.map(ligne)
-            ) : (
-              <p className="recents-vide">
-                Aucune discussion
-                {g.environnement && (
-                  <>
-                    {' · '}
-                    <button type="button" onClick={() => retirerEnvironnement(g.id)}>
-                      Retirer
-                    </button>
-                  </>
-                )}
-              </p>
-            ))}
-        </div>
-      );
-    });
+        );
+      });
   } else {
     contenu = (tout || filtre ? trouves : trouves.slice(0, VISIBLES)).map(ligne);
   }
