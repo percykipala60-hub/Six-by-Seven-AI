@@ -74,7 +74,7 @@ let appli = null;
 /** Ordinateur gardé éveillé (Réglages → Application de bureau) : identifiant du blocage de veille, ou null. */
 let eveil = null;
 /** Ce que l'app signale à la barre (volet ouvert, espace Cosinus). */
-let etatApp = { volet: null, terminal: false, cosinus: false };
+let etatApp = { volet: null, terminal: false, cosinus: false, connecte: false };
 /** Couleurs du thème de l'app, reprises par la barre et les boutons Windows. */
 let theme = null;
 
@@ -202,6 +202,7 @@ async function etatBarre() {
     avant: h.avant,
     volet: etatApp.volet,
     terminal: etatApp.terminal,
+    connecte: etatApp.connecte,
     cosinus: etatApp.cosinus && chemin.startsWith('/cosinus'),
     logo: `${ORIGINE_APP}/icon.png`,
     theme,
@@ -512,11 +513,16 @@ else {
     // L'app signale à la barre l'état de Cosinus (volet ouvert).
     ipcMain.handle('six:app-etat', (evenement, e) => {
       if (!depuisApp(evenement) || !e || typeof e !== 'object') return;
-      etatApp = {
-        volet: ['navigateur', 'fichiers', 'terminal'].includes(e.volet) ? e.volet : null,
-        terminal: e.terminal === true,
-        cosinus: e.cosinus === true,
-      };
+      // Connexion signalée à part (PontBureau, sur toutes les pages) : elle ne remet pas le volet à zéro.
+      if ('connecte' in e && Object.keys(e).length === 1)
+        etatApp = { ...etatApp, connecte: e.connecte === true };
+      else
+        etatApp = {
+          ...etatApp,
+          volet: ['navigateur', 'fichiers', 'terminal'].includes(e.volet) ? e.volet : null,
+          terminal: e.terminal === true,
+          cosinus: e.cosinus === true,
+        };
       void etatBarre();
     });
     ipcMain.handle('six:connexion', connexion);
