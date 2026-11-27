@@ -35,7 +35,7 @@ export async function POST(req: Request) {
       headers: { 'xi-api-key': apiKey, 'content-type': 'application/json', accept: 'audio/mpeg' },
       body: JSON.stringify({
         text: texte,
-        model_id: 'eleven_multilingual_v2',
+        model_id: voix.modele,
         language_code: voix.langue,
       }),
       signal: AbortSignal.any([req.signal, AbortSignal.timeout(25000)]),

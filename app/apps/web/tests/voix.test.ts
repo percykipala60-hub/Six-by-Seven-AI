@@ -115,3 +115,20 @@ describe('texte lu par Six', () => {
     expect(estPhraseFantome('Bonjour Six')).toBe(false);
   });
 });
+
+describe('voix retirées', () => {
+  it('Hortense, Julie et Paule ne sont jamais proposées', () => {
+    const fr = (nom: string) =>
+      ({
+        name: `Microsoft ${nom} - French (France)`,
+        lang: 'fr-FR',
+        voiceURI: nom,
+        default: false,
+        localService: true,
+      }) as SpeechSynthesisVoice;
+    const noms = voixPourLangue([fr('Hortense'), fr('Julie'), fr('Paule'), fr('Paul')], 'fr').map(
+      (v) => v.voiceURI,
+    );
+    expect(noms).toEqual(['Paul']);
+  });
+});

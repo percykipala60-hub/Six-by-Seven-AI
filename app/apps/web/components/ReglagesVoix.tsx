@@ -162,7 +162,14 @@ export function ReglagesVoix() {
             className="select voix-select"
             value={p.langue}
             aria-label="Langue"
-            onChange={(e) => changer({ langue: e.target.value as LangueVoix, voix: '' })}
+            onChange={(e) => {
+              // La voix suit la langue : la voix de Six prévue pour cette langue, sinon celle de l'appareil.
+              const langue = e.target.value as LangueVoix;
+              const prevue = elevenlabs
+                ? VOIX_ELEVENLABS.find((v) => v.langue === langue)
+                : undefined;
+              changer({ langue, voix: prevue?.selection ?? '' });
+            }}
           >
             {LANGUES_VOIX.map((l) => (
               <option key={l.id} value={l.id}>
@@ -198,7 +205,7 @@ export function ReglagesVoix() {
               <option value="">Automatique (appareil)</option>
               {voixDistantes.map((v) => (
                 <option key={v.selection} value={v.selection}>
-                  {v.nom} (ElevenLabs)
+                  {v.nom}
                 </option>
               ))}
               {disponibles.map((v) => (

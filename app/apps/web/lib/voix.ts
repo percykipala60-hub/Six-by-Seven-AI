@@ -75,6 +75,9 @@ export function texteEssaiVoix(langue: LangueVoix): string {
   return LANGUES_VOIX.find((l) => l.id === code)?.essai ?? LANGUES_VOIX[0].essai;
 }
 
+/** Voix de l'appareil jamais proposées (voix françaises de Windows écartées à la demande). */
+const VOIX_RETIREES = /\b(Hortense|Julie|Paule)\b/i;
+
 /** Les voix de l'appareil pour une langue, les plus naturelles d'abord (« Natural », « Online », « Neural »…). */
 export function voixPourLangue(
   toutes: SpeechSynthesisVoice[],
@@ -87,7 +90,7 @@ export function voixPourLangue(
   const region = (v: SpeechSynthesisVoice) =>
     Number(v.lang.toLowerCase().replace('_', '-') !== code);
   return toutes
-    .filter((v) => v.lang.toLowerCase().split(/[-_]/)[0] === prefixe)
+    .filter((v) => v.lang.toLowerCase().split(/[-_]/)[0] === prefixe && !VOIX_RETIREES.test(v.name))
     .sort(
       (a, b) =>
         naturelle(a) - naturelle(b) ||
