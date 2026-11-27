@@ -29,7 +29,10 @@ export type OutilDef = {
   description: string;
   parametres: {
     type: 'object';
-    properties: Record<string, { type: 'string' | 'object'; description: string; enum?: string[] }>;
+    properties: Record<
+      string,
+      { type: 'string' | 'object' | 'number'; description: string; enum?: string[] }
+    >;
     required: string[];
   };
 };
