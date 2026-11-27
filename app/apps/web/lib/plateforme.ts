@@ -9,6 +9,38 @@
  */
 export type Plateforme = 'bureau' | 'ios' | 'android' | 'web';
 
+type PontVoix = {
+  disponible: () => Promise<boolean>;
+  transcrire: (
+    audio: Uint8Array,
+    langue: string,
+  ) => Promise<{ texte: string; langue?: string } | null>;
+};
+
+export function pontVoixBureau(): PontVoix | undefined {
+  return typeof window !== 'undefined'
+    ? (window as Window & { sixBureau?: { voix?: PontVoix } }).sixBureau?.voix
+    : undefined;
+}
+
+export async function transcrireSurBureau(audio: Blob, langue: string): Promise<Response | null> {
+  const pont = pontVoixBureau();
+  if (!pont) return null;
+  try {
+    if (audio.size > 10 * 1024 * 1024) {
+      return Response.json({ error: 'Le message vocal dépasse 10 Mo.' }, { status: 413 });
+    }
+    const r = await pont.transcrire(new Uint8Array(await audio.arrayBuffer()), langue);
+    if (r) return Response.json(r);
+  } catch {
+    /* Le moteur local est indisponible. */
+  }
+  return Response.json(
+    { error: 'Le moteur de transcription local est indisponible.' },
+    { status: 503 },
+  );
+}
+
 export function estBureau(): boolean {
   return (
     typeof window !== 'undefined' &&

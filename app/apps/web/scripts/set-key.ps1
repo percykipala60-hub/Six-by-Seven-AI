@@ -13,13 +13,18 @@ $fichier = if ($env:SIX_ENV_FILE) { $env:SIX_ENV_FILE } else { Join-Path $racine
 $services = @{
   claude = @{ Variable = "ANTHROPIC_API_KEY"; Nom = "Claude (Anthropic)"; Debut = "sk-ant-" }
   openai = @{ Variable = "OPENAI_API_KEY"; Nom = "ChatGPT (OpenAI)"; Debut = "sk-" }
+  openrouter = @{ Variable = "OPENROUTER_API_KEY"; Nom = "OpenRouter"; Debut = "sk-or-" }
+  elevenlabs = @{ Variable = "ELEVENLABS_API_KEY"; Nom = "ElevenLabs"; Debut = "sk_" }
 }
 $cle_service = $Service.ToLower()
 if (-not $services.ContainsKey($cle_service)) {
-  Write-Error "Service inconnu : choisis claude ou openai."
+  Write-Error "Service inconnu : choisis claude, openai, openrouter ou elevenlabs."
   exit 1
 }
 $s = $services[$cle_service]
+if ($cle_service -eq 'elevenlabs' -and -not $env:SIX_CLE) {
+  $Host.UI.RawUI.WindowTitle = 'Six - Saisie ElevenLabs'
+}
 
 if ($env:SIX_CLE) {
   $cle = $env:SIX_CLE.Trim()

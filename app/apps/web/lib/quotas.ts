@@ -4,7 +4,7 @@
  * La clé est hachée : ni l'identifiant du compte ni l'adresse ne sont stockés en clair.
  */
 
-export type TypeQuota = 'analyses' | 'messages';
+export type TypeQuota = 'analyses' | 'messages' | 'synthese';
 
 const memoire = new Map<string, number>();
 const SCRIPT =

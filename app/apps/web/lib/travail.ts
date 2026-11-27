@@ -5,6 +5,7 @@ export const DOC_PROJET_MAX = 12_000;
 export const DOCS_PROJET_TOTAL = 24_000;
 export const ProjetSchema = z.object({
   titre: z.string().trim().min(1).max(100),
+  description: z.string().trim().max(2000).optional(),
   contexte: z.string().trim().max(12000),
   documents: z
     .array(
@@ -54,11 +55,18 @@ export type Travail = { projets: Projet[]; taches: Tache[]; battement?: string }
  * Contexte d'un projet donné à Six (Chat, Cosinus, tâches planifiées) : consignes puis documents. Ce sont des données
  * de référence, jamais des ordres.
  */
-export function contexteDuProjet(p: Pick<Projet, 'titre' | 'contexte' | 'documents'>): string {
+export function contexteDuProjet(
+  p: Pick<Projet, 'titre' | 'description' | 'contexte' | 'documents'>,
+): string {
   const documents = (p.documents ?? [])
     .map((d) => `[Document du projet : ${d.nom}]\n${d.texte}`)
     .join('\n\n');
-  return [`Contexte du projet « ${p.titre} » (données de référence) :`, p.contexte, documents]
+  return [
+    `Contexte du projet « ${p.titre} » (données de référence) :`,
+    p.description ?? '',
+    p.contexte,
+    documents,
+  ]
     .filter((x) => x.trim())
     .join('\n\n');
 }

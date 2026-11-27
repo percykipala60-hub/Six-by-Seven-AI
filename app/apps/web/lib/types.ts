@@ -100,9 +100,15 @@ export interface PieceAffichee {
   extrait?: string;
 }
 
+export interface UsageJetons {
+  entree: number;
+  sortie: number;
+}
+
 export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
+  usage?: UsageJetons;
   /** Pièces jointes du message, pour l'affichage seulement (retirées avant l'envoi au serveur). */
   pieces?: PieceAffichee[];
   /** Cosinus : ce que l'agent a fait (« Six lit … ») et les fichiers qu'il a enregistrés. Affichage seulement. */
@@ -122,5 +128,6 @@ export interface ChatMessage {
 export interface ChatResult {
   reponse: string;
   demo: boolean;
+  usage?: UsageJetons;
   lieux?: LieuCarte[];
 }

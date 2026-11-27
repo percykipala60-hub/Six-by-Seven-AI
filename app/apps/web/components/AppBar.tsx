@@ -12,7 +12,6 @@ import Link from 'next/link';
 import { ecouterCompte, lireCompte, type Compte } from '@/lib/compte';
 import { AvatarContenu } from './AvatarContenu';
 import { MenuCompte, useRaccourciReglages } from './MenuCompte';
-import { LIEN_CONFIDENTIALITE } from '@/lib/liens';
 import { effacerChat, ecouterChats, lireChats, type ChatSeven } from '@/lib/seven-chats';
 import { Recents, type ElementRecent } from './Recents';
 import {
@@ -420,7 +419,7 @@ export function AppBar({
           </Link>
         )}
         {/* Comme dans Claude : Rechercher, les trois espaces, puis « Récents » (les discussions de l'espace ouvert ;
-            dans Cosinus, groupées par dossier comme dans Claude Code). Réglages et confidentialité restent en bas. */}
+            dans Cosinus, groupées par dossier comme dans Claude Code). */}
         <nav aria-label="Navigation principale" className="drawer-nav">
           <button
             type="button"
@@ -464,23 +463,8 @@ export function AppBar({
           recherche={recherche}
           apresLien={apresLien}
         />
-        <nav aria-label="Réglages" className="drawer-nav drawer-bas">
-          {item('/reglages', 'reglages', <Icon name="sliders" />, 'Réglages')}
-          <a
-            href={LIEN_CONFIDENTIALITE}
-            className="drawer-item"
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={apresLien}
-          >
-            <Icon name="lock" />
-            <span>Confidentialité</span>
-          </a>
-        </nav>
         <Suivis />
-        <Link href="/reglages?v=compte" className="drawer-profile" onClick={apresLien}>
-          <ProfilLigne />
-        </Link>
+        <ProfilLigne />
       </div>
     </>
   );
@@ -594,24 +578,36 @@ function titreReponse(g: ConversationGardee): string {
 
 function ProfilLigne() {
   const [c, setC] = useState<Compte>({ statut: 'invite', prenom: '' });
+  const [menu, setMenu] = useState(false);
+  const fermer = useCallback(() => setMenu(false), []);
   useEffect(() => {
     const lire = () => setC(lireCompte());
     lire();
     return ecouterCompte(lire);
   }, []);
   return (
-    <>
-      <span className="avatar avatar-static" aria-hidden="true">
-        <AvatarContenu c={c} taille={18} />
-        <span className={`avatar-dot${c.statut === 'connecte' ? ' on' : ''}`} />
-      </span>
-      <span className="grow">
-        <b>{c.prenom || 'Invité'}</b>
-        <span className="muted small">
-          {c.statut === 'connecte' ? c.identifiant : 'Non connecté, tout reste ici'}
+    <div className="drawer-profile-ancre">
+      <button
+        type="button"
+        className="drawer-profile"
+        aria-label={`Menu du compte de ${c.prenom || 'l’invité'}`}
+        aria-haspopup="menu"
+        aria-expanded={menu}
+        onClick={() => setMenu((ouvert) => !ouvert)}
+      >
+        <span className="avatar avatar-static" aria-hidden="true">
+          <AvatarContenu c={c} taille={18} />
+          <span className={`avatar-dot${c.statut === 'connecte' ? ' on' : ''}`} />
         </span>
-      </span>
-      <Icon name="chevron" size={18} />
-    </>
+        <span className="grow">
+          <b>{c.prenom || 'Invité'}</b>
+          <span className="muted small">
+            {c.statut === 'connecte' ? c.identifiant : 'Non connecté, tout reste ici'}
+          </span>
+        </span>
+        <Icon name="chevron" size={18} />
+      </button>
+      {menu && <MenuCompte compte={c} ancre="panneau" onFermer={fermer} />}
+    </div>
   );
 }
