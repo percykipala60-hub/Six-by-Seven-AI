@@ -129,46 +129,131 @@ function Clic-Souris($e) {
   [SixUtilisateur32]::mouse_event(0x0004, 0, 0, 0, [UIntPtr]::Zero)
 }
 
-function Cliquer($id) {
-  $e = Repere $id
-  $p = $null
-  if ($e.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$p)) { $p.Invoke(); return @{ fait = 'activé' } }
-  if ($e.TryGetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern, [ref]$p)) { $p.Toggle(); return @{ fait = 'basculé' } }
-  if ($e.TryGetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern, [ref]$p)) { $p.Select(); return @{ fait = 'sélectionné' } }
-  if ($e.TryGetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern, [ref]$p)) { $p.Expand(); return @{ fait = 'déplié' } }
-  Clic-Souris $e
-  return @{ fait = 'cliqué' }
+# ---------- Premier plan : jamais de frappe dans une autre fenêtre ----------
+# Le clavier simulé de Windows va à la fenêtre active : avant chaque frappe, on vérifie que c'est EXACTEMENT la
+# fenêtre de travail. Sinon, Six agit en arrière-plan par l'accessibilité (remplir, ajouter, cliquer), ou s'abstient.
+
+function Fenetre-De-Travail($handle) {
+  if ($handle) { return [int64]$handle }
+  if ($script:fenetre) { return [int64]$script:fenetre.Current.NativeWindowHandle }
+  return 0
 }
 
-function Remplir($id, [string]$texte) {
-  $e = Repere $id
-  if ($e.Current.IsPassword) { throw 'Champ de mot de passe : laisse la personne le remplir.' }
-  # Devant la personne : la fenêtre passe au premier plan, le champ est vidé, puis le texte s'écrit sous ses yeux.
-  if ($script:fenetre) { [SixUtilisateur32]::Devant([IntPtr][int64]$script:fenetre.Current.NativeWindowHandle) | Out-Null }
-  try { $e.SetFocus() } catch { Clic-Souris $e }
-  Start-Sleep -Milliseconds 150
-  [System.Windows.Forms.SendKeys]::SendWait('^a')
-  [System.Windows.Forms.SendKeys]::SendWait('{DEL}')
-  Taper-Visible $texte
-  return @{ fait = 'rempli' }
+function Est-Devant([int64]$h) { return $h -ne 0 -and ([int64][SixUtilisateur32]::GetForegroundWindow() -eq $h) }
+
+# Six ne prend le premier plan que « poliment » : si la personne regarde Six lui-même, le bureau ou rien. Si elle
+# travaille dans une autre application, on ne la dérange pas (travail en arrière-plan).
+function Peut-Prendre-Devant {
+  $h = [SixUtilisateur32]::GetForegroundWindow()
+  if ($h -eq [IntPtr]::Zero) { return $true }
+  $procId = 0
+  [SixUtilisateur32]::GetWindowThreadProcessId($h, [ref]$procId) | Out-Null
+  $p = Get-Process -Id $procId -ErrorAction SilentlyContinue
+  if (-not $p) { return $true }
+  $chemin = $(try { $p.Path } catch { '' })
+  if ($env:SIX_CHEMIN -and $chemin -and ($chemin -ieq $env:SIX_CHEMIN)) { return $true }
+  return $p.ProcessName -ieq 'explorer'
+}
+
+function Tenter-Devant([int64]$h) {
+  if ($h -eq 0) { return $false }
+  if (Est-Devant $h) { return $true }
+  if (-not (Peut-Prendre-Devant)) { return $false }
+  [SixUtilisateur32]::Devant([IntPtr]$h) | Out-Null
+  Start-Sleep -Milliseconds 180
+  return (Est-Devant $h)
 }
 
 # SendKeys donne un sens à + ^ % ~ ( ) { } [ ] : on les tape tels quels.
 function Echapper-Touches([string]$t) { return ($t -replace '([+^%~(){}\[\]])', '{$1}') }
 
-# Écrit devant la personne, par petits morceaux (on voit le texte s'écrire) ; un long texte va plus vite.
-function Taper-Visible([string]$texte) {
+# Écrit devant la personne, par petits morceaux ; vérifie AVANT CHAQUE morceau que la fenêtre active est toujours
+# la fenêtre de travail (sinon arrêt immédiat : rien n'est tapé ailleurs). Renvoie le nombre de caractères écrits.
+function Taper-Visible([string]$texte, [int64]$h) {
   $morceau = if ($texte.Length -gt 600) { 12 } elseif ($texte.Length -gt 200) { 6 } else { 3 }
   $texte = $texte -replace "`r`n", "`n"
   for ($i = 0; $i -lt $texte.Length; $i += $morceau) {
+    if (-not (Est-Devant $h)) { return $i }
     $part = $texte.Substring($i, [Math]::Min($morceau, $texte.Length - $i))
     $echappe = (Echapper-Touches $part) -replace "`n", '{ENTER}'
     [System.Windows.Forms.SendKeys]::SendWait($echappe)
     Start-Sleep -Milliseconds 18
   }
+  return $texte.Length
 }
 
-function Raccourci([string]$touches) {
+# Zone de texte principale de la fenêtre (pour écrire en arrière-plan) : élément focalisé, sinon premier Document
+# ou Edit modifiable.
+function Zone-De-Texte($h) {
+  $f = $A::FromHandle([IntPtr]$h)
+  $types = New-Object System.Windows.Automation.OrCondition(
+    (New-Object System.Windows.Automation.PropertyCondition($A::ControlTypeProperty, [System.Windows.Automation.ControlType]::Document)),
+    (New-Object System.Windows.Automation.PropertyCondition($A::ControlTypeProperty, [System.Windows.Automation.ControlType]::Edit)))
+  foreach ($e in $f.FindAll([System.Windows.Automation.TreeScope]::Descendants, $types)) {
+    $p = $null
+    if (-not $e.Current.IsPassword -and $e.TryGetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern, [ref]$p) -and -not $p.Current.IsReadOnly) { return $e }
+  }
+  return $null
+}
+
+function Valeur-Arriere-Plan($e, [string]$texte, [bool]$ajouter) {
+  $p = $null
+  if (-not $e.TryGetCurrentPattern([System.Windows.Automation.ValuePattern]::Pattern, [ref]$p) -or $p.Current.IsReadOnly) { return $false }
+  $avant = if ($ajouter) { [string]$p.Current.Value } else { '' }
+  $p.SetValue($avant + ($texte -replace "`r?`n", "`r`n"))
+  return $true
+}
+
+function Cliquer($id, $handle) {
+  $e = Repere $id
+  $p = $null
+  # Ces actions passent par l'application elle-même : elles marchent même si la fenêtre n'est pas devant.
+  if ($e.TryGetCurrentPattern([System.Windows.Automation.InvokePattern]::Pattern, [ref]$p)) { $p.Invoke(); return @{ fait = 'activé' } }
+  if ($e.TryGetCurrentPattern([System.Windows.Automation.TogglePattern]::Pattern, [ref]$p)) { $p.Toggle(); return @{ fait = 'basculé' } }
+  if ($e.TryGetCurrentPattern([System.Windows.Automation.SelectionItemPattern]::Pattern, [ref]$p)) { $p.Select(); return @{ fait = 'sélectionné' } }
+  if ($e.TryGetCurrentPattern([System.Windows.Automation.ExpandCollapsePattern]::Pattern, [ref]$p)) { $p.Expand(); return @{ fait = 'déplié' } }
+  # Clic de souris : seulement si la fenêtre de travail est réellement devant (sinon on cliquerait ailleurs).
+  $h = Fenetre-De-Travail $handle
+  if (-not (Tenter-Devant $h)) { throw 'Cet élément demande un vrai clic, mais la fenêtre n’est pas au premier plan : attends que la personne la libère ou demande-lui.' }
+  Clic-Souris $e
+  return @{ fait = 'cliqué' }
+}
+
+function Remplir($id, [string]$texte, $handle) {
+  $e = Repere $id
+  if ($e.Current.IsPassword) { throw 'Champ de mot de passe : laisse la personne le remplir.' }
+  $h = Fenetre-De-Travail $handle
+  if (Tenter-Devant $h) {
+    try { $e.SetFocus() } catch { }
+    Start-Sleep -Milliseconds 150
+    if (Est-Devant $h) {
+      [System.Windows.Forms.SendKeys]::SendWait('^a')
+      [System.Windows.Forms.SendKeys]::SendWait('{DEL}')
+      $ecrits = Taper-Visible $texte $h
+      if ($ecrits -ge $texte.Length) { return @{ fait = 'rempli (sous les yeux de la personne)' } }
+      # La personne a changé de fenêtre en cours de route : la suite s'écrit en arrière-plan.
+      if (Valeur-Arriere-Plan $e $texte $false) { return @{ fait = 'rempli (fini en arrière-plan : la personne a changé de fenêtre)' } }
+      throw "Arrêté après $ecrits caractères : la fenêtre n’est plus au premier plan."
+    }
+  }
+  if (Valeur-Arriere-Plan $e $texte $false) { return @{ fait = 'rempli en arrière-plan' } }
+  throw 'Ce champ ne se remplit qu’au clavier et la fenêtre n’est pas au premier plan : rien n’a été tapé.'
+}
+
+function Taper([string]$texte, $handle) {
+  $h = Fenetre-De-Travail $handle
+  if ($h -eq 0) { throw 'Aucune fenêtre de travail : ouvre ou observe d’abord l’application.' }
+  if (Tenter-Devant $h) {
+    $ecrits = Taper-Visible $texte $h
+    if ($ecrits -ge $texte.Length) { return @{ fait = 'tapé (sous les yeux de la personne)' } }
+    $texte = $texte.Substring($ecrits)
+  }
+  $zone = Zone-De-Texte $h
+  if ($zone -and (Valeur-Arriere-Plan $zone $texte $true)) { return @{ fait = 'écrit en arrière-plan' } }
+  throw 'La fenêtre n’est pas au premier plan et n’a pas de zone de texte modifiable en arrière-plan : rien n’a été tapé.'
+}
+
+function Raccourci([string]$touches, $handle) {
   $map = @{ 'ctrl' = '^'; 'control' = '^'; 'maj' = '+'; 'shift' = '+'; 'alt' = '%' }
   $speciales = @{ 'entree' = '{ENTER}'; 'enter' = '{ENTER}'; 'tab' = '{TAB}'; 'echap' = '{ESC}'; 'esc' = '{ESC}'; 'suppr' = '{DEL}'; 'retour' = '{BACKSPACE}'; 'haut' = '{UP}'; 'bas' = '{DOWN}'; 'gauche' = '{LEFT}'; 'droite' = '{RIGHT}'; 'f5' = '{F5}'; 'debut' = '{HOME}'; 'fin' = '{END}' }
   $parties = ($touches.ToLower() -split '\+') | ForEach-Object { $_.Trim() }
@@ -179,14 +264,16 @@ function Raccourci([string]$touches) {
     elseif ($x.Length -eq 1) { $touche = (Echapper-Touches $x) }
     else { throw "Touche inconnue : $x" }
   }
+  # Un raccourci ne marche qu'au clavier : seulement si la fenêtre de travail est exactement au premier plan.
+  $h = Fenetre-De-Travail $handle
+  if (-not (Tenter-Devant $h)) { throw 'Raccourci impossible : la fenêtre n’est pas au premier plan (la personne utilise une autre application). Rien n’a été tapé.' }
   [System.Windows.Forms.SendKeys]::SendWait("$prefixe$touche")
   return @{ fait = "raccourci $touches" }
 }
 
 function Focaliser($handle) {
-  $ok = [SixUtilisateur32]::Devant([IntPtr][int64]$handle)
-  Start-Sleep -Milliseconds 200
-  return @{ fait = 'fenêtre au premier plan'; devant = $ok }
+  $ok = Tenter-Devant ([int64]$handle)
+  return @{ fait = $(if ($ok) { 'fenêtre au premier plan' } else { 'laissée en arrière-plan (la personne utilise une autre application)' }); devant = $ok }
 }
 
 # Applications du menu Démarrer, classiques ET modernes (Bloc-notes, Calculatrice, Word…), avec leur identifiant.
@@ -210,7 +297,7 @@ function Ouvrir([string]$id) {
     Start-Sleep -Milliseconds 250
     $nouvelle = (Fenetres).fenetres | Where-Object { -not $avant.ContainsKey([string]$_.fenetre) } | Select-Object -First 1
     if ($nouvelle) {
-      [SixUtilisateur32]::Devant([IntPtr][int64]$nouvelle.fenetre) | Out-Null
+      Tenter-Devant ([int64]$nouvelle.fenetre) | Out-Null
       Start-Sleep -Milliseconds 300
       return @{ fait = 'ouvert'; fenetre = $nouvelle.fenetre; app = $nouvelle.app; titre = $nouvelle.titre; chemin = $nouvelle.chemin }
     }
@@ -239,10 +326,10 @@ while ($true) {
       'fenetres' { $r = Fenetres }
       'observer' { $r = Observer $c.fenetre }
       'cible' { $r = Cible-Repere $c.element }
-      'cliquer' { $r = Cliquer $c.element }
-      'remplir' { $r = Remplir $c.element $c.texte }
-      'taper' { Taper-Visible ([string]$c.texte); $r = @{ fait = 'tapé' } }
-      'raccourci' { $r = Raccourci ([string]$c.touches) }
+      'cliquer' { $r = Cliquer $c.element $c.fenetre }
+      'remplir' { $r = Remplir $c.element ([string]$c.texte) $c.fenetre }
+      'taper' { $r = Taper ([string]$c.texte) $c.fenetre }
+      'raccourci' { $r = Raccourci ([string]$c.touches) $c.fenetre }
       'focaliser' { $r = Focaliser $c.fenetre }
       'premier_plan' { $r = Premier-Plan }
       'ouvrir' { $r = Ouvrir ([string]$c.appid) }

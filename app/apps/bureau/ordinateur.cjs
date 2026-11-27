@@ -149,6 +149,8 @@ function creerOrdinateur(ctx) {
       {
         stdio: ['pipe', 'pipe', 'pipe'],
         windowsHide: true,
+        // Le module reconnaît ainsi les fenêtres de Six (la personne regarde Six : il peut passer l'application devant).
+        env: { ...process.env, SIX_CHEMIN: process.execPath },
       },
     );
     tampon = '';
@@ -292,6 +294,19 @@ function creerOrdinateur(ctx) {
   }
 
   /** Ramène la fenêtre de travail au premier plan (la personne voit ce que fait Six, même si elle a réduit Six). */
+  /** Fenêtre où Six travaille (ouverte ou observée par lui), avec l'accord de la personne pour son application. */
+  async function fenetreDeTravail() {
+    if (!fenetreActive)
+      throw new Error('Aucune fenêtre de travail : ouvre ou observe d’abord l’application.');
+    const f = await appDe(fenetreActive).catch(() => null);
+    if (!f) {
+      fenetreActive = null;
+      throw new Error('La fenêtre de travail a été fermée : rouvre l’application.');
+    }
+    await exigerApplication(f.app, f.chemin);
+    return f;
+  }
+
   async function devant() {
     if (fenetreActive)
       await envoyer({ action: 'focaliser', fenetre: fenetreActive }).catch(() => {});
@@ -381,13 +396,16 @@ function creerOrdinateur(ctx) {
         await exigerApplication(f.app, f.chemin);
         return { app: f.app, ...(await capture()) };
       }
+      // Les actions visent la FENÊTRE DE TRAVAIL (celle que Six a ouverte ou observée), pas la fenêtre active : la
+      // personne peut réduire Six ou utiliser une autre application, Six continue (en arrière-plan si besoin). Le
+      // module ne tape jamais au clavier si la fenêtre active n'est pas exactement la fenêtre de travail.
       case 'cliquer':
       case 'remplir': {
-        await devant();
-        const f = await appDe(undefined);
-        await exigerApplication(f.app, f.chemin);
+        const f = await fenetreDeTravail();
         if (!derniere || derniere !== String(f.app).toLowerCase())
-          throw new Error('La fenêtre au premier plan a changé : observe-la de nouveau.');
+          throw new Error(
+            'Observe d’abord la fenêtre de travail (les repères viennent de la dernière observation).',
+          );
         const cible = await envoyer({ action: 'cible', element: String(c.element || '') });
         if (cible.motDePasse)
           throw new Error('Champ de mot de passe : laisse la personne le remplir.');
@@ -397,27 +415,28 @@ function creerOrdinateur(ctx) {
           );
         return envoyer(
           c.action === 'cliquer'
-            ? { action: 'cliquer', element: String(c.element) }
+            ? { action: 'cliquer', element: String(c.element), fenetre: f.fenetre }
             : {
                 action: 'remplir',
                 element: String(c.element),
                 texte: String(c.texte ?? '').slice(0, 2000),
+                fenetre: f.fenetre,
               },
         );
       }
       case 'taper': {
-        await devant();
-        const f = await appDe(undefined);
-        await exigerApplication(f.app, f.chemin);
-        return envoyer({ action: 'taper', texte: String(c.texte ?? '').slice(0, 2000) });
+        const f = await fenetreDeTravail();
+        return envoyer({
+          action: 'taper',
+          texte: String(c.texte ?? '').slice(0, 2000),
+          fenetre: f.fenetre,
+        });
       }
       case 'raccourci': {
         const touches = String(c.touches || '').trim();
         if (!touches || RACCOURCIS_INTERDITS.test(touches)) throw new Error('Raccourci refusé.');
-        await devant();
-        const f = await appDe(undefined);
-        await exigerApplication(f.app, f.chemin);
-        return envoyer({ action: 'raccourci', touches });
+        const f = await fenetreDeTravail();
+        return envoyer({ action: 'raccourci', touches, fenetre: f.fenetre });
       }
       case 'ouvrir': {
         const choix = trouverApplication(await applications(), c.app);
