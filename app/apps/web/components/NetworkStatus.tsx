@@ -44,8 +44,8 @@ export function NetworkStatus() {
   if (!offline) return null;
   return (
     <div className="demo" role="status" style={{ margin: '8px 16px 0' }}>
-      Pas de réseau. Tu peux continuer à préparer ton texte, l&apos;analyse reprendra au retour du
-      réseau.
+      Pas de réseau. Vous pouvez continuer à préparer votre texte, l&apos;analyse reprendra au
+      retour du réseau.
     </div>
   );
 }

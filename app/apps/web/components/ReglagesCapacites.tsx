@@ -66,8 +66,8 @@ export function ReglagesCapacites() {
           onChange={(on) => changer({ artefacts: on })}
         >
           <span className="voix-rangee-sous">
-            Permets à Six d’ouvrir les documents, les présentations et les pages dans une fenêtre
-            dédiée, à côté de ta discussion.
+            Permettez à Six d’ouvrir les documents, les présentations et les pages dans une fenêtre
+            dédiée, à côté de votre discussion.
           </span>
           <span className="voix-rangee-sous">Requis pour « Créer et modifier des fichiers »</span>
         </Interrupteur>
@@ -78,7 +78,7 @@ export function ReglagesCapacites() {
           onChange={(on) => changer({ graphiques: on })}
         >
           <span className="voix-rangee-sous">
-            Laisse Six créer des graphiques et des diagrammes directement dans tes discussions.
+            Laissez Six créer des graphiques et des diagrammes directement dans vos discussions.
           </span>
         </Interrupteur>
         <Interrupteur
@@ -88,11 +88,12 @@ export function ReglagesCapacites() {
           onChange={(on) => changer({ fichiers: on })}
         >
           <span className="voix-rangee-sous">
-            Permets à Six de créer et de modifier des fichiers que tu peux télécharger : documents
-            Word, PDF, présentations et tableurs. Les Focus de Cosinus nécessitent ce réglage.
+            Permettez à Six de créer et de modifier des fichiers que vous pouvez télécharger :
+            documents Word, PDF, présentations et tableurs. Les Focus de Cosinus nécessitent ce
+            réglage.
           </span>
           <span className="voix-rangee-sous">
-            Lorsqu’il est désactivé, Six répond dans la discussion sans rien enregistrer dans ton
+            Lorsqu’il est désactivé, Six répond dans la discussion sans rien enregistrer dans votre
             environnement.
           </span>
         </Interrupteur>

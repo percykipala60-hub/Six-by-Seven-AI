@@ -133,7 +133,7 @@ export function signalerConnexion(jetonAcces: string): Promise<'ok' | 'bloque' |
 async function signaler(jetonAcces: string): Promise<'ok' | 'bloque' | 'deja'> {
   const session = sessionDuJeton(jetonAcces);
   if (!session || lire('local', CLE_SIGNALEE) === session) return 'deja';
-  // La méthode est gardée avec la session : si le serveur ne répond pas, on réessaie plus tard avec la même
+  // La méthode est gardée avec la session : si le serveur ne répond pas, on réessayez plus tard avec la même
   // (une connexion par code QR ne doit jamais redevenir une connexion « principale »).
   const enAttente = lire('local', CLE_A_SIGNALER)?.split('|');
   let methode: MethodeConnexion;

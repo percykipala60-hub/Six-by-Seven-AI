@@ -20,10 +20,10 @@ export async function POST(req: Request) {
     const l = form.get('langue');
     if (estLangueVoix(l)) langue = l;
   } catch {
-    return fail(400, 'Message vocal illisible. Réessaie.');
+    return fail(400, 'Message vocal illisible. Réessayez.');
   }
   if (!(audio instanceof File) || !audio.type.startsWith('audio/'))
-    return fail(400, 'Envoie un message vocal (fichier audio).');
+    return fail(400, 'Envoyez un message vocal (fichier audio).');
   if (audio.size === 0) return fail(400, 'Le message vocal est vide.');
   if (audio.size > TAILLE_MAX) return fail(400, 'Le message vocal dépasse 10 Mo.');
 
@@ -37,7 +37,7 @@ export async function POST(req: Request) {
       });
       const data = await res.json();
       if (!res.ok || typeof data.texte !== 'string' || !data.texte.trim())
-        return fail(502, 'Le moteur local n’a pas compris le message. Réessaie.');
+        return fail(502, 'Le moteur local n’a pas compris le message. Réessayez.');
       return NextResponse.json({
         texte: data.texte.trim(),
         ...(estLangueVoix(data.langue) && data.langue !== 'auto' ? { langue: data.langue } : {}),

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState, type ClipboardEvent, type DragEvent } from 'react';
+import { mouvementReduit } from '@/lib/accessibilite';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { anonymize, markMe, restore } from '@/lib/anonymize';
 import {
@@ -128,20 +129,20 @@ const EXPORTS: Record<
     fichier: true,
     lien: 'whatsapp://',
     etapes: [
-      'Ouvre la discussion voulue.',
+      'Ouvrez la discussion voulue.',
       'Trois points, puis **Plus**, puis **Exporter la discussion**, puis **Sans médias**.',
-      "Dans la liste qui s'ouvre, choisis **Six**.",
+      "Dans la liste qui s'ouvre, choisissez **Six**.",
     ],
-    note: "Six n'apparaît qu'une fois installé sur ton écran d'accueil (menu du navigateur, Installer l'application). Sinon, enregistre l'export et choisis-le ci-dessous.",
+    note: "Six n'apparaît qu'une fois installé sur votre écran d'accueil (menu du navigateur, Installer l'application). Sinon, enregistrez l'export et choisissez-le ci-dessous.",
   },
   sms: {
     label: 'SMS',
     fichier: true,
     lien: 'sms:',
     etapes: [
-      'Ouvre la discussion voulue.',
-      'Appuie longuement sur les messages, puis **Partager** ou **Copier**.',
-      'Colle-les dans Six, ou enregistre et choisis le fichier.',
+      'Ouvrez la discussion voulue.',
+      'Appuyez longuement sur les messages, puis **Partager** ou **Copier**.',
+      'Collez-les dans Six, ou enregistrez et choisissez le fichier.',
     ],
     note: "Certains téléphones proposent aussi « Exporter la discussion » en texte dans les réglages de l'app SMS.",
   },
@@ -150,20 +151,20 @@ const EXPORTS: Record<
     fichier: true,
     lien: 'tg://',
     etapes: [
-      "Sur ordinateur : ouvre la discussion, puis le menu, puis **Exporter l'historique**.",
-      'Choisis le format **texte**, sans médias.',
-      'Colle le texte dans Six, ou choisis le fichier exporté.',
+      "Sur ordinateur : ouvrez la discussion, puis le menu, puis **Exporter l'historique**.",
+      'Choisissez le format **texte**, sans médias.',
+      'Collez le texte dans Six, ou choisissez le fichier exporté.',
     ],
-    note: "Sur téléphone, Telegram n'exporte pas en fichier : copie les messages ou prends une capture.",
+    note: "Sur téléphone, Telegram n'exporte pas en fichier : copiez les messages ou prenez une capture.",
   },
   email: {
     label: 'E-mail',
     fichier: false,
     lien: 'mailto:',
     etapes: [
-      "Ouvre le fil d'e-mail voulu.",
-      "Sélectionne le texte de l'échange, puis **Copier**.",
-      'Colle-le dans Six.',
+      "Ouvrez le fil d'e-mail voulu.",
+      "Sélectionnez le texte de l'échange, puis **Copier**.",
+      'Collez-le dans Six.',
     ],
   },
   facebook: {
@@ -171,9 +172,9 @@ const EXPORTS: Record<
     fichier: false,
     lien: 'fb://',
     etapes: [
-      'Ouvre la discussion depuis Facebook (Messenger).',
-      'Appuie longuement sur les messages, puis **Copier**.',
-      'Colle dans Six, ou prends une capture.',
+      'Ouvrez la discussion depuis Facebook (Messenger).',
+      'Appuyez longuement sur les messages, puis **Copier**.',
+      'Collez dans Six, ou prenez une capture.',
     ],
   },
   messenger: {
@@ -181,9 +182,9 @@ const EXPORTS: Record<
     fichier: false,
     lien: 'fb-messenger://',
     etapes: [
-      'Ouvre la discussion dans Messenger.',
-      'Appuie longuement sur les messages, puis **Copier**.',
-      'Colle-les dans Six, ou prends une capture.',
+      'Ouvrez la discussion dans Messenger.',
+      'Appuyez longuement sur les messages, puis **Copier**.',
+      'Collez-les dans Six, ou prenez une capture.',
     ],
   },
   linkedin: {
@@ -191,9 +192,9 @@ const EXPORTS: Record<
     fichier: false,
     lien: 'linkedin://',
     etapes: [
-      'Ouvre la messagerie LinkedIn.',
-      "Copie l'échange, ou prends une capture de l'écran.",
-      'Colle dans Six.',
+      'Ouvrez la messagerie LinkedIn.',
+      "Copiez l'échange, ou prenez une capture de l'écran.",
+      'Collez dans Six.',
     ],
   },
   tiktok: {
@@ -201,9 +202,9 @@ const EXPORTS: Record<
     fichier: false,
     lien: 'tiktok://',
     etapes: [
-      'Ouvre tes messages TikTok.',
-      "Copie l'échange, ou prends une capture.",
-      'Colle dans Six.',
+      'Ouvrez vos messages TikTok.',
+      "Copiez l'échange, ou prenez une capture.",
+      'Collez dans Six.',
     ],
   },
   instagram: {
@@ -211,9 +212,9 @@ const EXPORTS: Record<
     fichier: false,
     lien: 'instagram://',
     etapes: [
-      'Ouvre la discussion (Messagerie Instagram).',
-      'Appuie longuement sur le message, puis **Copier**.',
-      'Colle dans Six, ou prends une capture.',
+      'Ouvrez la discussion (Messagerie Instagram).',
+      'Appuyez longuement sur le message, puis **Copier**.',
+      'Collez dans Six, ou prenez une capture.',
     ],
   },
   x: {
@@ -221,9 +222,9 @@ const EXPORTS: Record<
     fichier: false,
     lien: 'twitter://',
     etapes: [
-      'Ouvre ta conversation privée sur X.',
-      'Copie les messages, ou prends une capture.',
-      'Colle dans Six.',
+      'Ouvrez votre conversation privée sur X.',
+      'Copiez les messages, ou prenez une capture.',
+      'Collez dans Six.',
     ],
   },
 };
@@ -316,10 +317,10 @@ async function post<T>(url: string, body: unknown): Promise<T> {
       body: JSON.stringify(body),
     });
   } catch {
-    throw new Error('Pas de réseau. Ton texte est gardé, réessaie dans un instant.');
+    throw new Error('Pas de réseau. Votre texte est gardé, réessayez dans un instant.');
   }
   const data = (await res.json().catch(() => ({}))) as { error?: string };
-  if (!res.ok) throw new Error(data.error ?? 'Erreur inattendue. Réessaie.');
+  if (!res.ok) throw new Error(data.error ?? 'Erreur inattendue. Réessayez.');
   return data as T;
 }
 
@@ -350,7 +351,7 @@ async function copyText(text: string): Promise<boolean> {
 
 // Ce que Six fait pendant qu'il réfléchit (composant Reflexion) : des phrases sur le travail, pas une barre de progression.
 const PHASES_LIRE = [
-  'Je masque les noms sur ton appareil…',
+  'Je masque les noms sur votre appareil…',
   'Je lis la conversation…',
   "Je cherche ce que l'autre veut dire…",
   "Je vérifie s'il y a une arnaque…",
@@ -522,7 +523,7 @@ export function Flow() {
   useEffect(() => {
     const el = document.querySelector('[data-dernier]');
     if (!el) return;
-    const doux = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const doux = !mouvementReduit();
     el.scrollIntoView({ block: 'start', behavior: doux ? 'smooth' : 'auto' });
   }, [analysing, analysis, busy, replies, consignes.length, finalText]);
 
@@ -606,13 +607,13 @@ export function Flow() {
       prepare(
         read,
         false,
-        `Lu sur ${files.length > 1 ? `tes ${files.length} captures, dans l'ordre` : 'ta capture'}, sur ton appareil. « Moi » = tes messages, « Autre » = l'autre personne.`,
+        `Lu sur ${files.length > 1 ? `vos ${files.length} captures, dans l'ordre` : 'votre capture'}, sur votre appareil. « Moi » = vos messages, « Autre » = l'autre personne.`,
       );
     } catch (e) {
       setError(
         e instanceof OcrError
           ? e.message
-          : 'La lecture de la capture a échoué. Colle le texte à la place.',
+          : 'La lecture de la capture a échoué. Collez le texte à la place.',
       );
     } finally {
       setOcrBusy(false);
@@ -685,7 +686,7 @@ export function Flow() {
       setError('');
     } catch {
       setError(
-        'Le collage automatique est refusé. Appuie longuement dans la zone, puis choisis Coller.',
+        'Le collage automatique est refusé. Appuyez longuement dans la zone, puis choisissez Coller.',
       );
     }
   }
@@ -693,7 +694,7 @@ export function Flow() {
   async function loadFile(file: File | undefined, auto = false) {
     if (!file) return;
     if (file.size > 50_000_000) {
-      setError('Ce fichier est trop gros. Exporte la discussion sans médias.');
+      setError('Ce fichier est trop gros. Exportez la discussion sans médias.');
       return;
     }
     let t: string;
@@ -712,7 +713,7 @@ export function Flow() {
         }).length;
         if (controls > 20) {
           setError(
-            "Ce fichier n'est pas une discussion. Choisis le fichier .txt ou .zip exporté par WhatsApp.",
+            "Ce fichier n'est pas une discussion. Choisissez le fichier .txt ou .zip exporté par WhatsApp.",
           );
           if (auto) setStep('whatsapp');
           return;
@@ -724,7 +725,7 @@ export function Flow() {
       return;
     }
     if (!t.trim()) {
-      setError('Ce fichier est vide. Exporte à nouveau la discussion depuis WhatsApp.');
+      setError('Ce fichier est vide. Exportez à nouveau la discussion depuis WhatsApp.');
       if (auto) setStep('whatsapp');
       return;
     }
@@ -763,8 +764,8 @@ export function Flow() {
     if (!t) {
       setError(
         fromFile
-          ? 'Aucun message lisible dans ce fichier. Colle la conversation à la place.'
-          : "Colle une conversation d'abord.",
+          ? 'Aucun message lisible dans ce fichier. Collez la conversation à la place.'
+          : "Collez une conversation d'abord.",
       );
       setStep('home');
       return;
@@ -1029,7 +1030,7 @@ export function Flow() {
             D&apos;où vient la <em>conversation</em> ?
           </h2>
           <p className="muted">
-            Choisis l&apos;application. Six t&apos;explique comment récupérer la discussion, et
+            Choisissez l&apos;application. Six vous explique comment récupérer la discussion, et
             adapte ses réponses à ce réseau.
           </p>
         </div>
@@ -1060,7 +1061,7 @@ export function Flow() {
           <p className="muted small">
             {ex.fichier
               ? `${ex.label} sait exporter la discussion : Six lit le fichier et garde les derniers messages.`
-              : `${ex.label} ne fournit pas de fichier d'export. Six lit la capture sur ton appareil, elle n'est jamais envoyée.`}
+              : `${ex.label} ne fournit pas de fichier d'export. Six lit la capture sur votre appareil, elle n'est jamais envoyée.`}
           </p>
           <button className="link" aria-expanded={tuto} onClick={() => setTuto((v) => !v)}>
             <Icon name="bulb" size={16} /> {tuto ? "Masquer le mode d'emploi" : 'Comment ça marche'}
@@ -1223,7 +1224,8 @@ export function Flow() {
                         onClick={() => setQuiOuvert((v) => !v)}
                         disabled={occupe}
                       >
-                        <Icon name="user" size={16} /> {me ? `Tu es ${me}` : "Tu n'as pas écrit"}
+                        <Icon name="user" size={16} />{' '}
+                        {me ? `Vous êtes ${me}` : "Vous n'avez pas écrit"}
                       </button>
                     )}
                   </div>
@@ -1280,7 +1282,7 @@ export function Flow() {
                         ))}
                       </div>
                       <p className="muted small">
-                        Ce nom reste sur ton appareil : l&apos;IA voit seulement « Moi ».
+                        Ce nom reste sur votre appareil : l&apos;IA voit seulement « Moi ».
                       </p>
                     </div>
                   )}
@@ -1288,7 +1290,7 @@ export function Flow() {
               )}
               {meGuessed && me && !quiOuvert && (
                 <p className="muted small">
-                  Six pense que tu es {me}.{' '}
+                  Six pense que vous êtes {me}.{' '}
                   <button
                     type="button"
                     className="link-inline"
@@ -1338,16 +1340,16 @@ export function Flow() {
                       ))}
                     </ul>
                     <p className="small">
-                      Ne donne jamais de code PIN, de mot de passe ni d&apos;argent à quelqu&apos;un
-                      qui te le demande par message.
+                      Ne donnez jamais de code PIN, de mot de passe ni d&apos;argent à
+                      quelqu&apos;un qui vous le demande par message.
                     </p>
                     <details>
                       <summary className="link">Comment bloquer ce contact</summary>
                       <p className="muted small">
-                        Six ne peut pas bloquer à ta place. Dans WhatsApp : ouvre la discussion,
-                        touche le nom en haut, puis « Bloquer ». Pour un SMS : appuie longuement sur
-                        la conversation, puis « Bloquer ». Tu peux aussi signaler le numéro à ton
-                        opérateur.
+                        Six ne peut pas bloquer à votre place. Dans WhatsApp : ouvrez la discussion,
+                        touchez le nom en haut, puis « Bloquer ». Pour un SMS : appuyez longuement
+                        sur la conversation, puis « Bloquer ». Vous pouvez aussi signaler le numéro
+                        à votre opérateur.
                       </p>
                     </details>
                     {!replies.length && !busy && (
@@ -1409,10 +1411,10 @@ export function Flow() {
                     {resumeFini && <Nuances items={analysis.nuances ?? []} />}
                     {resumeFini && analysis.question && (
                       <p className="question">
-                        <b>Six te demande :</b> {analysis.question}
+                        <b>Six vous demande :</b> {analysis.question}
                         <span className="muted small">
                           {' '}
-                          Réponds dans la barre en bas si tu veux.
+                          Répondez dans la barre en bas si vous le souhaitez.
                         </span>
                       </p>
                     )}
@@ -1420,7 +1422,7 @@ export function Flow() {
                       <details className="memo">
                         <summary className="link">Ce que Six sait de {contact}</summary>
                         <label className="sr" htmlFor="memo">
-                          Ce que tu sais de {contact}
+                          Ce que vous savez de {contact}
                         </label>
                         <textarea
                           id="memo"
@@ -1432,8 +1434,8 @@ export function Flow() {
                           placeholder="Ex : mon petit frère, on se tutoie, il aime plaisanter"
                         />
                         <p className="muted small">
-                          Gardé sur ton appareil pour les prochaines fois. Envoyé avec ta demande,
-                          nom masqué.
+                          Gardé sur votre appareil pour les prochaines fois. Envoyé avec votre
+                          demande, nom masqué.
                         </p>
                       </details>
                     )}
@@ -1512,7 +1514,7 @@ export function Flow() {
                               {selected === i && edition && (
                                 <div className="retouche stack">
                                   <label className="sr" htmlFor="txt">
-                                    Ta réponse
+                                    Votre réponse
                                   </label>
                                   <textarea
                                     id="txt"
@@ -1704,7 +1706,7 @@ export function Flow() {
                             <span className="lg-txt">
                               <span className="lg-label">Remettre les vrais noms</span>
                               <span className="lg-sous">
-                                Dans la réponse copiée, sur ton appareil
+                                Dans la réponse copiée, sur votre appareil
                               </span>
                             </span>
                             <input
@@ -1750,8 +1752,8 @@ export function Flow() {
                 </h2>
                 <p className="muted">
                   {copied
-                    ? 'Colle-la dans ta conversation et envoie-la toi-même.'
-                    : 'La copie automatique a échoué : sélectionne le texte ci-dessous et copie-le.'}
+                    ? 'Collez-la dans votre conversation et envoyez-la vous-même.'
+                    : 'La copie automatique a échoué : sélectionnez le texte ci-dessous et copiez-le.'}
                 </p>
                 <div className="card">
                   <p style={{ whiteSpace: 'pre-wrap', userSelect: 'all' }}>{finalText}</p>
@@ -1767,9 +1769,10 @@ export function Flow() {
                 {backHint && (
                   <div className="stack" id="retour-plateformes">
                     <p className="muted small">
-                      Choisis l&apos;app de ta conversation, puis colle la réponse et envoie-la :
+                      Choisissez l&apos;app de votre conversation, puis collez la réponse et
+                      envoyez-la :
                     </p>
-                    <AppsRow label="Revenir dans ton app" />
+                    <AppsRow label="Revenir dans votre app" />
                   </div>
                 )}
                 {suivi && (
@@ -1784,13 +1787,13 @@ export function Flow() {
                     ) : (
                       <>
                         <p>
-                          Te rappeler de suivre{' '}
+                          Vous rappeler de suivre{' '}
                           <b>
                             {suivi.qui === 'Cette conversation' ? 'cette conversation' : suivi.qui}
                           </b>{' '}
                           ?
                         </p>
-                        <div className="chips" role="group" aria-label="Quand te le rappeler">
+                        <div className="chips" role="group" aria-label="Quand vous le rappeler">
                           {RAPPELS.map(([label, delai]) => (
                             <button
                               key={label}
@@ -1798,7 +1801,7 @@ export function Flow() {
                               onClick={() => {
                                 ajouterSuivi({ ...suivi, quand: delai() });
                                 setSuiviNote(
-                                  `Noté : ${label.toLowerCase()}. Tu le retrouves dans le menu, rubrique « À suivre ».`,
+                                  `Noté : ${label.toLowerCase()}. Vous le retrouvez dans le menu, rubrique « À suivre ».`,
                                 );
                               }}
                             >
@@ -1824,7 +1827,7 @@ export function Flow() {
         {!actif && ocrBusy && (
           <div className="card" role="status">
             <div className="row sp">
-              <span>Six lit {shots.length > 1 ? 'tes captures' : 'ta capture'}…</span>
+              <span>Six lit {shots.length > 1 ? 'vos captures' : 'votre capture'}…</span>
               <b>{ocrPct} %</b>
             </div>
             <div className="meter" style={{ marginTop: 8 }}>
@@ -1875,7 +1878,7 @@ export function Flow() {
                 </div>
               ))}
             </div>
-            <p className="lg-pied">Gardées sur cet appareil tant que tu les conserves.</p>
+            <p className="lg-pied">Gardées sur cet appareil tant que vous les conservez.</p>
           </section>
         )}
       </div>
@@ -1893,7 +1896,7 @@ export function Flow() {
               <Icon name="clip" size={22} stroke={1.75} />
               <span className="attach-txt">
                 <span>Coller</span>
-                <span className="attach-sous">Le message que tu as copié</span>
+                <span className="attach-sous">Le message que vous avez copié</span>
               </span>
             </button>
             <button
@@ -1907,7 +1910,7 @@ export function Flow() {
               <Icon name="image" size={22} stroke={1.75} />
               <span className="attach-txt">
                 <span>Captures d&apos;écran</span>
-                <span className="attach-sous">Lues sur ton appareil, jamais envoyées</span>
+                <span className="attach-sous">Lues sur votre appareil, jamais envoyées</span>
               </span>
             </button>
             <button
@@ -1920,7 +1923,7 @@ export function Flow() {
               <Icon name="file" size={22} stroke={1.75} />
               <span className="attach-txt">
                 <span>Fichier d&apos;export</span>
-                <span className="attach-sous">Discussion exportée depuis ta messagerie</span>
+                <span className="attach-sous">Discussion exportée depuis votre messagerie</span>
               </span>
             </button>
           </div>
@@ -1941,7 +1944,7 @@ export function Flow() {
             </button>
           )}
           <label className="sr" htmlFor="conv">
-            {actif ? 'Préciser ce que tu veux' : 'Nouvelle conversation'}
+            {actif ? 'Préciser ce que vous voulez' : 'Nouvelle conversation'}
           </label>
           <textarea
             id="conv"
@@ -1950,7 +1953,7 @@ export function Flow() {
             value={saisie}
             onChange={(e) => (actif ? setMessage(e.target.value) : setRaw(e.target.value))}
             onPaste={onPasteZone}
-            placeholder={actif ? 'Précise ce que tu veux…' : 'Colle une conversation…'}
+            placeholder={actif ? 'Précisez ce que vous voulez…' : 'Collez une conversation…'}
           />
           <button
             className="send"
@@ -1974,7 +1977,7 @@ export function Flow() {
           onChange={(e) => addShots(e.target.files)}
         />
         <p className="privacy-line">
-          <Icon name="lock" size={13} /> Masqué sur ton appareil
+          <Icon name="lock" size={13} /> Masqué sur votre appareil
           {memoOn ? ', gardé ici seulement' : ", rien n'est gardé"}
           {!actif && raw.length > 0 && <span>({raw.length} caractères)</span>}
         </p>

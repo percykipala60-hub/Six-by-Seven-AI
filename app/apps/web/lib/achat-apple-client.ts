@@ -102,7 +102,7 @@ export async function acheterApple(offre: OffrePremium['id']): Promise<ResultatA
   if (!n)
     return { etat: 'erreur', message: 'L’achat n’est possible que dans l’app iPhone à jour.' };
   const compte = await idCompte();
-  if (!compte) return { etat: 'erreur', message: 'Connecte-toi pour passer à Six Premium.' };
+  if (!compte) return { etat: 'erreur', message: 'Connectez-vous pour passer à Six Premium.' };
   try {
     const r = await n.acheter({ id: PRODUIT_APPLE[offre], compte });
     if (r.etat !== 'achete' || !r.jws || !r.transactionId)

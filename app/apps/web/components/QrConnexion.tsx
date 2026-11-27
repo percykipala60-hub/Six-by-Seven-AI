@@ -143,12 +143,12 @@ export function QrConnexion() {
           <>
             <p className="qr-titre">Se connecter avec un code QR</p>
             <ol>
-              <li>Ouvre Six sur un appareil déjà connecté (téléphone, ordinateur).</li>
+              <li>Ouvrez Six sur un appareil déjà connecté (téléphone, ordinateur).</li>
               <li>
                 Réglages → <strong>Appareils connectés</strong> →{' '}
-                <strong>Associer un appareil</strong>, puis vise ce code.
+                <strong>Associer un appareil</strong>, puis visez ce code.
               </li>
-              <li>Confirme : cet appareil se connecte à ton compte.</li>
+              <li>Confirmez : cet appareil se connecte à votre compte.</li>
             </ol>
             {etat === 'pret' && <p className="qr-reste">Le code change dans {reste} s.</p>}
           </>

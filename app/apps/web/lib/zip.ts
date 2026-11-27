@@ -33,7 +33,7 @@ function listEntries(view: DataView): Entry[] {
   let p = view.getUint32(end + 16, true);
   const centralSize = view.getUint32(end + 12, true);
   if (count === 0xffff || p === 0xffffffff)
-    throw new ZipError('Ce .zip est trop gros. Exporte la discussion sans médias.');
+    throw new ZipError('Ce .zip est trop gros. Exportez la discussion sans médias.');
   if (count > MAX_ENTRIES || p + centralSize > end || p + centralSize > view.byteLength)
     throw new ZipError('Ce .zip est abîmé ou contient trop de fichiers.');
   const entries: Entry[] = [];

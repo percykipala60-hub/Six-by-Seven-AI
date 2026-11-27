@@ -1,6 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState, useLayoutEffect } from 'react';
+import { mouvementReduit } from '@/lib/accessibilite';
+import { lireInstructions, notifierFinReponse } from '@/lib/preferences';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AppBar } from './AppBar';
 import { Icon } from './Icon';
@@ -62,6 +64,7 @@ import {
 } from './Volet';
 import { memoireActive } from '@/lib/memoire';
 import { entetesCompte } from '@/lib/premium-client';
+import { executerOrdinateur, pontOrdinateur } from '@/lib/ordinateur-client';
 import { CHAT_MAX_BYTES, CHAT_MAX_CONTENT, CHAT_MAX_MESSAGES } from '@/lib/api-schemas';
 import { detecterOrdre } from '@/lib/seven-ordres';
 import type { ChatMessage, ChatResult, PieceAffichee, UsageJetons } from '@/lib/types';
@@ -105,7 +108,7 @@ function TexteProgressif({ texte, onPas }: { texte: string; onPas?: () => void }
   const morceaux = useMemo(() => texte.split(/(\s+)/), [texte]);
   const [n, setN] = useState(0);
   useEffect(() => {
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (mouvementReduit()) {
       setN(morceaux.length);
       return;
     }
@@ -208,7 +211,7 @@ export function dicteeDisponible(): boolean {
 class ErreurMicro extends Error {}
 
 const MESSAGE_PAS_DE_MICRO =
-  'Aucun micro détecté sur cet appareil. Branche un micro ou écris ton message.';
+  'Aucun micro détecté sur cet appareil. Branchez un micro ou écrivez votre message.';
 
 async function plateforme(): Promise<'ios' | 'android' | 'web'> {
   try {
@@ -224,10 +227,10 @@ async function plateforme(): Promise<'ios' | 'android' | 'web'> {
 async function messageMicroRefuse(): Promise<string> {
   const p = await plateforme();
   if (p === 'ios')
-    return 'Accès au micro refusé. Ouvre Réglages > Six, active Micro et Reconnaissance vocale, puis réessaie.';
+    return 'Accès au micro refusé. Ouvrez Réglages > Six, activez Micro et Reconnaissance vocale, puis réessayez.';
   if (p === 'android')
-    return 'Accès au micro refusé. Ouvre Paramètres > Applications > Six > Autorisations, active Micro, puis réessaie.';
-  return 'Accès au micro refusé. Autorise le micro pour ce site : clique sur l’icône 🔒 (ou ℹ️) à gauche de l’adresse, puis autorise le microphone.';
+    return 'Accès au micro refusé. Ouvrez Paramètres > Applications > Six > Autorisations, activez Micro, puis réessayez.';
+  return 'Accès au micro refusé. Autorisez le micro pour ce site : cliquez sur l’icône 🔒 (ou ℹ️) à gauche de l’adresse, puis autorisez le microphone.';
 }
 
 /** Message à afficher quand la dictée échoue ('' : arrêtée par la personne, rien à dire). */
@@ -236,8 +239,8 @@ async function messageErreurDictee(e: unknown): Promise<string> {
   const m = e instanceof Error ? e.message : '';
   if (m === 'Dictée arrêtée.') return '';
   if (m === 'refus') return messageMicroRefuse();
-  if (m === 'dictée vide') return 'Je n’ai rien entendu. Réessaie en parlant juste après le clic.';
-  return 'La dictée a échoué. Réessaie, ou écris ton message.';
+  if (m === 'dictée vide') return 'Je n’ai rien entendu. Réessayez en parlant juste après le clic.';
+  return 'La dictée a échoué. Réessayez, ou écrivez votre message.';
 }
 
 /** Écoute le micro et résout avec le texte dicté selon les réglages de voix. */
@@ -282,8 +285,8 @@ function dicterTexte(signal: AbortSignal): Promise<string> {
         reject(
           new ErreurMicro(
             navigator.onLine
-              ? 'La dictée de ce navigateur ne répond pas. Réessaie, ou écris ton message.'
-              : 'Pas de connexion Internet : la dictée ne peut pas fonctionner. Écris ton message en attendant.',
+              ? 'La dictée de ce navigateur ne répond pas. Réessayez, ou écrivez votre message.'
+              : 'Pas de connexion Internet : la dictée ne peut pas fonctionner. Écrivez votre message en attendant.',
           ),
         );
       else reject(new Error('erreur dictée'));
@@ -334,18 +337,41 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     setVoletBrut(onglet);
     garderOngletVolet(onglet);
   }, []);
+  // Terminal empilé sous le navigateur ou les fichiers (deux panneaux à la fois, comme sur ordinateur).
+  const [empile, setEmpile] = useState(false);
   const basculerVolet = useCallback(
-    (onglet: OngletVolet) => setVolet(volet === onglet ? null : onglet),
-    [volet, setVolet],
+    (onglet: OngletVolet) => {
+      if (onglet === 'terminal') {
+        if (!volet) setVolet('terminal');
+        else if (volet === 'terminal') setVolet(null);
+        else setEmpile((e) => !e); // navigateur ou fichiers ouverts : le terminal s'empile dessous
+        return;
+      }
+      if (volet === onglet) {
+        // Panneau du haut refermé : le terminal empilé reste, seul.
+        setVolet(empile ? 'terminal' : null);
+        setEmpile(false);
+      } else {
+        if (volet === 'terminal') setEmpile(true); // le terminal ouvert passe dessous
+        setVolet(onglet);
+      }
+    },
+    [volet, empile, setVolet],
   );
-  const fermerVolet = useCallback(() => setVolet(null), [setVolet]);
-  // App de bureau : les boutons Navigateur et Fichiers de la barre du haut ouvrent ou ferment le volet de Cosinus,
+  const fermerVolet = useCallback(() => {
+    setVolet(null);
+    setEmpile(false);
+  }, [setVolet]);
+  // App de bureau : les boutons Navigateur, Fichiers et Terminal de la barre du haut ouvrent ou ferment le volet de Cosinus,
   // et la barre montre lequel est ouvert.
   useEffect(() => {
     if (!sixtouch) return;
     const commande = (e: Event) => {
       const d = (e as CustomEvent<{ type?: string; onglet?: string }>).detail;
-      if (d?.type === 'volet' && (d.onglet === 'navigateur' || d.onglet === 'fichiers'))
+      if (
+        d?.type === 'volet' &&
+        (d.onglet === 'navigateur' || d.onglet === 'fichiers' || d.onglet === 'terminal')
+      )
         basculerVolet(d.onglet);
     };
     window.addEventListener('six-bureau', commande);
@@ -354,9 +380,13 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   useEffect(() => {
     const pont = (window as unknown as { sixBureau?: { signaler?: (e: object) => void } })
       .sixBureau;
-    pont?.signaler?.({ volet: sixtouch ? volet : null, cosinus: sixtouch });
+    pont?.signaler?.({
+      volet: sixtouch ? volet : null,
+      terminal: sixtouch && empile,
+      cosinus: sixtouch,
+    });
     return () => pont?.signaler?.({ volet: null, cosinus: false });
-  }, [volet, sixtouch]);
+  }, [volet, empile, sixtouch]);
   // Cosinus : étapes de l'agent reçues pendant la tâche en cours, et sa liste de tâches (cochée une à une).
   const [etapesEnCours, setEtapesEnCours] = useState<string[]>([]);
   const [planEnCours, setPlanEnCours] = useState<{ texte: string; faite: boolean }[]>([]);
@@ -402,12 +432,15 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     const mq = window.matchMedia(GRAND_VOLET);
     const lireTaille = () => {
       setTelephone(!mq.matches);
-      if (!mq.matches || !surBureau) setVoletBrut((v) => (v === 'navigateur' ? null : v));
+      if (!mq.matches || !surBureau)
+        setVoletBrut((v) => (v === 'navigateur' || v === 'terminal' ? null : v));
     };
     lireTaille();
     if (mq.matches && sixtouch) {
       const onglet = lireReglagesVolet().onglet;
-      setVoletBrut(onglet === 'navigateur' && !surBureau ? 'fichiers' : onglet);
+      setVoletBrut(
+        (onglet === 'navigateur' || onglet === 'terminal') && !surBureau ? 'fichiers' : onglet,
+      );
     }
     mq.addEventListener('change', lireTaille);
     return () => mq.removeEventListener('change', lireTaille);
@@ -481,7 +514,10 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   ): Promise<Response> {
     const controleur = new AbortController();
     ref.current = controleur;
-    const delai = setTimeout(() => controleur.abort(new Error('Délai dépassé. Réessaie.')), 120000);
+    const delai = setTimeout(
+      () => controleur.abort(new Error('Délai dépassé. Réessayez.')),
+      120000,
+    );
     try {
       const response = await fetch(url, { ...init, signal: controleur.signal });
       const body = await response.text();
@@ -514,16 +550,19 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   > {
     const controleur = new AbortController();
     operation.current = controleur;
-    const delai = setTimeout(() => controleur.abort(new Error('Délai dépassé. Réessaie.')), 300000);
+    const delai = setTimeout(
+      () => controleur.abort(new Error('Délai dépassé. Réessayez.')),
+      300000,
+    );
     try {
       const res = await fetch(url, { ...init, signal: controleur.signal });
       if (!(res.headers.get('content-type') ?? '').includes('ndjson')) {
         const data = (await res.json().catch(() => ({}))) as ChatResult & { error?: string };
-        if (!res.ok) throw new Error(data.error ?? 'Erreur inattendue. Réessaie.');
+        if (!res.ok) throw new Error(data.error ?? 'Erreur inattendue. Réessayez.');
         return data;
       }
       const lecteur = res.body?.getReader();
-      if (!lecteur) throw new Error('Réponse vide. Réessaie.');
+      if (!lecteur) throw new Error('Réponse vide. Réessayez.');
       const decodeur = new TextDecoder();
       let reste = '';
       for (;;) {
@@ -536,6 +575,8 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
           if (!ligne.trim()) continue;
           const o = JSON.parse(ligne) as {
             type: string;
+            id?: string;
+            args?: Record<string, unknown>;
             texte?: string;
             reponse?: string;
             usage?: UsageJetons;
@@ -548,6 +589,10 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
             plan?: { texte: string; faite: boolean }[];
           };
           if (o.type === 'plan' && Array.isArray(o.taches)) setPlanEnCours(o.taches);
+          // L'agent demande une action sur l'ordinateur : l'app de bureau l'exécute (après l'accord de la personne)
+          // et le résultat repart vers l'agent, qui attend.
+          if (o.type === 'ordinateur' && typeof o.id === 'string')
+            void executerOrdinateur(o.id, o.args);
           if (o.type === 'navigateur' && o.session && o.url) {
             sessionStorage.setItem(cleAgent(), JSON.stringify({ session: o.session, url: o.url }));
             // Seule l'app de bureau montre ce que Six fait dans le navigateur.
@@ -558,7 +603,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
             const t = o.texte;
             setEtapesEnCours((e) => [...e, t]);
           } else if (o.type === 'erreur')
-            throw new Error(o.error ?? 'Erreur inattendue. Réessaie.');
+            throw new Error(o.error ?? 'Erreur inattendue. Réessayez.');
           else if (o.type === 'fin')
             return {
               reponse: o.reponse ?? '',
@@ -570,7 +615,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
             };
         }
       }
-      throw new Error('La tâche s’est interrompue avant la fin. Réessaie.');
+      throw new Error('La tâche s’est interrompue avant la fin. Réessayez.');
     } catch (error) {
       if (controleur.signal.aborted)
         throw new Error('Demande interrompue ou délai dépassé. Tu peux réessayer.', {
@@ -852,15 +897,15 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     if (dossierRequis && !dossier && !enCloud) {
       setErreur(
         espace.local
-          ? 'Choisis d’abord l’environnement de cette discussion (« Choisir un environnement », au-dessus de la barre de saisie).'
-          : 'Choisis d’abord l’environnement de cette discussion : ton Cloud (connecte-toi à ton compte).',
+          ? 'Choisissez d’abord l’environnement de cette discussion (« Choisir un environnement », au-dessus de la barre de saisie).'
+          : 'Choisissez d’abord l’environnement de cette discussion : votre Cloud (connectez-vous à votre compte).',
       );
       return;
     }
     const ancien = messagesRef.current;
     if (images.length > IMAGES_MAX) {
       setErreur(
-        `Six lit ${IMAGES_MAX} images au plus par message (ici ${images.length}). Retire une pièce jointe.`,
+        `Six lit ${IMAGES_MAX} images au plus par message (ici ${images.length}). Retirez une pièce jointe.`,
       );
       return;
     }
@@ -945,10 +990,15 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       // Cosinus : le serveur donne à Six ses consignes d'agent de travail.
       // Chat de l'app de bureau : le navigateur interne existe, Six peut le piloter pour une demande web.
       const navigateurChat = !sixtouch && estBureau() && !appelActif.current;
+      // App de bureau : Six peut aussi piloter l'ordinateur (accords demandés par l'app, application par application).
+      const ordinateurDispo = estBureau() && Boolean(pontOrdinateur()) && !appelActif.current;
+      const preferences = lireInstructions();
       const corps =
-        images.length || sixtouch || projetId || navigateurChat || appelActif.current
+        images.length || sixtouch || projetId || navigateurChat || appelActif.current || preferences
           ? JSON.stringify({
               ...(JSON.parse(texteSeul) as object),
+              ...(preferences ? { preferences } : {}),
+              ...(ordinateurDispo ? { ordinateur: true } : {}),
               ...(!sixtouch && projetId ? { projetId } : {}),
               ...(!sixtouch && appelActif.current ? { vocal: true } : {}),
               ...(navigateurChat
@@ -998,10 +1048,10 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       else {
         const res = await requete('/api/chat', initEnvoi);
         data = (await res.json().catch(() => ({}))) as ChatResult & { error?: string };
-        if (!res.ok) throw new Error(data.error ?? 'Erreur inattendue. Réessaie.');
+        if (!res.ok) throw new Error(data.error ?? 'Erreur inattendue. Réessayez.');
       }
       if (typeof data.reponse !== 'string' || !data.reponse.trim()) {
-        throw new Error('Six a renvoyé une réponse vide. Réessaie.');
+        throw new Error('Six a renvoyé une réponse vide. Réessayez.');
       }
       const reponseSix: ChatMessage = {
         role: 'assistant',
@@ -1030,6 +1080,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         documentActif.current = docEnvoye;
         setDocumentAReimporter(false);
       }
+      notifierFinReponse(data.reponse);
       return data.reponse;
     } catch (e) {
       setDernierEchec({ texte, affichage, document, jointes, reprise });
@@ -1051,7 +1102,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
           ? ''
           : e instanceof Error
             ? e.message
-            : 'Six ne répond pas pour le moment. Réessaie.',
+            : 'Six ne répond pas pour le moment. Réessayez.',
       );
     } finally {
       setEnAttente('');
@@ -1133,7 +1184,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
             finirLecture.current = null;
             reject(
               new Error(
-                'Six ne peut pas lire sa réponse dans cette langue. Vérifie les voix installées sur cet appareil.',
+                'Six ne peut pas lire sa réponse dans cette langue. Vérifiez les voix installées sur cet appareil.',
               ),
             );
           }
@@ -1162,7 +1213,8 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       langue?: LangueVoix;
       error?: string;
     };
-    if (!res.ok) throw new Error(data.error ?? 'Six n’a pas pu transcrire ta phrase. Réessaie.');
+    if (!res.ok)
+      throw new Error(data.error ?? 'Six n’a pas pu transcrire votre phrase. Réessayez.');
     langueDetectee.current =
       estLangueVoix(data.langue) && data.langue !== 'auto' ? data.langue : undefined;
     return data.texte ?? '';
@@ -1224,7 +1276,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         } else {
           phrase = (await dictee()).trim();
           if (!appelActif.current) break;
-          if (!phrase) throw new Error('Je n’ai rien entendu. Réessaie.');
+          if (!phrase) throw new Error('Je n’ai rien entendu. Réessayez.');
         }
         setPhaseAppel('reflechit');
         const reponse = await envoyerPendantAppel.current(phrase);
@@ -1270,7 +1322,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     );
     if (!fichiers.length) return;
     if (fichiers.length + pieces.length > 100) {
-      setErreur('Ajoute au plus 100 fichiers à la fois. Choisis un sous-dossier plus petit.');
+      setErreur('Ajoutez au plus 100 fichiers à la fois. Choisissez un sous-dossier plus petit.');
       return;
     }
     // La lecture se fait à côté de la réponse en cours : on peut joindre ou coller à tout moment.
@@ -1303,7 +1355,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
               : await fichier.text();
           if (!estPdf && !estDocx && (texte.includes('\0') || texte.includes('\uFFFD')))
             throw new Error(
-              'format binaire non pris en charge. Utilise un PDF, un document Word ou un fichier texte UTF-8.',
+              'format binaire non pris en charge. Utilisez un PDF, un document Word ou un fichier texte UTF-8.',
             );
           if (!texte.trim()) throw new Error('ce fichier ne contient pas de texte lisible.');
           while (encoder.encode(JSON.stringify(texte)).length > TAILLE_DOC_MAX)
@@ -1320,7 +1372,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         }
       } catch (e) {
         setErreur(
-          `Lecture de « ${fichier.name} » impossible : ${e instanceof Error ? e.message : 'réessaie.'}`,
+          `Lecture de « ${fichier.name} » impossible : ${e instanceof Error ? e.message : 'réessayez.'}`,
         );
       } finally {
         setLectures((n) => Math.max(0, n - 1));
@@ -1386,7 +1438,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     }
     if (serviceVocal !== true) {
       if (serviceVocal === null) {
-        setErreur('Vérification du service vocal en cours. Réessaie dans quelques secondes.');
+        setErreur('Vérification du service vocal en cours. Réessayez dans quelques secondes.');
         return;
       }
       if (estBureau()) {
@@ -1422,14 +1474,14 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     if (!window.isSecureContext || typeof navigator.mediaDevices?.getUserMedia !== 'function') {
       setErreur(
         window.isSecureContext
-          ? 'Ce navigateur ne permet pas le micro. Ouvre Six en HTTPS ou sur localhost.'
+          ? 'Ce navigateur ne permet pas le micro. Ouvrez Six en HTTPS ou sur localhost.'
           : 'Le micro demande une connexion sécurisée : ouvre Six en HTTPS, pas en HTTP.',
       );
       return;
     }
     if (typeof MediaRecorder === 'undefined') {
       setErreur(
-        'Ce navigateur ne sait pas enregistrer de vocal. Mets-le à jour ou écris ton message.',
+        'Ce navigateur ne sait pas enregistrer de vocal. Mettez-le à jour ou écrivez votre message.',
       );
       return;
     }
@@ -1447,7 +1499,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       mr.onerror = () => {
         setEnregistre(false);
         mr.stream.getTracks().forEach((t) => t.stop());
-        setErreur('Enregistrement interrompu. Réessaie.');
+        setErreur('Enregistrement interrompu. Réessayez.');
       };
       mr.onstop = () => {
         mr.stream.getTracks().forEach((t) => t.stop());
@@ -1456,7 +1508,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         setEnregistre(false);
         const blob = new Blob(chunksAudio.current, { type: mr.mimeType || 'audio/webm' });
         if (blob.size === 0) {
-          setErreur('Je n’ai reçu aucun son. Réessaie en parlant après le clic.');
+          setErreur('Je n’ai reçu aucun son. Réessayez en parlant après le clic.');
           return;
         }
         void envoyerVocal(blob, envoiApresVocal.current);
@@ -1475,7 +1527,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         setErreur(await messageMicroRefuse());
       else if (nom === 'NotFoundError' || nom === 'OverconstrainedError')
         setErreur(MESSAGE_PAS_DE_MICRO);
-      else setErreur('Le micro n’a pas répondu. Réessaie, ou écris ton message en attendant.');
+      else setErreur('Le micro n’a pas répondu. Réessayez, ou écrivez votre message en attendant.');
     } finally {
       verrouMicro.current = false;
     }
@@ -1549,7 +1601,9 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
           return;
         }
       } else
-        setErreur(e instanceof Error ? e.message : 'Transcription impossible. Réessaie ou écris.');
+        setErreur(
+          e instanceof Error ? e.message : 'Transcription impossible. Réessayez ou écrivez.',
+        );
     } finally {
       setMicOccupe(false);
     }
@@ -1575,7 +1629,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       const { telechargerPdfSeven } = await import('@/lib/pdf-seven');
       await telechargerPdfSeven([m], 'Réponse de Six');
     } catch {
-      setErreur('Export PDF impossible sur cet appareil. Réessaie.');
+      setErreur('Export PDF impossible sur cet appareil. Réessayez.');
     }
   }
 
@@ -1604,7 +1658,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   function bifurquer(i: number) {
     if (!memoireActive()) {
       setErreur(
-        'Active la mémoire de Six (Réglages → Mémoire) pour garder une nouvelle discussion.',
+        'Activez la mémoire de Six (Réglages → Votre Six) pour garder une nouvelle discussion.',
       );
       return;
     }
@@ -1685,7 +1739,12 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         <div className="seven-outils-flottants seven-outils-ligne">
           {messages.length > 0 && <div className="volet-boutons">{partage}</div>}
           {sixtouch && (
-            <BoutonsVolet ouvert={volet} onBasculer={basculerVolet} telephone={sansNavigateur} />
+            <BoutonsVolet
+              ouvert={volet}
+              onBasculer={basculerVolet}
+              telephone={sansNavigateur}
+              empile={empile}
+            />
           )}
           {/* Chat de l'app de bureau : le navigateur seulement (pas d'espace de travail ni de fichiers). */}
           {chatNavigateur && (
@@ -1705,6 +1764,8 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
           telephone={sansNavigateur}
           dossier={vueFichiers}
           dossiers={enCloud ? [] : (env?.dossiers ?? (dossier ? [dossier] : []))}
+          empile={empile}
+          onFermerTerminal={() => setEmpile(false)}
           onAnnoter={(description, capture) =>
             // Chaque repère remplace la capture précédente dans la barre (une seule capture, toujours à jour).
             void pieceCapture(description, capture).then((piece) =>
@@ -1740,9 +1801,9 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
                 <p>
                   {dossierRequis
                     ? espace.local
-                      ? 'Choisis l’environnement de cette discussion : un dossier de cet ordinateur, ou ton Cloud (en ligne, avec un dépôt GitHub si tu veux). Ailleurs sur l’ordinateur, je ne vais que si tu me le demandes.'
-                      : 'Choisis l’environnement de cette discussion : ton Cloud, en ligne, avec un dépôt GitHub si tu veux.'
-                    : `Donne-moi une tâche : une recherche, l’analyse d’un document, d’une image ou d’une vidéo, un rapport. ${sansNavigateur ? 'Tes fichiers sont en haut à droite.' : 'Le navigateur et les fichiers sont en haut à droite.'}`}
+                      ? 'Choisissez l’environnement de cette discussion : un dossier de cet ordinateur, ou votre Cloud (en ligne, avec un dépôt GitHub si vous le souhaitez). Ailleurs sur l’ordinateur, je ne vais que si vous me le demandez.'
+                      : 'Choisissez l’environnement de cette discussion : votre Cloud, en ligne, avec un dépôt GitHub si vous le souhaitez.'
+                    : `Donnez-moi une tâche : une recherche, l’analyse d’un document, d’une image ou d’une vidéo, un rapport. ${sansNavigateur ? 'Vos fichiers sont en haut à droite.' : 'Le navigateur et les fichiers sont en haut à droite.'}`}
                 </p>
                 {choixEnvironnement && (
                   <CarteEnvironnements
@@ -1756,8 +1817,8 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
               <>
                 <h1>On discute ?</h1>
                 <p>
-                  Pose-moi une question, joins un document ou envoie un vocal. Tu peux aussi me
-                  demander d&apos;ouvrir une page, comme « ouvre les réglages ».
+                  Posez-moi une question, joignez un document ou envoyez un vocal. Vous pouvez aussi
+                  me demander d&apos;ouvrir une page, comme « ouvre les réglages ».
                 </p>
               </>
             )}

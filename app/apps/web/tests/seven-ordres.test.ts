@@ -8,7 +8,7 @@ describe('pilotage de Six par ordres (Seven AI)', () => {
     expect(detecterOrdre('je veux jouer au jeu du ton juste')?.cible).toBe('/ton-juste');
     expect(detecterOrdre('montre-moi coupe l’arnaque')?.cible).toBe('/coupe-arnaque');
     expect(detecterOrdre('va sur la page des devinettes')?.cible).toBe('/ton-juste');
-    expect(detecterOrdre('accède à la mémoire')?.cible).toBe('/reglages?v=memoire');
+    expect(detecterOrdre('accède à la mémoire')?.cible).toBe('/reglages?v=votre-six');
     expect(detecterOrdre('emmène-moi à l’accueil')?.cible).toBe('/');
   });
 

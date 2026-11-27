@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { mouvementReduit } from '@/lib/accessibilite';
 
-const calme = () =>
-  typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const calme = () => mouvementReduit();
 
 /**
  * Texte qui s'écrit lettre par lettre, comme une IA qui répond. Un repère de masquage (« [PERSONNE 1] ») apparaît d'un coup,

@@ -5,7 +5,7 @@ import { SevenChatPage } from '@/components/SevenChat';
 export const metadata: Metadata = {
   title: 'Cosinus — Six',
   description:
-    'Six travaille pour toi : rapports, recherches, analyse de documents, d’images et de vidéos.',
+    'Six travaille pour vous : rapports, recherches, analyse de documents, d’images et de vidéos.',
   robots: 'noindex, nofollow',
 };
 

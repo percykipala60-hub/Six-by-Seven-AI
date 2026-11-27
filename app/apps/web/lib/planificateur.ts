@@ -11,7 +11,7 @@ export async function executerProchaine(
     for (const t of e.taches) {
       if (t.execution && !t.execution.fin && maintenant - Date.parse(t.execution.debut) > 900000) {
         t.execution.fin = new Date(maintenant).toISOString();
-        t.execution.erreur = 'Exécution interrompue. Vérifie la tâche avant de la reprendre.';
+        t.execution.erreur = 'Exécution interrompue. Vérifiez la tâche avant de la reprendre.';
         t.etat = 'pause';
       }
     }
@@ -31,7 +31,7 @@ export async function executerProchaine(
     resultat = await generer(reservation.tache, reservation.contexte);
     if (!resultat.trim()) throw new Error('vide');
   } catch {
-    erreur = 'La tâche a échoué. Vérifie le service IA et tes limites, puis reprends-la.';
+    erreur = 'La tâche a échoué. Vérifiez le service IA et vos limites, puis reprenez-la.';
   }
   await modifierTravail((e) => {
     const t = e.taches.find((t) => t.id === reservation.tache.id);

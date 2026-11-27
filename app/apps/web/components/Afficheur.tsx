@@ -79,7 +79,7 @@ function useFichier<T>(url: string, lire: (r: Response) => Promise<T>) {
       .then((d) => !annule && setDonnees(d))
       .catch((e: unknown) => {
         if (!annule)
-          setErreur(`Lecture impossible : ${e instanceof Error ? e.message : 'réessaie.'}`);
+          setErreur(`Lecture impossible : ${e instanceof Error ? e.message : 'réessayez.'}`);
       });
     return () => {
       annule = true;

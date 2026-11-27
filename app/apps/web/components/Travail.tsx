@@ -34,7 +34,7 @@ const MODELES: Modele[] = [
   {
     icone: 'sun',
     titre: 'Plan de la journée',
-    description: 'Les priorités du jour, rédigées à partir du contexte de ton projet.',
+    description: 'Les priorités du jour, rédigées à partir du contexte de votre projet.',
     demande:
       'Rédige un plan de journée réaliste : trois priorités, l’ordre conseillé et le temps à prévoir pour chacune.',
     repetition: '24h',
@@ -58,7 +58,7 @@ const MODELES: Modele[] = [
   {
     icone: 'bulb',
     titre: 'Idées du jour',
-    description: 'Trois idées concrètes pour faire avancer ton projet.',
+    description: 'Trois idées concrètes pour faire avancer votre projet.',
     demande:
       'Propose trois idées concrètes et faciles à lancer aujourd’hui pour faire avancer ce projet.',
     repetition: '24h',
@@ -307,8 +307,8 @@ export function TravailPage({
         </nav>
         <p className={styles.intro}>
           {onglet === 'projets'
-            ? 'Garde le contexte de chaque projet et réutilise-le dans Chat et Cosinus. Enregistré sur ton compte, sur le serveur de Six.'
-            : 'Six rédige ou analyse à l’heure prévue, même application fermée. Les demandes restent sur le serveur ; les fichiers de ton téléphone ne sont pas lus.'}
+            ? 'Gardez le contexte de chaque projet et réutilisez-le dans Chat et Cosinus. Enregistré sur votre compte, sur le serveur de Six.'
+            : 'Six rédige ou analyse à l’heure prévue, même application fermée. Les demandes restent sur le serveur ; les fichiers de votre téléphone ne sont pas lus.'}
         </p>
         {erreur && (
           <p role="alert" className={styles.alerte}>
@@ -427,7 +427,7 @@ export function TravailPage({
               </label>
             </div>
             <p className={styles.discret}>
-              Heure de ton appareil. Les répétitions se font toutes les 24 heures ou tous les 7
+              Heure de votre appareil. Les répétitions se font toutes les 24 heures ou tous les 7
               jours, même lors d’un changement d’heure.
             </p>
             <div className={styles.actions}>
@@ -622,7 +622,7 @@ async function lireDocumentProjet(
     return resultat.documents;
   } catch (e) {
     throw new Error(
-      `« ${fichier.name} » n’a pas été ajouté : ${e instanceof Error ? e.message : 'réessaie.'}`,
+      `« ${fichier.name} » n’a pas été ajouté : ${e instanceof Error ? e.message : 'réessayez.'}`,
       { cause: e },
     );
   }
@@ -732,7 +732,7 @@ function FormulaireProjet({
             rows={3}
             maxLength={2000}
             defaultValue={projet?.description}
-            placeholder="Décris le sujet et ce que tu veux accomplir…"
+            placeholder="Décrivez le sujet et ce que vous voulez accomplir…"
           />
         </label>
         {contexteOuvert ? (
@@ -744,7 +744,7 @@ function FormulaireProjet({
                 rows={4}
                 maxLength={12000}
                 defaultValue={projet?.contexte}
-                placeholder="Ajoute les informations et les consignes utiles à Six."
+                placeholder="Ajoutez les informations et les consignes utiles à Six."
               />
             </label>
             <div>
@@ -1070,7 +1070,8 @@ function ExtrasProjet({
           </button>
         </div>
         <p>
-          Textes ou PDF lus sur ton appareil : Six s’appuie dessus dans chaque discussion du projet.
+          Textes ou PDF lus sur votre appareil : Six s’appuie dessus dans chaque discussion du
+          projet.
         </p>
         {documents.length > 0 && (
           <ul className={styles.listeProjet}>

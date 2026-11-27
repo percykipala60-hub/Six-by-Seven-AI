@@ -77,7 +77,7 @@ export async function enregistrerPhrase(signal?: AbortSignal): Promise<Blob> {
     signal?.addEventListener('abort', () => terminer(false), { once: true });
     enregistreur.onerror = () => {
       terminer(false);
-      reject(new Error('Le micro s’est arrêté. Réessaie.'));
+      reject(new Error('Le micro s’est arrêté. Réessayez.'));
     };
     enregistreur.start(250);
 

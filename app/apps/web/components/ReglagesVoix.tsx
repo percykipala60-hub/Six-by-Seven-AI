@@ -131,7 +131,7 @@ export function ReglagesVoix() {
     u.onerror = ({ error }) => {
       if (error === 'canceled' || error === 'interrupted') return;
       setErreurVoix(
-        'Impossible de lire dans cette langue. Vérifie les voix installées sur ton appareil.',
+        'Impossible de lire dans cette langue. Vérifiez les voix installées sur votre appareil.',
       );
     };
     s.speak(u);

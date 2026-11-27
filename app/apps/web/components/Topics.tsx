@@ -60,14 +60,14 @@ export function Topics() {
       const data = (await res.json().catch(() => ({}))) as Partial<TopicsResult> & {
         error?: string;
       };
-      if (!res.ok || !data.sujets) throw new Error(data.error ?? 'Erreur inattendue. Réessaie.');
+      if (!res.ok || !data.sujets) throw new Error(data.error ?? 'Erreur inattendue. Réessayez.');
       setSujets(data.sujets);
       setDemo(Boolean(data.demo));
     } catch (e) {
       if (controller.signal.aborted) return;
       setError(
         e instanceof TypeError
-          ? 'Pas de réseau. Réessaie dans un instant.'
+          ? 'Pas de réseau. Réessayez dans un instant.'
           : e instanceof Error
             ? e.message
             : 'Erreur inattendue.',
@@ -88,7 +88,7 @@ export function Topics() {
           Quoi <em>dire</em> ?
         </h1>
         <p className="muted">
-          Choisis une situation. Six propose des sujets, tu écris le message à ta façon.
+          Choisissez une situation. Six propose des sujets, vous écrivez le message à votre façon.
         </p>
       </div>
       <div className="chips" role="group" aria-label="Situation">
@@ -128,7 +128,7 @@ export function Topics() {
       {sujets.length === 0 && !busy && (
         <p className="privacy">
           <Icon name="bulb" size={16} /> Six propose des idées de sujets, jamais un message tout
-          fait à ta place.
+          fait à votre place.
         </p>
       )}
       <div className="stack" aria-live="polite" aria-busy={busy}>

@@ -129,7 +129,7 @@ export async function construirePdfSeven(
     doc.setFontSize(8.5);
     if (estSeven) doc.setTextColor(MARQUE.r, MARQUE.g, MARQUE.b);
     else doc.setTextColor(GRIS.r, GRIS.g, GRIS.b);
-    doc.text(estSeven ? 'SIX' : 'TOI', MARGE, y);
+    doc.text(estSeven ? 'SIX' : 'VOUS', MARGE, y);
     const hBulle = h - 5;
     const haut = estSeven ? FOND_SEVEN : FOND_USER;
     doc.setFillColor(haut.r, haut.g, haut.b);

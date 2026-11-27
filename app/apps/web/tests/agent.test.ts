@@ -219,7 +219,7 @@ describe('vigilance de la boucle', () => {
       surEtape: (e) => etapes.push(e),
     });
     expect(etapes[0]).toBe('Focus : Documents');
-    expect(etapes[1]).toContain('Six relit tes anciens documents');
+    expect(etapes[1]).toContain('Six relit vos anciens documents');
     const messages = appelAgent.mock.calls[0][1] as { role: string; nom?: string }[];
     expect(messages.map((m) => m.role)).toEqual(['user', 'assistant', 'tool']);
     expect(messages[2].nom).toBe('chercher_mes_documents');

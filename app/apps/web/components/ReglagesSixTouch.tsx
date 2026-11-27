@@ -25,7 +25,7 @@ export function ReglagesSixTouch() {
       {dossier && (
         <Groupe
           titre="Espace de travail"
-          pied="Le dossier où Six lit tes fichiers et range ses documents."
+          pied="Le dossier où Six lit vos fichiers et range ses documents."
         >
           <LigneInfo icon="dossier" label="Dossier" sous={dossier} />
         </Groupe>

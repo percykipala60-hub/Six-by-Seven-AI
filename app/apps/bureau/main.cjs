@@ -19,8 +19,19 @@
 const path = require('node:path');
 const { existsSync } = require('node:fs');
 const { spawn } = require('node:child_process');
-const { app, BrowserWindow, WebContentsView, ipcMain, shell, Menu, dialog } = require('electron');
+const {
+  app,
+  BrowserWindow,
+  WebContentsView,
+  ipcMain,
+  shell,
+  Menu,
+  dialog,
+  powerSaveBlocker,
+} = require('electron');
 const { creerNavigateur } = require('./navigateur.cjs');
+const { creerOrdinateur } = require('./ordinateur.cjs');
+const { creerTerminaux } = require('./terminal.cjs');
 
 /** Hauteur de la barre du haut de Six (barre.html), au-dessus de l'app. */
 const BARRE = 40;
@@ -50,14 +61,20 @@ async function demarrerMoteurVocal() {
     moteurVocal = null;
   });
 }
-app.on('before-quit', () => moteurVocal?.kill());
+app.on('before-quit', () => {
+  terminaux.toutFermer();
+  moteurVocal?.kill();
+  ordinateur.arreter();
+});
 
 /** @type {BrowserWindow | null} */
 let fenetre = null;
 /** L'app Six elle-même, sous la barre du haut. @type {WebContentsView | null} */
 let appli = null;
+/** Ordinateur gardé éveillé (Réglages → Application de bureau) : identifiant du blocage de veille, ou null. */
+let eveil = null;
 /** Ce que l'app signale à la barre (volet ouvert, espace Cosinus). */
-let etatApp = { volet: null, cosinus: false };
+let etatApp = { volet: null, terminal: false, cosinus: false };
 /** Couleurs du thème de l'app, reprises par la barre et les boutons Windows. */
 let theme = null;
 
@@ -91,6 +108,11 @@ const navigateur = creerNavigateur({
   barre: BARRE,
   depuisApp,
 });
+
+// Contrôle de l'ordinateur par l'agent de Six (accords, interdits et arrêt d'urgence : ordinateur.cjs).
+const ordinateur = creerOrdinateur({ fenetre: () => fenetre });
+// Terminal de Cosinus : la sortie de chaque shell part vers l'app (événement six:terminal).
+const terminaux = creerTerminaux((e) => appli?.webContents.send('six:terminal', e));
 
 // ---------- Connexion par le navigateur de l'ordinateur ----------
 
@@ -179,6 +201,7 @@ async function etatBarre() {
     retour: h.retour,
     avant: h.avant,
     volet: etatApp.volet,
+    terminal: etatApp.terminal,
     cosinus: etatApp.cosinus && chemin.startsWith('/cosinus'),
     logo: `${ORIGINE_APP}/icon.png`,
     theme,
@@ -226,7 +249,7 @@ function commandeBarre(evenement, c) {
         versApp({ type: 'aller', chemin: c.chemin });
       break;
     case 'volet':
-      if (c.onglet === 'navigateur' || c.onglet === 'fichiers')
+      if (['navigateur', 'fichiers', 'terminal'].includes(c.onglet))
         versApp({ type: 'volet', onglet: c.onglet });
       break;
     case 'menu-espaces':
@@ -490,12 +513,49 @@ else {
     ipcMain.handle('six:app-etat', (evenement, e) => {
       if (!depuisApp(evenement) || !e || typeof e !== 'object') return;
       etatApp = {
-        volet: e.volet === 'navigateur' || e.volet === 'fichiers' ? e.volet : null,
+        volet: ['navigateur', 'fichiers', 'terminal'].includes(e.volet) ? e.volet : null,
+        terminal: e.terminal === true,
         cosinus: e.cosinus === true,
       };
       void etatBarre();
     });
     ipcMain.handle('six:connexion', connexion);
+    // Réglages → Application de bureau : version, lancement au démarrage, ordinateur gardé éveillé.
+    ipcMain.handle('six:reglages-bureau', (evenement, c) => {
+      if (!depuisApp(evenement) || !c || typeof c !== 'object') throw new Error('Origine refusée.');
+      if (c.action === 'demarrage') app.setLoginItemSettings({ openAtLogin: c.valeur === true });
+      if (c.action === 'eveil') {
+        if (c.valeur === true && eveil === null)
+          eveil = powerSaveBlocker.start('prevent-app-suspension');
+        if (c.valeur !== true && eveil !== null) {
+          powerSaveBlocker.stop(eveil);
+          eveil = null;
+        }
+      }
+      return {
+        version: app.getVersion(),
+        demarrage: app.getLoginItemSettings().openAtLogin,
+        eveil: eveil !== null,
+      };
+    });
+    // Terminal de Cosinus : seule la personne y tape (l'agent n'y a pas accès). Réponse { ok, resultat } ou erreur.
+    ipcMain.handle('six:terminal', async (evenement, c) => {
+      if (!depuisApp(evenement)) return { ok: false, erreur: 'Origine refusée.' };
+      try {
+        return { ok: true, resultat: await terminaux.piloter(c) };
+      } catch (e) {
+        return { ok: false, erreur: e instanceof Error ? e.message : String(e) };
+      }
+    });
+    // Agent de Six : contrôle de l'ordinateur. Réponse { ok, resultat } ou { ok: false, erreur } (lisible par l'agent).
+    ipcMain.handle('six:ordinateur', async (evenement, c) => {
+      if (!depuisApp(evenement)) return { ok: false, erreur: 'Origine refusée.' };
+      try {
+        return { ok: true, resultat: await ordinateur.piloter(c) };
+      } catch (e) {
+        return { ok: false, erreur: e instanceof Error ? e.message : String(e) };
+      }
+    });
     // Volet Fichiers : montrer un fichier dans l'Explorateur (seulement un fichier existant, chemin absolu ; rien
     // n'est ouvert ni exécuté).
     ipcMain.handle('six:montrer-fichier', (evenement, chemin) => {

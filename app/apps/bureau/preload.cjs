@@ -1,7 +1,8 @@
 'use strict';
 /**
  * Pont entre l'app Six (page web) et l'application de bureau : quelques commandes pour le navigateur de Cosinus,
- * la connexion et la dictée locale. Aucun accès direct à Node. Disponible sous window.sixBureau.
+ * la connexion par le navigateur, la dictée locale, le terminal de Cosinus (tapé par la personne). Aucun accès
+ * direct à Node. Disponible dans la page sous window.sixBureau.
  */
 const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
@@ -31,6 +32,22 @@ contextBridge.exposeInMainWorld('sixBureau', {
   connexion: {
     ouvrir: (url) => ipcRenderer.invoke('six:connexion', url),
     premierPlan: () => ipcRenderer.invoke('six:premier-plan'),
+  },
+  /** Réglages de l'application de bureau (lire, lancement au démarrage, garder éveillé). */
+  reglages: (commande) => ipcRenderer.invoke('six:reglages-bureau', commande),
+  /** Terminal de Cosinus (PowerShell sous Windows), ouvert dans le dossier de la discussion. */
+  terminal: {
+    piloter: (commande) => ipcRenderer.invoke('six:terminal', commande),
+    /** Sortie, invite prête (« pret », avec le dossier courant) ou fin du shell. */
+    surEvenement: (rappel) => {
+      const f = (_e, evenement) => rappel(evenement);
+      ipcRenderer.on('six:terminal', f);
+      return () => ipcRenderer.removeListener('six:terminal', f);
+    },
+  },
+  /** Contrôle de l'ordinateur par l'agent (accords demandés à la personne par l'app de bureau). */
+  ordinateur: {
+    piloter: (commande) => ipcRenderer.invoke('six:ordinateur', commande),
   },
   navigateur: {
     /** Discussion affichée (« chat:… » ou « cosinus:… ») : ses propres onglets et son propre profil. */

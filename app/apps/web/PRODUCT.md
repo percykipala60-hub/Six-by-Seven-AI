@@ -32,7 +32,7 @@ Application mobile Android/iOS empaquetée avec Capacitor, avec une interface Ne
 
 ## Brand Commitments
 
-Nom Six, startup Seven.AI, logo « 6 » recoloré par thème, bleu Seven AI par défaut, tutoiement, français simple. Thèmes réseaux : couleurs seulement ; vraies icônes d'apps uniquement pour ouvrir l'app correspondante.
+Nom Six, startup Seven.AI, logo « 6 » recoloré par thème, bleu Seven AI par défaut, vouvoiement dans toute l’interface (seules les réponses de l’IA en conversation tutoient, avec respect ; décision du 2026-11-27), français simple. Thèmes réseaux : couleurs seulement ; vraies icônes d'apps uniquement pour ouvrir l'app correspondante.
 
 ## Evidence on Hand
 

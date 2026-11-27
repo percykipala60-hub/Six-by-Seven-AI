@@ -38,7 +38,7 @@ export default function EspaceJeuPage() {
         <h1>
           Espace <em>jeu</em>
         </h1>
-        <p className="muted">Choisis un jeu et lance une partie.</p>
+        <p className="muted">Choisissez un jeu et lancez une partie.</p>
       </div>
       <div className="game-hub-grid">
         {games.map((game) => (

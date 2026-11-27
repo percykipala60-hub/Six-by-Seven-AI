@@ -301,7 +301,7 @@ export function Recents({
             </button>
           )}
           {!filtre && elements.length === 0 && (
-            <p className="recents-vide">Tes discussions apparaîtront ici.</p>
+            <p className="recents-vide">Vos discussions apparaîtront ici.</p>
           )}
           {archives.length > 0 && (
             <div className="recents-archives">

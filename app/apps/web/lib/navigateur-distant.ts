@@ -459,7 +459,7 @@ export async function agirAgent(session: string | undefined, args: Record<string
   if (!['ouvrir', 'observer', 'cliquer', 'remplir', 'retour', 'avant', 'defiler'].includes(action))
     throw new Error('Action navigateur inconnue.');
   if (action !== 'ouvrir' && (!session || !etat.onglets.has(session)))
-    throw new Error('Aucun onglet actif. Ouvre une URL publique avant de continuer.');
+    throw new Error('Aucun onglet actif. Ouvrez une URL publique avant de continuer.');
   let id = session as string;
   let page: Page;
   const existant = session ? etat.onglets.get(session) : undefined;

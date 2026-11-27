@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { fail, foreignOrigin } from '@/lib/http';
+import { utilise } from '@/lib/quotas';
 import {
   appelant,
   limitesGratuites,
@@ -13,6 +14,13 @@ import {
 export async function GET(req: Request) {
   if (foreignOrigin(req)) return fail(403, 'Requête non autorisée.');
   const a = await appelant(req);
+  // Utilisations du jour (écran Utilisation) ; remises à zéro chaque jour à minuit UTC.
+  const [analyses, messages] = await Promise.all([
+    utilise('analyses', a.cle),
+    utilise('messages', a.cle),
+  ]);
+  const demain = new Date();
+  demain.setUTCHours(24, 0, 0, 0);
   return NextResponse.json(
     {
       connecte: Boolean(a.utilisateur),
@@ -23,6 +31,8 @@ export async function GET(req: Request) {
       paiementDisponible: paiementDisponible(),
       apple: appleOuvert(),
       veille: premiumEnVeille(),
+      utilise: { analyses, messages },
+      remiseAZero: demain.toISOString(),
     },
     { headers: { 'Cache-Control': 'no-store' } },
   );

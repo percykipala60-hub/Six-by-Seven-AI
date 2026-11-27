@@ -376,7 +376,8 @@ const ONGLETS: [Onglet, string][] = [
   ['cloud', 'Cloud'],
   ['distant', 'Remote Control'],
 ];
-const A_VENIR = 'Bientôt : tu piloteras depuis ton téléphone le Six qui tourne sur ton ordinateur.';
+const A_VENIR =
+  'Bientôt : vous piloterez depuis votre téléphone le Six qui tourne sur votre ordinateur.';
 
 /** Fenêtre « Nouvel environnement » (comme « New environment » de Claude Code). */
 export function NouvelEnvironnement({
@@ -541,9 +542,9 @@ export function NouvelEnvironnement({
               </label>
             )}
             <p className="env-note">
-              L’environnement est gardé dans ton compte Six : Six y travaille en ligne, même depuis
-              ton téléphone. Un dépôt GitHub public y est copié (fichiers de 2 Mo au plus). Les
-              dépôts privés viendront avec la connexion à GitHub.
+              L’environnement est gardé dans votre compte Six : Six y travaille en ligne, même
+              depuis votre téléphone. Un dépôt GitHub public y est copié (fichiers de 2 Mo au plus).
+              Les dépôts privés viendront avec la connexion à GitHub.
             </p>
             {erreur && (
               <p role="alert" className="env-erreur">
@@ -640,8 +641,8 @@ export function NouvelEnvironnement({
               </div>
               {dossiers.length === 0 ? (
                 <p className="env-dossiers-vide">
-                  Choisis le dossier où Six travaille. Tu peux en ajouter d’autres : Six pourra les
-                  lire, sans jamais les modifier.
+                  Choisissez le dossier où Six travaille. Vous pouvez en ajouter d’autres : Six
+                  pourra les lire, sans jamais les modifier.
                 </p>
               ) : (
                 <ul className="env-dossiers">

@@ -64,5 +64,5 @@ export async function evaluer(level: Niveau, playerAnswer: string): Promise<Eval
       /* JSON invalide : on redemande une fois */
     }
   }
-  throw new ProviderError("L'évaluation de Six était illisible. Réessaie.");
+  throw new ProviderError("L'évaluation de Six était illisible. Réessayez.");
 }

@@ -28,20 +28,20 @@ describe('validation de connexion et inscription', () => {
   it('rejette les e-mails invalides et mots de passe trop courts', async () => {
     const { connecterParMotDePasse, inscrire } = await import('@/lib/compte');
     expect((await connecterParMotDePasse('mauvais-email', '123456')).erreur).toBe(
-      'Écris une adresse e-mail valide.',
+      'Écrivez une adresse e-mail valide.',
     );
     expect((await connecterParMotDePasse('test@exemple.com', '123')).erreur).toBe(
       'Le mot de passe doit comporter au moins 6 caractères.',
     );
 
     const resInscr1 = await inscrire('mauvais-email', '12345678', 'Jean', true);
-    expect(resInscr1.error).toBe('Écris une adresse e-mail valide.');
+    expect(resInscr1.error).toBe('Écrivez une adresse e-mail valide.');
 
     const resInscr2 = await inscrire('test@exemple.com', '12345678', '', true);
-    expect(resInscr2.error).toBe('Indique ton prénom pour que Six te reconnaisse.');
+    expect(resInscr2.error).toBe('Indiquez votre prénom pour que Six vous reconnaisse.');
 
     const resInscr3 = await inscrire('test@exemple.com', '123', 'Jean', true);
-    expect(resInscr3.error).toBe('Choisis un mot de passe d’au moins 8 caractères.');
+    expect(resInscr3.error).toBe('Choisissez un mot de passe d’au moins 8 caractères.');
   });
 
   it('exige l’acceptation des conditions avant de créer un compte', async () => {
@@ -56,8 +56,8 @@ describe('validation de connexion et inscription', () => {
   it('évalue la longueur d’un nouveau mot de passe', async () => {
     const { MDP_MIN_INSCRIPTION, erreurMotDePasse } = await import('@/lib/compte');
     expect(MDP_MIN_INSCRIPTION).toBe(8);
-    expect(erreurMotDePasse('')).toBe('Choisis un mot de passe.');
-    expect(erreurMotDePasse('court')).toBe('Choisis un mot de passe d’au moins 8 caractères.');
+    expect(erreurMotDePasse('')).toBe('Choisissez un mot de passe.');
+    expect(erreurMotDePasse('court')).toBe('Choisissez un mot de passe d’au moins 8 caractères.');
     expect(erreurMotDePasse('motdepasse8')).toBeNull();
   });
 });

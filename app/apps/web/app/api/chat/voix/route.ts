@@ -17,7 +17,7 @@ export async function POST(req: Request) {
   const bloque = await guard(req);
   if (bloque) return bloque;
   const compte = await utilisateurDeRequete(req);
-  if (!compte) return fail(401, 'Connecte-toi à Six pour utiliser les voix ElevenLabs.');
+  if (!compte) return fail(401, 'Connectez-vous à Six pour utiliser les voix ElevenLabs.');
   const apiKey = cle();
   if (!apiKey) return fail(503, 'Les voix ElevenLabs sont indisponibles sur ce serveur.');
 
@@ -27,7 +27,7 @@ export async function POST(req: Request) {
   if (!voix || !texte || texte.length > 4000)
     return fail(400, 'La demande de lecture vocale est invalide ou trop longue.');
   if (await depasse('synthese', compte.id, 60))
-    return fail(429, 'Tu as atteint la limite quotidienne de lecture avec ElevenLabs.');
+    return fail(429, 'Vous avez atteint la limite quotidienne de lecture avec ElevenLabs.');
 
   try {
     const reponse = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voix.id}`, {
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
       signal: AbortSignal.any([req.signal, AbortSignal.timeout(25000)]),
     });
     if (!reponse.ok || !reponse.body || !reponse.headers.get('content-type')?.startsWith('audio/'))
-      return fail(502, 'ElevenLabs n’a pas pu générer la voix. Réessaie dans un instant.');
+      return fail(502, 'ElevenLabs n’a pas pu générer la voix. Réessayez dans un instant.');
     return new Response(reponse.body, {
       headers: { 'content-type': 'audio/mpeg', 'cache-control': 'no-store' },
     });

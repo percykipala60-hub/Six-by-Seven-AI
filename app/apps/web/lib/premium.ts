@@ -44,9 +44,9 @@ export function limitesGratuites() {
 
 export const MESSAGE_LIMITE = {
   analyses:
-    "Tu as utilisé tes analyses gratuites d'aujourd'hui. Passe à Six Premium (Réglages > Six Premium) ou reviens demain.",
+    "Vous avez utilisé vos analyses gratuites d'aujourd'hui. Passez à Six Premium (Réglages > Facturation) ou revenez demain.",
   messages:
-    "Tu as utilisé tes messages gratuits avec Six pour aujourd'hui. Passe à Six Premium (Réglages > Six Premium) ou reviens demain.",
+    "Vous avez utilisé vos messages gratuits avec Six pour aujourd'hui. Passez à Six Premium (Réglages > Facturation) ou revenez demain.",
 };
 
 /** Un moyen de paiement est ouvert : les achats intégrés Apple (app iPhone) et la clé secrète Supabase. */

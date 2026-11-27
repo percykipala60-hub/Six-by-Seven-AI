@@ -1,4 +1,5 @@
 import { demandeNavigation } from '@/lib/agent/demande-navigation';
+import { demandeOrdinateur, demanderAuClient } from '@/lib/agent/pont-ordinateur';
 import { NextResponse } from 'next/server';
 import { fail, guard, providerFail, readJson } from '@/lib/http';
 import { CHAT_MAX_BYTES, CHAT_MAX_BYTES_AVEC_IMAGE, ChatBodySchema } from '@/lib/api-schemas';
@@ -32,9 +33,9 @@ import type { UsageJetons } from '@/lib/types';
 export const dynamic = 'force-dynamic';
 
 const SANS_ENVIRONNEMENT =
-  'Choisis d’abord l’environnement de cette discussion : un dossier de l’ordinateur, ou ton Cloud.';
+  'Choisissez d’abord l’environnement de cette discussion : un dossier de l’ordinateur, ou votre Cloud.';
 const DOSSIER_REFUSE =
-  'Ce dossier de travail est introuvable ou inaccessible. Choisis un autre dossier pour cette discussion.';
+  'Ce dossier de travail est introuvable ou inaccessible. Choisissez un autre dossier pour cette discussion.';
 
 export async function GET() {
   return NextResponse.json(
@@ -57,18 +58,31 @@ async function traiterChat(req: Request, lireUsage: () => UsageJetons | undefine
   // Des images (capture d'écran, images d'une vidéo) peuvent accompagner le message : le corps peut alors être plus gros, mais le texte de la
   // discussion garde sa limite habituelle (CHAT_MAX_BYTES).
   const b = await readJson(req, CHAT_MAX_BYTES_AVEC_IMAGE);
-  if (!b) return fail(400, 'Requête illisible ou trop volumineuse. Raccourcis ton message.');
+  if (!b) return fail(400, 'Requête illisible ou trop volumineuse. Raccourcissez votre message.');
   const parsed = ChatBodySchema.safeParse(b);
   if (!parsed.success) return fail(400, 'Les messages du chat sont invalides.');
   const tailleTexte = new TextEncoder().encode(
     JSON.stringify({ messages: parsed.data.messages }),
   ).length;
   if (tailleTexte > CHAT_MAX_BYTES)
-    return fail(400, 'Requête illisible ou trop volumineuse. Raccourcis ton message.');
+    return fail(400, 'Requête illisible ou trop volumineuse. Raccourcissez votre message.');
   const a = await appelant(req);
+  // Question telle que tapée : elle seule décide s'il faut naviguer ou piloter l'ordinateur.
+  const questionBrute = parsed.data.messages.at(-1)?.content ?? '';
+  // Réglages → Votre Six : les préférences écrites par la personne précèdent sa demande (des données, pas des ordres
+  // qui changeraient les règles de Six).
+  if (parsed.data.preferences) {
+    const dernier = parsed.data.messages.at(-1);
+    if (dernier)
+      dernier.content = `Préférences de la personne (Réglages → Votre Six), à respecter sauf demande contraire :
+${parsed.data.preferences}
+
+Demande actuelle :
+${dernier.content}`;
+  }
   // Projet (Chat et Cosinus) : son contexte et ses documents, lus sur le serveur, précèdent la demande.
   if (parsed.data.projetId) {
-    if (!a.utilisateur) return fail(401, 'Connecte-toi pour utiliser ce projet.');
+    if (!a.utilisateur) return fail(401, 'Connectez-vous pour utiliser ce projet.');
     const proprietaire = a.utilisateur.id;
     try {
       const projet = await modifierTravail((e) =>
@@ -89,13 +103,27 @@ async function traiterChat(req: Request, lireUsage: () => UsageJetons | undefine
   // Chat de l'app de bureau : une demande qui passe par le web (ouvrir un site, chercher, cliquer…) est confiée à
   // l'agent avec le navigateur interne, sans espace de travail ni fichiers.
   const derniereQuestion = parsed.data.messages.at(-1)?.content ?? '';
+  // App de bureau, compte connecté : Six peut piloter l'ordinateur (le résultat de chaque action revient du même
+  // compte, voir lib/agent/pont-ordinateur.ts).
+  const compte = a.utilisateur?.id;
+  const ordinateurPermis =
+    parsed.data.ordinateur === true && Boolean(compte) && !process.env.VERCEL;
+  if (process.env.NODE_ENV !== 'production' && parsed.data.ordinateur)
+    console.info(`[ordinateur] demandé par l'app de bureau ; compte connecté : ${Boolean(compte)}`);
+  const ordinateurPour = (envoyer: (o: unknown) => void) =>
+    ordinateurPermis && compte
+      ? {
+          demander: (args: Record<string, unknown>) =>
+            demanderAuClient(compte, envoyer, args, req.signal),
+        }
+      : undefined;
   if (
     parsed.data.mode !== 'sixtouch' &&
     parsed.data.navigateur === true &&
     parsed.data.vocal !== true &&
     !process.env.VERCEL &&
     agentDisponible() &&
-    demandeNavigation(derniereQuestion)
+    (demandeNavigation(questionBrute) || (ordinateurPermis && demandeOrdinateur(questionBrute)))
   ) {
     const messages = parsed.data.messages;
     const encodeur = new TextEncoder();
@@ -110,6 +138,7 @@ async function traiterChat(req: Request, lireUsage: () => UsageJetons | undefine
             premium: a.illimite,
             ctx: {
               espace: '', // le Chat n'a pas d'espace de travail
+              ordinateur: ordinateurPour(envoyer),
               navigateur: {
                 session: parsed.data.navigateurSession,
                 surEtat: (etat: { session: string; url: string }) =>
@@ -128,7 +157,7 @@ async function traiterChat(req: Request, lireUsage: () => UsageJetons | undefine
         } catch (e) {
           envoyer({
             type: 'erreur',
-            error: e instanceof ProviderError ? e.message : 'Erreur inattendue. Réessaie.',
+            error: e instanceof ProviderError ? e.message : 'Erreur inattendue. Réessayez.',
           });
         } finally {
           c.close();
@@ -161,7 +190,7 @@ async function traiterChat(req: Request, lireUsage: () => UsageJetons | undefine
       const u = await utilisateurDeRequete(req);
       const jeton = /^Bearer\s+(\S+)$/.exec(req.headers.get('authorization') ?? '')?.[1];
       if (!u || !jeton)
-        return fail(401, 'Connecte-toi à ton compte Six pour travailler dans le Cloud.');
+        return fail(401, 'Connectez-vous à votre compte Six pour travailler dans le Cloud.');
       try {
         const envs = await environnementsCloud(jeton, u.id);
         const env =
@@ -204,6 +233,7 @@ async function traiterChat(req: Request, lireUsage: () => UsageJetons | undefine
             premium: a.illimite,
             ctx: {
               espace,
+              ordinateur: cloud ? undefined : ordinateurPour(envoyer),
               horsDossier: { toutLePc: false, chemins: lecture },
               corpus: !cloud && Boolean(espace) && (await corpusDisponible()),
               ...(espace && !cloud && !process.env.VERCEL
@@ -224,7 +254,7 @@ async function traiterChat(req: Request, lireUsage: () => UsageJetons | undefine
             type: 'fin',
             reponse:
               corrigerIdentite(r.reponse) ||
-              'Travail terminé, mais Six n’a pas écrit de résumé. Regarde tes fichiers.',
+              'Travail terminé, mais Six n’a pas écrit de résumé. Regardez vos fichiers.',
             etapes: r.etapes,
             fichiers: r.fichiers,
             plan: r.plan,
@@ -233,7 +263,7 @@ async function traiterChat(req: Request, lireUsage: () => UsageJetons | undefine
         } catch (e) {
           envoyer({
             type: 'erreur',
-            error: e instanceof ProviderError ? e.message : 'Erreur inattendue. Réessaie.',
+            error: e instanceof ProviderError ? e.message : 'Erreur inattendue. Réessayez.',
           });
         }
         if (cloud) {

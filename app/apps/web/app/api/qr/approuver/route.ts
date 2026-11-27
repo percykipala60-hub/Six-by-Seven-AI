@@ -18,7 +18,7 @@ export async function POST(req: Request) {
   if (!adminDisponible())
     return fail(503, 'La connexion par code QR est indisponible pour le moment.');
   const u = await utilisateurDeRequete(req);
-  if (!u) return fail(401, 'Connecte-toi d’abord sur cet appareil.');
+  if (!u) return fail(401, 'Connectez-vous d’abord sur cet appareil.');
   const corps = Corps.safeParse(await readJson(req, 1_000));
   if (!corps.success) return fail(400, 'Code QR invalide.');
   try {
@@ -27,6 +27,6 @@ export async function POST(req: Request) {
       return fail(410, 'Ce code QR a expiré ou a déjà servi. Affiche-en un nouveau.');
     return NextResponse.json({ ok: true });
   } catch {
-    return fail(500, 'Connexion impossible pour le moment. Réessaie.');
+    return fail(500, 'Connexion impossible pour le moment. Réessayez.');
   }
 }

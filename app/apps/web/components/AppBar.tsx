@@ -99,7 +99,7 @@ function ChoixMode({ actif }: { actif: 'six' | 'seven' | 'sixtouch' }) {
         href="/cosinus"
         className="choix-mode-btn"
         aria-current={actif === 'sixtouch' ? 'page' : undefined}
-        aria-label="Cosinus : Six travaille pour toi (navigateur, fichiers)"
+        aria-label="Cosinus : Six travaille pour vous (navigateur, fichiers)"
         title="Cosinus"
       >
         <Icon name="sixtouch" size={18} stroke={1.75} />
@@ -464,6 +464,8 @@ export function AppBar({
           apresLien={apresLien}
         />
         <Suivis />
+        {/* Comme dans Claude : le compte en bas du panneau ; un clic ouvre la petite liste (paramètres, utilisation,
+            aide, applications, déconnexion) juste au-dessus. */}
         <ProfilLigne />
       </div>
     </>

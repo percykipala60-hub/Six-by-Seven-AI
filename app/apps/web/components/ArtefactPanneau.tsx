@@ -243,7 +243,7 @@ export default function ArtefactPanneau({
       </div>
       {export_ === 'erreur' && (
         <p role="alert" className="seven-erreur artefact-alerte">
-          Le fichier PowerPoint n’a pas pu être créé. Réessaie.
+          Le fichier PowerPoint n’a pas pu être créé. Réessayez.
         </p>
       )}
       <div className="artefact-corps">

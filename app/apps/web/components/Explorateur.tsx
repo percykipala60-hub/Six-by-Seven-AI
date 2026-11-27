@@ -619,7 +619,7 @@ export function Explorateur({
             ) : (niveaux.get('') ?? []).length === 0 ? (
               <p className="volet-rien">
                 {niveaux.has('')
-                  ? 'Le dossier est vide. Dépose-y tes fichiers : ils apparaîtront ici. Les résultats de Six vont dans « resultats ».'
+                  ? 'Le dossier est vide. Déposez-y vos fichiers : ils apparaîtront ici. Les résultats de Six vont dans « resultats ».'
                   : 'Chargement…'}
               </p>
             ) : (

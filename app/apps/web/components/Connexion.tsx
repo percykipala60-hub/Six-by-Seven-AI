@@ -174,7 +174,7 @@ export function FormulaireConnexion() {
     if (!etaitBloque()) return;
     marquerBloque(false);
     setErreur(
-      'Cet appareil a été déconnecté depuis l’e-mail d’alerte de connexion (« Ce n’était pas moi »). Si c’était bien toi, reconnecte-toi ; sinon, change ton mot de passe avec « Mot de passe oublié ».',
+      'Cet appareil a été déconnecté depuis l’e-mail d’alerte de connexion (« Ce n’était pas moi »). Si c’était bien vous, reconnectez-vous ; sinon, changez votre mot de passe avec « Mot de passe oublié ».',
     );
   }, []);
   useEffect(() => {
@@ -189,7 +189,7 @@ export function FormulaireConnexion() {
     const fragment = new URLSearchParams(url.hash.slice(1));
     if (!url.searchParams.has('error') && !fragment.has('error')) return;
     setErreur(
-      'La connexion avec Google ou Apple a échoué. Utilise ton adresse e-mail ou réessaie plus tard.',
+      'La connexion avec Google ou Apple a échoué. Utilisez votre adresse e-mail ou réessayez plus tard.',
     );
     url.searchParams.delete('error');
     url.searchParams.delete('error_code');
@@ -216,7 +216,7 @@ export function FormulaireConnexion() {
       if (r.erreur) setErreur(r.erreur);
       else if (r.info) setInfo(r.info);
     } catch {
-      setErreur('La connexion ne répond pas. Vérifie ta connexion Internet et réessaie.');
+      setErreur('La connexion ne répond pas. Vérifiez votre connexion Internet et réessayez.');
     } finally {
       setSocialBusy(null);
     }
@@ -238,9 +238,9 @@ export function FormulaireConnexion() {
       const r = await connecterParMotDePasse(email, motDePasse);
       if (r.erreur) setErreur(r.erreur);
       else if (r.code) ouvrirEtapeCode(r.code);
-      else setErreur('La connexion n’a pas pu être terminée. Réessaie.');
+      else setErreur('La connexion n’a pas pu être terminée. Réessayez.');
     } catch {
-      setErreur('La connexion ne répond pas. Vérifie ta connexion Internet et réessaie.');
+      setErreur('La connexion ne répond pas. Vérifiez votre connexion Internet et réessayez.');
     } finally {
       setBusy(false);
     }
@@ -251,7 +251,7 @@ export function FormulaireConnexion() {
     setErreur('');
     setInfo('');
     if (!prenomSaisie.trim()) {
-      setErreur('Indique ton prénom pour que Six puisse te saluer.');
+      setErreur('Indiquez votre prénom pour que Six puisse vous saluer.');
       return;
     }
     if (motDePasse.length < MDP_MIN_INSCRIPTION) {
@@ -263,7 +263,7 @@ export function FormulaireConnexion() {
       return;
     }
     if (!accepteConditions) {
-      setErreur('Accepte les conditions d’utilisation et la politique de confidentialité.');
+      setErreur('Acceptez les conditions d’utilisation et la politique de confidentialité.');
       return;
     }
     setBusy(true);
@@ -275,10 +275,12 @@ export function FormulaireConnexion() {
       else {
         setMotDePasse('');
         setConfirmationMdp('');
-        setInfo('Compte créé. Tu peux maintenant utiliser Six.');
+        setInfo('Compte créé. Vous pouvez maintenant utiliser Six.');
       }
     } catch {
-      setErreur('La création du compte ne répond pas. Vérifie ta connexion Internet et réessaie.');
+      setErreur(
+        'La création du compte ne répond pas. Vérifiez votre connexion Internet et réessayez.',
+      );
     } finally {
       setBusy(false);
     }
@@ -298,10 +300,10 @@ export function FormulaireConnexion() {
       if (err) setErreur(err);
       else {
         setAttente(60);
-        setInfo('Un nouveau code vient de partir. Regarde aussi tes spams.');
+        setInfo('Un nouveau code vient de partir. Regardez aussi vos spams.');
       }
     } catch {
-      setErreur('Le renvoi du code ne répond pas. Réessaie dans un instant.');
+      setErreur('Le renvoi du code ne répond pas. Réessayez dans un instant.');
     } finally {
       setBusy(false);
     }
@@ -324,10 +326,10 @@ export function FormulaireConnexion() {
         setMotDePasse('');
         setConfirmationMdp('');
         setMode('connexion');
-        setInfo('Adresse confirmée. Ton compte est prêt.');
+        setInfo('Adresse confirmée. Votre compte est prêt.');
       }
     } catch {
-      setErreur('La vérification du code ne répond pas. Réessaie dans un instant.');
+      setErreur('La vérification du code ne répond pas. Réessayez dans un instant.');
     } finally {
       setBusy(false);
     }
@@ -342,11 +344,11 @@ export function FormulaireConnexion() {
       const err = await reinitialiserMotDePasse(email);
       if (err) setErreur(err);
       else {
-        setInfo('Un e-mail de réinitialisation t’a été envoyé. Regarde aussi tes spams.');
+        setInfo('Un e-mail de réinitialisation vous a été envoyé. Regardez aussi vos spams.');
         setMode('connexion');
       }
     } catch {
-      setErreur('La demande ne répond pas. Vérifie ta connexion Internet et réessaie.');
+      setErreur('La demande ne répond pas. Vérifiez votre connexion Internet et réessayez.');
     } finally {
       setBusy(false);
     }
@@ -359,9 +361,9 @@ export function FormulaireConnexion() {
         <span className="auth-eyebrow">COMPTE SIX</span>
         <h2>
           {etapeCode
-            ? 'Vérifie ton e-mail'
+            ? 'Vérifiez votre e-mail'
             : mode === 'inscription'
-              ? 'Créer ton compte'
+              ? 'Créer votre compte'
               : mode === 'oubli'
                 ? 'Réinitialiser le mot de passe'
                 : 'Bienvenue sur Six'}
@@ -370,12 +372,12 @@ export function FormulaireConnexion() {
           {etapeCode
             ? etapeCode.type === 'inscription'
               ? 'Dernière étape : confirme que cette adresse est bien la tienne.'
-              : 'Pour ta sécurité, chaque connexion se confirme avec un code reçu par e-mail.'
+              : 'Pour votre sécurité, chaque connexion se confirme avec un code reçu par e-mail.'
             : mode === 'inscription'
-              ? 'Un compte suffit pour utiliser Six. Ta mémoire reste sur cet appareil, sauf si tu choisis de la copier sur ton compte.'
+              ? 'Un compte suffit pour utiliser Six. Votre mémoire reste sur cet appareil, sauf si vous choisissez de la copier sur votre compte.'
               : mode === 'oubli'
                 ? 'On t’enverra un lien sécurisé pour choisir un nouveau mot de passe.'
-                : 'Connecte-toi ou crée ton compte pour commencer.'}
+                : 'Connectez-vous ou créez votre compte pour commencer.'}
         </p>
       </div>
       {/* Connexion en un geste : le reste (e-mail, code) ne change pas. */}
@@ -426,7 +428,9 @@ export function FormulaireConnexion() {
             {mode === 'connexion' && qrOuvert && <QrConnexion />}
             {socialBusy && dansAppBureau() && (
               <div className="auth-attente-navigateur">
-                <p>Termine la connexion dans ton navigateur : Six reprend ici tout seul ensuite.</p>
+                <p>
+                  Terminez la connexion dans votre navigateur : Six reprend ici tout seul ensuite.
+                </p>
                 <button type="button" className="auth-lien" onClick={annulerConnexionBureau}>
                   Annuler
                 </button>
@@ -485,9 +489,9 @@ export function FormulaireConnexion() {
       {/* Étape 2 : code à 6 chiffres reçu par e-mail */}
       {etapeCode && (
         <form onSubmit={handleValiderCode} className="stack" style={{ gap: 12 }}>
-          <b>Entre le code à 6 chiffres</b>
+          <b>Entrez le code à 6 chiffres</b>
           <p className="muted small">
-            Envoyé à <b>{etapeCode.email}</b>. Il expire dans 10 minutes. Regarde aussi dans tes
+            Envoyé à <b>{etapeCode.email}</b>. Il expire dans 10 minutes. Regardez aussi dans vos
             courriers indésirables.
           </p>
           <CodeOtp value={codeOtp} onChange={setCodeOtp} />
@@ -544,7 +548,7 @@ export function FormulaireConnexion() {
               spellCheck={false}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="toi@exemple.com"
+              placeholder="vous@exemple.com"
               required
             />
           </div>
@@ -628,7 +632,7 @@ export function FormulaireConnexion() {
             </span>
             <div className="auth-step-body">
               <label htmlFor="inscr-email" className="set-label">
-                Ton adresse e-mail
+                Votre adresse e-mail
               </label>
               <input
                 id="inscr-email"
@@ -640,7 +644,7 @@ export function FormulaireConnexion() {
                 spellCheck={false}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="toi@exemple.com"
+                placeholder="vous@exemple.com"
                 required
               />
             </div>
@@ -652,7 +656,7 @@ export function FormulaireConnexion() {
             </span>
             <div className="auth-step-body">
               <label htmlFor="inscr-pwd" className="set-label">
-                Choisis un mot de passe (au moins {MDP_MIN_INSCRIPTION} caractères)
+                Choisissez un mot de passe (au moins {MDP_MIN_INSCRIPTION} caractères)
               </label>
               <div className="input-pwd-wrap">
                 <input
@@ -792,8 +796,8 @@ export function FormulaireConnexion() {
         <form onSubmit={handleOubli} className="stack" style={{ gap: 12 }}>
           <b>Mot de passe oublié</b>
           <p className="muted small">
-            Saisis ton adresse e-mail. Six t&apos;enverra un lien pour créer un nouveau mot de passe
-            en toute sécurité.
+            Saisissez votre adresse e-mail. Six vous enverra un lien pour créer un nouveau mot de
+            passe en toute sécurité.
           </p>
           <label htmlFor="oubli-email" className="set-label">
             Adresse e-mail
@@ -805,7 +809,7 @@ export function FormulaireConnexion() {
             autoComplete="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="toi@exemple.com"
+            placeholder="vous@exemple.com"
             required
           />
           <button className="btn primary" type="submit" disabled={busy || !email.trim()}>

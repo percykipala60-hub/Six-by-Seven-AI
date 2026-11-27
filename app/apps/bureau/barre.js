@@ -22,6 +22,9 @@
   $('fichiers').addEventListener('click', () =>
     b.commande({ action: 'volet', onglet: 'fichiers' }),
   );
+  $('terminal').addEventListener('click', () =>
+    b.commande({ action: 'volet', onglet: 'terminal' }),
+  );
   $('espace').addEventListener('click', () => {
     const r = $('espace').getBoundingClientRect();
     b.commande({ action: 'menu-espaces', x: Math.round(r.left), y: Math.round(r.bottom + 4) });
@@ -32,9 +35,10 @@
     $('avant').disabled = !e.avant;
     $('nom-espace').textContent = ESPACES[e.chemin] ?? '';
     $('reglages').setAttribute('aria-pressed', String(e.chemin === '/reglages'));
-    for (const onglet of ['navigateur', 'fichiers']) {
+    for (const onglet of ['navigateur', 'fichiers', 'terminal']) {
       $(onglet).hidden = !e.cosinus;
-      $(onglet).setAttribute('aria-pressed', String(e.volet === onglet));
+      const ouvert = e.volet === onglet || (onglet === 'terminal' && e.terminal === true);
+      $(onglet).setAttribute('aria-pressed', String(ouvert));
     }
     if (e.logo) $('logo').src = e.logo;
     if (e.theme) {

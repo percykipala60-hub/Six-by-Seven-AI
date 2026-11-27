@@ -32,7 +32,7 @@ async function jetonGithubDe(userId: string): Promise<string | undefined> {
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
-const SANS_COMPTE = 'Connecte-toi à ton compte Six pour utiliser le Cloud.';
+const SANS_COMPTE = 'Connectez-vous à votre compte Six pour utiliser le Cloud.';
 
 async function compte(req: Request) {
   const u = await utilisateurDeRequete(req);
