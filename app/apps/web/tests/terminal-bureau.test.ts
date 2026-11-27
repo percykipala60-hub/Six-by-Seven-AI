@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { createRequire } from 'node:module';
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdtempSync, realpathSync, rmSync } from 'node:fs';
 import { homedir, tmpdir } from 'node:os';
 import path from 'node:path';
 
@@ -8,6 +8,9 @@ import path from 'node:path';
  * Terminal de Cosinus (apps/bureau/terminal.cjs) avec un vrai shell : la sortie arrive, le dossier courant suit
  * « cd », les accents passent, une commande longue s'arrête et le shell repart dans le même dossier.
  */
+
+/** Chemin réel : noms courts de Windows (RUNNER~1) et liens de macOS (/var → /private/var) résolus. */
+const reel = (p: string) => realpathSync.native(path.resolve(p));
 
 type Evenement = { id: number; type: 'sortie' | 'pret' | 'fin'; texte?: string; cwd?: string };
 type Terminaux = {
@@ -53,7 +56,7 @@ describe('terminal de Cosinus', () => {
     dossier = mkdtempSync(path.join(tmpdir(), 'six-terminal-'));
     const t = nouveau();
     const { id, cwd } = await t.T.piloter({ action: 'ouvrir', cwd: dossier });
-    expect(path.resolve(cwd)).toBe(path.resolve(dossier));
+    expect(reel(cwd)).toBe(reel(dossier));
     await t.attendrePret(0);
 
     let n = t.prets();
@@ -65,7 +68,7 @@ describe('terminal de Cosinus', () => {
     await t.T.piloter({ action: 'ecrire', id, commande: 'cd ..' });
     await t.attendrePret(n);
     const dernier = t.evenements.filter((e) => e.type === 'pret').at(-1);
-    expect(path.resolve(dernier?.cwd ?? '')).toBe(path.resolve(dossier, '..'));
+    expect(reel(dernier?.cwd ?? '')).toBe(reel(path.join(dossier, '..')));
   }, 30_000);
 
   it('arrête une commande longue et repart dans le même dossier', async () => {
