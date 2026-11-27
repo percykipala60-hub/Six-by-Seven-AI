@@ -170,7 +170,7 @@ export function demandeEnregistrement(question: string): boolean {
  * App de bureau : Six peut piloter l'ordinateur de la personne. Sans cette consigne, il croit n'avoir que les outils
  * de l'espace de travail (listés dans son système) et refuse d'ouvrir une application.
  */
-const CONSIGNE_ORDINATEUR = `
+export const CONSIGNE_ORDINATEUR = `
 
 ## Ordinateur de la personne (app de bureau)
 - Tu peux piloter l'ordinateur avec l'outil « ordinateur » : ouvrir une application, lire une fenêtre, cliquer, écrire, utiliser des raccourcis. Quand on te demande d'agir dans une application (Bloc-notes, Explorateur, Word, Excel, réglages…), fais-le avec cet outil au lieu de dire que tu ne peux pas.

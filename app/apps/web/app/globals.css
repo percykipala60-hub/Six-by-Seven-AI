@@ -11153,20 +11153,20 @@ button.drawer-profile .grow .small {
   margin-top: 6px;
 }
 
-/* Panneau de gauche, compact comme la barre latérale de Claude : texte 12,5 px, poids normal, lignes de 28 px.
+/* Panneau de gauche, compact comme la barre latérale de Claude : texte 13 px, poids normal, lignes de 30 px.
    (html … pour passer devant les règles du panneau ouvert sur grand écran.) */
 html .drawer .drawer-item,
 html[data-panneau] .drawer .drawer-item {
   gap: 10px;
-  min-height: 28px;
-  padding: 0 8px;
+  min-height: 30px;
+  padding: 0 9px;
   border-radius: 7px;
-  font-size: 0.78rem;
+  font-size: 0.8125rem;
   font-weight: 400;
 }
 .drawer .drawer-item svg {
-  width: 15px;
-  height: 15px;
+  width: 16px;
+  height: 16px;
 }
 html .drawer .drawer-item[aria-current='page'],
 html[data-panneau] .drawer .drawer-item[aria-current='page'] {
@@ -11180,7 +11180,7 @@ html[data-panneau] .drawer .drawer-item[aria-current='page'] {
   padding-bottom: 8px;
 }
 .drawer .drawer-head .word {
-  font-size: 0.88rem;
+  font-size: 0.92rem;
 }
 .drawer .drawer-head .logo,
 .drawer .drawer-head svg:first-child,
@@ -11195,13 +11195,13 @@ html[data-panneau] .drawer .drawer-item[aria-current='page'] {
 }
 .drawer .recent,
 .drawer .recent-lien {
-  font-size: 0.75rem;
+  font-size: 0.78rem;
 }
 .drawer .recents-vide {
   font-size: 0.72rem;
 }
 button.drawer-profile b {
-  font-size: 0.78rem;
+  font-size: 0.8125rem;
   font-weight: 500;
 }
 button.drawer-profile .grow .small {
