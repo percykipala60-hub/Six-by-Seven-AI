@@ -665,9 +665,10 @@ function MenuLigne({
             {sous.actions.length === 0 ? (
               <p className="recent-menu-vide">Aucun autre endroit.</p>
             ) : (
-              sous.actions.map((x) => (
+              // Deux environnements peuvent porter le même nom (« Environnement cloud ») : la clé ajoute la position.
+              sous.actions.map((x, i) => (
                 <button
-                  key={x.libelle}
+                  key={`${i}-${x.libelle}`}
                   type="button"
                   role={x.coche === undefined ? 'menuitem' : 'menuitemcheckbox'}
                   aria-checked={x.coche}
