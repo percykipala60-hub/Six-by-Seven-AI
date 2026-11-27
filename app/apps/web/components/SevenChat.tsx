@@ -75,7 +75,12 @@ import {
 import { memoireActive } from '@/lib/memoire';
 import { entetesCompte } from '@/lib/premium-client';
 import { executerOrdinateur, pontOrdinateur } from '@/lib/ordinateur-client';
-import { CHAT_MAX_BYTES, CHAT_MAX_CONTENT, CHAT_MAX_MESSAGES } from '@/lib/api-schemas';
+import {
+  CHAT_MAX_BYTES,
+  CHAT_MAX_CONTENT,
+  CHAT_MAX_MESSAGES,
+  type FournisseurChat,
+} from '@/lib/api-schemas';
 import { detecterOrdre } from '@/lib/seven-ordres';
 import type { ChatMessage, ChatResult, PieceAffichee, UsageJetons } from '@/lib/types';
 import {
@@ -327,6 +332,8 @@ function joindreTexte(avant: string, dit: string): string {
 export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   const router = useRouter();
   const sixtouch = mode === 'sixtouch';
+  const [fournisseur, setFournisseur] = useState<FournisseurChat | 'auto'>('auto');
+  const [fournisseurs, setFournisseurs] = useState<string[]>([]);
   const [skill, setSkill] = useState<ChoixSkill>('auto');
   // Skill de départ : celui choisi dans Réglages → Skills (lu après le premier rendu, comme tout réglage local).
   useEffect(() => setSkill(lireSkillDefaut()), []);
@@ -789,7 +796,8 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     void fetch('/api/chat', { signal: controleur.signal })
       .then(async (res) => {
         if (!res.ok) throw new Error('État indisponible');
-        const etat = (await res.json()) as { transcription: boolean };
+        const etat = (await res.json()) as { transcription: boolean; fournisseurs?: string[] };
+        setFournisseurs(etat.fournisseurs ?? []);
         setTranscription(await (pontVoixBureau()?.disponible() ?? etat.transcription));
       })
       .catch(() => {
@@ -991,14 +999,23 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       );
       // Cosinus : le serveur donne à Six ses consignes d'agent de travail.
       // Chat de l'app de bureau : le navigateur interne existe, Six peut le piloter pour une demande web.
-      const navigateurChat = !sixtouch && estBureau() && !appelActif.current;
+      const fournisseurExplicite = !sixtouch && fournisseur !== 'auto' ? fournisseur : undefined;
+      const navigateurChat =
+        !sixtouch && !fournisseurExplicite && estBureau() && !appelActif.current;
       // App de bureau : Six peut aussi piloter l'ordinateur (accords demandés par l'app, application par application).
       const ordinateurDispo = estBureau() && Boolean(pontOrdinateur()) && !appelActif.current;
       const preferences = lireInstructions();
       const corps =
-        images.length || sixtouch || projetId || navigateurChat || appelActif.current || preferences
+        images.length ||
+        sixtouch ||
+        projetId ||
+        navigateurChat ||
+        appelActif.current ||
+        preferences ||
+        fournisseurExplicite
           ? JSON.stringify({
               ...(JSON.parse(texteSeul) as object),
+              ...(fournisseurExplicite ? { fournisseur: fournisseurExplicite } : {}),
               ...(preferences ? { preferences } : {}),
               ...(ordinateurDispo ? { ordinateur: true } : {}),
               ...(!sixtouch && projetId ? { projetId } : {}),
@@ -2260,6 +2277,9 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
             avecSkills={sixtouch}
             desactive={enregistre || appel}
             modeleActif={modeleActif}
+            fournisseur={fournisseur}
+            fournisseurs={fournisseurs}
+            onFournisseur={setFournisseur}
           />
         </div>
         <p className="seven-mention">Six peut se tromper : vérifie les informations importantes.</p>

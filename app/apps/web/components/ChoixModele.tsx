@@ -3,12 +3,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { Icon } from './Icon';
 import { SKILLS, nomSkill, type ChoixSkill } from '@/lib/skills-cosinus';
+import type { FournisseurChat } from '@/lib/api-schemas';
 
-/**
- * Sous la barre de saisie, à droite (comme le choix du modèle chez Claude) : le modèle qui répond et, dans Cosinus,
- * le focus (méthode de travail). Un seul modèle pour l'instant ; la liste s'allongera avec les prochains.
- */
-export const MODELES = [{ id: 'six', nom: 'Six', sous: 'Le modèle de Six' }] as const;
+const MODELES = [
+  { id: 'auto', nom: 'Automatique' },
+  { id: 'claude', nom: 'Claude' },
+  { id: 'openrouter', nom: 'OpenRouter' },
+] as const;
 
 export function ChoixModele({
   skill,
@@ -16,17 +17,23 @@ export function ChoixModele({
   avecSkills,
   desactive,
   modeleActif,
+  fournisseur,
+  fournisseurs,
+  onFournisseur,
 }: {
   skill: ChoixSkill;
   onSkill: (s: ChoixSkill) => void;
   avecSkills: boolean;
   desactive?: boolean;
   modeleActif?: string;
+  fournisseur: FournisseurChat | 'auto';
+  fournisseurs: string[];
+  onFournisseur: (fournisseur: FournisseurChat | 'auto') => void;
 }) {
   const [ouvert, setOuvert] = useState(false);
   const [sousMenu, setSousMenu] = useState(false);
   const zone = useRef<HTMLDivElement>(null);
-  const modele = MODELES[0];
+  const modele = MODELES.find((m) => m.id === fournisseur) ?? MODELES[0];
 
   useEffect(() => {
     if (!ouvert) return;
@@ -67,7 +74,7 @@ export function ChoixModele({
               : 'Le modèle apparaît après la première réponse'
           }
         >
-          {modeleActif ?? modele.nom}
+          {avecSkills ? (modeleActif ?? 'Six') : modele.nom}
         </span>
         {avecSkills && (
           <span className="modele-skill">{skill === 'auto' ? 'Auto' : nomSkill(skill)}</span>
@@ -76,22 +83,31 @@ export function ChoixModele({
       </button>
       {ouvert && (
         <div className="modele-menu" role="menu">
-          {MODELES.map((m) => (
-            <button
-              key={m.id}
-              type="button"
-              role="menuitemradio"
-              aria-checked={m.id === modele.id}
-              onClick={() => setOuvert(false)}
-            >
-              <span className="modele-ligne">
-                <span>{m.nom}</span>
-                <small>{modeleActif ? `Dernier modèle utilisé : ${modeleActif}` : m.sous}</small>
-              </span>
-              {m.id === modele.id && <Icon name="check" size={16} stroke={2} />}
-            </button>
-          ))}
-          <p className="modele-note">D’autres modèles arriveront bientôt.</p>
+          {!avecSkills &&
+            MODELES.map((m) => {
+              const disponible = m.id === 'auto' || fournisseurs.includes(m.id);
+              return (
+                <button
+                  key={m.id}
+                  type="button"
+                  role="menuitemradio"
+                  aria-checked={m.id === modele.id}
+                  disabled={!disponible}
+                  onClick={() => {
+                    onFournisseur(m.id);
+                    setOuvert(false);
+                  }}
+                >
+                  <span className="modele-ligne">
+                    <span>{m.nom}</span>
+                    {m.id === 'auto' && <small>Six choisit le fournisseur</small>}
+                    {!disponible && <small>Indisponible sur ce serveur</small>}
+                  </span>
+                  {m.id === modele.id && <Icon name="check" size={16} stroke={2} />}
+                </button>
+              );
+            })}
+          {modeleActif && <p className="modele-note">Dernier modèle utilisé : {modeleActif}</p>}
           {avecSkills && (
             <>
               <hr />

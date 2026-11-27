@@ -78,14 +78,19 @@ describe("fournisseurs d'IA", () => {
   });
 
   it('envoie la clé et le modèle OpenRouter à son propre endpoint', async () => {
-    vi.stubEnv('AI_PROVIDERS', 'openrouter');
+    vi.stubEnv('AI_PROVIDERS', 'openai,openrouter');
     vi.stubEnv('OPENROUTER_API_KEY', 'cle-routeur-test');
     expect(hasAI()).toBe(false);
     vi.stubEnv('OPENROUTER_MODEL', 'openai/modele-test');
+    vi.stubEnv('OPENAI_API_KEY', 'sk-test');
+    vi.stubEnv('OPENAI_MODEL', 'modele-automatique');
     const fetchMock = vi.fn(async (_url: string, _init: RequestInit) => okOpenAI());
     vi.stubGlobal('fetch', fetchMock);
 
-    expect(await callChat('sys', 'user', [], 100)).toBe('réponse openai');
+    expect(await callChat('sys', 'user', [], 100, true, undefined, 'openrouter')).toBe(
+      'réponse openai',
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe('https://openrouter.ai/api/v1/chat/completions');
     expect(new Headers(init.headers).get('authorization')).toBe('Bearer cle-routeur-test');

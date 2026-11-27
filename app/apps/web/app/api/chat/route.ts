@@ -7,7 +7,7 @@ import { chat } from '@/lib/providers';
 import { appelant, limitesGratuites, MESSAGE_LIMITE } from '@/lib/premium';
 import { depasse } from '@/lib/quotas';
 
-import { ProviderError, agentDisponible, hasChatAI } from '@/lib/ai';
+import { ProviderError, agentDisponible, fournisseursChat, hasChatAI } from '@/lib/ai';
 import { executerAgent } from '@/lib/agent/boucle';
 import { espacePourDemande } from '@/lib/agent/outils';
 import { dossierChoisi } from '@/lib/espace-travail';
@@ -21,7 +21,7 @@ import {
   type EnvironnementCloud,
 } from '@/lib/cloud-cosinus';
 import { corpusDisponible } from '@/lib/agent/memoire-documents';
-import { corrigerIdentite } from '@/lib/identite';
+import { corrigerIdentite, reponseCreateur } from '@/lib/identite';
 import { transcriptionLocaleDisponible } from '@/lib/transcription-locale';
 import { modifierTravail } from '@/lib/travail-serveur';
 import { contexteDuProjet } from '@/lib/travail';
@@ -41,6 +41,7 @@ export async function GET() {
   return NextResponse.json(
     {
       demo: !hasChatAI(),
+      fournisseurs: fournisseursChat(),
       agent: agentDisponible(),
       transcription: await transcriptionLocaleDisponible(),
     },
@@ -73,6 +74,14 @@ async function traiterChat(
   const a = await appelant(req);
   // Question telle que tapée : elle seule décide s'il faut naviguer ou piloter l'ordinateur.
   const questionBrute = parsed.data.messages.at(-1)?.content ?? '';
+  const fournisseur = parsed.data.fournisseur;
+  if (fournisseur && parsed.data.mode === 'sixtouch')
+    return fail(400, 'Cosinus utilise la sélection automatique du fournisseur.');
+  if (fournisseur && !fournisseursChat().includes(fournisseur))
+    return fail(
+      503,
+      `${fournisseur === 'claude' ? 'Claude' : 'OpenRouter'} est indisponible sur ce serveur.`,
+    );
   // Réglages → Votre Six : les préférences écrites par la personne précèdent sa demande (des données, pas des ordres
   // qui changeraient les règles de Six).
   if (parsed.data.preferences) {
@@ -102,6 +111,8 @@ ${dernier.content}`;
   }
   if (!a.illimite && (await depasse('messages', a.cle, limitesGratuites().messages)))
     return fail(402, MESSAGE_LIMITE.messages);
+  const identite = reponseCreateur(questionBrute);
+  if (identite) return NextResponse.json({ reponse: identite, demo: !hasChatAI() });
   // Cosinus avec une IA capable d'agir (Claude ou IA locale) : l'agent utilise ses outils et la réponse arrive en
   // flux NDJSON, une ligne par étape ({type:'etape'}), puis la fin ({type:'fin'}) ou une erreur ({type:'erreur'}).
   // Chat de l'app de bureau : une demande qui passe par le web (ouvrir un site, chercher, cliquer…) est confiée à
@@ -123,6 +134,7 @@ ${dernier.content}`;
       : undefined;
   if (
     parsed.data.mode !== 'sixtouch' &&
+    !fournisseur &&
     parsed.data.navigateur === true &&
     parsed.data.vocal !== true &&
     !process.env.VERCEL &&
@@ -306,6 +318,7 @@ ${dernier.content}`;
       parsed.data.mode,
       parsed.data.skill,
       parsed.data.vocal === true,
+      fournisseur,
     );
     return NextResponse.json({ ...resultat, usage: lireUsage(), modele: lireModele() });
   } catch (e) {

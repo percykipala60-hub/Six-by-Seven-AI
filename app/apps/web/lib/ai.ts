@@ -261,6 +261,10 @@ function chain(role: Role): Provider[] {
   return [...new Set(order)].map((id) => ALL[id]).filter((p) => p.configured(role));
 }
 
+export function fournisseursChat(): string[] {
+  return chain('redaction').map((p) => p.id);
+}
+
 export function hasChatAI(): boolean {
   return chain('redaction').length > 0;
 }
@@ -362,8 +366,9 @@ export async function callChat(
   maxTokens: number,
   premium = true,
   images?: ImageJointe[],
+  fournisseur?: 'claude' | 'openrouter',
 ): Promise<string> {
-  const providers = chain('redaction');
+  const providers = chain('redaction').filter((p) => !fournisseur || p.id === fournisseur);
   if (!providers.length) throw new ProviderError("Aucun service d'IA n'est configuré.");
   // Une réponse longue (rapport de Cosinus) prend plus de temps à écrire : le délai suit la longueur demandée
   // (environ 18 ms par jeton), sans descendre sous PROVIDER_TIMEOUT_MS. L'app attend 120 s au plus.

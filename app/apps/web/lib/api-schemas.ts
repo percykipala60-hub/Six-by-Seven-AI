@@ -61,7 +61,11 @@ export const ImageJointeSchema = z.object({
 });
 export type ImageJointe = z.infer<typeof ImageJointeSchema>;
 
+const FournisseurChatSchema = z.enum(['claude', 'openrouter']);
+export type FournisseurChat = z.infer<typeof FournisseurChatSchema>;
+
 export const ChatBodySchema = z.object({
+  fournisseur: FournisseurChatSchema.optional(),
   navigateurSession: z.string().uuid().optional(),
   projetId: z.string().uuid().optional(),
   /** Espace de la discussion : absent = Chat ; « sixtouch » = consignes d'agent de travail. */
