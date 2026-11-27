@@ -64,6 +64,7 @@ const ACTIONS = new Set([
   'fermer',
   'arreter',
   'etat',
+  'attendre',
 ]);
 const RACCOURCIS_INTERDITS = /^(ctrl\+alt\+(suppr|del)|alt\+f4\+?|win)/i;
 
@@ -112,16 +113,28 @@ function trouverApplication(liste, demandeBrute) {
   const d = ALIAS.get(d0) ?? d0;
   if (!d) throw new Error('Nom d’application manquant.');
   const motEntier = new RegExp(`(^| )${echapperRegex(d)}( |$)`);
+  const debutDeMot = new RegExp(`(^| )${echapperRegex(d)}`);
   const rang = (nom) => {
     const n = sansAccents(nom);
-    if (n === d) return 3;
-    if (n.startsWith(`${d} `)) return 2;
-    return motEntier.test(n) ? 1 : 0;
+    if (n === d) return 4;
+    if (n.startsWith(`${d} `)) return 3;
+    // « solidwork » pour « SOLIDWORKS 2025 » : début du nom, faute de frappe ou pluriel oublié.
+    if (n.startsWith(d) && d.length >= 4) return 2;
+    if (motEntier.test(n)) return 1;
+    return debutDeMot.test(n) && d.length >= 4 ? 0.5 : 0;
   };
   const notes = liste.map((a) => ({ a, r: rang(a.nom) })).filter((x) => x.r > 0);
   const meilleur = Math.max(0, ...notes.map((x) => x.r));
   const choix = notes.filter((x) => x.r === meilleur);
   if (choix.length === 1) return choix[0].a;
+  // Plusieurs noms commencent par la demande : l'application principale est celle dont le reste du nom n'est
+  // qu'un pluriel ou une année (« SOLIDWORKS 2025 » plutôt que « SOLIDWORKS 2025 Routing Library Manager »).
+  if (meilleur >= 2) {
+    const principales = choix.filter((x) =>
+      /^s?( (19|20)\d\d)?$/.test(sansAccents(x.a.nom).slice(d.length)),
+    );
+    if (principales.length === 1) return principales[0].a;
+  }
   if (!choix.length) {
     const debut = d.split(' ')[0];
     const proches = liste.filter((a) => sansAccents(a.nom).includes(debut)).slice(0, 8);
@@ -135,7 +148,7 @@ function trouverApplication(liste, demandeBrute) {
 }
 
 /**
- * @param {{ fenetre: () => import('electron').BrowserWindow | null }} ctx
+ * @param {{ fenetre: () => import('electron').BrowserWindow | null, demander?: (d: { titre: string, texte: string, garanties?: boolean }) => Promise<boolean> }} ctx
  */
 function creerOrdinateur(ctx) {
   /** @type {import('node:child_process').ChildProcess | null} */
@@ -233,7 +246,9 @@ function creerOrdinateur(ctx) {
     }
   }
 
-  async function demander(message, detail) {
+  async function demander(message, detail, garanties = false) {
+    // Fenêtre d'accord aux couleurs de Six (main.cjs) ; boîte de Windows en secours.
+    if (ctx.demander) return ctx.demander({ titre: message, texte: detail, garanties });
     const f = ctx.fenetre();
     const options = {
       type: 'question',
@@ -256,7 +271,8 @@ function creerOrdinateur(ctx) {
     surveillerArret();
     const ok = await demander(
       'Autoriser Six à contrôler cet ordinateur ?',
-      'Six pourra lire les fenêtres que tu autorises, cliquer et taper pour toi. Il te demandera l’accord pour chaque application. Il ne touche jamais aux mots de passe ni aux paiements. Arrêt immédiat : Ctrl+Alt+Échap.',
+      'Six pourra lire les fenêtres que vous autorisez, cliquer et taper pour vous.',
+      true,
     );
     if (!ok) throw new Error('Contrôle de l’ordinateur refusé par la personne.');
     accordGlobal = true;
@@ -281,7 +297,7 @@ function creerOrdinateur(ctx) {
     if (refusees.has(nom)) throw new Error(`La personne a refusé que Six utilise « ${appNom} ».`);
     const ok = await demander(
       `Autoriser Six à utiliser « ${appNom} » ?`,
-      'Il pourra lire cette fenêtre, cliquer et taper dedans.',
+      'Six pourra lire cette fenêtre, cliquer et taper dedans. Vous pouvez l’arrêter à tout moment avec Ctrl+Alt+Échap.',
     );
     if (!ok) {
       refusees.add(nom);
@@ -380,6 +396,12 @@ function creerOrdinateur(ctx) {
         ouvertesParSix.delete(cible);
         if (fenetreActive === cible) fenetreActive = null;
         return { fait: 'fermeture demandée (l’application peut proposer d’enregistrer)' };
+      }
+      // Logiciel lent à démarrer (écran de chargement) : Six attend, puis voit les fenêtres ouvertes.
+      case 'attendre': {
+        const secondes = Math.min(30, Math.max(1, Number(c.secondes) || 5));
+        await new Promise((r) => setTimeout(r, secondes * 1000));
+        return { attendu: secondes, ...(await piloter({ action: 'fenetres' })) };
       }
       case 'fenetres': {
         const { fenetres } = await envoyer({ action: 'fenetres' });

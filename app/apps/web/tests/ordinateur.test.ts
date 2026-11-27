@@ -85,6 +85,19 @@ describe('protections de l’app de bureau', () => {
     expect(trouverApplication(liste, 'chrome').id).toBe('chrome');
   });
 
+  it('SolidWorks : faute de frappe et outils annexes écartés', () => {
+    const liste = [
+      { nom: 'SOLIDWORKS 2025', id: 'sw' },
+      { nom: 'SOLIDWORKS 2025 Routing Library Manager', id: 'routing' },
+      { nom: 'SOLIDWORKS Network Monitor 2025', id: 'monitor' },
+      { nom: 'SOLIDWORKS Rx 2025', id: 'rx' },
+      { nom: 'Planificateur de tâches SOLIDWORKS 2025', id: 'plan' },
+    ];
+    expect(trouverApplication(liste, 'solidwork').id).toBe('sw');
+    expect(trouverApplication(liste, 'SolidWorks').id).toBe('sw');
+    expect(trouverApplication(liste, 'solidworks 2025').id).toBe('sw');
+  });
+
   it('les clics engageants sont laissés à la personne', () => {
     for (const nom of [
       'Envoyer',

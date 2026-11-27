@@ -8366,9 +8366,14 @@ div.seven-outils-ligne:not(.seven-outils-flottants) {
 .recents-dossier-titre svg {
   transition: transform 0.15s;
 }
+/* Chevrons comme Claude : « ⌄ » ouvert, « › » replié. */
+.recents-titre svg,
+.recents-dossier-titre svg {
+  transform: rotate(90deg);
+}
 .recents-titre[aria-expanded='false'] svg,
 .recents-dossier-titre[aria-expanded='false'] svg {
-  transform: rotate(-90deg);
+  transform: none;
 }
 .recents-liste {
   display: flex;
@@ -11221,4 +11226,84 @@ button.drawer-profile .grow .small {
 .drawer .drawer-close svg {
   width: 16px;
   height: 16px;
+}
+
+/* Demande d'accord de l'app de bureau, dans la conversation (components/AccordBureau.tsx). */
+.accord-msg {
+  align-self: stretch;
+}
+.accord-carte {
+  max-width: 520px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--card);
+}
+.accord-tete {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.95rem;
+}
+.accord-pastille {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--accent-b, #3a67b8) 18%, transparent);
+  color: var(--accent-b, #3a67b8);
+}
+.accord-texte {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.accord-garanties {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--panel2);
+  list-style: none;
+  font-size: 0.84rem;
+}
+.accord-garanties li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.accord-garanties kbd {
+  padding: 0 5px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  font: inherit;
+  font-size: 0.78rem;
+}
+.accord-boutons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+.accord-boutons button {
+  min-width: 96px;
+  height: 34px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 10px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.accord-non {
+  background: var(--panel2);
+  color: var(--ink);
+}
+.accord-oui {
+  background: var(--accent-b, #3a67b8);
+  color: #fff;
 }

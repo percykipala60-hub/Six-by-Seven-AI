@@ -110,7 +110,88 @@ const navigateur = creerNavigateur({
 });
 
 // Contrôle de l'ordinateur par l'agent de Six (accords, interdits et arrêt d'urgence : ordinateur.cjs).
-const ordinateur = creerOrdinateur({ fenetre: () => fenetre });
+const ordinateur = creerOrdinateur({ fenetre: () => fenetre, demander: demanderAccord });
+
+// ---------- Demande d'accord (accord.html) ----------
+// Fenêtre séparée aux couleurs de Six, au-dessus de l'app : la page web ne peut ni la voir ni cliquer dedans.
+/** @type {{ fenetre: BrowserWindow, resoudre: (oui: boolean) => void } | null} */
+let accord = null;
+
+/** Demandes posées dans la conversation : id → { resoudre, recu }. */
+const accordsConversation = new Map();
+let accordSuivant = 1;
+
+/**
+ * Demande l'accord de la personne, d'abord dans la conversation (message de Six avec deux boutons) ; si la page ne
+ * l'a pas affichée dans la seconde (autre écran que le Chat ou Cosinus), dans une fenêtre d'accord à part.
+ */
+function demanderAccord(demande) {
+  if (!appli) return demanderAccordFenetre(demande);
+  const id = accordSuivant++;
+  return new Promise((resoudre) => {
+    const entree = { resoudre, recu: false };
+    accordsConversation.set(id, entree);
+    appli.webContents.send('six:accord-conversation', { id, ...demande });
+    setTimeout(() => {
+      if (entree.recu || !accordsConversation.has(id)) return;
+      accordsConversation.delete(id);
+      void demanderAccordFenetre(demande).then(resoudre);
+    }, 1200);
+  });
+}
+
+/** Fenêtre d'accord à part ; résout false si elle est fermée sans réponse. */
+function demanderAccordFenetre({ titre, texte, garanties = false }) {
+  if (!fenetre) return Promise.resolve(false);
+  if (accord) accord.resoudre(false);
+  const zone = fenetre.getBounds();
+  const largeur = 460;
+  const hauteur = garanties ? 330 : 210;
+  const f = new BrowserWindow({
+    parent: fenetre,
+    modal: true,
+    x: Math.round(zone.x + (zone.width - largeur) / 2),
+    y: Math.round(zone.y + Math.max(60, (zone.height - hauteur) / 3)),
+    width: largeur,
+    height: hauteur,
+    frame: false,
+    transparent: true,
+    resizable: false,
+    movable: false,
+    minimizable: false,
+    maximizable: false,
+    skipTaskbar: true,
+    show: false,
+    hasShadow: false,
+    webPreferences: {
+      preload: path.join(__dirname, 'accord-preload.cjs'),
+      sandbox: true,
+      contextIsolation: true,
+      nodeIntegration: false,
+      webviewTag: false,
+    },
+  });
+  f.webContents.on('will-navigate', (e) => e.preventDefault());
+  f.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  return new Promise((resoudre) => {
+    let fini = false;
+    const terminer = (oui) => {
+      if (fini) return;
+      fini = true;
+      if (accord?.fenetre === f) accord = null;
+      resoudre(oui);
+      if (!f.isDestroyed()) f.close();
+    };
+    accord = { fenetre: f, resoudre: terminer };
+    f.on('closed', () => terminer(false));
+    f.webContents.once('did-finish-load', () => {
+      f.webContents.send('six:accord-demande', { titre, texte, garanties, theme });
+      f.show();
+      f.focus();
+    });
+    void f.loadFile(path.join(__dirname, 'accord.html'));
+  });
+}
 // Terminal de Cosinus : la sortie de chaque shell part vers l'app (événement six:terminal).
 const terminaux = creerTerminaux((e) => appli?.webContents.send('six:terminal', e));
 
@@ -526,6 +607,22 @@ else {
       void etatBarre();
     });
     ipcMain.handle('six:connexion', connexion);
+    // Demande d'accord dans la conversation : accusé de réception, puis réponse (seulement depuis l'app).
+    ipcMain.handle('six:accord-recu', (evenement, id) => {
+      const e = accordsConversation.get(Number(id));
+      if (e && depuisApp(evenement)) e.recu = true;
+    });
+    ipcMain.handle('six:accord-conversation', (evenement, id, oui) => {
+      const e = accordsConversation.get(Number(id));
+      if (!e || !depuisApp(evenement)) return;
+      accordsConversation.delete(Number(id));
+      e.resoudre(oui === true);
+    });
+    // Réponse de la demande d'accord : acceptée seulement depuis sa propre fenêtre.
+    ipcMain.handle('six:accord', (evenement, oui) => {
+      if (!accord || evenement.sender !== accord.fenetre.webContents) return;
+      accord.resoudre(oui === true);
+    });
     // Réglages → Application de bureau : version, lancement au démarrage, ordinateur gardé éveillé.
     ipcMain.handle('six:reglages-bureau', (evenement, c) => {
       if (!depuisApp(evenement) || !c || typeof c !== 'object') throw new Error('Origine refusée.');

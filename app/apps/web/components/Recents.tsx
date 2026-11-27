@@ -256,7 +256,7 @@ export function Recents({
                 onClick={() => basculerReplie(g.id)}
               >
                 <span>{g.nom}</span>
-                <Icon name="down" size={13} stroke={2} />
+                <Icon name="chevron" size={12} stroke={2.2} />
               </button>
               {g.id !== '-' && (
                 <button
@@ -307,7 +307,7 @@ export function Recents({
   return (
     <div className="recents" ref={racine}>
       <button type="button" className="recents-titre" aria-expanded={!replie} onClick={basculer}>
-        Récents <Icon name="down" size={13} stroke={2} />
+        Récents <Icon name="chevron" size={12} stroke={2.2} />
       </button>
       {!replie && (
         <div className="recents-liste">
@@ -329,7 +329,7 @@ export function Recents({
                 aria-expanded={voirArchives}
                 onClick={() => setVoirArchives((v) => !v)}
               >
-                Archivées ({archives.length}) <Icon name="down" size={13} stroke={2} />
+                Archivées ({archives.length}) <Icon name="chevron" size={12} stroke={2.2} />
               </button>
               {voirArchives &&
                 (filtre

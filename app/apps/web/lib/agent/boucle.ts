@@ -181,6 +181,7 @@ export const CONSIGNE_ORDINATEUR = `
   1. Page de garde : « raccourci » ctrl+e (centrer), « taper » le titre, puis l'auteur et la date du jour sur des lignes séparées ; « raccourci » ctrl+entree (saut de page) ; « raccourci » ctrl+l (aligner à gauche).
   2. Le contenu : rédige le texte complet (introduction, parties, conclusion), pas seulement un sommaire, et tape-le en un seul « taper » par grande partie.
   3. Ne tape pas toi-même « 1. », « 2. » au début des titres ou des lignes : Word numérote déjà les listes ; écris les titres sans numéro.
+- Un gros logiciel (SolidWorks, Word, Excel…) affiche d'abord un écran de chargement : « attendre » (10 à 30 secondes), puis « fenetres » pour trouver la fenêtre principale et « focaliser » ; recommence tant qu'elle n'est pas prête. N'abandonne jamais parce que l'interface n'est pas encore affichée.
 - Après un « taper », observe la fenêtre une fois pour vérifier ; ne retape jamais un texte déjà écrit. Si une action répond « délai » ou « pas de réponse », le texte s'écrit peut-être encore : observe avant de recommencer, et ne conclus jamais que la saisie est bloquée sans l'avoir vérifié.
 - Si une action échoue, lis le message d'erreur et essaie autrement (ouvrir l'application, observer de nouveau, utiliser le clavier) avant d'abandonner. Ne dis jamais qu'une application est bloquée sans avoir réellement essayé de l'ouvrir.
 - Écoute la personne : si elle te corrige, reviens sur ton action au lieu de continuer.

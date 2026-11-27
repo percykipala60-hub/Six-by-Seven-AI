@@ -177,6 +177,7 @@ export function definitionsOutils(ctx: ContexteOutils): OutilDef[] {
                   'taper',
                   'raccourci',
                   'fermer',
+                  'attendre',
                 ],
               },
               app: {
@@ -199,6 +200,10 @@ export function definitionsOutils(ctx: ContexteOutils): OutilDef[] {
               touches: {
                 type: 'string' as const,
                 description: 'Raccourci, par exemple « ctrl+s » ou « entree »',
+              },
+              secondes: {
+                type: 'number' as const,
+                description: 'Pour « attendre » : durée en secondes (1 à 30)',
               },
             },
             required: ['action'],

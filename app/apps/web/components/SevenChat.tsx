@@ -30,6 +30,7 @@ import { changerVersion, jusquA, nouvelleVersion } from '@/lib/versions';
 import { ActionsMessage } from './ActionsMessage';
 import { CarteEnvironnements, cheminDuFichier, useEtatEspace } from './ChoixEnvironnement';
 import { PlanTaches } from './PlanTaches';
+import { AccordBureau } from './AccordBureau';
 import { Logo } from './Logo';
 import { PiecesJointes } from './PiecesJointes';
 import { ArtefactPanneau, Artefacts, type ArtefactOuvert } from './Artefacts';
@@ -1941,6 +1942,8 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         })}
 
         {usageDiscussion && <CompteurJetons usage={usageDiscussion} discussion />}
+        {/* App de bureau : demande d'accord de Six (contrôler l'ordinateur, une application), avec ses boutons. */}
+        <AccordBureau />
         {enAttente && (
           <div className="seven-msg user">
             <PiecesJointes pieces={attentePieces} petit />
