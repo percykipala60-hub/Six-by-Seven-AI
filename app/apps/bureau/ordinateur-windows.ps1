@@ -169,7 +169,27 @@ function Echapper-Touches([string]$t) { return ($t -replace '([+^%~(){}\[\]])', 
 
 # Écrit devant la personne, par petits morceaux ; vérifie AVANT CHAQUE morceau que la fenêtre active est toujours
 # la fenêtre de travail (sinon arrêt immédiat : rien n'est tapé ailleurs). Renvoie le nombre de caractères écrits.
+# Texte long : collé d'un coup (presse-papiers rendu tel qu'il était ensuite). Instantané, accents intacts, et Word
+# ne renumérote pas un texte collé (« 2. 2. »). Renvoie $false si le collage n'a pas pu se faire.
+function Coller-Visible([string]$texte, [int64]$h) {
+  if (-not (Est-Devant $h)) { return $false }
+  $ancien = $null
+  try { $ancien = Get-Clipboard -Raw -ErrorAction Stop } catch { $ancien = $null }
+  try {
+    Set-Clipboard -Value ($texte -replace "`r?`n", "`r`n") -ErrorAction Stop
+    Start-Sleep -Milliseconds 80
+    [System.Windows.Forms.SendKeys]::SendWait('^v')
+    Start-Sleep -Milliseconds 400
+    return $true
+  } catch {
+    return $false
+  } finally {
+    try { if ($null -ne $ancien) { Set-Clipboard -Value $ancien } } catch { }
+  }
+}
+
 function Taper-Visible([string]$texte, [int64]$h) {
+  if ($texte.Length -gt 40 -and (Coller-Visible $texte $h)) { return $texte.Length }
   $morceau = if ($texte.Length -gt 600) { 12 } elseif ($texte.Length -gt 200) { 6 } else { 3 }
   $texte = $texte -replace "`r`n", "`n"
   for ($i = 0; $i -lt $texte.Length; $i += $morceau) {

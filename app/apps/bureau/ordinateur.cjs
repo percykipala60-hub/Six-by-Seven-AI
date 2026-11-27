@@ -197,14 +197,18 @@ function creerOrdinateur(ctx) {
     return aide;
   }
 
-  function envoyer(commande) {
+  function envoyer(commande, delai = DELAI_MS) {
     const p = demarrerAide();
     const id = suivant++;
     return new Promise((resoudre, rejeter) => {
       const minuterie = setTimeout(() => {
         attentes.delete(id);
-        rejeter(new Error('Pas de réponse de la fenêtre (délai dépassé).'));
-      }, DELAI_MS);
+        rejeter(
+          new Error(
+            'Pas de réponse de la fenêtre à temps : l’action continue peut-être. Observe la fenêtre avant de recommencer.',
+          ),
+        );
+      }, delai);
       attentes.set(id, { resoudre, rejeter, minuterie });
       p.stdin.write(`${JSON.stringify({ ...commande, id })}\n`);
     });
@@ -297,6 +301,7 @@ function creerOrdinateur(ctx) {
     return envoyer({ action: 'premier_plan' });
   }
 
+  let derniereFrappe = null; // dernier texte tapé ({ cle: fenêtre + texte, quand }) : contre les répétitions
   let derniere = null; // application de la dernière observation (les repères lui appartiennent)
   let fenetreActive = null; // fenêtre où Six travaille : remise devant la personne avant chaque action
   const ouvertesParSix = new Set(); // seules fenêtres que Six peut fermer (ouvertes par lui pendant ce lancement)
@@ -443,11 +448,25 @@ function creerOrdinateur(ctx) {
       }
       case 'taper': {
         const f = await fenetreDeTravail();
-        return envoyer({
-          action: 'taper',
-          texte: String(c.texte ?? '').slice(0, 2000),
-          fenetre: f.fenetre,
-        });
+        const texte = String(c.texte ?? '').slice(0, 8000);
+        // Le même texte, retapé dans la même fenêtre juste après : presque toujours une répétition (l'agent croit
+        // que la frappe a échoué). On refuse et on lui dit de vérifier.
+        const cle = `${f.fenetre}:${texte}`;
+        if (
+          texte.length > 20 &&
+          derniereFrappe?.cle === cle &&
+          Date.now() - derniereFrappe.quand < 5 * 60_000
+        )
+          throw new Error(
+            'Ce texte vient déjà d’être tapé dans cette fenêtre. Observe la fenêtre pour vérifier au lieu de le retaper.',
+          );
+        // Délai selon la longueur : une frappe longue n'est pas un échec (sinon l'agent retape tout).
+        const r = await envoyer(
+          { action: 'taper', texte, fenetre: f.fenetre },
+          Math.min(180_000, DELAI_MS + texte.length * 60),
+        );
+        derniereFrappe = { cle, quand: Date.now() };
+        return { ...r, caracteres: texte.length };
       }
       case 'raccourci': {
         const touches = String(c.touches || '').trim();

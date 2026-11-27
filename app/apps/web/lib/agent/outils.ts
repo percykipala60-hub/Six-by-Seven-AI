@@ -191,7 +191,11 @@ export function definitionsOutils(ctx: ContexteOutils): OutilDef[] {
                 type: 'string' as const,
                 description: 'Identifiant exact de la dernière observation',
               },
-              texte: { type: 'string' as const, description: 'Texte à saisir' },
+              texte: {
+                type: 'string' as const,
+                description:
+                  'Texte à saisir (jusqu’à 8 000 caractères en une fois : un long texte est collé d’un coup)',
+              },
               touches: {
                 type: 'string' as const,
                 description: 'Raccourci, par exemple « ctrl+s » ou « entree »',

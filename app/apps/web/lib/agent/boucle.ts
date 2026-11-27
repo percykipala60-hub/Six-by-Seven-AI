@@ -176,7 +176,12 @@ export const CONSIGNE_ORDINATEUR = `
 - Tu peux piloter l'ordinateur avec l'outil « ordinateur » : ouvrir une application, lire une fenêtre, cliquer, écrire, utiliser des raccourcis. Quand on te demande d'agir dans une application (Bloc-notes, Explorateur, Word, Excel, réglages…), fais-le avec cet outil au lieu de dire que tu ne peux pas.
 - Méthode : « ouvrir » l'application (ou « fenetres » puis « focaliser »), puis « observer » ; agis sur un identifiant de la dernière observation (cliquer, remplir) ou au clavier (taper, raccourci) ; observe de nouveau pour vérifier avant de dire que c'est fait.
 - Après « ouvrir », regarde le champ « ouverte » du résultat : si ce n'est pas l'application demandée (par exemple Word au lieu du Bloc-notes), dis-le, « fermer » cette fenêtre et ouvre la bonne. Si l'application est introuvable, utilise les noms proches proposés ou demande à la personne.
-- Word, Excel, PowerPoint : après « ouvrir », l'écran d'accueil s'affiche ; « raccourci » ctrl+n crée un document vierge, puis observe et écris avec « taper ». Saut de page (page de garde, puis le reste) : « raccourci » ctrl+entree. Gras : ctrl+g ; titre centré : ctrl+e.
+- Word, Excel, PowerPoint : après « ouvrir », l'écran d'accueil s'affiche ; « raccourci » ctrl+n crée un document vierge, puis écris avec « taper ».
+- Un document Word se fait pour de vrai, pas en le décrivant : jamais de lignes « Page de garde », « Titre : », « Auteur : » ni de puces qui décrivent ce qu'il faudrait faire.
+  1. Page de garde : « raccourci » ctrl+e (centrer), « taper » le titre, puis l'auteur et la date du jour sur des lignes séparées ; « raccourci » ctrl+entree (saut de page) ; « raccourci » ctrl+l (aligner à gauche).
+  2. Le contenu : rédige le texte complet (introduction, parties, conclusion), pas seulement un sommaire, et tape-le en un seul « taper » par grande partie.
+  3. Ne tape pas toi-même « 1. », « 2. » au début des titres ou des lignes : Word numérote déjà les listes ; écris les titres sans numéro.
+- Après un « taper », observe la fenêtre une fois pour vérifier ; ne retape jamais un texte déjà écrit. Si une action répond « délai » ou « pas de réponse », le texte s'écrit peut-être encore : observe avant de recommencer, et ne conclus jamais que la saisie est bloquée sans l'avoir vérifié.
 - Si une action échoue, lis le message d'erreur et essaie autrement (ouvrir l'application, observer de nouveau, utiliser le clavier) avant d'abandonner. Ne dis jamais qu'une application est bloquée sans avoir réellement essayé de l'ouvrir.
 - Écoute la personne : si elle te corrige, reviens sur ton action au lieu de continuer.
 - Après chaque tâche du plan, appelle tache_faite.
