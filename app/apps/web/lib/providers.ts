@@ -93,13 +93,14 @@ export async function chat(
   mode: 'chat' | 'sixtouch' = 'chat',
   skill: ChoixSkill = 'auto',
   vocal = false,
+  fournisseur?: 'claude' | 'openrouter',
 ): Promise<ChatResult> {
   const user = messages[messages.length - 1]?.content ?? '';
   const history = messages.slice(0, -1);
   if (!hasChatAI()) return { reponse: demoChat(user), demo: true };
   // Question de lieu (où se trouve…, pharmacie proche…, distance…) : Six cherche dans OpenStreetMap et l'app
   // montre la carte des lieux trouvés sous la réponse. Sinon, ou en cas d'échec, réponse habituelle.
-  if (mode === 'chat' && questionDeLieu(user) && agentDisponible()) {
+  if (!fournisseur && mode === 'chat' && questionDeLieu(user) && agentDisponible()) {
     try {
       const { repondreAvecCarte } = await import('./agent/carte');
       const r = await repondreAvecCarte({
@@ -144,12 +145,13 @@ export async function chat(
       vocal ? 300 : long ? 4500 : mode === 'sixtouch' ? 4000 : 1500,
       premium,
       images,
+      fournisseur,
     )
   ).trim();
   if (!reponse) throw new ProviderError('La réponse de Six était vide. Réessayez.');
   // Mode vocal : la réponse est lue tout de suite. La relecture (un second appel au modèle) doublerait l'attente
   // pour quelques phrases de conversation sans outil ni fichier.
-  if (vocal) return { reponse: corrigerIdentite(reponse), demo: false };
+  if (vocal || fournisseur) return { reponse: corrigerIdentite(reponse), demo: false };
   return {
     reponse: corrigerIdentite(await verifierReponse({ question: user, reponse, premium })),
     demo: false,

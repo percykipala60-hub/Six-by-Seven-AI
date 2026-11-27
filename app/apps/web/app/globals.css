@@ -2760,12 +2760,119 @@ button.avatar::after {
 .seven-jetons p {
   margin: 4px 0 0;
 }
-.seven-jetons.discussion {
-  align-self: center;
+.six-utilisation {
+  position: relative;
+  flex: none;
+  color: var(--muted);
+}
+.six-utilisation summary {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 32px;
+  border-radius: 10px;
+  list-style: none;
+  cursor: pointer;
+}
+.six-utilisation summary::-webkit-details-marker {
+  display: none;
+}
+.six-utilisation summary:hover,
+.six-utilisation[open] summary {
+  background: var(--panel2);
+  color: var(--ink);
+}
+.six-utilisation-details {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  right: 0;
+  z-index: 45;
+  width: min(250px, calc(100vw - 32px));
+  box-sizing: border-box;
+  padding: 12px;
   border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 6px 10px;
+  border-radius: 14px;
   background: var(--card);
+  color: var(--ink);
+  box-shadow: var(--sh-2);
+  font-size: 0.83rem;
+}
+.six-utilisation-details dl {
+  margin: 8px 0 0;
+}
+.six-utilisation-details dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding-block: 5px;
+}
+.six-utilisation-details dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+}
+.six-utilisation-details small,
+.six-utilisation-details p {
+  color: var(--muted);
+}
+.six-utilisation-details p {
+  margin: 8px 0 0;
+}
+.six-utilisation-saisie {
+  margin-left: auto;
+}
+.seven-sous-barre > .modele-choix {
+  margin-left: 0;
+  min-width: 0;
+}
+.modele-actif {
+  max-width: clamp(90px, 32vw, 230px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rail .six-utilisation-details {
+  bottom: 0;
+  right: auto;
+  left: calc(100% + 8px);
+}
+.drawer > .six-utilisation-panneau {
+  margin-top: auto;
+}
+.drawer > .six-utilisation-panneau + .drawer-profile-ancre {
+  margin-top: 0;
+}
+.drawer .six-utilisation-details {
+  right: auto;
+  left: 0;
+  width: min(250px, 100%);
+}
+.six-remote-commande {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px;
+  border-radius: 8px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-decoration: none;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.six-remote-commande:hover {
+  background: var(--panel2);
+  color: var(--ink);
+}
+@media (max-width: 640px) {
+  .seven-sous-barre {
+    flex-wrap: wrap;
+  }
+  .six-utilisation-saisie .six-utilisation-details {
+    position: fixed;
+    right: 12px;
+    bottom: calc(100px + env(safe-area-inset-bottom, 0px));
+  }
 }
 .seven-note-demo {
   margin: 0;
@@ -11306,4 +11413,36 @@ button.drawer-profile .grow .small {
 .accord-oui {
   background: var(--accent-b, #3a67b8);
   color: #fff;
+}
+
+/* Panneau de gauche : tout le panneau défile d'un seul tenant (pas de barre dans les Récents), avec une barre fine
+   sans flèches, comme Claude ; le compte reste collé en bas. */
+.drawer .recents {
+  flex: none;
+  min-height: auto;
+  overflow: visible;
+}
+.drawer {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--ink) 22%, transparent) transparent;
+}
+.drawer::-webkit-scrollbar {
+  width: 6px;
+}
+.drawer::-webkit-scrollbar-button {
+  display: none;
+  height: 0;
+}
+.drawer::-webkit-scrollbar-track {
+  background: transparent;
+}
+.drawer::-webkit-scrollbar-thumb {
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--ink) 22%, transparent);
+}
+.drawer-profile-ancre {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  background: inherit;
 }

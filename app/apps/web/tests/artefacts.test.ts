@@ -22,11 +22,35 @@ it('laisse les blocs incomplets dans le message sans créer de fichier', () => {
   expect(extraireArtefacts('```html\n<p>Test').artefacts).toEqual([]);
   expect(() => sansMarkdown('```html\n<p>Test')).not.toThrow();
 });
+it('récupère une page HTML brute et laisse le commentaire dans la discussion', () => {
+  const page =
+    '<!DOCTYPE html>\n<html lang="fr"><head><style>body { color: navy; }</style></head>\n<body><h1>Horizons</h1></body>\n</html>';
+  expect(extraireArtefacts(`Voici la page.\n\n${page}\n\nTu peux la télécharger.`)).toEqual({
+    texte: 'Voici la page.\n\n\n\nTu peux la télécharger.',
+    artefacts: [{ nom: 'creation-1.html', langage: 'html', contenu: page }],
+  });
+  expect(extraireArtefacts(page.slice(0, -7)).artefacts).toEqual([]);
+  expect(extraireArtefacts(`\x60\x60\x60html\n${page}`).artefacts).toEqual([]);
+});
 it('impose une politique sans réseau ni scripts avant le contenu généré', () => {
   const doc = documentApercu('<script>alert(1)</script>');
   expect(doc.indexOf('Content-Security-Policy')).toBeLessThan(doc.indexOf('<script>'));
   expect(doc).toContain("default-src 'none'");
   expect(doc).toContain("form-action 'none'");
+});
+
+it('convertit le code brut identifiable et conserve son indentation et son introduction', () => {
+  const python = 'def doubler(n):\r\n    return n * 2\r\n\r\nprint(doubler(3))';
+  expect(extraireArtefacts(`Voici le script.\r\n\r\n${python}`)).toEqual({
+    texte: 'Voici le script.',
+    artefacts: [{ nom: 'creation-1.py', langage: 'python', contenu: python }],
+  });
+  expect(extraireArtefacts('const total: number = 2;').artefacts[0]?.nom).toBe('creation-1.ts');
+  expect(extraireArtefacts('SELECT nom FROM produits;').artefacts[0]?.nom).toBe('creation-1.sql');
+  expect(extraireArtefacts('Une explication ordinaire du code.').artefacts).toEqual([]);
+  expect(
+    extraireArtefacts('\x60\x60\x60js\nconsole.log("Salut");\n\x60\x60\x60').artefacts[0]?.nom,
+  ).toBe('creation-1.js');
 });
 
 it('reconnaît le genre d’un artefact par son nom', () => {

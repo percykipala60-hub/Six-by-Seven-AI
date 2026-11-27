@@ -78,14 +78,19 @@ describe("fournisseurs d'IA", () => {
   });
 
   it('envoie la clé et le modèle OpenRouter à son propre endpoint', async () => {
-    vi.stubEnv('AI_PROVIDERS', 'openrouter');
+    vi.stubEnv('AI_PROVIDERS', 'openai,openrouter');
     vi.stubEnv('OPENROUTER_API_KEY', 'cle-routeur-test');
     expect(hasAI()).toBe(false);
     vi.stubEnv('OPENROUTER_MODEL', 'openai/modele-test');
+    vi.stubEnv('OPENAI_API_KEY', 'sk-test');
+    vi.stubEnv('OPENAI_MODEL', 'modele-automatique');
     const fetchMock = vi.fn(async (_url: string, _init: RequestInit) => okOpenAI());
     vi.stubGlobal('fetch', fetchMock);
 
-    expect(await callChat('sys', 'user', [], 100)).toBe('réponse openai');
+    expect(await callChat('sys', 'user', [], 100, true, undefined, 'openrouter')).toBe(
+      'réponse openai',
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe('https://openrouter.ai/api/v1/chat/completions');
     expect(new Headers(init.headers).get('authorization')).toBe('Bearer cle-routeur-test');
@@ -113,6 +118,28 @@ describe("fournisseurs d'IA", () => {
       { entree: 712, sortie: 5 },
       { entree: 1424, sortie: 10 },
     ]);
+  });
+
+  it('garde le modèle qui a répondu même si la relecture utilise un autre modèle', async () => {
+    vi.stubEnv('AI_PROVIDERS', 'openrouter');
+    vi.stubEnv('OPENROUTER_API_KEY', 'cle-test');
+    vi.stubEnv('OPENROUTER_MODEL', 'openai/modele-configure');
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValueOnce(
+          json({ model: 'openai/modele-reel', choices: [{ message: { content: 'réponse' } }] }),
+        )
+        .mockResolvedValueOnce(
+          json({ model: 'openai/relecture', choices: [{ message: { content: 'OK' } }] }),
+        ),
+    );
+    await mesurerJetons(async (_lire, lireModele) => {
+      await callChat('sys', 'demande', [], 100);
+      await callAI('analyse', 'sys', 'relecture', 100);
+      expect(lireModele()).toBe('openai/modele-reel');
+    });
   });
 
   it("utilise Claude en premier et envoie la clé dans l'en-tête seulement", async () => {

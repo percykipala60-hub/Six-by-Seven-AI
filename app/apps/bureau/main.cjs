@@ -17,6 +17,7 @@
  * l'app transmet à la page de Six pour terminer la connexion.
  */
 const path = require('node:path');
+const { pathToFileURL } = require('node:url');
 const { existsSync } = require('node:fs');
 const { spawn } = require('node:child_process');
 const {
@@ -683,6 +684,30 @@ else {
         properties: ['openDirectory', 'createDirectory'],
       });
       return r.canceled ? null : (r.filePaths[0] ?? null);
+    });
+    ipcMain.handle('six:ouvrir-vscode', async (evenement, dossier) => {
+      if (!depuisApp(evenement) || !fenetre) return 'indisponible';
+      const dossierSuggere =
+        typeof dossier === 'string' &&
+        path.isAbsolute(dossier) &&
+        (process.platform !== 'win32' || /^[a-z]:[\\/]/i.test(dossier))
+          ? dossier
+          : undefined;
+      try {
+        const selection = await dialog.showOpenDialog(fenetre, {
+          title: 'Ouvrir un dossier dans Visual Studio Code',
+          buttonLabel: 'Ouvrir dans VS Code',
+          defaultPath: dossierSuggere,
+          properties: ['openDirectory'],
+        });
+        if (selection.canceled || !selection.filePaths[0]) return 'annule';
+        const url = pathToFileURL(selection.filePaths[0]);
+        if (url.hostname) return 'indisponible';
+        await shell.openExternal(`vscode://file${url.pathname.replace(/\/$/, '')}/`);
+        return 'ouvert';
+      } catch {
+        return 'indisponible';
+      }
     });
     // Connexion terminée : la fenêtre revient devant le navigateur (Windows n'autorise pas toujours un simple focus).
     ipcMain.handle('six:premier-plan', (evenement) => {

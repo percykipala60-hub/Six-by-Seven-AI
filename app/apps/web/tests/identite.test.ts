@@ -1,7 +1,21 @@
 import { describe, expect, it } from 'vitest';
-import { corrigerIdentite } from '@/lib/identite';
+import { corrigerIdentite, reponseCreateur } from '@/lib/identite';
 
 describe('identité de Six', () => {
+  it('attribue la création de Six à Seven.AI', () => {
+    expect(reponseCreateur("qui t'a crée")).toBe(
+      'Je suis Six, un assistant développé par Seven.AI.',
+    );
+    expect(reponseCreateur('Qui a créé Anthropic ?')).toBeUndefined();
+    expect(corrigerIdentite('Je suis Six, l’assistant de l’app Six, créée par Anthropic.')).toBe(
+      'Je suis Six, l’assistant de l’app Six, créée par Seven.AI.',
+    );
+  });
+
+  it('préserve la mise en forme du code', () => {
+    const code = '<html>\n  <body>Bonjour</body>\n</html>';
+    expect(corrigerIdentite(code)).toBe(code);
+  });
   it('retire les dénégations fausses sur le modèle utilisé', () => {
     expect(
       corrigerIdentite(

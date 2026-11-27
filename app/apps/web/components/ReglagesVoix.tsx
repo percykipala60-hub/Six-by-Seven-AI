@@ -3,7 +3,13 @@
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Icon } from './Icon';
 import { lireAvecElevenLabs } from '@/lib/lecture-elevenlabs';
-import { trouverVoixElevenLabs, VOIX_ELEVENLABS } from '@/lib/voix-elevenlabs';
+import { estLangueVoix } from '@/lib/langues-voix';
+import {
+  trouverVoixElevenLabs,
+  VOIX_ELEVENLABS,
+  VOIX_ELEVENLABS_AUTO,
+  voixElevenLabsPourLecture,
+} from '@/lib/voix-elevenlabs';
 import {
   LANGUES_VOIX,
   VITESSES,
@@ -93,7 +99,9 @@ export function ReglagesVoix() {
   };
   const disponibles = voixPourLangue(voix, p.langue);
   const voixDistantes = elevenlabs ? VOIX_ELEVENLABS.filter((v) => v.langue === p.langue) : [];
+  const autoDistant = elevenlabs && p.langue === 'auto';
   const selection =
+    (autoDistant && p.voix === VOIX_ELEVENLABS_AUTO) ||
     voixDistantes.some((v) => v.selection === p.voix) ||
     disponibles.some((v) => v.voiceURI === p.voix)
       ? p.voix
@@ -105,11 +113,20 @@ export function ReglagesVoix() {
     const s = window.speechSynthesis;
     s?.cancel();
     setErreurVoix('');
-    const distante = trouverVoixElevenLabs(choix);
+    const codeAppareil = bcp47('auto').split('-')[0].toLowerCase();
+    const distante =
+      choix === VOIX_ELEVENLABS_AUTO
+        ? voixElevenLabsPourLecture(choix, estLangueVoix(codeAppareil) ? codeAppareil : 'fr')
+        : trouverVoixElevenLabs(choix);
     if (distante) {
       const ctl = new AbortController();
       apercu.current = ctl;
-      void lireAvecElevenLabs(texteEssaiVoix(distante.langue), choix, p.vitesse, ctl.signal)
+      void lireAvecElevenLabs(
+        texteEssaiVoix(distante.langue),
+        distante.selection,
+        p.vitesse,
+        ctl.signal,
+      )
         .catch((e) => {
           if (!ctl.signal.aborted)
             setErreurVoix(e instanceof Error ? e.message : 'Aperçu indisponible.');
@@ -157,7 +174,10 @@ export function ReglagesVoix() {
             ))}
           </select>
         </Rangee>
-        <Rangee titre="Langue" sous="Dictée et lecture des réponses">
+        <Rangee
+          titre="Langue"
+          sous="En détection automatique, Six adapte sa voix à chaque phrase reconnue par son moteur."
+        >
           <select
             className="select voix-select"
             value={p.langue}
@@ -168,7 +188,13 @@ export function ReglagesVoix() {
               const prevue = elevenlabs
                 ? VOIX_ELEVENLABS.find((v) => v.langue === langue)
                 : undefined;
-              changer({ langue, voix: prevue?.selection ?? '' });
+              changer({
+                langue,
+                voix:
+                  elevenlabs && langue === 'auto'
+                    ? VOIX_ELEVENLABS_AUTO
+                    : (prevue?.selection ?? ''),
+              });
             }}
           >
             {LANGUES_VOIX.map((l) => (
@@ -199,10 +225,17 @@ export function ReglagesVoix() {
               aria-label="Voix de Six"
               onChange={(e) => {
                 changer({ voix: e.target.value });
-                if (!trouverVoixElevenLabs(e.target.value)) ecouter(e.target.value);
+                if (
+                  e.target.value !== VOIX_ELEVENLABS_AUTO &&
+                  !trouverVoixElevenLabs(e.target.value)
+                )
+                  ecouter(e.target.value);
               }}
             >
               <option value="">Automatique (appareil)</option>
+              {autoDistant && (
+                <option value={VOIX_ELEVENLABS_AUTO}>Voix adaptée (ElevenLabs)</option>
+              )}
               {voixDistantes.map((v) => (
                 <option key={v.selection} value={v.selection}>
                   {v.nom}
@@ -215,7 +248,7 @@ export function ReglagesVoix() {
               ))}
             </select>
           </div>
-          {trouverVoixElevenLabs(selection) && (
+          {(selection === VOIX_ELEVENLABS_AUTO || trouverVoixElevenLabs(selection)) && (
             <p className="muted small">Le texte lu est envoyé à ElevenLabs pour générer l’audio.</p>
           )}
           {erreurVoix && (

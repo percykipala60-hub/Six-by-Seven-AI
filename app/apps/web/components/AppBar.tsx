@@ -115,12 +115,14 @@ export function AppBar({
   onNouvelle,
   chatActif,
   outils,
+  outilPanneau,
 }: {
   page: Page;
   titre?: string;
   onNouvelle?: () => void;
   /** Boutons propres à la page, à droite de la barre, avant le profil (Chat : volet d'outils). */
   outils?: ReactNode;
+  outilPanneau?: ReactNode;
   /** Chat : discussion ouverte, en relief dans la liste du menu. */
   chatActif?: string;
 }) {
@@ -359,7 +361,12 @@ export function AppBar({
         {outils}
         <Avatar />
       </header>
-      <Rail page={page} onPanneau={() => setOpen(true)} onNouvelle={onNouvelle} />
+      <Rail
+        page={page}
+        onPanneau={() => setOpen(true)}
+        onNouvelle={onNouvelle}
+        outilPanneau={outilPanneau}
+      />
       {demandeEffacer}
       <div
         className={`drawer-scrim${open ? ' open' : ''}`}
@@ -464,8 +471,7 @@ export function AppBar({
           apresLien={apresLien}
         />
         <Suivis />
-        {/* Comme dans Claude : le compte en bas du panneau ; un clic ouvre la petite liste (paramètres, utilisation,
-            aide, applications, déconnexion) juste au-dessus. */}
+        {outilPanneau}
         <ProfilLigne />
       </div>
     </>
@@ -509,10 +515,12 @@ function Rail({
   page,
   onPanneau,
   onNouvelle,
+  outilPanneau,
 }: {
   page: Page;
   onPanneau: () => void;
   onNouvelle?: () => void;
+  outilPanneau?: ReactNode;
 }) {
   const lien = (href: string, id: Page, icon: IconName, label: string) => (
     <Link
@@ -566,6 +574,7 @@ function Rail({
       {lien('/taches', 'taches', 'file', 'Tâches planifiées')}
       <span className="rail-fin" aria-hidden="true" />
       {lien('/reglages', 'reglages', 'sliders', 'Réglages')}
+      {outilPanneau}
       <Avatar size={32} ancre="haut" />
     </nav>
   );

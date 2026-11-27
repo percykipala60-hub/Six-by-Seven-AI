@@ -105,12 +105,13 @@ export async function enregistrerPhrase(signal?: AbortSignal): Promise<Blob> {
   });
 }
 
-/** Écoute une phrase et la renvoie transcrite (texte vide si personne n'a parlé). */
-export async function ecouterPhrase(
-  transcrire: (audio: Blob) => Promise<string>,
+/** Écoute une phrase et renvoie sa transcription si quelqu’un a parlé. */
+export async function ecouterPhrase<T>(
+  transcrire: (audio: Blob, signal?: AbortSignal) => Promise<T>,
   signal?: AbortSignal,
-): Promise<string> {
+): Promise<T | null> {
   const audio = await enregistrerPhrase(signal);
-  if (!audio.size || signal?.aborted) return '';
-  return (await transcrire(audio)).trim();
+  if (!audio.size || signal?.aborted) return null;
+  const resultat = await transcrire(audio, signal);
+  return signal?.aborted ? null : resultat;
 }

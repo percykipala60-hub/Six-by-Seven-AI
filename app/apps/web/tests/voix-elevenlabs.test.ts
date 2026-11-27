@@ -1,8 +1,20 @@
 import { describe, expect, it } from 'vitest';
 import { LANGUES_VOIX } from '@/lib/langues-voix';
-import { trouverVoixElevenLabs, VOIX_ELEVENLABS } from '@/lib/voix-elevenlabs';
+import {
+  trouverVoixElevenLabs,
+  VOIX_ELEVENLABS,
+  VOIX_ELEVENLABS_AUTO,
+  voixElevenLabsPourLecture,
+} from '@/lib/voix-elevenlabs';
 
 describe('Voix ElevenLabs', () => {
+  it('suit la langue détectée à chaque prise de parole en mode automatique', () => {
+    expect(voixElevenLabsPourLecture(VOIX_ELEVENLABS_AUTO, 'fr')?.nom).toBe('Dayn');
+    expect(voixElevenLabsPourLecture(VOIX_ELEVENLABS_AUTO, 'es')?.nom).toBe('Antonio');
+    expect(voixElevenLabsPourLecture(VOIX_ELEVENLABS_AUTO, 'zh')?.nom).toBe('Evan Zhao');
+    expect(voixElevenLabsPourLecture(VOIX_ELEVENLABS_AUTO, 'auto')).toBeUndefined();
+    expect(voixElevenLabsPourLecture('elevenlabs:ava', 'es')).toBeUndefined();
+  });
   it('chaque langue parlée a au moins une voix', () => {
     for (const l of LANGUES_VOIX.filter((x) => x.id !== 'auto'))
       expect(VOIX_ELEVENLABS.some((v) => v.langue === l.id)).toBe(true);

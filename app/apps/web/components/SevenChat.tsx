@@ -5,9 +5,15 @@ import { mouvementReduit } from '@/lib/accessibilite';
 import { lireInstructions, notifierFinReponse } from '@/lib/preferences';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { AppBar } from './AppBar';
+import { UtilisationSix } from './UtilisationSix';
 import { Icon } from './Icon';
 import { BoutonPartager } from './BoutonPartager';
-import { estBureau, pontVoixBureau, transcrireSurBureau } from '@/lib/plateforme';
+import {
+  estBureau,
+  ouvrirVSCodeBureau,
+  pontVoixBureau,
+  transcrireSurBureau,
+} from '@/lib/plateforme';
 import { CarteLieux } from './CarteLieux';
 import { lireDocx, texteDeBlocs } from '@/lib/docx';
 import { NOM_TEXTE_COLLE, extraitTexte, piecesDuCollage } from '@/lib/collage';
@@ -42,7 +48,11 @@ import { ChoixModele } from './ChoixModele';
 import { ecouterPhrase } from '@/lib/ecoute';
 import { estLangueVoix, type LangueVoix } from '@/lib/langues-voix';
 import { lireAvecElevenLabs } from '@/lib/lecture-elevenlabs';
-import { trouverVoixElevenLabs } from '@/lib/voix-elevenlabs';
+import {
+  trouverVoixElevenLabs,
+  VOIX_ELEVENLABS_AUTO,
+  voixElevenLabsPourLecture,
+} from '@/lib/voix-elevenlabs';
 import {
   audioMicro,
   bcp47,
@@ -66,7 +76,12 @@ import {
 import { memoireActive } from '@/lib/memoire';
 import { entetesCompte } from '@/lib/premium-client';
 import { executerOrdinateur, pontOrdinateur } from '@/lib/ordinateur-client';
-import { CHAT_MAX_BYTES, CHAT_MAX_CONTENT, CHAT_MAX_MESSAGES } from '@/lib/api-schemas';
+import {
+  CHAT_MAX_BYTES,
+  CHAT_MAX_CONTENT,
+  CHAT_MAX_MESSAGES,
+  type FournisseurChat,
+} from '@/lib/api-schemas';
 import { detecterOrdre } from '@/lib/seven-ordres';
 import type { ChatMessage, ChatResult, PieceAffichee, UsageJetons } from '@/lib/types';
 import {
@@ -139,19 +154,10 @@ function TexteProgressif({ texte, onPas }: { texte: string; onPas?: () => void }
 
 const formatJetons = new Intl.NumberFormat('fr-FR');
 
-function CompteurJetons({
-  usage,
-  discussion = false,
-}: {
-  usage: UsageJetons;
-  discussion?: boolean;
-}) {
+function CompteurJetons({ usage }: { usage: UsageJetons }) {
   return (
-    <details className={`seven-jetons${discussion ? ' discussion' : ''}`}>
-      <summary>
-        {discussion ? 'Total des réponses affichées · ' : ''}
-        {formatJetons.format(usage.entree + usage.sortie)} jetons
-      </summary>
+    <details className="seven-jetons">
+      <summary>{formatJetons.format(usage.entree + usage.sortie)} jetons</summary>
       <p>
         {formatJetons.format(usage.entree)} en entrée · {formatJetons.format(usage.sortie)} en
         sortie
@@ -327,6 +333,8 @@ function joindreTexte(avant: string, dit: string): string {
 export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   const router = useRouter();
   const sixtouch = mode === 'sixtouch';
+  const [fournisseur, setFournisseur] = useState<FournisseurChat | 'auto'>('auto');
+  const [fournisseurs, setFournisseurs] = useState<string[]>([]);
   const [skill, setSkill] = useState<ChoixSkill>('auto');
   // Skill de départ : celui choisi dans Réglages → Skills (lu après le premier rendu, comme tout réglage local).
   useEffect(() => setSkill(lireSkillDefaut()), []);
@@ -525,7 +533,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       return new Response(body, { status: response.status, headers: response.headers });
     } catch (error) {
       if (controleur.signal.aborted)
-        throw new Error('Demande interrompue ou délai dépassé. Tu peux réessayer.', {
+        throw new Error('Demande interrompue ou délai dépassé. Vous pouvez réessayer.', {
           cause: error,
         });
       throw error;
@@ -581,6 +589,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
             texte?: string;
             reponse?: string;
             usage?: UsageJetons;
+            modele?: string;
             etapes?: string[];
             fichiers?: string[];
             error?: string;
@@ -610,6 +619,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
               reponse: o.reponse ?? '',
               demo: false,
               usage: o.usage,
+              modele: o.modele,
               etapes: o.etapes,
               fichiers: o.fichiers,
               plan: o.plan,
@@ -619,7 +629,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       throw new Error('La tâche s’est interrompue avant la fin. Réessayez.');
     } catch (error) {
       if (controleur.signal.aborted)
-        throw new Error('Demande interrompue ou délai dépassé. Tu peux réessayer.', {
+        throw new Error('Demande interrompue ou délai dépassé. Vous pouvez réessayer.', {
           cause: error,
         });
       throw error;
@@ -667,7 +677,6 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   const enDirect = useRef<AbortController | null>(null);
   const finirLecture = useRef<(() => void) | null>(null);
   const lectureElevenLabs = useRef<AbortController | null>(null);
-  const langueDetectee = useRef<LangueVoix | undefined>(undefined);
   useEffect(
     () => () => {
       appelActif.current = false;
@@ -788,7 +797,8 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     void fetch('/api/chat', { signal: controleur.signal })
       .then(async (res) => {
         if (!res.ok) throw new Error('État indisponible');
-        const etat = (await res.json()) as { transcription: boolean };
+        const etat = (await res.json()) as { transcription: boolean; fournisseurs?: string[] };
+        setFournisseurs(etat.fournisseurs ?? []);
         setTranscription(await (pontVoixBureau()?.disponible() ?? etat.transcription));
       })
       .catch(() => {
@@ -990,14 +1000,23 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       );
       // Cosinus : le serveur donne à Six ses consignes d'agent de travail.
       // Chat de l'app de bureau : le navigateur interne existe, Six peut le piloter pour une demande web.
-      const navigateurChat = !sixtouch && estBureau() && !appelActif.current;
+      const fournisseurExplicite = !sixtouch && fournisseur !== 'auto' ? fournisseur : undefined;
+      const navigateurChat =
+        !sixtouch && !fournisseurExplicite && estBureau() && !appelActif.current;
       // App de bureau : Six peut aussi piloter l'ordinateur (accords demandés par l'app, application par application).
       const ordinateurDispo = estBureau() && Boolean(pontOrdinateur()) && !appelActif.current;
       const preferences = lireInstructions();
       const corps =
-        images.length || sixtouch || projetId || navigateurChat || appelActif.current || preferences
+        images.length ||
+        sixtouch ||
+        projetId ||
+        navigateurChat ||
+        appelActif.current ||
+        preferences ||
+        fournisseurExplicite
           ? JSON.stringify({
               ...(JSON.parse(texteSeul) as object),
+              ...(fournisseurExplicite ? { fournisseur: fournisseurExplicite } : {}),
               ...(preferences ? { preferences } : {}),
               ...(ordinateurDispo ? { ordinateur: true } : {}),
               ...(!sixtouch && projetId ? { projetId } : {}),
@@ -1059,6 +1078,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         date: Date.now(),
         content: data.reponse,
         ...(data.usage ? { usage: data.usage } : {}),
+        ...(typeof data.modele === 'string' && data.modele ? { modele: data.modele } : {}),
         ...(data.etapes?.length ? { etapes: data.etapes } : {}),
         ...(data.fichiers?.length ? { fichiers: data.fichiers } : {}),
         ...(data.lieux?.length ? { lieux: data.lieux } : {}),
@@ -1132,19 +1152,19 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     setAppel(false);
   }
 
-  async function lireReponse(texte: string): Promise<void> {
+  async function lireReponse(texte: string, langueDetectee?: LangueVoix): Promise<void> {
     const synthese = window.speechSynthesis;
     const prefs = lirePreferencesVoix();
-    const langue = prefs.langue === 'auto' ? (langueDetectee.current ?? 'auto') : prefs.langue;
-    const distante = trouverVoixElevenLabs(prefs.voix);
-    if (distante?.langue === langue) {
+    const langue = prefs.langue === 'auto' ? (langueDetectee ?? 'auto') : prefs.langue;
+    const distante = voixElevenLabsPourLecture(prefs.voix, langue);
+    if (distante) {
       if (!appelActif.current) return;
       const aLire = texteALire(texte);
       if (!aLire) return;
       const ctl = new AbortController();
       lectureElevenLabs.current = ctl;
       try {
-        await lireAvecElevenLabs(aLire, prefs.voix, prefs.vitesse, ctl.signal);
+        await lireAvecElevenLabs(aLire, distante.selection, prefs.vitesse, ctl.signal);
       } catch (e) {
         if (!ctl.signal.aborted)
           throw new Error(
@@ -1156,6 +1176,8 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       }
       return;
     }
+    if (!synthese || typeof SpeechSynthesisUtterance === 'undefined')
+      throw new Error('Six ne peut pas lire sa réponse à voix haute sur cet appareil.');
     const voixChoisie = choisirVoix(await chargerVoix(), { ...prefs, langue });
     if (!appelActif.current) return;
     // Par passages : un seul bloc très long se coupe sur certains appareils, phrase par phrase la voix hache.
@@ -1197,7 +1219,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   }
 
   /** Transcription d'une phrase du mode vocal par le serveur de Six. */
-  async function transcrireAudio(audio: Blob): Promise<string> {
+  async function transcrireAudio(audio: Blob, signal?: AbortSignal) {
     const langue = lirePreferencesVoix().langue;
     const form = new FormData();
     form.append('audio', audio);
@@ -1208,6 +1230,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         method: 'POST',
         headers: await entetesCompte(),
         body: form,
+        signal,
       }));
     const data = (await res.json().catch(() => ({}))) as {
       texte?: string;
@@ -1216,32 +1239,36 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     };
     if (!res.ok)
       throw new Error(data.error ?? 'Six n’a pas pu transcrire votre phrase. Réessayez.');
-    langueDetectee.current =
-      estLangueVoix(data.langue) && data.langue !== 'auto' ? data.langue : undefined;
-    return data.texte ?? '';
+    return {
+      texte: typeof data.texte === 'string' ? data.texte.trim() : '',
+      langue: estLangueVoix(data.langue) && data.langue !== 'auto' ? data.langue : undefined,
+    };
   }
 
   async function lancerAppel() {
     if (appelActif.current) return raccrocher();
     if (occupe || enregistre) return;
+    const prefs = lirePreferencesVoix();
     if (
-      !trouverVoixElevenLabs(lirePreferencesVoix().voix) &&
+      prefs.voix !== VOIX_ELEVENLABS_AUTO &&
+      !trouverVoixElevenLabs(prefs.voix) &&
       (!('speechSynthesis' in window) || typeof SpeechSynthesisUtterance === 'undefined')
     ) {
       setErreur('La lecture vocale n’est pas disponible sur cet appareil.');
       return;
     }
-    // App de bureau (pas de reconnaissance vocale Google dans Electron) ou navigateur sans dictée : on enregistre
-    // la phrase et le serveur de Six la transcrit (moteur vocal local ou service vocal).
     const bureau = estBureau();
-    const parMoteur = bureau || ((await plateforme()) === 'web' && !dicteeDisponible());
-    if (parMoteur) {
-      const pret = await (pontVoixBureau()?.disponible() ??
+    const moteurRequis = bureau || ((await plateforme()) === 'web' && !dicteeDisponible());
+    let parMoteur = false;
+    if (moteurRequis || prefs.langue === 'auto') {
+      const pret = await (
+        pontVoixBureau()?.disponible() ??
         fetch('/api/chat', { cache: 'no-store' })
           .then((r) => (r.ok ? (r.json() as Promise<{ transcription?: boolean }>) : null))
           .then((d) => d?.transcription === true)
-          .catch(() => false));
-      if (!pret) {
+      ).catch(() => false);
+      parMoteur = pret;
+      if (moteurRequis && !pret) {
         setErreur(
           bureau
             ? 'Le mode vocal est indisponible pour le moment.'
@@ -1252,7 +1279,6 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     }
     setErreur('');
     appelActif.current = true;
-    langueDetectee.current = undefined;
     setAppel(true);
     // Le modèle se charge pendant que la personne dit sa première phrase (sinon la première réponse attend).
     void fetch('/api/chat/prechauffer', { method: 'POST' }).catch(() => {});
@@ -1268,9 +1294,12 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         }
         setPhaseAppel('ecoute');
         let phrase: string;
+        let langueDetectee: LangueVoix | undefined;
         if (parMoteur) {
           ecouteAppel.current = new AbortController();
-          phrase = await ecouterPhrase(transcrireAudio, ecouteAppel.current.signal);
+          const resultat = await ecouterPhrase(transcrireAudio, ecouteAppel.current.signal);
+          phrase = resultat?.texte ?? '';
+          langueDetectee = resultat?.langue;
           if (!appelActif.current) break;
           // Personne n'a parlé, ou Whisper a « entendu » une phrase fantôme sur un bruit : Six continue d'écouter.
           if (!phrase || estPhraseFantome(phrase)) continue;
@@ -1283,7 +1312,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         const reponse = await envoyerPendantAppel.current(phrase);
         if (!appelActif.current || !reponse) break;
         setPhaseAppel('parle');
-        await lireReponse(reponse);
+        await lireReponse(reponse, langueDetectee);
         // Petite pause avant de réécouter : le micro ne doit pas capter la fin de la voix de Six.
         await new Promise((r) => setTimeout(r, 450));
       }
@@ -1700,6 +1729,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       sortie: (total?.sortie ?? 0) + message.usage.sortie,
     };
   }, undefined);
+  const modeleActif = messages.findLast((message) => message.role === 'assistant')?.modele;
   const partage = (
     <BoutonPartager titre={titreDe(messages)} messages={messages} onErreur={setErreur} />
   );
@@ -1707,6 +1737,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   return (
     <main className="screen seven-screen">
       <AppBar
+        outilPanneau={<UtilisationSix usage={usageDiscussion} emplacement="panneau" />}
         page={sixtouch ? 'sixtouch' : 'seven-ai'}
         titre={sixtouch ? 'Cosinus' : 'Chat'}
         chatActif={messages.length ? chatId.current : undefined}
@@ -1941,7 +1972,6 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
           );
         })}
 
-        {usageDiscussion && <CompteurJetons usage={usageDiscussion} discussion />}
         {/* App de bureau : demande d'accord de Six (contrôler l'ordinateur, une application), avec ses boutons. */}
         <AccordBureau />
         {enAttente && (
@@ -2212,11 +2242,47 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
           )}
         </div>
         <div className="seven-sous-barre">
+          {sixtouch && bureau && !enCloud && ouvrirVSCodeBureau() && (
+            <button
+              type="button"
+              className="six-remote-commande"
+              onClick={async () => {
+                const ouvrir = ouvrirVSCodeBureau();
+                if (!ouvrir) return;
+                try {
+                  if ((await ouvrir(dossier)) !== 'indisponible') return;
+                } catch {
+                  /* Le lancement du protocole est indisponible. */
+                }
+                setErreur(
+                  'Impossible d’ouvrir le dossier. Vérifiez que Visual Studio Code est installé.',
+                );
+              }}
+            >
+              <Icon name="ordinateur" size={16} /> Ouvrir dans VS Code
+            </button>
+          )}
+          {sixtouch && (
+            <a
+              className="six-remote-commande"
+              href="https://mcp.desktopcommander.app/"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Icon name="ordinateur" size={16} /> Remote Desktop Commander
+              <Icon name="externe" size={13} />
+            </a>
+          )}
+          <UtilisationSix usage={usageDiscussion} emplacement="saisie" />
           <ChoixModele
             skill={skill}
             onSkill={setSkill}
             avecSkills={sixtouch}
             desactive={enregistre || appel}
+            modeleActif={modeleActif}
+            fournisseur={fournisseur}
+            fournisseurs={fournisseurs}
+            onFournisseur={setFournisseur}
           />
         </div>
         <p className="seven-mention">Six peut se tromper : vérifie les informations importantes.</p>

@@ -17,6 +17,18 @@ type PontVoix = {
   ) => Promise<{ texte: string; langue?: string } | null>;
 };
 
+export function ouvrirVSCodeBureau() {
+  return typeof window !== 'undefined'
+    ? (
+        window as Window & {
+          sixBureau?: {
+            ouvrirVSCode?: (dossier: string) => Promise<'ouvert' | 'annule' | 'indisponible'>;
+          };
+        }
+      ).sixBureau?.ouvrirVSCode
+    : undefined;
+}
+
 export function pontVoixBureau(): PontVoix | undefined {
   return typeof window !== 'undefined'
     ? (window as Window & { sixBureau?: { voix?: PontVoix } }).sixBureau?.voix
