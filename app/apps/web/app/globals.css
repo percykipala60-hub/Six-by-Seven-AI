@@ -2847,23 +2847,6 @@ button.avatar::after {
   left: 0;
   width: min(250px, 100%);
 }
-.six-remote-commande {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 6px;
-  border-radius: 8px;
-  color: var(--muted);
-  font-size: 0.78rem;
-  text-decoration: none;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-}
-.six-remote-commande:hover {
-  background: var(--panel2);
-  color: var(--ink);
-}
 @media (max-width: 640px) {
   .seven-sous-barre {
     flex-wrap: wrap;
@@ -8473,9 +8456,14 @@ div.seven-outils-ligne:not(.seven-outils-flottants) {
 .recents-dossier-titre svg {
   transition: transform 0.15s;
 }
+/* Chevrons comme Claude : « ⌄ » ouvert, « › » replié. */
+.recents-titre svg,
+.recents-dossier-titre svg {
+  transform: rotate(90deg);
+}
 .recents-titre[aria-expanded='false'] svg,
 .recents-dossier-titre[aria-expanded='false'] svg {
-  transform: rotate(-90deg);
+  transform: none;
 }
 .recents-liste {
   display: flex;
@@ -11258,4 +11246,250 @@ button.drawer-profile .grow .small {
 }
 .lg-accordeon li + li {
   margin-top: 6px;
+}
+
+/* Panneau de gauche, compact comme la barre latérale de Claude : texte 13 px, poids normal, lignes de 30 px.
+   (html … pour passer devant les règles du panneau ouvert sur grand écran.) */
+html .drawer .drawer-item,
+html[data-panneau] .drawer .drawer-item {
+  gap: 10px;
+  min-height: 30px;
+  padding: 0 9px;
+  border-radius: 7px;
+  font-size: 0.8125rem;
+  font-weight: 400;
+}
+.drawer .drawer-item svg {
+  width: 16px;
+  height: 16px;
+}
+html .drawer .drawer-item[aria-current='page'],
+html[data-panneau] .drawer .drawer-item[aria-current='page'] {
+  font-weight: 500;
+}
+.drawer .drawer-new {
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+.drawer .drawer-head {
+  padding-bottom: 8px;
+}
+.drawer .drawer-head .word {
+  font-size: 0.92rem;
+}
+.drawer .drawer-head .logo,
+.drawer .drawer-head svg:first-child,
+.drawer .drawer-head img {
+  width: 26px;
+  height: 26px;
+}
+.drawer .recents-titre,
+.drawer .recents-dossier-titre {
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+.drawer .recent,
+.drawer .recent-lien {
+  font-size: 0.78rem;
+}
+.drawer .recents-vide {
+  font-size: 0.72rem;
+}
+button.drawer-profile b {
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+button.drawer-profile .grow .small {
+  font-size: 0.7rem;
+}
+@media (max-width: 767px) {
+  /* Téléphone : un peu plus grand pour le doigt. */
+  html .drawer .drawer-item {
+    min-height: 40px;
+    font-size: 0.875rem;
+  }
+}
+.drawer .drawer-close {
+  width: 30px;
+  height: 30px;
+}
+.drawer .drawer-close svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Demande d'accord de l'app de bureau, dans la conversation (components/AccordBureau.tsx). */
+.accord-msg {
+  align-self: stretch;
+}
+.accord-carte {
+  max-width: 520px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--card);
+}
+.accord-tete {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.95rem;
+}
+.accord-pastille {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--accent-b, #3a67b8) 18%, transparent);
+  color: var(--accent-b, #3a67b8);
+}
+.accord-texte {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+.accord-garanties {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--panel2);
+  list-style: none;
+  font-size: 0.84rem;
+}
+.accord-garanties li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.accord-garanties kbd {
+  padding: 0 5px;
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  font: inherit;
+  font-size: 0.78rem;
+}
+.accord-boutons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+.accord-boutons button {
+  min-width: 96px;
+  height: 34px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 10px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.accord-non {
+  background: var(--panel2);
+  color: var(--ink);
+}
+.accord-oui {
+  background: var(--accent-b, #3a67b8);
+  color: #fff;
+}
+
+/* Panneau de gauche : tout le panneau défile d'un seul tenant (pas de barre dans les Récents), avec une barre fine
+   sans flèches, comme Claude ; le compte reste collé en bas. */
+.drawer .recents {
+  flex: none;
+  min-height: auto;
+  overflow: visible;
+}
+.drawer {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--ink) 22%, transparent) transparent;
+}
+.drawer::-webkit-scrollbar {
+  width: 6px;
+}
+.drawer::-webkit-scrollbar-button {
+  display: none;
+  height: 0;
+}
+.drawer::-webkit-scrollbar-track {
+  background: transparent;
+}
+.drawer::-webkit-scrollbar-thumb {
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--ink) 22%, transparent);
+}
+.drawer-profile-ancre {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  background: inherit;
+}
+
+/* Groupes des Récents comme Claude : options « ≡ » et « + » au survol, menus à cases et valeurs à droite. */
+.recents-dossier-tete {
+  border-radius: 8px;
+}
+.recents-dossier-tete:hover,
+.recents-dossier-tete:focus-within {
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
+}
+.recents-dossier-nouvelle {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.recents-dossier-nouvelle:hover {
+  background: color-mix(in srgb, var(--ink) 9%, transparent);
+  color: var(--ink);
+}
+.recents-dossier-nouvelle[aria-expanded='true'] {
+  opacity: 1;
+  background: color-mix(in srgb, var(--ink) 9%, transparent);
+}
+.recent-menu-valeur {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.82em;
+}
+.recent-menu button[role='menuitemcheckbox'] {
+  justify-content: flex-start;
+  gap: 10px;
+}
+.recent-menu-case {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 15px;
+  height: 15px;
+  border: 1.5px solid color-mix(in srgb, var(--ink) 35%, transparent);
+  border-radius: 4px;
+}
+.recent-menu-case[data-coche] {
+  border-color: var(--accent-b, #3a67b8);
+  background: var(--accent-b, #3a67b8);
+  color: #fff;
+}
+.recent-lien {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.recent-titre {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.recent-meta {
+  flex: none;
+  color: var(--muted);
+  font-size: 0.72rem;
 }

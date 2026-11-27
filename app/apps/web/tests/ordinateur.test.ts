@@ -64,10 +64,39 @@ describe('protections de l’app de bureau', () => {
     loaded: true,
     exports: { dialog: {}, desktopCapturer: {}, globalShortcut: {} },
   } as unknown as NodeJS.Module;
-  const { ENGAGEANT, INTERDITES } = exiger('../bureau/ordinateur.cjs') as {
+  const { ENGAGEANT, INTERDITES, trouverApplication } = exiger('../bureau/ordinateur.cjs') as {
     ENGAGEANT: RegExp;
     INTERDITES: Set<string>;
+    trouverApplication: (liste: { nom: string; id: string }[], demande: string) => { id: string };
   };
+
+  it('les noms courants trouvent la bonne application', () => {
+    const liste = [
+      { nom: 'Word', id: 'word' },
+      { nom: 'Excel', id: 'excel' },
+      { nom: 'PowerPoint', id: 'ppt' },
+      { nom: 'Bloc-notes', id: 'notepad' },
+      { nom: 'Google Chrome', id: 'chrome' },
+    ];
+    expect(trouverApplication(liste, 'Microsoft Word').id).toBe('word');
+    expect(trouverApplication(liste, 'word').id).toBe('word');
+    expect(trouverApplication(liste, 'Power Point').id).toBe('ppt');
+    expect(trouverApplication(liste, 'bloc note').id).toBe('notepad');
+    expect(trouverApplication(liste, 'chrome').id).toBe('chrome');
+  });
+
+  it('SolidWorks : faute de frappe et outils annexes écartés', () => {
+    const liste = [
+      { nom: 'SOLIDWORKS 2025', id: 'sw' },
+      { nom: 'SOLIDWORKS 2025 Routing Library Manager', id: 'routing' },
+      { nom: 'SOLIDWORKS Network Monitor 2025', id: 'monitor' },
+      { nom: 'SOLIDWORKS Rx 2025', id: 'rx' },
+      { nom: 'Planificateur de tâches SOLIDWORKS 2025', id: 'plan' },
+    ];
+    expect(trouverApplication(liste, 'solidwork').id).toBe('sw');
+    expect(trouverApplication(liste, 'SolidWorks').id).toBe('sw');
+    expect(trouverApplication(liste, 'solidworks 2025').id).toBe('sw');
+  });
 
   it('les clics engageants sont laissés à la personne', () => {
     for (const nom of [

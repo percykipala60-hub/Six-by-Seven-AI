@@ -250,6 +250,13 @@ export function SelecteurEnvironnement({
 }) {
   const [ouvert, setOuvert] = useState(false);
   const [creation, setCreation] = useState(false);
+  useEffect(() => {
+    const u = new URL(window.location.href);
+    if (u.searchParams.get('nouvel') !== '1') return;
+    setCreation(true);
+    u.searchParams.delete('nouvel');
+    window.history.replaceState(null, '', u.pathname + u.search);
+  }, []);
   const zone = useFermeture(ouvert, () => setOuvert(false));
   return (
     <div className="env-selecteur" ref={zone}>
@@ -314,6 +321,13 @@ export function CarteEnvironnements({
   const envs = useEnvironnements();
   const [ouvert, setOuvert] = useState(false);
   const [creation, setCreation] = useState(false);
+  useEffect(() => {
+    const u = new URL(window.location.href);
+    if (u.searchParams.get('nouvel') !== '1') return;
+    setCreation(true);
+    u.searchParams.delete('nouvel');
+    window.history.replaceState(null, '', u.pathname + u.search);
+  }, []);
   const zone = useFermeture(ouvert, () => setOuvert(false));
   return (
     <div className="env-carte" ref={zone}>
@@ -390,6 +404,17 @@ export function NouvelEnvironnement({
   onFermer: () => void;
 }) {
   const [onglet, setOnglet] = useState<Onglet>('local');
+  // Six en ligne ne peut pas lire les dossiers de l'ordinateur : la fenêtre s'ouvre alors sur le Cloud.
+  const espaceLocal = useEtatEspace(true).local;
+  const [lu, setLu] = useState(false);
+  useEffect(() => {
+    if (lu) return;
+    const t = setTimeout(() => {
+      setLu(true);
+      if (!espaceLocal) setOnglet((o) => (o === 'local' ? 'cloud' : o));
+    }, 400);
+    return () => clearTimeout(t);
+  }, [espaceLocal, lu]);
   const [nom, setNom] = useState('');
   const [dossiers, setDossiers] = useState<string[]>([]);
   const [ajout, setAjout] = useState(false);
@@ -552,6 +577,12 @@ export function NouvelEnvironnement({
               </p>
             )}
           </>
+        ) : !espaceLocal ? (
+          <p className="env-note">
+            Les dossiers de cet ordinateur ne sont utilisables que lorsque Six tourne sur cet
+            ordinateur. Avec Six en ligne, choisissez « Cloud » : Six y travaille avec vos fichiers
+            ou un dépôt GitHub.
+          </p>
         ) : (
           <>
             <label className="env-champ">
@@ -678,7 +709,9 @@ export function NouvelEnvironnement({
             type="button"
             className="principal"
             disabled={
-              attente || onglet === 'distant' || (onglet === 'local' && dossiers.length === 0)
+              attente ||
+              onglet === 'distant' ||
+              (onglet === 'local' && (!espaceLocal || dossiers.length === 0))
             }
             onClick={() =>
               onglet === 'cloud' ? void creerCloud() : onCree(creerEnvironnement(nom, dossiers))

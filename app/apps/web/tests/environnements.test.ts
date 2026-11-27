@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  groupeVisible,
   SANS_DOSSIER,
   dossiersConnus,
   grouperParEnvironnement,
@@ -69,5 +70,20 @@ describe('environnements de Cosinus (un nom, un ou plusieurs dossiers)', () => {
         env('b', 'B', ['c:\\x\\', 'C:\\Z'], 1),
       ]),
     ).toEqual(['C:\\X', 'C:\\Y', 'C:\\Z']);
+  });
+});
+
+describe('retirer un environnement de la liste', () => {
+  it('caché après le retrait, revient avec une discussion plus récente', () => {
+    const masques = { 'd:C:/Travail': 1000 };
+    const g = { id: 'd:C:/Travail', dossier: 'C:/Travail', chats: [{ maj: 900 }] };
+    expect(groupeVisible(g, masques)).toBe(false);
+    expect(groupeVisible({ ...g, chats: [{ maj: 900 }, { maj: 1500 }] }, masques)).toBe(true);
+    expect(groupeVisible({ id: 'autre', chats: [] }, masques)).toBe(true);
+  });
+
+  it('un environnement retiré cache aussi ses dossiers', () => {
+    const masques = { env1: 1000 };
+    expect(groupeVisible({ id: 'env1', dossier: 'C:/A', chats: [] }, masques)).toBe(false);
   });
 });

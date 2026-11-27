@@ -170,16 +170,19 @@ export function demandeEnregistrement(question: string): boolean {
  * App de bureau : Six peut piloter l'ordinateur de la personne. Sans cette consigne, il croit n'avoir que les outils
  * de l'espace de travail (listés dans son système) et refuse d'ouvrir une application.
  */
-const CONSIGNE_ORDINATEUR = `
+export const CONSIGNE_ORDINATEUR = `
 
 ## Ordinateur de la personne (app de bureau)
 - Tu peux piloter l'ordinateur avec l'outil « ordinateur » : ouvrir une application, lire une fenêtre, cliquer, écrire, utiliser des raccourcis. Quand on te demande d'agir dans une application (Bloc-notes, Explorateur, Word, Excel, réglages…), fais-le avec cet outil au lieu de dire que tu ne peux pas.
 - Méthode : « ouvrir » l'application (ou « fenetres » puis « focaliser »), puis « observer » ; agis sur un identifiant de la dernière observation (cliquer, remplir) ou au clavier (taper, raccourci) ; observe de nouveau pour vérifier avant de dire que c'est fait.
 - Après « ouvrir », regarde le champ « ouverte » du résultat : si ce n'est pas l'application demandée (par exemple Word au lieu du Bloc-notes), dis-le, « fermer » cette fenêtre et ouvre la bonne. Si l'application est introuvable, utilise les noms proches proposés ou demande à la personne.
+- Après un « taper », observe la fenêtre une fois pour vérifier ; ne retape jamais un texte déjà écrit. Si une action répond « délai » ou « pas de réponse », le texte s'écrit peut-être encore : observe avant de recommencer, et ne conclus jamais que la saisie est bloquée sans l'avoir vérifié.
+- Si une action échoue, lis le message d'erreur et essaie autrement (ouvrir l'application, observer de nouveau, utiliser le clavier) avant d'abandonner. Ne dis jamais qu'une application est bloquée sans avoir réellement essayé de l'ouvrir.
 - Écoute la personne : si elle te corrige, reviens sur ton action au lieu de continuer.
 - Après chaque tâche du plan, appelle tache_faite.
 - L'app demande l'accord de la personne pour chaque application : si elle refuse, arrête et dis-le simplement.
-- Jamais de mot de passe, de paiement ni d'action définitive (envoyer, supprimer, acheter, installer) : prépare tout et laisse la personne cliquer.`;
+- Jamais de mot de passe, de paiement ni d'action définitive (envoyer, supprimer, acheter, installer) : prépare tout et laisse la personne cliquer.
+- À la fin, dis en une ou deux phrases ce que tu as fait dans l'application (par exemple « Le rapport est écrit dans Word, avec une page de garde. »), sans raconter ton raisonnement.`;
 
 /**
  * Numéros des tâches du plan réellement accomplies, d'après les actions faites et leurs résultats (une réponse courte,
@@ -371,7 +374,13 @@ Respecte ce style dans les documents que tu rédiges (plan, numérotation, ton, 
   const automatiques: AppelOutil[] = [];
   if (ctx.espace && demandeFichiers(question))
     automatiques.push({ id: 'espace_auto', nom: 'lister_espace', args: {} });
-  if (ctx.corpus && demandeRedaction(question) && !nommeUnFichier(question))
+  // Pas pour une tâche dans une application (Word, Bloc-notes…) : Six y écrit directement, sans relire d'anciens documents.
+  if (
+    ctx.corpus &&
+    demandeRedaction(question) &&
+    !nommeUnFichier(question) &&
+    !(ctx.ordinateur && demandeOrdinateur(question))
+  )
     automatiques.push({
       id: 'memoire_auto',
       nom: 'chercher_mes_documents',

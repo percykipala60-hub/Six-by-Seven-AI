@@ -34,6 +34,7 @@ const CLE = 'six-environnements';
 const CLE_CLOUD = 'six-environnements-cloud';
 export const ID_AUTO = 'cloud:auto';
 const CLE_REPLIES = 'six-environnements-replies';
+const CLE_MASQUES = 'six-environnements-masques';
 const EVT = 'six-environnements';
 const MAX_ENVIRONNEMENTS = 30;
 const DOSSIERS_MAX = 8;
@@ -251,6 +252,39 @@ export function retirerEnvironnement(id: string): void {
     CLE,
     lireEnvironnements().filter((e) => e.id !== id && e.type !== 'cloud'),
   );
+}
+
+/**
+ * Groupes retirés du menu latéral (environnement ou dossier) : seulement leur affichage, jamais le dossier ni ses
+ * fichiers. Clé = identifiant du groupe, valeur = date du retrait ; une discussion plus récente le fait revenir.
+ */
+export function lireMasques(): Record<string, number> {
+  const m = lireJson<Record<string, number>>(CLE_MASQUES, {});
+  return m && typeof m === 'object' ? m : {};
+}
+
+/** Retire un groupe de la liste : l'environnement (s'il y en a un) et les dossiers de ses discussions. */
+export function masquerGroupe(g: {
+  id: string;
+  dossier?: string;
+  environnement?: Environnement;
+}): void {
+  const quand = Date.now();
+  const m = { ...lireMasques(), [g.id]: quand };
+  // Les discussions de l'environnement ne doivent pas revenir sous le nom de leur dossier.
+  for (const d of g.environnement?.dossiers ?? (g.dossier ? [g.dossier] : [])) m[`d:${d}`] = quand;
+  if (g.environnement && g.environnement.type !== 'cloud') retirerEnvironnement(g.environnement.id);
+  ecrireJson(CLE_MASQUES, m);
+}
+
+/** Un groupe retiré reste caché, sauf s'il a une discussion plus récente que son retrait. */
+export function groupeVisible(
+  g: { id: string; dossier?: string; chats: { maj: number }[] },
+  masques: Record<string, number> = lireMasques(),
+): boolean {
+  const quand = masques[g.id] ?? (g.dossier ? masques[`d:${g.dossier}`] : undefined);
+  if (quand === undefined) return true;
+  return g.chats.some((c) => c.maj > quand);
 }
 
 /** Groupes repliés dans le menu latéral. */

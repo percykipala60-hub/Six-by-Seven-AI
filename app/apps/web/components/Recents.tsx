@@ -17,9 +17,10 @@ import {
   basculerReplie,
   ecouterEnvironnements,
   grouperParEnvironnement,
+  groupeVisible,
+  masquerGroupe,
   lireEnvironnements,
   lireReplies,
-  retirerEnvironnement,
   type Environnement,
 } from '@/lib/environnements';
 
@@ -36,6 +37,43 @@ export type ElementRecent = {
 
 const VISIBLES = 8;
 const CLE_REPLIE = 'six-recents-replie';
+const CLE_AFFICHAGE = 'six-recents-affichage';
+
+/** Options du menu « ≡ » des groupes (comme Claude) : regroupement, tri et ce qu'on affiche. */
+type Affichage = {
+  grouper: 'dossier' | 'aucun';
+  trier: 'maj' | 'nom';
+  /** Date de la dernière activité à droite de chaque discussion. */
+  meta: boolean;
+  /** Environnements sans discussion. */
+  vides: boolean;
+};
+const AFFICHAGE_DEFAUT: Affichage = { grouper: 'dossier', trier: 'maj', meta: false, vides: false };
+
+function lireAffichage(): Affichage {
+  try {
+    const o = JSON.parse(localStorage.getItem(CLE_AFFICHAGE) ?? '{}') as Partial<Affichage>;
+    return {
+      grouper: o.grouper === 'aucun' ? 'aucun' : 'dossier',
+      trier: o.trier === 'nom' ? 'nom' : 'maj',
+      meta: o.meta === true,
+      vides: o.vides === true,
+    };
+  } catch {
+    return { ...AFFICHAGE_DEFAUT };
+  }
+}
+
+/** « il y a 5 min », « hier »… pour les métadonnées. */
+function ilYA(t: number): string {
+  const m = Math.round((Date.now() - t) / 60000);
+  if (m < 1) return 'à l’instant';
+  if (m < 60) return `${m} min`;
+  const h = Math.round(m / 60);
+  if (h < 24) return `${h} h`;
+  const j = Math.round(h / 24);
+  return j === 1 ? 'hier' : `${j} j`;
+}
 
 /** Correspondance souple pour « Rechercher » : sans accents ni majuscules. */
 const sansAccents = (t: string) => t.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
@@ -68,7 +106,19 @@ export function Recents({
   const [envs, setEnvs] = useState<Environnement[]>([]);
   const [dossiersReplies, setDossiersReplies] = useState<string[]>([]);
   const [voirArchives, setVoirArchives] = useState(false);
+  const [affichage, setAffichageBrut] = useState<Affichage>(AFFICHAGE_DEFAUT);
+  const setAffichage = (a: Affichage) => {
+    setAffichageBrut(a);
+    try {
+      localStorage.setItem(CLE_AFFICHAGE, JSON.stringify(a));
+    } catch {
+      /* stockage bloqué : vaut pour cette visite */
+    }
+  };
+  // Menu « ≡ » d'un groupe : le groupe visé et son bouton.
+  const [menuGroupe, setMenuGroupe] = useState<{ id: string; bouton: HTMLElement } | null>(null);
   useEffect(() => {
+    setAffichageBrut(lireAffichage());
     try {
       setReplie(localStorage.getItem(CLE_REPLIE) === '1');
     } catch {
@@ -84,7 +134,11 @@ export function Recents({
   const racine = useRef<HTMLDivElement>(null);
 
   const filtre = sansAccents(recherche.trim());
-  const trouves = filtre ? elements.filter((e) => sansAccents(e.titre).includes(filtre)) : elements;
+  const filtres = filtre ? elements.filter((e) => sansAccents(e.titre).includes(filtre)) : elements;
+  const trouves =
+    affichage.trier === 'nom'
+      ? [...filtres].sort((a, b) => a.titre.localeCompare(b.titre, 'fr'))
+      : filtres;
   const basculer = () => {
     setReplie((v) => {
       try {
@@ -155,7 +209,10 @@ export function Recents({
               <Icon name="epingle" size={12} stroke={1.9} />
             </span>
           )}
-          {e.titre}
+          <span className="recent-titre">{e.titre}</span>
+          {affichage.meta && e.chat?.maj ? (
+            <span className="recent-meta">{ilYA(e.chat.maj)}</span>
+          ) : null}
         </Link>
       )}
       <button
@@ -219,7 +276,7 @@ export function Recents({
   );
 
   let contenu;
-  if (parDossier && !filtre) {
+  if (parDossier && !filtre && affichage.grouper === 'dossier') {
     const groupes = grouperParEnvironnement(
       trouves.map((e) => ({
         ...e,
@@ -229,59 +286,171 @@ export function Recents({
       })),
       envs,
     );
-    contenu = groupes.map((g) => {
-      const ferme = dossiersReplies.includes(g.id);
-      const nouvelle = g.environnement
-        ? `/cosinus?e=${encodeURIComponent(g.id)}`
-        : g.dossier
-          ? `/cosinus?d=${encodeURIComponent(g.dossier)}`
-          : '';
-      return (
-        <div className="recents-dossier" key={g.id}>
-          <div className="recents-dossier-tete">
-            <button
-              type="button"
-              className="recents-dossier-titre"
-              aria-expanded={!ferme}
-              title={
-                g.environnement?.dossiers.join('\n') || g.dossier || 'Discussions sans dossier'
-              }
-              onClick={() => basculerReplie(g.id)}
-            >
-              <span>{g.nom}</span>
-              <Icon name="down" size={13} stroke={2} />
-            </button>
-            {nouvelle && (
-              <Link
-                href={nouvelle}
-                className="recents-dossier-nouvelle"
-                aria-label={`Nouvelle discussion dans ${g.nom}`}
-                title="Nouvelle discussion dans cet environnement"
-                onClick={apresLien}
+    contenu = groupes
+      .filter((g) => g.id === '-' || groupeVisible(g))
+      .filter((g) => affichage.vides || g.chats.length > 0)
+      .map((g) => {
+        // Comme les dossiers de Claude : un environnement sans discussion reste replié (une seule ligne).
+        const bascule = dossiersReplies.includes(g.id);
+        const ferme = g.chats.length ? bascule : !bascule;
+        const nouvelle = g.environnement
+          ? `/cosinus?e=${encodeURIComponent(g.id)}`
+          : g.dossier
+            ? `/cosinus?d=${encodeURIComponent(g.dossier)}`
+            : '';
+        return (
+          <div className="recents-dossier" key={g.id}>
+            <div className="recents-dossier-tete">
+              <button
+                type="button"
+                className="recents-dossier-titre"
+                aria-expanded={!ferme}
+                title={
+                  g.environnement?.dossiers.join('\n') || g.dossier || 'Discussions sans dossier'
+                }
+                onClick={() => basculerReplie(g.id)}
               >
-                <Icon name="plus" size={14} stroke={2} />
-              </Link>
-            )}
+                <span>{g.nom}</span>
+                <Icon name="chevron" size={12} stroke={2.2} />
+              </button>
+              <button
+                type="button"
+                className="recents-dossier-nouvelle"
+                aria-label={`Options d’affichage (${g.nom})`}
+                title="Grouper, trier, afficher"
+                aria-haspopup="menu"
+                aria-expanded={menuGroupe?.id === g.id}
+                onClick={(ev) =>
+                  setMenuGroupe(
+                    menuGroupe?.id === g.id ? null : { id: g.id, bouton: ev.currentTarget },
+                  )
+                }
+              >
+                <Icon name="filtre" size={14} stroke={2} />
+              </button>
+              {menuGroupe?.id === g.id && (
+                <MenuLigne
+                  bouton={menuGroupe.bouton}
+                  onFermer={() => setMenuGroupe(null)}
+                  actions={[
+                    {
+                      libelle: 'Grouper par',
+                      touche: '',
+                      valeur: affichage.grouper === 'dossier' ? 'Environnement' : 'Aucun',
+                      faire: () => {},
+                      sous: [
+                        {
+                          libelle: 'Environnement',
+                          touche: '',
+                          coche: affichage.grouper === 'dossier',
+                          faire: () => setAffichage({ ...affichage, grouper: 'dossier' }),
+                        },
+                        {
+                          libelle: 'Aucun',
+                          touche: '',
+                          coche: affichage.grouper === 'aucun',
+                          faire: () => setAffichage({ ...affichage, grouper: 'aucun' }),
+                        },
+                      ],
+                    },
+                    {
+                      libelle: 'Trier par',
+                      touche: '',
+                      valeur: affichage.trier === 'maj' ? 'Dernière mise à jour' : 'Nom',
+                      faire: () => {},
+                      sous: [
+                        {
+                          libelle: 'Dernière mise à jour',
+                          touche: '',
+                          coche: affichage.trier === 'maj',
+                          faire: () => setAffichage({ ...affichage, trier: 'maj' }),
+                        },
+                        {
+                          libelle: 'Nom',
+                          touche: '',
+                          coche: affichage.trier === 'nom',
+                          faire: () => setAffichage({ ...affichage, trier: 'nom' }),
+                        },
+                      ],
+                    },
+                    {
+                      libelle: 'Afficher',
+                      touche: '',
+                      faire: () => {},
+                      sous: [
+                        {
+                          libelle: 'Métadonnées',
+                          touche: '',
+                          coche: affichage.meta,
+                          faire: () => setAffichage({ ...affichage, meta: !affichage.meta }),
+                        },
+                        {
+                          libelle: 'Groupes vides',
+                          touche: '',
+                          coche: affichage.vides,
+                          faire: () => setAffichage({ ...affichage, vides: !affichage.vides }),
+                        },
+                      ],
+                    },
+                    'separateur' as const,
+                    {
+                      libelle: 'Nouvel environnement',
+                      touche: '',
+                      faire: () => {
+                        apresLien();
+                        router.push('/cosinus?nouvel=1');
+                      },
+                    },
+                    // Retrait seulement pour un environnement vide : jamais de suppression d'un groupe qui a des
+                    // discussions (le dossier et ses fichiers restent toujours sur l'ordinateur).
+                    ...(g.id !== '-' && g.chats.length === 0
+                      ? [
+                          {
+                            libelle: 'Retirer de la liste',
+                            touche: '',
+                            danger: true,
+                            faire: () => masquerGroupe(g),
+                          },
+                        ]
+                      : []),
+                    'separateur' as const,
+                    {
+                      libelle: 'Réinitialiser les paramètres par défaut',
+                      touche: '',
+                      faire: () => setAffichage({ ...AFFICHAGE_DEFAUT }),
+                    },
+                    {
+                      libelle: 'Tout afficher',
+                      touche: '',
+                      faire: () => {
+                        for (const id of dossiersReplies) basculerReplie(id);
+                        setAffichage({ ...affichage, vides: true });
+                      },
+                    },
+                  ]}
+                />
+              )}
+              {nouvelle && (
+                <Link
+                  href={nouvelle}
+                  className="recents-dossier-nouvelle"
+                  aria-label={`Nouvelle discussion dans ${g.nom}`}
+                  title="Nouvelle discussion dans cet environnement"
+                  onClick={apresLien}
+                >
+                  <Icon name="plus" size={14} stroke={2} />
+                </Link>
+              )}
+            </div>
+            {!ferme &&
+              (g.chats.length ? (
+                g.chats.map(ligne)
+              ) : (
+                <p className="recents-vide">Aucune discussion</p>
+              ))}
           </div>
-          {!ferme &&
-            (g.chats.length ? (
-              g.chats.map(ligne)
-            ) : (
-              <p className="recents-vide">
-                Aucune discussion
-                {g.environnement && (
-                  <>
-                    {' · '}
-                    <button type="button" onClick={() => retirerEnvironnement(g.id)}>
-                      Retirer
-                    </button>
-                  </>
-                )}
-              </p>
-            ))}
-        </div>
-      );
-    });
+        );
+      });
   } else {
     contenu = (tout || filtre ? trouves : trouves.slice(0, VISIBLES)).map(ligne);
   }
@@ -289,7 +458,7 @@ export function Recents({
   return (
     <div className="recents" ref={racine}>
       <button type="button" className="recents-titre" aria-expanded={!replie} onClick={basculer}>
-        Récents <Icon name="down" size={13} stroke={2} />
+        Récents <Icon name="chevron" size={12} stroke={2.2} />
       </button>
       {!replie && (
         <div className="recents-liste">
@@ -311,7 +480,7 @@ export function Recents({
                 aria-expanded={voirArchives}
                 onClick={() => setVoirArchives((v) => !v)}
               >
-                Archivées ({archives.length}) <Icon name="down" size={13} stroke={2} />
+                Archivées ({archives.length}) <Icon name="chevron" size={12} stroke={2.2} />
               </button>
               {voirArchives &&
                 (filtre
@@ -333,6 +502,10 @@ type ActionMenu = {
   faire: () => void;
   /** Sous-menu (« Déplacer vers › ») : s'ouvre à côté, au survol ou au clic. */
   sous?: ActionMenu[];
+  /** Valeur actuelle affichée à droite (« Dernière mise à jour »). */
+  valeur?: string;
+  /** Option cochée ou non (sous-menus « Afficher », « Trier par »…). */
+  coche?: boolean;
 };
 
 /**
@@ -470,7 +643,10 @@ function MenuLigne({
           >
             <span>{a.libelle}</span>
             {a.sous ? (
-              <Icon name="suivant" size={13} stroke={2} />
+              <span className="recent-menu-valeur">
+                {a.valeur && <span>{a.valeur}</span>}
+                <Icon name="suivant" size={13} stroke={2} />
+              </span>
             ) : (
               <kbd aria-hidden="true">{a.touche}</kbd>
             )}
@@ -490,8 +666,23 @@ function MenuLigne({
               <p className="recent-menu-vide">Aucun autre endroit.</p>
             ) : (
               sous.actions.map((x) => (
-                <button key={x.libelle} type="button" role="menuitem" onClick={() => executer(x)}>
-                  <span>{x.libelle}</span>
+                <button
+                  key={x.libelle}
+                  type="button"
+                  role={x.coche === undefined ? 'menuitem' : 'menuitemcheckbox'}
+                  aria-checked={x.coche}
+                  onClick={() => executer(x)}
+                >
+                  {x.coche !== undefined && (
+                    <span
+                      className="recent-menu-case"
+                      data-coche={x.coche || undefined}
+                      aria-hidden="true"
+                    >
+                      {x.coche && <Icon name="check" size={11} stroke={3} />}
+                    </span>
+                  )}
+                  <span className="recent-menu-libelle">{x.libelle}</span>
                 </button>
               ))
             )}

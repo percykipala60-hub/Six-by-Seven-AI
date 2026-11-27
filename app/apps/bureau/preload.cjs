@@ -34,6 +34,16 @@ contextBridge.exposeInMainWorld('sixBureau', {
     ouvrir: (url) => ipcRenderer.invoke('six:connexion', url),
     premierPlan: () => ipcRenderer.invoke('six:premier-plan'),
   },
+  /** Demandes d'accord affichées dans la conversation (boutons Autoriser / Refuser). */
+  accord: {
+    surDemande: (rappel) => {
+      const f = (_e, d) => rappel(d);
+      ipcRenderer.on('six:accord-conversation', f);
+      return () => ipcRenderer.removeListener('six:accord-conversation', f);
+    },
+    recu: (id) => ipcRenderer.invoke('six:accord-recu', id),
+    repondre: (id, choix) => ipcRenderer.invoke('six:accord-conversation', id, choix),
+  },
   /** Réglages de l'application de bureau (lire, lancement au démarrage, garder éveillé). */
   reglages: (commande) => ipcRenderer.invoke('six:reglages-bureau', commande),
   /** Terminal de Cosinus (PowerShell sous Windows), ouvert dans le dossier de la discussion. */

@@ -35,8 +35,10 @@
     $('avant').disabled = !e.avant;
     $('nom-espace').textContent = ESPACES[e.chemin] ?? '';
     $('reglages').setAttribute('aria-pressed', String(e.chemin === '/reglages'));
+    // Pas connecté (écran de connexion) : aucun bouton d'outil ni de réglages dans la barre.
+    $('reglages').hidden = !e.connecte;
     for (const onglet of ['navigateur', 'fichiers', 'terminal']) {
-      $(onglet).hidden = !e.cosinus;
+      $(onglet).hidden = !e.cosinus || !e.connecte;
       const ouvert = e.volet === onglet || (onglet === 'terminal' && e.terminal === true);
       $(onglet).setAttribute('aria-pressed', String(ouvert));
     }

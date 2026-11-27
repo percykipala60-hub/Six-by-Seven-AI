@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self'; style-src 'self'"
+    />
+    <title>Autorisation</title>
+    <link rel="stylesheet" href="accord.css" />
+  </head>
+  <body>
+    <!-- Demande d'accord de Six (contrôle de l'ordinateur, une application) : voir accord.js et main.cjs. -->
+    <div
+      class="carte"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="titre"
+      aria-describedby="texte"
+    >
+      <div class="tete">
+        <span class="pastille" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" /></svg>
+        </span>
+        <h1 id="titre"></h1>
+      </div>
+      <p id="texte"></p>
+      <ul id="garanties" class="garanties" hidden>
+        <li>
+          <svg viewBox="0 0 24 24"><path d="M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4" /></svg>
+          Jamais de mot de passe ni de paiement
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24"><path d="M3 12h18M12 3v18" transform="rotate(45 12 12)" /></svg>
+          Une autorisation demandée pour chaque application
+        </li>
+        <li>
+          <svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z" /></svg>
+          Arrêt immédiat : <kbd>Ctrl</kbd> <kbd>Alt</kbd> <kbd>Échap</kbd>
+        </li>
+      </ul>
+      <div class="boutons">
+        <button id="refuser" type="button" class="secondaire">Refuser</button>
+        <button id="autoriser" type="button" class="secondaire">Autoriser cette fois</button>
+        <button id="toujours" type="button" class="principal">Toujours autoriser</button>
+      </div>
+    </div>
+    <script src="accord.js"></script>
+  </body>
+</html>

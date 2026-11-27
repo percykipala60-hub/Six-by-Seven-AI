@@ -358,12 +358,14 @@ export function ConfidentialiteVue({ onOuvrir }: { onOuvrir: Ouvrir }) {
 }
 
 // ---------- Application de bureau ----------
+type InfosBureau = {
+  version: string;
+  demarrage: boolean;
+  eveil: boolean;
+  autorisations?: { global: boolean; apps: string[] };
+};
 type PontBureau = {
-  reglages?: (c: Record<string, unknown>) => Promise<{
-    version: string;
-    demarrage: boolean;
-    eveil: boolean;
-  }>;
+  reglages?: (c: Record<string, unknown>) => Promise<InfosBureau>;
 };
 
 function pontBureau(): PontBureau | null {
@@ -372,7 +374,7 @@ function pontBureau(): PontBureau | null {
 }
 
 export function BureauVue() {
-  const [infos, setInfos] = useState<{ version: string; demarrage: boolean; eveil: boolean }>();
+  const [infos, setInfos] = useState<InfosBureau>();
   const [erreur, setErreur] = useState('');
   const pont = pontBureau();
   useEffect(() => {
@@ -422,6 +424,29 @@ export function BureauVue() {
           disabled={!infos}
           onChange={(on) => void changer({ action: 'eveil', valeur: on })}
         />
+      </Groupe>
+      <Groupe
+        titre="Autorisations permanentes"
+        pied="« Toujours autoriser » reste valable d’un lancement à l’autre. L’arrêt d’urgence (Ctrl+Alt+Échap) ou « arrête » les retire aussi."
+      >
+        <LigneInfo
+          icon="shield"
+          label="Contrôle de l’ordinateur"
+          valeur={infos?.autorisations?.global ? 'Toujours autorisé' : 'Demandé à chaque lancement'}
+        />
+        <LigneInfo
+          icon="appareils"
+          label="Applications toujours autorisées"
+          sous={infos?.autorisations?.apps.length ? infos.autorisations.apps.join(', ') : 'Aucune'}
+        />
+        {(infos?.autorisations?.global || Boolean(infos?.autorisations?.apps.length)) && (
+          <Ligne
+            icon="x"
+            danger
+            label="Retirer toutes les autorisations"
+            onClick={() => void changer({ action: 'retirer-autorisations' })}
+          />
+        )}
       </Groupe>
       <Groupe titre="Raccourcis">
         <LigneInfo label="Ouvrir les réglages" valeur={<kbd>Ctrl ,</kbd>} />

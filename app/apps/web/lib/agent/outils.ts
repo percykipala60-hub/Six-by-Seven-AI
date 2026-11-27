@@ -29,7 +29,10 @@ export type OutilDef = {
   description: string;
   parametres: {
     type: 'object';
-    properties: Record<string, { type: 'string' | 'object'; description: string; enum?: string[] }>;
+    properties: Record<
+      string,
+      { type: 'string' | 'object' | 'number'; description: string; enum?: string[] }
+    >;
     required: string[];
   };
 };
@@ -177,6 +180,7 @@ export function definitionsOutils(ctx: ContexteOutils): OutilDef[] {
                   'taper',
                   'raccourci',
                   'fermer',
+                  'attendre',
                 ],
               },
               app: {
@@ -191,10 +195,18 @@ export function definitionsOutils(ctx: ContexteOutils): OutilDef[] {
                 type: 'string' as const,
                 description: 'Identifiant exact de la dernière observation',
               },
-              texte: { type: 'string' as const, description: 'Texte à saisir' },
+              texte: {
+                type: 'string' as const,
+                description:
+                  'Texte à saisir (jusqu’à 8 000 caractères en une fois : un long texte est collé d’un coup)',
+              },
               touches: {
                 type: 'string' as const,
                 description: 'Raccourci, par exemple « ctrl+s » ou « entree »',
+              },
+              secondes: {
+                type: 'number' as const,
+                description: 'Pour « attendre » : durée en secondes (1 à 30)',
               },
             },
             required: ['action'],
@@ -319,7 +331,7 @@ export function libelleEtape(nom: string, args: Record<string, unknown>): string
     case 'lister_espace':
       return "Six regarde les fichiers de l'espace de travail";
     case 'chercher_mes_documents':
-      return `Six relit vos anciens documents : « ${s('requete')} »`;
+      return 'Six consulte vos documents';
     case 'lire_fichier':
       return `Six lit « ${s('chemin')} »`;
     case 'lister_dossier':

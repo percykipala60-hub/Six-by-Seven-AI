@@ -64,6 +64,7 @@ const ACTIONS = new Set([
   'fermer',
   'arreter',
   'etat',
+  'attendre',
 ]);
 const RACCOURCIS_INTERDITS = /^(ctrl\+alt\+(suppr|del)|alt\+f4\+?|win)/i;
 
@@ -88,6 +89,17 @@ const ALIAS = new Map([
   ['file explorer', 'explorateur de fichiers'],
   ['settings', 'parametres'],
   ['reglages', 'parametres'],
+  ['microsoft word', 'word'],
+  ['ms word', 'word'],
+  ['winword', 'word'],
+  ['word 365', 'word'],
+  ['microsoft excel', 'excel'],
+  ['microsoft powerpoint', 'powerpoint'],
+  ['power point', 'powerpoint'],
+  ['ppt', 'powerpoint'],
+  ['chrome', 'google chrome'],
+  ['edge', 'microsoft edge'],
+  ['paint 3d', 'paint'],
 ]);
 const echapperRegex = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -101,16 +113,28 @@ function trouverApplication(liste, demandeBrute) {
   const d = ALIAS.get(d0) ?? d0;
   if (!d) throw new Error('Nom d’application manquant.');
   const motEntier = new RegExp(`(^| )${echapperRegex(d)}( |$)`);
+  const debutDeMot = new RegExp(`(^| )${echapperRegex(d)}`);
   const rang = (nom) => {
     const n = sansAccents(nom);
-    if (n === d) return 3;
-    if (n.startsWith(`${d} `)) return 2;
-    return motEntier.test(n) ? 1 : 0;
+    if (n === d) return 4;
+    if (n.startsWith(`${d} `)) return 3;
+    // « solidwork » pour « SOLIDWORKS 2025 » : début du nom, faute de frappe ou pluriel oublié.
+    if (n.startsWith(d) && d.length >= 4) return 2;
+    if (motEntier.test(n)) return 1;
+    return debutDeMot.test(n) && d.length >= 4 ? 0.5 : 0;
   };
   const notes = liste.map((a) => ({ a, r: rang(a.nom) })).filter((x) => x.r > 0);
   const meilleur = Math.max(0, ...notes.map((x) => x.r));
   const choix = notes.filter((x) => x.r === meilleur);
   if (choix.length === 1) return choix[0].a;
+  // Plusieurs noms commencent par la demande : l'application principale est celle dont le reste du nom n'est
+  // qu'un pluriel ou une année (« SOLIDWORKS 2025 » plutôt que « SOLIDWORKS 2025 Routing Library Manager »).
+  if (meilleur >= 2) {
+    const principales = choix.filter((x) =>
+      /^s?( (19|20)\d\d)?$/.test(sansAccents(x.a.nom).slice(d.length)),
+    );
+    if (principales.length === 1) return principales[0].a;
+  }
   if (!choix.length) {
     const debut = d.split(' ')[0];
     const proches = liste.filter((a) => sansAccents(a.nom).includes(debut)).slice(0, 8);
@@ -124,7 +148,7 @@ function trouverApplication(liste, demandeBrute) {
 }
 
 /**
- * @param {{ fenetre: () => import('electron').BrowserWindow | null }} ctx
+ * @param {{ fenetre: () => import('electron').BrowserWindow | null, demander?: (d: { titre: string, texte: string, garanties?: boolean }) => Promise<boolean> }} ctx
  */
 function creerOrdinateur(ctx) {
   /** @type {import('node:child_process').ChildProcess | null} */
@@ -136,6 +160,38 @@ function creerOrdinateur(ctx) {
   let arrete = false;
   const autorisees = new Set();
   const refusees = new Set();
+  // Autorisations permanentes (« Toujours autoriser ») : gardées d'un lancement à l'autre, annulées par un rappel à
+  // l'ordre (arrêt d'urgence ou « arrête ») ou depuis Réglages → Application de bureau.
+  const fs = require('node:fs');
+  const permanentes = { global: false, apps: new Set() };
+  try {
+    const d = JSON.parse(fs.readFileSync(ctx.stockage || '', 'utf8'));
+    permanentes.global = d.global === true;
+    for (const a of Array.isArray(d.apps) ? d.apps : [])
+      if (typeof a === 'string') permanentes.apps.add(a);
+  } catch {
+    /* pas encore d'autorisation permanente */
+  }
+  const garderPermanentes = () => {
+    if (!ctx.stockage) return;
+    try {
+      fs.writeFileSync(
+        ctx.stockage,
+        JSON.stringify({ global: permanentes.global, apps: [...permanentes.apps] }),
+      );
+    } catch {
+      /* stockage impossible : valables jusqu'à la fermeture */
+    }
+  };
+  /** Rappel à l'ordre : tout est retiré, même ce qui était autorisé pour toujours. */
+  const rappelALOrdre = () => {
+    arrete = true;
+    accordGlobal = false;
+    autorisees.clear();
+    permanentes.global = false;
+    permanentes.apps.clear();
+    garderPermanentes();
+  };
   let raccourcis = null;
 
   function demarrerAide() {
@@ -186,14 +242,18 @@ function creerOrdinateur(ctx) {
     return aide;
   }
 
-  function envoyer(commande) {
+  function envoyer(commande, delai = DELAI_MS) {
     const p = demarrerAide();
     const id = suivant++;
     return new Promise((resoudre, rejeter) => {
       const minuterie = setTimeout(() => {
         attentes.delete(id);
-        rejeter(new Error('Pas de réponse de la fenêtre (délai dépassé).'));
-      }, DELAI_MS);
+        rejeter(
+          new Error(
+            'Pas de réponse de la fenêtre à temps : l’action continue peut-être. Observe la fenêtre avant de recommencer.',
+          ),
+        );
+      }, delai);
       attentes.set(id, { resoudre, rejeter, minuterie });
       p.stdin.write(`${JSON.stringify({ ...commande, id })}\n`);
     });
@@ -204,13 +264,13 @@ function creerOrdinateur(ctx) {
     raccourcis = true;
     try {
       globalShortcut.register('CommandOrControl+Alt+Escape', () => {
-        arrete = true;
-        accordGlobal = false;
+        rappelALOrdre();
         void dialog.showMessageBox({
           type: 'info',
           title: 'Six',
           message: 'Contrôle de l’ordinateur arrêté.',
-          detail: 'Six ne touchera plus à l’ordinateur sans un nouvel accord.',
+          detail:
+            'Six ne touchera plus à l’ordinateur sans un nouvel accord, même pour les applications autorisées pour toujours.',
         });
       });
     } catch {
@@ -218,13 +278,19 @@ function creerOrdinateur(ctx) {
     }
   }
 
-  async function demander(message, detail) {
+  /** Réponse de la personne : « non », « une-fois » (jusqu'à la fermeture de l'app) ou « toujours ». */
+  async function demander(message, detail, garanties = false) {
+    // Dans la conversation ou fenêtre d'accord aux couleurs de Six (main.cjs) ; boîte de Windows en secours.
+    if (ctx.demander) {
+      const r = await ctx.demander({ titre: message, texte: detail, garanties });
+      return r === 'toujours' || r === 'une-fois' ? r : 'non';
+    }
     const f = ctx.fenetre();
     const options = {
       type: 'question',
-      buttons: ['Autoriser', 'Refuser'],
-      defaultId: 1,
-      cancelId: 1,
+      buttons: ['Toujours autoriser', 'Autoriser cette fois', 'Refuser'],
+      defaultId: 2,
+      cancelId: 2,
       title: 'Six',
       message,
       detail,
@@ -232,19 +298,28 @@ function creerOrdinateur(ctx) {
     const { response } = f
       ? await dialog.showMessageBox(f, options)
       : await dialog.showMessageBox(options);
-    return response === 0;
+    return response === 0 ? 'toujours' : response === 1 ? 'une-fois' : 'non';
   }
 
   async function exigerAccordGlobal() {
     if (arrete && !accordGlobal) arrete = false;
-    if (accordGlobal) return;
     surveillerArret();
-    const ok = await demander(
+    if (accordGlobal) return;
+    if (permanentes.global) {
+      accordGlobal = true;
+      return;
+    }
+    const r = await demander(
       'Autoriser Six à contrôler cet ordinateur ?',
-      'Six pourra lire les fenêtres que tu autorises, cliquer et taper pour toi. Il te demandera l’accord pour chaque application. Il ne touche jamais aux mots de passe ni aux paiements. Arrêt immédiat : Ctrl+Alt+Échap.',
+      'Six pourra lire les fenêtres que vous autorisez, cliquer et taper pour vous.',
+      true,
     );
-    if (!ok) throw new Error('Contrôle de l’ordinateur refusé par la personne.');
+    if (r === 'non') throw new Error('Contrôle de l’ordinateur refusé par la personne.');
     accordGlobal = true;
+    if (r === 'toujours') {
+      permanentes.global = true;
+      garderPermanentes();
+    }
   }
 
   const estSixLuiMeme = (chemin) =>
@@ -254,19 +329,29 @@ function creerOrdinateur(ctx) {
   async function exigerApplication(appNom, chemin) {
     const nom = String(appNom || '').toLowerCase();
     if (!nom) throw new Error('Application inconnue : observe une fenêtre d’abord.');
-    if (INTERDITES.has(nom) || estSixLuiMeme(chemin))
-      throw new Error(`« ${appNom} » ne peut pas être contrôlée par Six (sécurité).`);
-    if (autorisees.has(nom)) return;
+    // La fenêtre devant est Six lui-même (la personne vient de lui écrire) : ce n'est pas un blocage, il faut d'abord
+    // ouvrir ou choisir l'application voulue.
+    if (estSixLuiMeme(chemin))
+      throw new Error(
+        'La fenêtre au premier plan est Six lui-même. Ouvre d’abord l’application voulue avec l’action « ouvrir » (par exemple app « Word » ou « Bloc-notes »), ou « fenetres » puis « focaliser », puis observe-la.',
+      );
+    if (INTERDITES.has(nom))
+      throw new Error(`« ${appNom} » ne peut pas être contrôlée par Six (sécurité de Windows).`);
+    if (autorisees.has(nom) || permanentes.apps.has(nom)) return;
     if (refusees.has(nom)) throw new Error(`La personne a refusé que Six utilise « ${appNom} ».`);
-    const ok = await demander(
+    const r = await demander(
       `Autoriser Six à utiliser « ${appNom} » ?`,
-      'Il pourra lire cette fenêtre, cliquer et taper dedans.',
+      'Six pourra lire cette fenêtre, cliquer et taper dedans. Vous pouvez l’arrêter à tout moment avec Ctrl+Alt+Échap.',
     );
-    if (!ok) {
+    if (r === 'non') {
       refusees.add(nom);
       throw new Error(`La personne a refusé que Six utilise « ${appNom} ».`);
     }
     autorisees.add(nom);
+    if (r === 'toujours') {
+      permanentes.apps.add(nom);
+      garderPermanentes();
+    }
   }
 
   /** Application de la fenêtre visée (ou de celle au premier plan). */
@@ -280,6 +365,7 @@ function creerOrdinateur(ctx) {
     return envoyer({ action: 'premier_plan' });
   }
 
+  let derniereFrappe = null; // dernier texte tapé ({ cle: fenêtre + texte, quand }) : contre les répétitions
   let derniere = null; // application de la dernière observation (les repères lui appartiennent)
   let fenetreActive = null; // fenêtre où Six travaille : remise devant la personne avant chaque action
   const ouvertesParSix = new Set(); // seules fenêtres que Six peut fermer (ouvertes par lui pendant ce lancement)
@@ -333,8 +419,7 @@ function creerOrdinateur(ctx) {
     if (c.action === 'etat')
       return { actif: accordGlobal && !arrete, applications: [...autorisees] };
     if (c.action === 'arreter') {
-      arrete = true;
-      accordGlobal = false;
+      rappelALOrdre();
       return { fait: 'arrêté' };
     }
     await exigerAccordGlobal();
@@ -358,6 +443,12 @@ function creerOrdinateur(ctx) {
         ouvertesParSix.delete(cible);
         if (fenetreActive === cible) fenetreActive = null;
         return { fait: 'fermeture demandée (l’application peut proposer d’enregistrer)' };
+      }
+      // Logiciel lent à démarrer (écran de chargement) : Six attend, puis voit les fenêtres ouvertes.
+      case 'attendre': {
+        const secondes = Math.min(30, Math.max(1, Number(c.secondes) || 5));
+        await new Promise((r) => setTimeout(r, secondes * 1000));
+        return { attendu: secondes, ...(await piloter({ action: 'fenetres' })) };
       }
       case 'fenetres': {
         const { fenetres } = await envoyer({ action: 'fenetres' });
@@ -426,11 +517,25 @@ function creerOrdinateur(ctx) {
       }
       case 'taper': {
         const f = await fenetreDeTravail();
-        return envoyer({
-          action: 'taper',
-          texte: String(c.texte ?? '').slice(0, 2000),
-          fenetre: f.fenetre,
-        });
+        const texte = String(c.texte ?? '').slice(0, 8000);
+        // Le même texte, retapé dans la même fenêtre juste après : presque toujours une répétition (l'agent croit
+        // que la frappe a échoué). On refuse et on lui dit de vérifier.
+        const cle = `${f.fenetre}:${texte}`;
+        if (
+          texte.length > 20 &&
+          derniereFrappe?.cle === cle &&
+          Date.now() - derniereFrappe.quand < 5 * 60_000
+        )
+          throw new Error(
+            'Ce texte vient déjà d’être tapé dans cette fenêtre. Observe la fenêtre pour vérifier au lieu de le retaper.',
+          );
+        // Délai selon la longueur : une frappe longue n'est pas un échec (sinon l'agent retape tout).
+        const r = await envoyer(
+          { action: 'taper', texte, fenetre: f.fenetre },
+          Math.min(180_000, DELAI_MS + texte.length * 60),
+        );
+        derniereFrappe = { cle, quand: Date.now() };
+        return { ...r, caracteres: texte.length };
       }
       case 'raccourci': {
         const touches = String(c.touches || '').trim();
@@ -467,6 +572,14 @@ function creerOrdinateur(ctx) {
 
   return {
     piloter,
+    /** Réglages : autorisations permanentes, et leur retrait (sans arrêter une tâche en cours). */
+    autorisations: () => ({ global: permanentes.global, apps: [...permanentes.apps] }),
+    retirerAutorisations: () => {
+      permanentes.global = false;
+      permanentes.apps.clear();
+      garderPermanentes();
+      return { global: false, apps: [] };
+    },
     arreter: () => {
       try {
         globalShortcut.unregister('CommandOrControl+Alt+Escape');

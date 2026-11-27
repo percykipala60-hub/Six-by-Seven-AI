@@ -36,6 +36,7 @@ import { changerVersion, jusquA, nouvelleVersion } from '@/lib/versions';
 import { ActionsMessage } from './ActionsMessage';
 import { CarteEnvironnements, cheminDuFichier, useEtatEspace } from './ChoixEnvironnement';
 import { PlanTaches } from './PlanTaches';
+import { AccordBureau } from './AccordBureau';
 import { Logo } from './Logo';
 import { PiecesJointes } from './PiecesJointes';
 import { ArtefactPanneau, Artefacts, type ArtefactOuvert } from './Artefacts';
@@ -532,7 +533,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       return new Response(body, { status: response.status, headers: response.headers });
     } catch (error) {
       if (controleur.signal.aborted)
-        throw new Error('Demande interrompue ou délai dépassé. Tu peux réessayer.', {
+        throw new Error('Demande interrompue ou délai dépassé. Vous pouvez réessayer.', {
           cause: error,
         });
       throw error;
@@ -628,7 +629,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       throw new Error('La tâche s’est interrompue avant la fin. Réessayez.');
     } catch (error) {
       if (controleur.signal.aborted)
-        throw new Error('Demande interrompue ou délai dépassé. Tu peux réessayer.', {
+        throw new Error('Demande interrompue ou délai dépassé. Vous pouvez réessayer.', {
           cause: error,
         });
       throw error;
@@ -1769,6 +1770,30 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       {(sixtouch || chatNavigateur || messages.length > 0) && (
         <div className="seven-outils-flottants seven-outils-ligne">
           {messages.length > 0 && <div className="volet-boutons">{partage}</div>}
+          {sixtouch && bureau && !enCloud && !telephone && ouvrirVSCodeBureau() && (
+            <div className="volet-boutons">
+              <button
+                type="button"
+                className="volet-bouton"
+                aria-label="Ouvrir le dossier dans VS Code"
+                title="Ouvrir dans VS Code"
+                onClick={async () => {
+                  const ouvrir = ouvrirVSCodeBureau();
+                  if (!ouvrir) return;
+                  try {
+                    if ((await ouvrir(dossier)) !== 'indisponible') return;
+                  } catch {
+                    /* Le lancement du protocole est indisponible. */
+                  }
+                  setErreur(
+                    'Impossible d’ouvrir le dossier. Vérifiez que Visual Studio Code est installé.',
+                  );
+                }}
+              >
+                <Icon name="code" size={18} stroke={1.8} />
+              </button>
+            </div>
+          )}
           {sixtouch && (
             <BoutonsVolet
               ouvert={volet}
@@ -1971,6 +1996,8 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
           );
         })}
 
+        {/* App de bureau : demande d'accord de Six (contrôler l'ordinateur, une application), avec ses boutons. */}
+        <AccordBureau />
         {enAttente && (
           <div className="seven-msg user">
             <PiecesJointes pieces={attentePieces} petit />
@@ -2239,37 +2266,6 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
           )}
         </div>
         <div className="seven-sous-barre">
-          {sixtouch && bureau && !enCloud && ouvrirVSCodeBureau() && (
-            <button
-              type="button"
-              className="six-remote-commande"
-              onClick={async () => {
-                const ouvrir = ouvrirVSCodeBureau();
-                if (!ouvrir) return;
-                try {
-                  if ((await ouvrir(dossier)) !== 'indisponible') return;
-                } catch {
-                  /* Le lancement du protocole est indisponible. */
-                }
-                setErreur(
-                  'Impossible d’ouvrir le dossier. Vérifie que Visual Studio Code est installé.',
-                );
-              }}
-            >
-              <Icon name="ordinateur" size={16} /> Ouvrir dans VS Code
-            </button>
-          )}
-          {sixtouch && (
-            <a
-              className="six-remote-commande"
-              href="https://mcp.desktopcommander.app/"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Icon name="ordinateur" size={16} /> Remote Desktop Commander
-              <Icon name="externe" size={13} />
-            </a>
-          )}
           <UtilisationSix usage={usageDiscussion} emplacement="saisie" />
           <ChoixModele
             skill={skill}
