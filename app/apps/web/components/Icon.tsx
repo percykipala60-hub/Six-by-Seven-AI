@@ -28,6 +28,7 @@ const PATHS = {
   phone: 'M7 2h10v20H7zM11 18h2',
   ordinateur: 'M3 5h18v11H3zM8 20h8M12 16v4',
   terminal: 'M4 17l6-5-6-5M12 19h8',
+  code: 'M8 7l-5 5 5 5M16 7l5 5-5 5M14 4l-4 16',
   agrandir: 'M14 4h6v6M10 20H4v-6M20 4l-7 7M4 20l7-7',
   reduire: 'M4 14h6v6M20 10h-6V4M10 14l-7 7M14 10l7-7',
   up: 'M12 19V5M5 12l7-7 7 7',

@@ -2847,23 +2847,6 @@ button.avatar::after {
   left: 0;
   width: min(250px, 100%);
 }
-.six-remote-commande {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 6px;
-  border-radius: 8px;
-  color: var(--muted);
-  font-size: 0.78rem;
-  text-decoration: none;
-  border: 0;
-  background: transparent;
-  cursor: pointer;
-}
-.six-remote-commande:hover {
-  background: var(--panel2);
-  color: var(--ink);
-}
 @media (max-width: 640px) {
   .seven-sous-barre {
     flex-wrap: wrap;

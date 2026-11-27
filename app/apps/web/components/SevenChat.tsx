@@ -1770,6 +1770,30 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       {(sixtouch || chatNavigateur || messages.length > 0) && (
         <div className="seven-outils-flottants seven-outils-ligne">
           {messages.length > 0 && <div className="volet-boutons">{partage}</div>}
+          {sixtouch && bureau && !enCloud && !telephone && ouvrirVSCodeBureau() && (
+            <div className="volet-boutons">
+              <button
+                type="button"
+                className="volet-bouton"
+                aria-label="Ouvrir le dossier dans VS Code"
+                title="Ouvrir dans VS Code"
+                onClick={async () => {
+                  const ouvrir = ouvrirVSCodeBureau();
+                  if (!ouvrir) return;
+                  try {
+                    if ((await ouvrir(dossier)) !== 'indisponible') return;
+                  } catch {
+                    /* Le lancement du protocole est indisponible. */
+                  }
+                  setErreur(
+                    'Impossible d’ouvrir le dossier. Vérifiez que Visual Studio Code est installé.',
+                  );
+                }}
+              >
+                <Icon name="code" size={18} stroke={1.8} />
+              </button>
+            </div>
+          )}
           {sixtouch && (
             <BoutonsVolet
               ouvert={volet}
@@ -2242,37 +2266,6 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
           )}
         </div>
         <div className="seven-sous-barre">
-          {sixtouch && bureau && !enCloud && ouvrirVSCodeBureau() && (
-            <button
-              type="button"
-              className="six-remote-commande"
-              onClick={async () => {
-                const ouvrir = ouvrirVSCodeBureau();
-                if (!ouvrir) return;
-                try {
-                  if ((await ouvrir(dossier)) !== 'indisponible') return;
-                } catch {
-                  /* Le lancement du protocole est indisponible. */
-                }
-                setErreur(
-                  'Impossible d’ouvrir le dossier. Vérifiez que Visual Studio Code est installé.',
-                );
-              }}
-            >
-              <Icon name="ordinateur" size={16} /> Ouvrir dans VS Code
-            </button>
-          )}
-          {sixtouch && (
-            <a
-              className="six-remote-commande"
-              href="https://mcp.desktopcommander.app/"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Icon name="ordinateur" size={16} /> Remote Desktop Commander
-              <Icon name="externe" size={13} />
-            </a>
-          )}
           <UtilisationSix usage={usageDiscussion} emplacement="saisie" />
           <ChoixModele
             skill={skill}
