@@ -11429,3 +11429,67 @@ button.drawer-profile .grow .small {
   z-index: 1;
   background: inherit;
 }
+
+/* Groupes des Récents comme Claude : options « ≡ » et « + » au survol, menus à cases et valeurs à droite. */
+.recents-dossier-tete {
+  border-radius: 8px;
+}
+.recents-dossier-tete:hover,
+.recents-dossier-tete:focus-within {
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
+}
+.recents-dossier-nouvelle {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.recents-dossier-nouvelle:hover {
+  background: color-mix(in srgb, var(--ink) 9%, transparent);
+  color: var(--ink);
+}
+.recents-dossier-nouvelle[aria-expanded='true'] {
+  opacity: 1;
+  background: color-mix(in srgb, var(--ink) 9%, transparent);
+}
+.recent-menu-valeur {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 0.82em;
+}
+.recent-menu button[role='menuitemcheckbox'] {
+  justify-content: flex-start;
+  gap: 10px;
+}
+.recent-menu-case {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 15px;
+  height: 15px;
+  border: 1.5px solid color-mix(in srgb, var(--ink) 35%, transparent);
+  border-radius: 4px;
+}
+.recent-menu-case[data-coche] {
+  border-color: var(--accent-b, #3a67b8);
+  background: var(--accent-b, #3a67b8);
+  color: #fff;
+}
+.recent-lien {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.recent-titre {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.recent-meta {
+  flex: none;
+  color: var(--muted);
+  font-size: 0.72rem;
+}

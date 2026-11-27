@@ -250,6 +250,13 @@ export function SelecteurEnvironnement({
 }) {
   const [ouvert, setOuvert] = useState(false);
   const [creation, setCreation] = useState(false);
+  useEffect(() => {
+    const u = new URL(window.location.href);
+    if (u.searchParams.get('nouvel') !== '1') return;
+    setCreation(true);
+    u.searchParams.delete('nouvel');
+    window.history.replaceState(null, '', u.pathname + u.search);
+  }, []);
   const zone = useFermeture(ouvert, () => setOuvert(false));
   return (
     <div className="env-selecteur" ref={zone}>
@@ -314,6 +321,13 @@ export function CarteEnvironnements({
   const envs = useEnvironnements();
   const [ouvert, setOuvert] = useState(false);
   const [creation, setCreation] = useState(false);
+  useEffect(() => {
+    const u = new URL(window.location.href);
+    if (u.searchParams.get('nouvel') !== '1') return;
+    setCreation(true);
+    u.searchParams.delete('nouvel');
+    window.history.replaceState(null, '', u.pathname + u.search);
+  }, []);
   const zone = useFermeture(ouvert, () => setOuvert(false));
   return (
     <div className="env-carte" ref={zone}>
