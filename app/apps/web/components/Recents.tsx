@@ -230,7 +230,10 @@ export function Recents({
       envs,
     );
     contenu = groupes.map((g) => {
-      const ferme = dossiersReplies.includes(g.id);
+      // Comme les dossiers de Claude : un environnement sans discussion reste replié (une seule ligne) ; l'ouvrir
+      // montre « Aucune discussion · Retirer ».
+      const bascule = dossiersReplies.includes(g.id);
+      const ferme = g.chats.length ? bascule : !bascule;
       const nouvelle = g.environnement
         ? `/cosinus?e=${encodeURIComponent(g.id)}`
         : g.dossier

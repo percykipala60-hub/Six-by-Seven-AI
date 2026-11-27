@@ -88,6 +88,17 @@ const ALIAS = new Map([
   ['file explorer', 'explorateur de fichiers'],
   ['settings', 'parametres'],
   ['reglages', 'parametres'],
+  ['microsoft word', 'word'],
+  ['ms word', 'word'],
+  ['winword', 'word'],
+  ['word 365', 'word'],
+  ['microsoft excel', 'excel'],
+  ['microsoft powerpoint', 'powerpoint'],
+  ['power point', 'powerpoint'],
+  ['ppt', 'powerpoint'],
+  ['chrome', 'google chrome'],
+  ['edge', 'microsoft edge'],
+  ['paint 3d', 'paint'],
 ]);
 const echapperRegex = (t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -254,8 +265,14 @@ function creerOrdinateur(ctx) {
   async function exigerApplication(appNom, chemin) {
     const nom = String(appNom || '').toLowerCase();
     if (!nom) throw new Error('Application inconnue : observe une fenêtre d’abord.');
-    if (INTERDITES.has(nom) || estSixLuiMeme(chemin))
-      throw new Error(`« ${appNom} » ne peut pas être contrôlée par Six (sécurité).`);
+    // La fenêtre devant est Six lui-même (la personne vient de lui écrire) : ce n'est pas un blocage, il faut d'abord
+    // ouvrir ou choisir l'application voulue.
+    if (estSixLuiMeme(chemin))
+      throw new Error(
+        'La fenêtre au premier plan est Six lui-même. Ouvre d’abord l’application voulue avec l’action « ouvrir » (par exemple app « Word » ou « Bloc-notes »), ou « fenetres » puis « focaliser », puis observe-la.',
+      );
+    if (INTERDITES.has(nom))
+      throw new Error(`« ${appNom} » ne peut pas être contrôlée par Six (sécurité de Windows).`);
     if (autorisees.has(nom)) return;
     if (refusees.has(nom)) throw new Error(`La personne a refusé que Six utilise « ${appNom} ».`);
     const ok = await demander(

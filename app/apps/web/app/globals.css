@@ -11152,3 +11152,59 @@ button.drawer-profile .grow .small {
 .lg-accordeon li + li {
   margin-top: 6px;
 }
+
+/* Panneau de gauche, compact comme la barre latérale de Claude : texte 14 px, poids normal, lignes de 34 px.
+   (html … pour passer devant les règles du panneau ouvert sur grand écran.) */
+html .drawer .drawer-item,
+html[data-panneau] .drawer .drawer-item {
+  gap: 10px;
+  min-height: 34px;
+  padding: 0 10px;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 400;
+}
+.drawer .drawer-item svg {
+  width: 17px;
+  height: 17px;
+}
+html .drawer .drawer-item[aria-current='page'],
+html[data-panneau] .drawer .drawer-item[aria-current='page'] {
+  font-weight: 500;
+}
+.drawer .drawer-new {
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+.drawer .drawer-head {
+  padding-bottom: 8px;
+}
+.drawer .drawer-head .word {
+  font-size: 1rem;
+}
+.drawer .recents-titre,
+.drawer .recents-dossier-titre {
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+.drawer .recent,
+.drawer .recent-lien {
+  font-size: 0.84rem;
+}
+.drawer .recents-vide {
+  font-size: 0.78rem;
+}
+button.drawer-profile b {
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+button.drawer-profile .grow .small {
+  font-size: 0.75rem;
+}
+@media (max-width: 767px) {
+  /* Téléphone : un peu plus grand pour le doigt. */
+  html .drawer .drawer-item {
+    min-height: 42px;
+    font-size: 0.94rem;
+  }
+}
