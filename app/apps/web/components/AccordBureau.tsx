@@ -5,14 +5,16 @@ import { Icon } from './Icon';
 
 /**
  * Demandes d'accord de l'app de bureau (contrôle de l'ordinateur, une application), affichées DANS la conversation,
- * comme un message de Six avec deux boutons. L'app de bureau attend la réponse ; si la conversation n'est pas
+ * comme un message de Six avec trois boutons : Refuser, Autoriser cette fois (jusqu'à la fermeture de l'app),
+ * Toujours autoriser (gardé, sauf rappel à l'ordre : arrêt d'urgence ou « arrête »). L'app de bureau attend la réponse ; si la conversation n'est pas
  * affichée, elle ouvre sa propre fenêtre d'accord à la place.
  */
+type Choix = 'non' | 'une-fois' | 'toujours';
 type Demande = { id: number; titre: string; texte: string; garanties?: boolean };
 type Pont = {
   surDemande: (rappel: (d: Demande) => void) => () => void;
   recu: (id: number) => void;
-  repondre: (id: number, oui: boolean) => void;
+  repondre: (id: number, choix: Choix) => void;
 };
 
 function pont(): Pont | null {
@@ -32,8 +34,8 @@ export function AccordBureau() {
     });
   }, []);
   if (!demandes.length) return null;
-  const repondre = (d: Demande, oui: boolean) => {
-    pont()?.repondre(d.id, oui);
+  const repondre = (d: Demande, choix: Choix) => {
+    pont()?.repondre(d.id, choix);
     setDemandes((liste) => liste.filter((x) => x.id !== d.id));
   };
   return (
@@ -68,11 +70,14 @@ export function AccordBureau() {
               </ul>
             )}
             <div className="accord-boutons">
-              <button type="button" className="accord-non" onClick={() => repondre(d, false)}>
+              <button type="button" className="accord-non" onClick={() => repondre(d, 'non')}>
                 Refuser
               </button>
-              <button type="button" className="accord-oui" onClick={() => repondre(d, true)}>
-                Autoriser
+              <button type="button" className="accord-non" onClick={() => repondre(d, 'une-fois')}>
+                Autoriser cette fois
+              </button>
+              <button type="button" className="accord-oui" onClick={() => repondre(d, 'toujours')}>
+                Toujours autoriser
               </button>
             </div>
           </div>

@@ -15,9 +15,10 @@
     // Par sécurité, le focus va sur « Refuser » : Entrée ne donne jamais l'accord par mégarde.
     $('refuser').focus();
   });
-  $('autoriser').addEventListener('click', () => a.repondre(true));
-  $('refuser').addEventListener('click', () => a.repondre(false));
+  $('toujours').addEventListener('click', () => a.repondre('toujours'));
+  $('autoriser').addEventListener('click', () => a.repondre('une-fois'));
+  $('refuser').addEventListener('click', () => a.repondre('non'));
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') a.repondre(false);
+    if (e.key === 'Escape') a.repondre('non');
   });
 })();

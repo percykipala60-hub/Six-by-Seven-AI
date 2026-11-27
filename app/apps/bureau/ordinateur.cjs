@@ -160,6 +160,38 @@ function creerOrdinateur(ctx) {
   let arrete = false;
   const autorisees = new Set();
   const refusees = new Set();
+  // Autorisations permanentes (« Toujours autoriser ») : gardées d'un lancement à l'autre, annulées par un rappel à
+  // l'ordre (arrêt d'urgence ou « arrête ») ou depuis Réglages → Application de bureau.
+  const fs = require('node:fs');
+  const permanentes = { global: false, apps: new Set() };
+  try {
+    const d = JSON.parse(fs.readFileSync(ctx.stockage || '', 'utf8'));
+    permanentes.global = d.global === true;
+    for (const a of Array.isArray(d.apps) ? d.apps : [])
+      if (typeof a === 'string') permanentes.apps.add(a);
+  } catch {
+    /* pas encore d'autorisation permanente */
+  }
+  const garderPermanentes = () => {
+    if (!ctx.stockage) return;
+    try {
+      fs.writeFileSync(
+        ctx.stockage,
+        JSON.stringify({ global: permanentes.global, apps: [...permanentes.apps] }),
+      );
+    } catch {
+      /* stockage impossible : valables jusqu'à la fermeture */
+    }
+  };
+  /** Rappel à l'ordre : tout est retiré, même ce qui était autorisé pour toujours. */
+  const rappelALOrdre = () => {
+    arrete = true;
+    accordGlobal = false;
+    autorisees.clear();
+    permanentes.global = false;
+    permanentes.apps.clear();
+    garderPermanentes();
+  };
   let raccourcis = null;
 
   function demarrerAide() {
@@ -232,13 +264,13 @@ function creerOrdinateur(ctx) {
     raccourcis = true;
     try {
       globalShortcut.register('CommandOrControl+Alt+Escape', () => {
-        arrete = true;
-        accordGlobal = false;
+        rappelALOrdre();
         void dialog.showMessageBox({
           type: 'info',
           title: 'Six',
           message: 'Contrôle de l’ordinateur arrêté.',
-          detail: 'Six ne touchera plus à l’ordinateur sans un nouvel accord.',
+          detail:
+            'Six ne touchera plus à l’ordinateur sans un nouvel accord, même pour les applications autorisées pour toujours.',
         });
       });
     } catch {
@@ -246,15 +278,19 @@ function creerOrdinateur(ctx) {
     }
   }
 
+  /** Réponse de la personne : « non », « une-fois » (jusqu'à la fermeture de l'app) ou « toujours ». */
   async function demander(message, detail, garanties = false) {
-    // Fenêtre d'accord aux couleurs de Six (main.cjs) ; boîte de Windows en secours.
-    if (ctx.demander) return ctx.demander({ titre: message, texte: detail, garanties });
+    // Dans la conversation ou fenêtre d'accord aux couleurs de Six (main.cjs) ; boîte de Windows en secours.
+    if (ctx.demander) {
+      const r = await ctx.demander({ titre: message, texte: detail, garanties });
+      return r === 'toujours' || r === 'une-fois' ? r : 'non';
+    }
     const f = ctx.fenetre();
     const options = {
       type: 'question',
-      buttons: ['Autoriser', 'Refuser'],
-      defaultId: 1,
-      cancelId: 1,
+      buttons: ['Toujours autoriser', 'Autoriser cette fois', 'Refuser'],
+      defaultId: 2,
+      cancelId: 2,
       title: 'Six',
       message,
       detail,
@@ -262,20 +298,28 @@ function creerOrdinateur(ctx) {
     const { response } = f
       ? await dialog.showMessageBox(f, options)
       : await dialog.showMessageBox(options);
-    return response === 0;
+    return response === 0 ? 'toujours' : response === 1 ? 'une-fois' : 'non';
   }
 
   async function exigerAccordGlobal() {
     if (arrete && !accordGlobal) arrete = false;
-    if (accordGlobal) return;
     surveillerArret();
-    const ok = await demander(
+    if (accordGlobal) return;
+    if (permanentes.global) {
+      accordGlobal = true;
+      return;
+    }
+    const r = await demander(
       'Autoriser Six à contrôler cet ordinateur ?',
       'Six pourra lire les fenêtres que vous autorisez, cliquer et taper pour vous.',
       true,
     );
-    if (!ok) throw new Error('Contrôle de l’ordinateur refusé par la personne.');
+    if (r === 'non') throw new Error('Contrôle de l’ordinateur refusé par la personne.');
     accordGlobal = true;
+    if (r === 'toujours') {
+      permanentes.global = true;
+      garderPermanentes();
+    }
   }
 
   const estSixLuiMeme = (chemin) =>
@@ -293,17 +337,21 @@ function creerOrdinateur(ctx) {
       );
     if (INTERDITES.has(nom))
       throw new Error(`« ${appNom} » ne peut pas être contrôlée par Six (sécurité de Windows).`);
-    if (autorisees.has(nom)) return;
+    if (autorisees.has(nom) || permanentes.apps.has(nom)) return;
     if (refusees.has(nom)) throw new Error(`La personne a refusé que Six utilise « ${appNom} ».`);
-    const ok = await demander(
+    const r = await demander(
       `Autoriser Six à utiliser « ${appNom} » ?`,
       'Six pourra lire cette fenêtre, cliquer et taper dedans. Vous pouvez l’arrêter à tout moment avec Ctrl+Alt+Échap.',
     );
-    if (!ok) {
+    if (r === 'non') {
       refusees.add(nom);
       throw new Error(`La personne a refusé que Six utilise « ${appNom} ».`);
     }
     autorisees.add(nom);
+    if (r === 'toujours') {
+      permanentes.apps.add(nom);
+      garderPermanentes();
+    }
   }
 
   /** Application de la fenêtre visée (ou de celle au premier plan). */
@@ -371,8 +419,7 @@ function creerOrdinateur(ctx) {
     if (c.action === 'etat')
       return { actif: accordGlobal && !arrete, applications: [...autorisees] };
     if (c.action === 'arreter') {
-      arrete = true;
-      accordGlobal = false;
+      rappelALOrdre();
       return { fait: 'arrêté' };
     }
     await exigerAccordGlobal();
@@ -525,6 +572,14 @@ function creerOrdinateur(ctx) {
 
   return {
     piloter,
+    /** Réglages : autorisations permanentes, et leur retrait (sans arrêter une tâche en cours). */
+    autorisations: () => ({ global: permanentes.global, apps: [...permanentes.apps] }),
+    retirerAutorisations: () => {
+      permanentes.global = false;
+      permanentes.apps.clear();
+      garderPermanentes();
+      return { global: false, apps: [] };
+    },
     arreter: () => {
       try {
         globalShortcut.unregister('CommandOrControl+Alt+Escape');

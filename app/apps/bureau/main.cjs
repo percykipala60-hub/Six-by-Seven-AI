@@ -110,7 +110,11 @@ const navigateur = creerNavigateur({
 });
 
 // Contrôle de l'ordinateur par l'agent de Six (accords, interdits et arrêt d'urgence : ordinateur.cjs).
-const ordinateur = creerOrdinateur({ fenetre: () => fenetre, demander: demanderAccord });
+const ordinateur = creerOrdinateur({
+  fenetre: () => fenetre,
+  demander: demanderAccord,
+  stockage: path.join(app.getPath('userData'), 'six-autorisations.json'),
+});
 
 // ---------- Demande d'accord (accord.html) ----------
 // Fenêtre séparée aux couleurs de Six, au-dessus de l'app : la page web ne peut ni la voir ni cliquer dedans.
@@ -142,8 +146,8 @@ function demanderAccord(demande) {
 
 /** Fenêtre d'accord à part ; résout false si elle est fermée sans réponse. */
 function demanderAccordFenetre({ titre, texte, garanties = false }) {
-  if (!fenetre) return Promise.resolve(false);
-  if (accord) accord.resoudre(false);
+  if (!fenetre) return Promise.resolve('non');
+  if (accord) accord.resoudre('non');
   const zone = fenetre.getBounds();
   const largeur = 460;
   const hauteur = garanties ? 330 : 210;
@@ -183,7 +187,7 @@ function demanderAccordFenetre({ titre, texte, garanties = false }) {
       if (!f.isDestroyed()) f.close();
     };
     accord = { fenetre: f, resoudre: terminer };
-    f.on('closed', () => terminer(false));
+    f.on('closed', () => terminer('non'));
     f.webContents.once('did-finish-load', () => {
       f.webContents.send('six:accord-demande', { titre, texte, garanties, theme });
       f.show();
@@ -616,16 +620,17 @@ else {
       const e = accordsConversation.get(Number(id));
       if (!e || !depuisApp(evenement)) return;
       accordsConversation.delete(Number(id));
-      e.resoudre(oui === true);
+      e.resoudre(oui === 'toujours' || oui === 'une-fois' ? oui : 'non');
     });
     // Réponse de la demande d'accord : acceptée seulement depuis sa propre fenêtre.
     ipcMain.handle('six:accord', (evenement, oui) => {
       if (!accord || evenement.sender !== accord.fenetre.webContents) return;
-      accord.resoudre(oui === true);
+      accord.resoudre(oui === 'toujours' || oui === 'une-fois' ? oui : 'non');
     });
     // Réglages → Application de bureau : version, lancement au démarrage, ordinateur gardé éveillé.
     ipcMain.handle('six:reglages-bureau', (evenement, c) => {
       if (!depuisApp(evenement) || !c || typeof c !== 'object') throw new Error('Origine refusée.');
+      if (c.action === 'retirer-autorisations') ordinateur.retirerAutorisations();
       if (c.action === 'demarrage') app.setLoginItemSettings({ openAtLogin: c.valeur === true });
       if (c.action === 'eveil') {
         if (c.valeur === true && eveil === null)
@@ -639,6 +644,7 @@ else {
         version: app.getVersion(),
         demarrage: app.getLoginItemSettings().openAtLogin,
         eveil: eveil !== null,
+        autorisations: ordinateur.autorisations(),
       };
     });
     // Terminal de Cosinus : seule la personne y tape (l'agent n'y a pas accès). Réponse { ok, resultat } ou erreur.

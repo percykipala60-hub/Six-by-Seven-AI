@@ -41,7 +41,7 @@ contextBridge.exposeInMainWorld('sixBureau', {
       return () => ipcRenderer.removeListener('six:accord-conversation', f);
     },
     recu: (id) => ipcRenderer.invoke('six:accord-recu', id),
-    repondre: (id, oui) => ipcRenderer.invoke('six:accord-conversation', id, oui === true),
+    repondre: (id, choix) => ipcRenderer.invoke('six:accord-conversation', id, choix),
   },
   /** Réglages de l'application de bureau (lire, lancement au démarrage, garder éveillé). */
   reglages: (commande) => ipcRenderer.invoke('six:reglages-bureau', commande),

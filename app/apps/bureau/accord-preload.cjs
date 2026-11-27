@@ -3,6 +3,6 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('sixAccord', {
-  repondre: (oui) => ipcRenderer.invoke('six:accord', oui === true),
+  repondre: (choix) => ipcRenderer.invoke('six:accord', choix),
   surDemande: (rappel) => ipcRenderer.on('six:accord-demande', (_e, d) => rappel(d)),
 });
