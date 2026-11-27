@@ -1,7 +1,9 @@
 'use client';
 
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { Icon } from './Icon';
+import { lireAvecElevenLabs } from '@/lib/lecture-elevenlabs';
+import { trouverVoixElevenLabs, VOIX_ELEVENLABS } from '@/lib/voix-elevenlabs';
 import {
   LANGUES_VOIX,
   VITESSES,
@@ -11,6 +13,7 @@ import {
   ecrirePreferencesVoix,
   lirePreferencesVoix,
   listerMicros,
+  texteEssaiVoix,
   voixPourLangue,
   type Declenchement,
   type LangueVoix,
@@ -45,6 +48,9 @@ export function ReglagesVoix() {
   const [p, setP] = useState<PreferencesVoix | null>(null);
   const [voix, setVoix] = useState<SpeechSynthesisVoice[]>([]);
   const [micros, setMicros] = useState<MediaDeviceInfo[]>([]);
+  const [erreurVoix, setErreurVoix] = useState('');
+  const [elevenlabs, setElevenLabs] = useState(false);
+  const apercu = useRef<AbortController | null>(null);
 
   const rafraichirMicros = useCallback(
     (demander = false) =>
@@ -63,29 +69,71 @@ export function ReglagesVoix() {
     md?.addEventListener?.('devicechange', maj);
     return () => md?.removeEventListener?.('devicechange', maj);
   }, [rafraichirMicros]);
+  useEffect(() => {
+    const ctl = new AbortController();
+    void fetch('/api/chat/voix', { signal: ctl.signal })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!ctl.signal.aborted) setElevenLabs(data?.elevenlabs === true);
+      })
+      .catch(() => {});
+    return () => {
+      ctl.abort();
+      apercu.current?.abort();
+    };
+  }, []);
 
   if (!p) return null;
   const changer = (maj: Partial<PreferencesVoix>) => {
+    apercu.current?.abort();
     const n = { ...p, ...maj };
     setP(n);
     ecrirePreferencesVoix(n);
+    setErreurVoix('');
   };
   const disponibles = voixPourLangue(voix, p.langue);
-  const actuelle = choisirVoix(voix, p);
+  const voixDistantes = elevenlabs ? VOIX_ELEVENLABS.filter((v) => v.langue === p.langue) : [];
+  const selection =
+    voixDistantes.some((v) => v.selection === p.voix) ||
+    disponibles.some((v) => v.voiceURI === p.voix)
+      ? p.voix
+      : '';
   const nomsCaches = micros.length > 0 && micros.every((m) => !m.label);
 
-  const ecouter = (v = actuelle) => {
+  const ecouter = (choix = p.voix) => {
+    apercu.current?.abort();
     const s = window.speechSynthesis;
-    if (!s) return;
-    s.cancel();
-    const u = new SpeechSynthesisUtterance(
-      p.langue === 'en'
-        ? 'Hello, I am Six. How can I help you?'
-        : 'Bonjour, je suis Six. Comment puis-je t’aider ?',
-    );
+    s?.cancel();
+    setErreurVoix('');
+    const distante = trouverVoixElevenLabs(choix);
+    if (distante) {
+      const ctl = new AbortController();
+      apercu.current = ctl;
+      void lireAvecElevenLabs(texteEssaiVoix(distante.langue), choix, p.vitesse, ctl.signal)
+        .catch((e) => {
+          if (!ctl.signal.aborted)
+            setErreurVoix(e instanceof Error ? e.message : 'Aperçu indisponible.');
+        })
+        .finally(() => {
+          if (apercu.current === ctl) apercu.current = null;
+        });
+      return;
+    }
+    if (!s || typeof SpeechSynthesisUtterance === 'undefined') {
+      setErreurVoix('La lecture vocale est indisponible sur cet appareil.');
+      return;
+    }
+    const v = choisirVoix(voix, { ...p, voix: choix });
+    const u = new SpeechSynthesisUtterance(texteEssaiVoix(p.langue));
     if (v) u.voice = v;
     u.lang = v?.lang ?? bcp47(p.langue);
     u.rate = p.vitesse;
+    u.onerror = ({ error }) => {
+      if (error === 'canceled' || error === 'interrupted') return;
+      setErreurVoix(
+        'Impossible de lire dans cette langue. Vérifiez les voix installées sur votre appareil.',
+      );
+    };
     s.speak(u);
   };
 
@@ -109,16 +157,23 @@ export function ReglagesVoix() {
             ))}
           </select>
         </Rangee>
-        <Rangee titre="Langue" sous="La langue que vous parlez, ou laissez Six la reconnaître">
+        <Rangee titre="Langue" sous="Dictée et lecture des réponses">
           <select
             className="select voix-select"
             value={p.langue}
             aria-label="Langue"
-            onChange={(e) => changer({ langue: e.target.value as LangueVoix, voix: '' })}
+            onChange={(e) => {
+              // La voix suit la langue : la voix de Six prévue pour cette langue, sinon celle de l'appareil.
+              const langue = e.target.value as LangueVoix;
+              const prevue = elevenlabs
+                ? VOIX_ELEVENLABS.find((v) => v.langue === langue)
+                : undefined;
+              changer({ langue, voix: prevue?.selection ?? '' });
+            }}
           >
             {LANGUES_VOIX.map((l) => (
               <option key={l.id} value={l.id}>
-                {l.id === 'auto' ? 'Détection automatique' : l.nom}
+                {l.nom}
               </option>
             ))}
           </select>
@@ -140,14 +195,19 @@ export function ReglagesVoix() {
             </button>
             <select
               className="select voix-select"
-              value={actuelle?.voiceURI ?? ''}
+              value={selection}
               aria-label="Voix de Six"
               onChange={(e) => {
                 changer({ voix: e.target.value });
-                ecouter(voix.find((v) => v.voiceURI === e.target.value));
+                if (!trouverVoixElevenLabs(e.target.value)) ecouter(e.target.value);
               }}
             >
-              {disponibles.length === 0 && <option value="">Voix de l’appareil</option>}
+              <option value="">Automatique (appareil)</option>
+              {voixDistantes.map((v) => (
+                <option key={v.selection} value={v.selection}>
+                  {v.nom}
+                </option>
+              ))}
               {disponibles.map((v) => (
                 <option key={v.voiceURI} value={v.voiceURI}>
                   {nomVoix(v)}
@@ -155,6 +215,14 @@ export function ReglagesVoix() {
               ))}
             </select>
           </div>
+          {trouverVoixElevenLabs(selection) && (
+            <p className="muted small">Le texte lu est envoyé à ElevenLabs pour générer l’audio.</p>
+          )}
+          {erreurVoix && (
+            <p role="status" className="muted small">
+              {erreurVoix}
+            </p>
+          )}
         </Rangee>
         <Rangee titre="Vitesse de lecture">
           <select

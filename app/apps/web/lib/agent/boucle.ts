@@ -84,19 +84,15 @@ export function sansMarkdown(t: string): string {
       .join('\n')
       .trim();
   }
-  return (
-    t
-      .replace(/^#{1,6}\s+/gm, '')
-      .replace(/\*\*([^*\n]+)\*\*/g, '$1')
-      .replace(/__([^_\n]+)__/g, '$1')
-      .replace(/(^|[\s(])\*([^*\n\s][^*\n]*)\*(?=[\s).,;:!?]|$)/gm, '$1$2')
-      .replace(/(^|[\s(])_([^_\n\s][^_\n]*)_(?=[\s).,;:!?]|$)/gm, '$1$2')
-      .replace(/`([^`\n]+)`/g, '$1')
-      .replace(/^\s*[-*]\s+/gm, '• ')
-      // Qwen glisse parfois un caractère chinois ou japonais au milieu du français : on le retire.
-      .replace(/[぀-ヿ㐀-䶿一-鿿豈-﫿가-힯]+/g, '')
-      .trim()
-  );
+  return t
+    .replace(/^#{1,6}\s+/gm, '')
+    .replace(/\*\*([^*\n]+)\*\*/g, '$1')
+    .replace(/__([^_\n]+)__/g, '$1')
+    .replace(/(^|[\s(])\*([^*\n\s][^*\n]*)\*(?=[\s).,;:!?]|$)/gm, '$1$2')
+    .replace(/(^|[\s(])_([^_\n\s][^_\n]*)_(?=[\s).,;:!?]|$)/gm, '$1$2')
+    .replace(/`([^`\n]+)`/g, '$1')
+    .replace(/^\s*[-*]\s+/gm, '• ')
+    .trim();
 }
 
 /** La personne demande de ne pas enregistrer (« ne l'enregistre pas », « sans enregistrer », « juste montre-moi »). */

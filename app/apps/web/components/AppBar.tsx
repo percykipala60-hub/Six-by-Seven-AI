@@ -419,7 +419,7 @@ export function AppBar({
           </Link>
         )}
         {/* Comme dans Claude : Rechercher, les trois espaces, puis « Récents » (les discussions de l'espace ouvert ;
-            dans Cosinus, groupées par dossier comme dans Claude Code). Réglages et confidentialité restent en bas. */}
+            dans Cosinus, groupées par dossier comme dans Claude Code). */}
         <nav aria-label="Navigation principale" className="drawer-nav">
           <button
             type="button"
@@ -466,7 +466,7 @@ export function AppBar({
         <Suivis />
         {/* Comme dans Claude : le compte en bas du panneau ; un clic ouvre la petite liste (paramètres, utilisation,
             aide, applications, déconnexion) juste au-dessus. */}
-        <ProfilMenu />
+        <ProfilLigne />
       </div>
     </>
   );
@@ -578,7 +578,7 @@ function titreReponse(g: ConversationGardee): string {
   return g.canal ? `${g.canal} · ${court}` : court || 'Réponse';
 }
 
-function ProfilMenu() {
+function ProfilLigne() {
   const [c, setC] = useState<Compte>({ statut: 'invite', prenom: '' });
   const [menu, setMenu] = useState(false);
   const fermer = useCallback(() => setMenu(false), []);
@@ -592,9 +592,10 @@ function ProfilMenu() {
       <button
         type="button"
         className="drawer-profile"
+        aria-label={`Menu du compte de ${c.prenom || 'l’invité'}`}
         aria-haspopup="menu"
         aria-expanded={menu}
-        onClick={() => setMenu((m) => !m)}
+        onClick={() => setMenu((ouvert) => !ouvert)}
       >
         <span className="avatar avatar-static" aria-hidden="true">
           <AvatarContenu c={c} taille={18} />
@@ -606,9 +607,9 @@ function ProfilMenu() {
             {c.statut === 'connecte' ? c.identifiant : 'Non connecté, tout reste ici'}
           </span>
         </span>
-        <Icon name="trier" size={16} />
+        <Icon name="chevron" size={18} />
       </button>
-      {menu && <MenuCompte compte={c} ancre="dessus" onFermer={fermer} />}
+      {menu && <MenuCompte compte={c} ancre="panneau" onFermer={fermer} />}
     </div>
   );
 }

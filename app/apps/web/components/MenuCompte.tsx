@@ -59,7 +59,14 @@ function Element({
   );
   if (href && externe)
     return (
-      <a role="menuitem" className="menu-compte-el" href={href} target="_blank" rel="noreferrer">
+      <a
+        role="menuitem"
+        className="menu-compte-el"
+        href={href}
+        target="_blank"
+        rel="noreferrer"
+        onClick={onClick}
+      >
         {contenu}
         <Icon name="externe" size={15} stroke={1.75} />
       </a>
@@ -89,9 +96,9 @@ export function MenuCompte({
   compte: Compte;
   /**
    * Où s'ouvre le menu : à droite de l'avatar de la barre verticale (« haut »), sous l'avatar de la barre du haut
-   * (« bas »), ou au-dessus du compte en bas du panneau de gauche (« dessus », comme dans Claude).
+   * (« bas »), ou au-dessus du compte en bas du panneau de gauche (« panneau », comme dans Claude).
    */
-  ancre: 'haut' | 'bas' | 'dessus';
+  ancre: 'haut' | 'bas' | 'panneau';
   onFermer: () => void;
 }) {
   const boite = useRef<HTMLDivElement>(null);
@@ -108,7 +115,7 @@ export function MenuCompte({
     boite.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
     const dehors = (e: PointerEvent) => {
       if (raccourcis || demande) return;
-      if (!boite.current?.contains(e.target as Node)) onFermer();
+      if (!boite.current?.parentElement?.contains(e.target as Node)) onFermer();
     };
     const touche = (e: KeyboardEvent) => {
       if (e.key !== 'Escape') return;
@@ -135,7 +142,10 @@ export function MenuCompte({
           {compte.statut === 'connecte' ? compte.identifiant : 'Invité, non connecté'}
         </p>
         <Element icon="sliders" href="/reglages" onClick={onFermer} apres={<kbd>{CTRL} ,</kbd>}>
-          Paramètres
+          Réglages
+        </Element>
+        <Element icon="lock" href={LIEN_CONFIDENTIALITE} externe onClick={onFermer}>
+          Confidentialité
         </Element>
         <Element icon="horloge" href="/reglages?v=utilisation" onClick={onFermer}>
           Utilisation
@@ -164,9 +174,6 @@ export function MenuCompte({
         </Element>
         {plus && (
           <div className="menu-compte-sous">
-            <a role="menuitem" href={LIEN_CONFIDENTIALITE} target="_blank" rel="noreferrer">
-              Confidentialité
-            </a>
             <a role="menuitem" href={LIEN_CONDITIONS} target="_blank" rel="noreferrer">
               Conditions d’utilisation
             </a>

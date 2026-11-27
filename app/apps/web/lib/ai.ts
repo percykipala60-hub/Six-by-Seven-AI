@@ -1,7 +1,8 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { MessageAgent, OutilSchema, ReponseAgent } from './agent/types';
+import { compterJetons } from './jetons-serveur';
 
-// Fournisseurs d'IA (Claude, OpenAI/ChatGPT). Les clés ne vivent QUE dans les variables d'environnement du serveur :
+// Les clés des fournisseurs ne vivent que dans les variables d'environnement du serveur :
 // jamais dans le code, jamais dans le navigateur (aucune variable NEXT_PUBLIC_), jamais dans les logs.
 
 export class ProviderError extends Error {}
@@ -45,6 +46,10 @@ const FALLBACK_MODELS = new Set([
 
 /** Journal technique des jetons (nombres seulement, jamais de contenu) pour vérifier que le cache est relu. */
 function logUsage(model: string, u: Anthropic.Beta.BetaUsage): void {
+  compterJetons(
+    u.input_tokens + (u.cache_creation_input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0),
+    u.output_tokens,
+  );
   console.info(
     `[ia] ${model} : entrée ${u.input_tokens}, cache écrit ${u.cache_creation_input_tokens ?? 0}, cache lu ${u.cache_read_input_tokens ?? 0}, sortie ${u.output_tokens}`,
   );
@@ -111,52 +116,71 @@ const claude: Provider = {
   },
 };
 
-const openai: Provider = {
-  id: 'openai',
-  label: 'ChatGPT (OpenAI)',
-  // Pas de nom de modèle par défaut : à choisir dans la doc OpenAI, puis à mettre dans .env.local.
-  configured: (role) => Boolean(env('OPENAI_API_KEY') && openai.model(role)),
-  model: (role, premium = true) =>
+function fournisseurCompatible(id: 'openai' | 'openrouter', label: string, url: string): Provider {
+  const prefixe = id.toUpperCase();
+  const cle = () => env(`${prefixe}_API_KEY`);
+  const modele = (role: Role, premium = true) =>
     (role === 'analyse'
-      ? env('OPENAI_MODEL_ANALYSE')
-      : (!premium && env('OPENAI_MODEL_REDACTION_GRATUIT')) || env('OPENAI_MODEL_REDACTION')) ||
-    env('OPENAI_MODEL'),
-  async call(model, system, user, maxTokens, signal, history, images) {
-    const res = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      signal,
-      headers: {
-        'content-type': 'application/json',
-        authorization: `Bearer ${env('OPENAI_API_KEY')}`,
-      },
-      body: JSON.stringify({
-        model,
-        max_completion_tokens: maxTokens,
-        messages: [
-          { role: 'system', content: system },
-          ...(history ?? []),
-          {
-            role: 'user',
-            content: images?.length
-              ? [
-                  { type: 'text', text: user },
-                  ...images.map((image) => ({
-                    type: 'image_url',
-                    image_url: { url: `data:${image.type};base64,${image.data}` },
-                  })),
-                ]
-              : user,
-          },
-        ],
-      }),
-    });
-    if (!res.ok) throw new HttpFailure(res.status);
-    const data = (await res.json()) as { choices?: { message?: { content?: string } }[] };
-    const text = data.choices?.[0]?.message?.content;
-    if (typeof text !== 'string') throw new HttpFailure(502);
-    return text;
-  },
-};
+      ? env(`${prefixe}_MODEL_ANALYSE`)
+      : (!premium && env(`${prefixe}_MODEL_REDACTION_GRATUIT`)) ||
+        env(`${prefixe}_MODEL_REDACTION`)) || env(`${prefixe}_MODEL`);
+  return {
+    id,
+    label,
+    configured: (role) => Boolean(cle() && modele(role)),
+    model: modele,
+    async call(model, system, user, maxTokens, signal, history, images) {
+      const res = await fetch(url, {
+        method: 'POST',
+        signal,
+        headers: {
+          'content-type': 'application/json',
+          authorization: `Bearer ${cle()}`,
+        },
+        body: JSON.stringify({
+          model,
+          max_completion_tokens: maxTokens,
+          messages: [
+            { role: 'system', content: system },
+            ...(history ?? []),
+            {
+              role: 'user',
+              content: images?.length
+                ? [
+                    { type: 'text', text: user },
+                    ...images.map((image) => ({
+                      type: 'image_url',
+                      image_url: { url: `data:${image.type};base64,${image.data}` },
+                    })),
+                  ]
+                : user,
+            },
+          ],
+        }),
+      });
+      if (!res.ok) throw new HttpFailure(res.status);
+      const data = (await res.json()) as {
+        choices?: { message?: { content?: string } }[];
+        usage?: { prompt_tokens?: number; completion_tokens?: number };
+      };
+      compterJetons(data.usage?.prompt_tokens, data.usage?.completion_tokens);
+      const text = data.choices?.[0]?.message?.content;
+      if (typeof text !== 'string') throw new HttpFailure(502);
+      return text;
+    },
+  };
+}
+
+const openai = fournisseurCompatible(
+  'openai',
+  'ChatGPT (OpenAI)',
+  'https://api.openai.com/v1/chat/completions',
+);
+const openrouter = fournisseurCompatible(
+  'openrouter',
+  'OpenRouter',
+  'https://openrouter.ai/api/v1/chat/completions',
+);
 
 class HttpFailure extends Error {
   constructor(readonly status: number) {
@@ -206,24 +230,28 @@ const local: Provider = {
       throw new HttpFailure(0); // Ollama arrêté, délai dépassé ou annulation
     }
     if (!res.ok) throw new HttpFailure(res.status);
-    const data = (await res.json()) as { message?: { content?: string } };
+    const data = (await res.json()) as {
+      message?: { content?: string };
+      prompt_eval_count?: number;
+      eval_count?: number;
+    };
+    compterJetons(data.prompt_eval_count, data.eval_count);
     const text = data.message?.content;
     if (typeof text !== 'string') throw new HttpFailure(502);
     return text;
   },
 };
 
-const ALL: Record<string, Provider> = { claude, openai, local };
+const ALL: Record<string, Provider> = { claude, openai, openrouter, local };
 
 /**
- * Ordre d'essai : AI_PROVIDERS=claude,openai,local (défaut). Le suivant prend le relais si le premier échoue.
- * Seuls les fournisseurs configurés comptent : sans clé Claude ni OpenAI, l'IA locale répond seule.
+ * AI_PROVIDERS fixe l'ordre d'essai. Seuls les fournisseurs configurés peuvent prendre le relais.
  */
 function chain(role: Role): Provider[] {
-  const order = (env('AI_PROVIDERS') || 'claude,openai,local')
+  const order = (env('AI_PROVIDERS') || 'claude,openai,openrouter,local')
     .split(',')
     .map((s) => s.trim().toLowerCase())
-    .filter((s) => s in ALL);
+    .filter((s) => Object.hasOwn(ALL, s));
   return [...new Set(order)].map((id) => ALL[id]).filter((p) => p.configured(role));
 }
 
@@ -520,11 +548,14 @@ const localOutils: AppelAvecOutils = async (model, system, messages, outils, max
   }
   if (!res.ok) throw new HttpFailure(res.status);
   const data = (await res.json()) as {
+    prompt_eval_count?: number;
+    eval_count?: number;
     message?: {
       content?: string;
       tool_calls?: { function?: { name?: string; arguments?: Record<string, unknown> | string } }[];
     };
   };
+  compterJetons(data.prompt_eval_count, data.eval_count);
   const appels = (data.message?.tool_calls ?? []).flatMap((t) => {
     const nom = t.function?.name;
     if (!nom) return [];

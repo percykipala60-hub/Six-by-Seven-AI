@@ -2,7 +2,7 @@
 /**
  * Six by Seven.AI — application de bureau.
  *
- * La fenêtre charge l'app Six (par défaut le serveur local, http://localhost:3000/cosinus ; SIX_URL pour en changer).
+ * La fenêtre charge Six en ligne par défaut. SIX_URL permet de viser un serveur de développement.
  * Dans Cosinus, le volet « navigateur » est un vrai navigateur Chromium (WebContentsView) posé exactement sur la zone
  * de la page : tous les sites s'affichent (aucun refus d'affichage intégré), nets, fluides, avec le vrai curseur.
  *
@@ -36,17 +36,18 @@ const { creerTerminaux } = require('./terminal.cjs');
 /** Hauteur de la barre du haut de Six (barre.html), au-dessus de l'app. */
 const BARRE = 40;
 
-const URL_APP = process.env.SIX_URL || 'http://localhost:3000/cosinus';
+const URL_APP = process.env.SIX_URL || 'https://app.sixbysevenai.com/cosinus';
 const ORIGINE_APP = new URL(URL_APP).origin;
 let moteurVocal = null;
+const URL_VOIX = 'http://127.0.0.1:8765';
+const LANGUES_VOIX = new Set(['fr', 'en', 'es', 'de', 'zh', 'ln', 'sw', 'auto']);
 
 async function demarrerMoteurVocal() {
-  if (!['localhost', '127.0.0.1'].includes(new URL(URL_APP).hostname)) return;
   const racine = path.resolve(__dirname, '../../..');
   const python = path.join(racine, '.local-tools/voice/Scripts/python.exe');
   if (!existsSync(python)) return;
   try {
-    const res = await fetch('http://127.0.0.1:8765/health', { signal: AbortSignal.timeout(1500) });
+    const res = await fetch(`${URL_VOIX}/health`, { signal: AbortSignal.timeout(1500) });
     if (res.ok) return;
   } catch {
     /* Le moteur n'est pas encore démarré. */
@@ -473,6 +474,41 @@ else {
     ipcMain.handle('six:navigateur', navigateur.piloter);
     ipcMain.handle('six:barre', commandeBarre);
     ipcMain.handle('six:menu', choixMenu);
+    ipcMain.handle('six:voix-disponible', async (evenement) => {
+      if (!depuisApp(evenement)) return false;
+      try {
+        const res = await fetch(`${URL_VOIX}/health`, {
+          signal: AbortSignal.timeout(1500),
+          redirect: 'error',
+        });
+        return res.ok && (await res.json()).ready === true;
+      } catch {
+        return false;
+      }
+    });
+    ipcMain.handle('six:transcrire', async (evenement, audio, langue) => {
+      if (
+        !depuisApp(evenement) ||
+        !(audio instanceof Uint8Array) ||
+        audio.byteLength < 1 ||
+        audio.byteLength > 10 * 1024 * 1024 ||
+        !LANGUES_VOIX.has(langue)
+      )
+        return null;
+      try {
+        const res = await fetch(`${URL_VOIX}/transcribe?langue=${langue}`, {
+          method: 'POST',
+          body: audio,
+          signal: AbortSignal.timeout(120000),
+          redirect: 'error',
+        });
+        if (!res.ok) return null;
+        const r = await res.json();
+        return typeof r.texte === 'string' ? { texte: r.texte, langue: r.langue } : null;
+      } catch {
+        return null;
+      }
+    });
     // L'app signale à la barre l'état de Cosinus (volet ouvert).
     ipcMain.handle('six:app-etat', (evenement, e) => {
       if (!depuisApp(evenement) || !e || typeof e !== 'object') return;

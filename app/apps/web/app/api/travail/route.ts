@@ -7,6 +7,11 @@ import { modifierTravail, travailDisponible } from '@/lib/travail-serveur';
 import { ProjetSchema, TacheSchema } from '@/lib/travail';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
+const stockageIndisponible = () =>
+  NextResponse.json(
+    { error: 'Le stockage des projets est indisponible sur ce serveur. Réessayez plus tard.' },
+    { status: 503 },
+  );
 const commande = z.discriminatedUnion('action', [
   z.object({
     action: z.literal('projet'),
@@ -28,11 +33,7 @@ export async function GET(req: Request) {
       { error: 'Connectez-vous pour retrouver vos projets et vos tâches.' },
       { status: 401 },
     );
-  if (!travailDisponible())
-    return NextResponse.json(
-      { error: 'Le stockage des projets doit être activé sur le serveur.' },
-      { status: 503 },
-    );
+  if (!travailDisponible()) return stockageIndisponible();
   try {
     return NextResponse.json(
       await modifierTravail((e) => ({
@@ -55,9 +56,9 @@ export async function POST(req: Request) {
   if (bloque) return bloque;
   const utilisateur = await utilisateurDeRequete(req);
   if (!utilisateur) return NextResponse.json({ error: 'Connexion requise.' }, { status: 401 });
-  if (!travailDisponible())
-    return NextResponse.json({ error: 'Stockage non configuré.' }, { status: 503 });
-  const parsed = commande.safeParse(await readJson(req, 100000));
+  if (!travailDisponible()) return stockageIndisponible();
+  // Le JSON peut échapper chaque caractère des champs texte sur six octets.
+  const parsed = commande.safeParse(await readJson(req, 256 * 1024));
   if (!parsed.success)
     return NextResponse.json({ error: 'Vérifiez les champs du formulaire.' }, { status: 400 });
   const c = parsed.data;

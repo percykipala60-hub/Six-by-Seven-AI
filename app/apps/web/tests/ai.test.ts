@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ProviderError, activeProviders, callAI, callChat, hasAI } from '@/lib/ai';
 import { analyze } from '@/lib/providers';
+import { mesurerJetons } from '@/lib/jetons-serveur';
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } });
@@ -28,6 +29,11 @@ beforeEach(() => {
     'OPENAI_MODEL',
     'OPENAI_MODEL_ANALYSE',
     'OPENAI_MODEL_REDACTION',
+    'OPENROUTER_API_KEY',
+    'OPENROUTER_MODEL',
+    'OPENROUTER_MODEL_ANALYSE',
+    'OPENROUTER_MODEL_REDACTION',
+    'OPENROUTER_MODEL_REDACTION_GRATUIT',
     'AI_PROVIDERS',
     'IA_LOCALE_MODELE',
     'IA_LOCALE_URL',
@@ -69,6 +75,44 @@ describe("fournisseurs d'IA", () => {
     expect(hasAI()).toBe(false);
     vi.stubEnv('OPENAI_MODEL', 'modele-choisi');
     expect(hasAI()).toBe(true);
+  });
+
+  it('envoie la clé et le modèle OpenRouter à son propre endpoint', async () => {
+    vi.stubEnv('AI_PROVIDERS', 'openrouter');
+    vi.stubEnv('OPENROUTER_API_KEY', 'cle-routeur-test');
+    expect(hasAI()).toBe(false);
+    vi.stubEnv('OPENROUTER_MODEL', 'openai/modele-test');
+    const fetchMock = vi.fn(async (_url: string, _init: RequestInit) => okOpenAI());
+    vi.stubGlobal('fetch', fetchMock);
+
+    expect(await callChat('sys', 'user', [], 100)).toBe('réponse openai');
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('https://openrouter.ai/api/v1/chat/completions');
+    expect(new Headers(init.headers).get('authorization')).toBe('Bearer cle-routeur-test');
+    expect(JSON.parse(String(init.body))).toMatchObject({ model: 'openai/modele-test' });
+    expect(String(init.body)).not.toContain('cle-routeur-test');
+  });
+
+  it('compte les jetons lus du cache Claude et isole les demandes simultanées', async () => {
+    vi.stubEnv('ANTHROPIC_API_KEY', 'cle-test');
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => okClaude()),
+    );
+
+    const uneReponse = mesurerJetons(async (lire) => {
+      await callChat('sys', 'première demande', [], 100);
+      return lire();
+    });
+    const deuxReponses = mesurerJetons(async (lire) => {
+      await callChat('sys', 'autre demande', [], 100);
+      await callChat('sys', 'relecture', [], 100);
+      return lire();
+    });
+    expect(await Promise.all([uneReponse, deuxReponses])).toEqual([
+      { entree: 712, sortie: 5 },
+      { entree: 1424, sortie: 10 },
+    ]);
   });
 
   it("utilise Claude en premier et envoie la clé dans l'en-tête seulement", async () => {

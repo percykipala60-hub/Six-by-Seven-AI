@@ -1,8 +1,8 @@
 'use strict';
 /**
  * Pont entre l'app Six (page web) et l'application de bureau : quelques commandes pour le navigateur de Cosinus,
- * la connexion par le navigateur, le terminal de Cosinus (tapé par la personne), rien d'autre (pas d'accès direct
- * aux fichiers ni à Node). Disponible dans la page sous window.sixBureau.
+ * la connexion par le navigateur, la dictée locale, le terminal de Cosinus (tapé par la personne). Aucun accès
+ * direct à Node. Disponible dans la page sous window.sixBureau.
  */
 const { contextBridge, ipcRenderer, webUtils } = require('electron');
 
@@ -10,6 +10,10 @@ const piloter = (commande) => ipcRenderer.invoke('six:navigateur', commande);
 
 contextBridge.exposeInMainWorld('sixBureau', {
   version: 1,
+  voix: {
+    disponible: () => ipcRenderer.invoke('six:voix-disponible'),
+    transcrire: (audio, langue) => ipcRenderer.invoke('six:transcrire', audio, langue),
+  },
   /** Volet Fichiers : montre un fichier dans l'Explorateur de Windows (ou le Finder). */
   montrerFichier: (chemin) => ipcRenderer.invoke('six:montrer-fichier', chemin),
   /** Cosinus : sélecteur de dossier de l'ordinateur ; renvoie le chemin choisi, ou null. */

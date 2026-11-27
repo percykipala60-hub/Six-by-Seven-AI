@@ -9,7 +9,7 @@ import { Icon } from './Icon';
  * sinon l'initiale du prénom, sinon l'icône. Si la photo ne se charge pas, on revient à l'initiale.
  */
 export function AvatarContenu({ c, taille, trait }: { c: Compte; taille: number; trait?: number }) {
-  const photo = c.statut === 'connecte' ? c.photo : undefined;
+  const photo = c.photo;
   const [echec, setEchec] = useState<string | null>(null);
   if (photo && echec !== photo) {
     return (

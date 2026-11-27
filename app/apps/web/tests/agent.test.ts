@@ -175,7 +175,10 @@ describe('mise en forme de la réponse', () => {
       'Synthèse\nImportant : voir Energy Policy et resultats/plan.md.\n• point un\n• point deux\n1. étape',
     );
     expect(sansMarkdown('3 * 4 = 12 et snake_case_nom')).toBe('3 * 4 = 12 et snake_case_nom');
-    expect(sansMarkdown('Vérifie la拼 orthographe du nom.')).toBe('Vérifie la orthographe du nom.');
+    expect(sansMarkdown('**你好，世界。**')).toBe('你好，世界。');
+    expect(sansMarkdown('« 拼 » est un caractère chinois.')).toBe(
+      '« 拼 » est un caractère chinois.',
+    );
   });
 });
 

@@ -1,15 +1,17 @@
 'use client';
 
+import { estLangueVoix, LANGUES_VOIX, type LangueVoix } from './langues-voix';
+export { LANGUES_VOIX, type LangueVoix } from './langues-voix';
+
 /**
  * Réglages → Voix : comment Six parle et écoute en mode vocal. Gardé sur l'appareil.
  * - voix : une voix de l'appareil (vide : la plus naturelle trouvée pour la langue) ;
- * - langue : langue de la dictée et de la lecture (« auto » : la dictée reconnaît la langue, Six lit en français) ;
+ * - langue : langue de la dictée et de la lecture (« auto » : langue détectée par le moteur ou langue de l’appareil) ;
  * - vitesse : débit de lecture ;
  * - declenchement : « auto » (Six écoute dès qu'une voix est détectée, pas les bruits) ou « toucher » (on touche la
  *   sphère pour parler).
  */
 
-export type LangueVoix = 'fr' | 'en' | 'ln' | 'sw' | 'auto';
 export type Declenchement = 'auto' | 'toucher';
 export type PreferencesVoix = {
   /** Micro choisi (identifiant de l'appareil) ; vide : le micro par défaut du système. */
@@ -19,14 +21,6 @@ export type PreferencesVoix = {
   vitesse: number;
   declenchement: Declenchement;
 };
-
-export const LANGUES_VOIX: { id: LangueVoix; nom: string; bcp47: string }[] = [
-  { id: 'fr', nom: 'Français', bcp47: 'fr-FR' },
-  { id: 'en', nom: 'Anglais', bcp47: 'en-US' },
-  { id: 'ln', nom: 'Lingala', bcp47: 'ln-CD' },
-  { id: 'sw', nom: 'Swahili', bcp47: 'sw-KE' },
-  { id: 'auto', nom: 'Automatique', bcp47: 'fr-FR' },
-];
 
 export const VITESSES: { valeur: number; nom: string }[] = [
   { valeur: 0.9, nom: 'Posée' },
@@ -49,9 +43,7 @@ export function lirePreferencesVoix(): PreferencesVoix {
     return {
       micro: typeof p.micro === 'string' ? p.micro.slice(0, 200) : DEFAUT.micro,
       voix: typeof p.voix === 'string' ? p.voix.slice(0, 200) : DEFAUT.voix,
-      langue: LANGUES_VOIX.some((l) => l.id === p.langue)
-        ? (p.langue as LangueVoix)
-        : DEFAUT.langue,
+      langue: estLangueVoix(p.langue) ? p.langue : DEFAUT.langue,
       vitesse: VITESSES.some((v) => v.valeur === p.vitesse)
         ? (p.vitesse as number)
         : DEFAUT.vitesse,
@@ -72,32 +64,49 @@ export function ecrirePreferencesVoix(p: PreferencesVoix): void {
 
 /** Code de langue pour la dictée et la lecture (« fr-FR »…). */
 export function bcp47(langue: LangueVoix): string {
+  if (langue === 'auto' && typeof navigator !== 'undefined' && navigator.language) {
+    return navigator.language;
+  }
   return LANGUES_VOIX.find((l) => l.id === langue)?.bcp47 ?? 'fr-FR';
 }
+
+export function texteEssaiVoix(langue: LangueVoix): string {
+  const code = bcp47(langue).split('-')[0].toLowerCase();
+  return LANGUES_VOIX.find((l) => l.id === code)?.essai ?? LANGUES_VOIX[0].essai;
+}
+
+/** Voix de l'appareil jamais proposées (voix françaises de Windows écartées à la demande). */
+const VOIX_RETIREES = /\b(Hortense|Julie|Paule)\b/i;
 
 /** Les voix de l'appareil pour une langue, les plus naturelles d'abord (« Natural », « Online », « Neural »…). */
 export function voixPourLangue(
   toutes: SpeechSynthesisVoice[],
   langue: LangueVoix,
 ): SpeechSynthesisVoice[] {
-  const prefixe = (langue === 'auto' ? 'fr' : langue).toLowerCase();
+  const code = bcp47(langue).toLowerCase();
+  const prefixe = code.split('-')[0];
   const naturelle = (v: SpeechSynthesisVoice) =>
-    /natural|online|neural|premium|enhanced|google/i.test(v.name) ? 0 : 1;
+    /natural|neural|premium|enhanced|google/i.test(v.name) ? 0 : 1;
+  const region = (v: SpeechSynthesisVoice) =>
+    Number(v.lang.toLowerCase().replace('_', '-') !== code);
   return toutes
-    .filter((v) => v.lang.toLowerCase().startsWith(prefixe))
-    .sort((a, b) => naturelle(a) - naturelle(b) || a.name.localeCompare(b.name));
+    .filter((v) => v.lang.toLowerCase().split(/[-_]/)[0] === prefixe && !VOIX_RETIREES.test(v.name))
+    .sort(
+      (a, b) =>
+        naturelle(a) - naturelle(b) ||
+        region(a) - region(b) ||
+        Number(Boolean(b.default)) - Number(Boolean(a.default)) ||
+        a.name.localeCompare(b.name),
+    );
 }
 
-/** La voix à utiliser : celle choisie si elle existe encore, sinon la plus naturelle de la langue (ou du français). */
+/** Une voix de la langue demandée. Sans voix correspondante, la synthèse reçoit le code de langue. */
 export function choisirVoix(
   toutes: SpeechSynthesisVoice[],
   p: PreferencesVoix,
 ): SpeechSynthesisVoice | undefined {
-  return (
-    toutes.find((v) => v.voiceURI === p.voix) ??
-    voixPourLangue(toutes, p.langue)[0] ??
-    voixPourLangue(toutes, 'fr')[0]
-  );
+  const disponibles = voixPourLangue(toutes, p.langue);
+  return disponibles.find((v) => v.voiceURI === p.voix) ?? disponibles[0];
 }
 
 /** Découpe un texte en phrases (sert à composer les passages lus). */
@@ -105,7 +114,7 @@ export function phrases(texte: string): string[] {
   return (
     texte
       .replace(/\s+/g, ' ')
-      .match(/[^.!?…]+[.!?…]+["»”)]*|[^.!?…]+$/g)
+      .match(/[^.!?…。！？]+[.!?…。！？]+["»”)]*|[^.!?…。！？]+$/g)
       ?.map((p) => p.trim())
       .filter(Boolean) ?? []
   );

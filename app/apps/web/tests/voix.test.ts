@@ -1,9 +1,11 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   choisirVoix,
+  bcp47,
   estPhraseFantome,
   passagesALire,
   texteALire,
+  texteEssaiVoix,
   ecrirePreferencesVoix,
   lirePreferencesVoix,
   phrases,
@@ -36,7 +38,7 @@ describe('voix de Six', () => {
     expect(phrases('  ')).toEqual([]);
   });
 
-  it('met les voix naturelles en tête et retombe sur le français', () => {
+  it('privilégie une voix naturelle sans changer de langue', () => {
     expect(voixPourLangue(toutes, 'fr')[0]?.name).toContain('Denise');
     expect(voixPourLangue(toutes, 'en').map((v) => v.lang)).toEqual(['en-US']);
     const p = {
@@ -46,10 +48,25 @@ describe('voix de Six', () => {
       vitesse: 1.05,
       declenchement: 'auto' as const,
     };
-    expect(choisirVoix(toutes, p)?.name).toContain('Denise');
-    expect(choisirVoix(toutes, { ...p, voix: 'Microsoft Paul - French (France)' })?.name).toContain(
-      'Paul',
-    );
+    expect(choisirVoix(toutes, p)).toBeUndefined();
+    expect(
+      choisirVoix(toutes, { ...p, langue: 'fr', voix: 'Microsoft Paul - French (France)' })?.name,
+    ).toContain('Paul');
+    expect(
+      choisirVoix(toutes, { ...p, langue: 'de', voix: 'Microsoft Paul - French (France)' }),
+    ).toBeUndefined();
+  });
+
+  it('choisit les voix et les exemples espagnols ou allemands', () => {
+    const allemand = voix('Katja Natural', 'de-DE');
+    const espagnol = voix('Elvira Natural', 'es-ES');
+    const variantes = [voix('Alvaro Natural', 'es-MX'), allemand, espagnol, ...toutes];
+    expect(bcp47('es')).toBe('es-ES');
+    expect(bcp47('de')).toBe('de-DE');
+    expect(voixPourLangue(variantes, 'es')[0]).toBe(espagnol);
+    expect(voixPourLangue(variantes, 'de')).toEqual([allemand]);
+    expect(texteEssaiVoix('es')).toContain('Hola');
+    expect(texteEssaiVoix('de')).toContain('Hallo');
   });
 
   it('garde les préférences et ignore les valeurs inconnues', () => {
@@ -96,5 +113,22 @@ describe('texte lu par Six', () => {
     expect(estPhraseFantome('you')).toBe(true);
     expect(estPhraseFantome('Merci pour ton aide, Six.')).toBe(false);
     expect(estPhraseFantome('Bonjour Six')).toBe(false);
+  });
+});
+
+describe('voix retirées', () => {
+  it('Hortense, Julie et Paule ne sont jamais proposées', () => {
+    const fr = (nom: string) =>
+      ({
+        name: `Microsoft ${nom} - French (France)`,
+        lang: 'fr-FR',
+        voiceURI: nom,
+        default: false,
+        localService: true,
+      }) as SpeechSynthesisVoice;
+    const noms = voixPourLangue([fr('Hortense'), fr('Julie'), fr('Paule'), fr('Paul')], 'fr').map(
+      (v) => v.voiceURI,
+    );
+    expect(noms).toEqual(['Paul']);
   });
 });
