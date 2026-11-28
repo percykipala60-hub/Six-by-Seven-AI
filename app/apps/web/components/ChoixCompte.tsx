@@ -16,7 +16,7 @@ export function ChoixCompte() {
   const agir = (action: Promise<void>) =>
     void action.catch(() => setErreur('Changement de compte impossible.'));
   return (
-    <details>
+    <details data-menu>
       <summary>Comptes sur ce PC</summary>
       {liste.map((p) => (
         <button

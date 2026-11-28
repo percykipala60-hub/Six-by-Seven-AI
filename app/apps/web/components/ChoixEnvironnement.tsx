@@ -579,9 +579,7 @@ export function NouvelEnvironnement({
           </>
         ) : !espaceLocal ? (
           <p className="env-note">
-            Les dossiers de cet ordinateur ne sont utilisables que lorsque Six tourne sur cet
-            ordinateur. Avec Six en ligne, choisissez « Cloud » : Six y travaille avec vos fichiers
-            ou un dépôt GitHub.
+            Choisissez « Cloud » : Six y travaille avec vos fichiers ou un dépôt GitHub.
           </p>
         ) : (
           <>

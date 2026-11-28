@@ -105,6 +105,15 @@ export function MenuCompte({
   const boite = useRef<HTMLDivElement>(null);
   const [plus, setPlus] = useState(false);
   const [raccourcis, setRaccourcis] = useState(false);
+  // Raccourcis clavier : seulement avec un clavier et une souris (ordinateur), jamais sur téléphone ou tablette.
+  const [clavier, setClavier] = useState(false);
+  useEffect(() => {
+    const m = window.matchMedia('(hover: hover) and (pointer: fine)');
+    const suivre = () => setClavier(m.matches);
+    suivre();
+    m.addEventListener('change', suivre);
+    return () => m.removeEventListener('change', suivre);
+  }, []);
   const [mettreANiveau, setMettreANiveau] = useState(false);
   const [demande, demander] = useConfirmer();
 
@@ -152,9 +161,11 @@ export function MenuCompte({
         <Element icon="horloge" href="/reglages?v=utilisation" onClick={onFermer}>
           Utilisation
         </Element>
-        <Element icon="clavier" onClick={() => setRaccourcis(true)}>
-          Raccourcis clavier
-        </Element>
+        {clavier && (
+          <Element icon="clavier" onClick={() => setRaccourcis(true)}>
+            Raccourcis clavier
+          </Element>
+        )}
         <Element icon="shield" href="/reglages?v=capacites" onClick={onFermer}>
           Capacités
         </Element>

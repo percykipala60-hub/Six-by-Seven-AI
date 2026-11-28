@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Suspense } from 'react';
 import { RetourParametres } from '@/components/RetourParametres';
+import { FermerMenus } from '@/components/FermerMenus';
 import { CompteSync } from '@/components/CompteSync';
 import { PorteCompte } from '@/components/Connexion';
 import { Clavier } from '@/components/Clavier';
@@ -58,6 +59,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeIcon />
         <Suspense fallback={null}>
           <RetourParametres />
+          <FermerMenus />
         </Suspense>
         <CompteSync />
         <PontBureau />
