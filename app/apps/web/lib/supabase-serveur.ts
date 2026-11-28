@@ -328,3 +328,17 @@ export async function ecrireLienGithub(
 export async function supprimerLienGithub(userId: string): Promise<void> {
   await rest(`six_github?user_id=eq.${encodeURIComponent(userId)}`, { method: 'DELETE' });
 }
+
+export async function lireLienGmail(id: string) {
+  const lignes = (await rest('six_gmail?select=jeton&user_id=eq.' + encodeURIComponent(id))) as {
+    jeton: string;
+  }[];
+  return lignes[0]?.jeton;
+}
+export async function ecrireLienGmail(id: string, jeton: string) {
+  await rest('six_gmail?on_conflict=user_id', {
+    method: 'POST',
+    headers: { prefer: 'resolution=merge-duplicates,return=minimal' },
+    body: JSON.stringify({ user_id: id, jeton }),
+  });
+}

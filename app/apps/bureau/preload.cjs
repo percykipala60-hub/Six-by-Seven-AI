@@ -10,6 +10,25 @@ const piloter = (commande) => ipcRenderer.invoke('six:navigateur', commande);
 
 contextBridge.exposeInMainWorld('sixBureau', {
   version: 1,
+  versionProfils: process.argv.includes('--six-profils-v1') ? 1 : 0,
+  profils: process.argv.includes('--six-profils-v1')
+    ? Object.fromEntries(
+        Object.entries({
+          liste: 'liste',
+          retrouver: 'retrouver',
+          choisir: 'choisir',
+          ajouter: 'ajouter',
+          quitter: 'quitter',
+          toutQuitter: 'tout-quitter',
+          lire: 'lire',
+          memoriser: 'memoriser',
+          effacer: 'effacer',
+        }).map(([nom, action]) => [
+          nom,
+          (valeur) => ipcRenderer.invoke('six:profils', action, valeur),
+        ]),
+      )
+    : undefined,
   voix: {
     disponible: () => ipcRenderer.invoke('six:voix-disponible'),
     transcrire: (audio, langue) => ipcRenderer.invoke('six:transcrire', audio, langue),

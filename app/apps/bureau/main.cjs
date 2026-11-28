@@ -39,6 +39,8 @@ const BARRE = 40;
 
 const URL_APP = process.env.SIX_URL || 'https://app.sixbysevenai.com/cosinus';
 const ORIGINE_APP = new URL(URL_APP).origin;
+const instancePrincipale = app.requestSingleInstanceLock();
+const profils = instancePrincipale ? require('./profils.cjs').preparerProfils(ORIGINE_APP) : null;
 let moteurVocal = null;
 const URL_VOIX = 'http://127.0.0.1:8765';
 const LANGUES_VOIX = new Set(['fr', 'en', 'es', 'de', 'zh', 'ln', 'sw', 'auto']);
@@ -440,6 +442,7 @@ function creerFenetre() {
   appli = new WebContentsView({
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
+      additionalArguments: ['--six-profils-v1'],
       sandbox: true,
       contextIsolation: true,
       nodeIntegration: false,
@@ -540,7 +543,7 @@ if (process.defaultApp && process.argv.length >= 2)
 else app.setAsDefaultProtocolClient('six');
 
 // Une seule instance : relancer l'app (ou ouvrir un lien six://) ramène la fenêtre existante.
-if (!app.requestSingleInstanceLock()) app.quit();
+if (!instancePrincipale) app.quit();
 else {
   app.on('second-instance', (_e, argv) => {
     const lien = argv.find((a) => a.toLowerCase().startsWith('six://'));
@@ -610,6 +613,10 @@ else {
           cosinus: e.cosinus === true,
         };
       void etatBarre();
+    });
+    ipcMain.handle('six:profils', (e, action, valeur) => {
+      if (!depuisApp(e) || e.senderFrame !== e.sender.mainFrame) throw Error('Origine refusée');
+      return profils(action, valeur);
     });
     ipcMain.handle('six:connexion', connexion);
     // Demande d'accord dans la conversation : accusé de réception, puis réponse (seulement depuis l'app).

@@ -95,7 +95,8 @@ function ecrire(cle: string, valeur: unknown) {
 
 /** Réglages du volet gardés sur l'appareil (onglet ouvert, largeur). */
 export function lireReglagesVolet(): Reglages {
-  return lire<Reglages>(CLE_REGLAGES, { onglet: null, largeur: LARGEUR_DEFAUT });
+  const reglages = lire<Reglages>(CLE_REGLAGES, { onglet: null, largeur: LARGEUR_DEFAUT });
+  return ONGLETS.some((o) => o.id === reglages.onglet) ? reglages : { ...reglages, onglet: null };
 }
 export function garderOngletVolet(onglet: OngletVolet | null) {
   ecrire(CLE_REGLAGES, { ...lireReglagesVolet(), onglet });

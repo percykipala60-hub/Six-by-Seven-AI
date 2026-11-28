@@ -1,5 +1,7 @@
 'use client';
+import { reprendreHistoriqueExistant } from '@/lib/historique-compte';
 
+import { profilsBureau } from '@/lib/profils-bureau';
 import { useEffect } from 'react';
 import { CONNEXION_DISPONIBLE, demarrerCompte } from '@/lib/compte';
 
@@ -10,6 +12,7 @@ import { CONNEXION_DISPONIBLE, demarrerCompte } from '@/lib/compte';
 export function CompteSync() {
   useEffect(() => {
     if (!CONNEXION_DISPONIBLE) return;
+    reprendreHistoriqueExistant();
     let session = false;
     try {
       session = Boolean(localStorage.getItem('six-auth'));
@@ -17,7 +20,7 @@ export function CompteSync() {
       /* stockage bloqué */
     }
     const lien = /access_token=|[?&]code=/.test(window.location.hash + window.location.search);
-    if (session || lien) void demarrerCompte();
+    if (profilsBureau() || session || lien) void demarrerCompte();
   }, []);
   return null;
 }

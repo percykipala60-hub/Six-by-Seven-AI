@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import { Suspense } from 'react';
+import { RetourParametres } from '@/components/RetourParametres';
 import { CompteSync } from '@/components/CompteSync';
 import { PorteCompte } from '@/components/Connexion';
 import { Clavier } from '@/components/Clavier';
@@ -54,6 +56,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <NetworkStatus />
         <InterAppLaunchHandler />
         <ThemeIcon />
+        <Suspense fallback={null}>
+          <RetourParametres />
+        </Suspense>
         <CompteSync />
         <PontBureau />
         <PorteCompte>{children}</PorteCompte>

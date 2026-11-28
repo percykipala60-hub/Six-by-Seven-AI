@@ -1,3 +1,4 @@
+import { profilsBureau, stockageBureau } from './profils-bureau';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 /**
@@ -19,10 +20,12 @@ let client: Promise<SupabaseClient | null> | null = null;
 /** Chargé à la demande (bibliothèque d'environ 50 Ko) : l'accueil reste léger sur un petit réseau. */
 export function supabase(): Promise<SupabaseClient | null> {
   if (!CONNEXION_DISPONIBLE || typeof window === 'undefined') return Promise.resolve(null);
+  const pont = profilsBureau();
   client ??= import('@supabase/supabase-js')
     .then(({ createClient }) =>
       createClient(URL_SUPABASE, CLE, {
         auth: {
+          storage: pont ? stockageBureau(pont) : undefined,
           persistSession: true,
           autoRefreshToken: true,
           detectSessionInUrl: true,

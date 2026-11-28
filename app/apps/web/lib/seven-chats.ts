@@ -1,3 +1,4 @@
+import { cleHistorique } from './historique-compte';
 import { sans } from './objet';
 import { memoireActive } from './memoire';
 import type { ChatMessage } from './types';
@@ -64,7 +65,7 @@ export function titreDe(messages: ChatMessage[]): string {
 
 function ecrire(chats: ChatSeven[]) {
   try {
-    localStorage.setItem(CLE, JSON.stringify(chats.slice(0, MAX_CHATS)));
+    localStorage.setItem(cleHistorique(CLE), JSON.stringify(chats.slice(0, MAX_CHATS)));
   } catch {
     /* stockage plein ou bloqué : la discussion vaut pour cette visite */
   }
@@ -76,20 +77,20 @@ export function lireChats(): ChatSeven[] {
   if (typeof window === 'undefined' || !memoireActive()) return [];
   try {
     // Ancienne version : une seule discussion. On la reprend comme première de la liste.
-    const ancienne = localStorage.getItem(ANCIENNE_CLE);
-    if (ancienne !== null && localStorage.getItem(CLE) === null) {
+    const ancienne = localStorage.getItem(cleHistorique(ANCIENNE_CLE));
+    if (ancienne !== null && localStorage.getItem(cleHistorique(CLE)) === null) {
       const messages = messagesValides(JSON.parse(ancienne));
       localStorage.setItem(
-        CLE,
+        cleHistorique(CLE),
         JSON.stringify(
           messages.length
             ? [{ id: nouvelId(), titre: titreDe(messages), maj: Date.now(), messages }]
             : [],
         ),
       );
-      localStorage.removeItem(ANCIENNE_CLE);
+      localStorage.removeItem(cleHistorique(ANCIENNE_CLE));
     }
-    const brut = JSON.parse(localStorage.getItem(CLE) ?? '[]') as unknown;
+    const brut = JSON.parse(localStorage.getItem(cleHistorique(CLE)) ?? '[]') as unknown;
     if (!Array.isArray(brut)) return [];
     return brut
       .filter(
@@ -268,8 +269,8 @@ export function sortirDuProjet(projetId: string): void {
 
 export function effacerTousLesChats(): void {
   try {
-    localStorage.removeItem(CLE);
-    localStorage.removeItem(ANCIENNE_CLE);
+    localStorage.removeItem(cleHistorique(CLE));
+    localStorage.removeItem(cleHistorique(ANCIENNE_CLE));
   } catch {
     /* rien à effacer */
   }

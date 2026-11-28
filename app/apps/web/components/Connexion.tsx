@@ -1,6 +1,16 @@
 'use client';
+import { ChoixCompte } from './ChoixCompte';
 
-import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react';
+import { compteHistorique } from '@/lib/historique-compte';
+import {
+  Fragment,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from 'react';
 import { usePathname } from 'next/navigation';
 import {
   CONNEXION_DISPONIBLE,
@@ -356,6 +366,7 @@ export function FormulaireConnexion() {
 
   return (
     <div className="auth-card">
+      <ChoixCompte />
       <div className="auth-hero">
         <Logo label="Six" />
         <span className="auth-eyebrow">COMPTE SIX</span>
@@ -843,6 +854,7 @@ const PAGES_PUBLIQUES = [
   '/connexion/nouveau-mot-de-passe',
   '/compte/alerte',
   '/partage',
+  '/remote',
 ];
 
 /**
@@ -851,15 +863,18 @@ const PAGES_PUBLIQUES = [
  */
 export function PorteCompte({ children }: { children: ReactNode }) {
   const chemin = usePathname() ?? '/';
-  const [connecte, setConnecte] = useState<boolean | null>(null);
+  const [connecte, setConnecte] = useState<string | null>(null);
   useEffect(() => {
-    const lire = () => setConnecte(lireCompte().statut === 'connecte');
+    const lire = () => {
+      const compte = lireCompte();
+      setConnecte(compte.statut === 'connecte' ? compteHistorique() || compte.identifiant : '');
+    };
     lire();
     return ecouterCompte(lire);
   }, []);
 
   const publique = PAGES_PUBLIQUES.some((p) => chemin === p || chemin.startsWith(`${p}/`));
-  if (!CONNEXION_DISPONIBLE || publique) return <>{children}</>;
+  if (!CONNEXION_DISPONIBLE || publique) return <Fragment key={connecte}>{children}</Fragment>;
   if (connecte === null) return null; // session lue après le montage : pas d'écran qui clignote
   if (!connecte) {
     return (
@@ -870,5 +885,5 @@ export function PorteCompte({ children }: { children: ReactNode }) {
       </div>
     );
   }
-  return <>{children}</>;
+  return <Fragment key={connecte}>{children}</Fragment>;
 }

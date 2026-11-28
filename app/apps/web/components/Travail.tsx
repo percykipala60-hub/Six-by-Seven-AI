@@ -1,4 +1,5 @@
 'use client';
+import { cleHistorique } from '@/lib/historique-compte';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -887,7 +888,7 @@ function FicheProjet({
             if (!message.trim()) return;
             try {
               sessionStorage.setItem(
-                CLE_BROUILLON_PROJET,
+                cleHistorique(CLE_BROUILLON_PROJET),
                 JSON.stringify({ projetId: projet.id, texte: message.trim() }),
               );
               router.push(`/chat?projet=${projet.id}&brouillon=1`);

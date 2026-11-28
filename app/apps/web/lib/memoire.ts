@@ -1,3 +1,4 @@
+import { cleHistorique } from './historique-compte';
 /**
  * Mémoire de Six, sur le téléphone (localStorage) ; copiée sur le compte seulement si la personne l'autorise (lib/compte.ts). Aucune conversation n'y entre.
  *
@@ -149,8 +150,8 @@ export function effacerMemoire(): void {
 /** Discussions avec Seven AI (lib/seven-chats, clés recopiées ici pour éviter un import circulaire). */
 function effacerDiscussionsSeven(): void {
   try {
-    localStorage.removeItem('seven-ai-chats');
-    localStorage.removeItem('seven-ai-chat');
+    localStorage.removeItem(cleHistorique('seven-ai-chats'));
+    localStorage.removeItem(cleHistorique('seven-ai-chat'));
   } catch {
     /* rien à effacer */
   }

@@ -6,6 +6,7 @@
  * Jamais de conversation sur le compte : celles que la mémoire garde restent sur le téléphone.
  * L'interface (avatar, menu, écran Compte) lit `lireCompte()`, synchrone, et s'abonne avec `ecouterCompte()`.
  */
+import { profilsBureau } from './profils-bureau';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { effacerMemoire, fusionner, lireMemoire, memoireActive, remplacerMemoire } from './memoire';
 import { CLE, CONNEXION_DISPONIBLE, URL_SUPABASE, supabase } from './supabase';
@@ -925,6 +926,7 @@ export async function deconnecter(): Promise<void> {
     /* rien à retirer */
   }
   annoncer();
+  await profilsBureau()?.quitter();
 }
 
 /** Supprime le compte et sa mémoire synchronisée (la ligne `memoires`), puis déconnecte. */
@@ -1075,6 +1077,10 @@ export async function demarrerCompte(): Promise<void> {
     try {
       if (session?.user) {
         const u = session.user;
+        if (evenement === 'SIGNED_IN' || evenement === 'INITIAL_SESSION')
+          void profilsBureau()
+            ?.retrouver?.(CLE)
+            .catch(() => {});
         localStorage.setItem(
           SESSION,
           JSON.stringify({

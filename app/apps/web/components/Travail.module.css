@@ -38,7 +38,8 @@
   gap: 4px;
 }
 .recherche {
-  height: 40px;
+  height: 32px;
+  min-height: 32px;
   width: min(220px, 50vw);
   padding: 0 14px;
   font: inherit;
@@ -46,11 +47,16 @@
   color: inherit;
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 999px;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 0.88rem;
   outline: none;
 }
-.recherche:focus {
-  border-color: var(--accent-b);
+.recherche:focus,
+.recherche:focus-visible {
+  outline: none;
+  box-shadow: none;
+  border-color: color-mix(in srgb, var(--ink) 35%, transparent);
 }
 
 /* Boutons. */

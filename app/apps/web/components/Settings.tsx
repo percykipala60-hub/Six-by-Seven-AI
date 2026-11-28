@@ -58,6 +58,8 @@ import {
 import { plateforme } from '@/lib/plateforme';
 import { AppareilsVue } from './Appareils';
 import { GithubCloud } from './GithubCloud';
+import { ecranAvantParametres } from './RetourParametres';
+import { PluginsParametres } from './PluginsParametres';
 import { ReglagesSkills } from './ReglagesSkills';
 import { ReglagesVoix } from './ReglagesVoix';
 import { ReglagesCapacites } from './ReglagesCapacites';
@@ -286,6 +288,7 @@ type Vue =
   | 'voix'
   | 'notifications'
   | 'confidentialite'
+  | 'plugins'
   | 'focus'
   | 'cosinus'
   | 'cloud'
@@ -303,6 +306,7 @@ const TITRES: Record<Exclude<Vue, ''>, string> = {
   voix: 'Voix et dictée',
   notifications: 'Notifications',
   confidentialite: 'Confidentialité',
+  plugins: 'Plug-ins',
   focus: 'Focus',
   cosinus: 'Cosinus',
   cloud: 'Cloud et partages',
@@ -1155,6 +1159,7 @@ export function Settings() {
       {vue === 'raccourcis' && <Raccourcis />}
       {vue === 'cosinus' && <ReglagesSixTouch />}
       {vue === 'appareils' && <AppareilsVue />}
+      {vue === 'plugins' && <PluginsParametres />}
       {vue === 'focus' && <ReglagesSkills />}
       {vue === 'voix' && <ReglagesVoix />}
       {vue === 'capacites' && <ReglagesCapacites />}
@@ -1261,6 +1266,15 @@ export function Settings() {
       mobile: 'compte',
     },
     {
+      id: 'plugins',
+      icon: 'plugins',
+      label: 'Plug-ins',
+      sous: 'Connecteurs et skills',
+      cles: 'plugins connecteurs skills',
+      groupe: 3,
+      mobile: 'app',
+    },
+    {
       id: 'focus',
       icon: 'sparkles',
       label: 'Focus',
@@ -1365,8 +1379,7 @@ export function Settings() {
     });
   // Fermer les paramètres : retour à l'écran d'où l'on venait (ou au Chat si on est arrivé directement).
   const fermer = () => {
-    if (window.history.length > 1) window.history.back();
-    else router.push('/chat');
+    router.replace(ecranAvantParametres());
   };
 
   if (grand) {
@@ -1450,7 +1463,11 @@ export function Settings() {
                 {q && !visibles.length && <p className="lg-pied">Aucun réglage ne correspond.</p>}
               </nav>
               <section className="reglages-contenu" aria-labelledby="reglages-titre">
-                <h2 id="reglages-titre" className="reglages-contenu-titre">
+                <h2
+                  id="reglages-titre"
+                  hidden={actif === 'plugins'}
+                  className="reglages-contenu-titre"
+                >
                   {TITRES[actif]}
                 </h2>
                 {contenuVue(actif)}

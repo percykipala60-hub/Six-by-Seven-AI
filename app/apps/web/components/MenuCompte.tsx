@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { ChoixCompte } from './ChoixCompte';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Icon, type IconName } from './Icon';
@@ -141,6 +142,7 @@ export function MenuCompte({
         <p className="menu-compte-qui">
           {compte.statut === 'connecte' ? compte.identifiant : 'Invité, non connecté'}
         </p>
+        <ChoixCompte />
         <Element icon="sliders" href="/reglages" onClick={onFermer} apres={<kbd>{CTRL} ,</kbd>}>
           Réglages
         </Element>

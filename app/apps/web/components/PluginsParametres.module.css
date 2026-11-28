@@ -1,0 +1,192 @@
+.page {
+  container-type: inline-size;
+  width: 100%;
+  color: inherit;
+  font-size: 15px;
+  line-height: 1.4;
+}
+.page button {
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  background: none;
+  border: 0;
+}
+.barre,
+.segment,
+.barre label,
+.entete,
+.entete a,
+.corps,
+.vide {
+  display: flex;
+  align-items: center;
+}
+.barre {
+  gap: 10px;
+  width: 100%;
+}
+/* La barre garde une vraie largeur même quand la page se dimensionne sur son contenu. */
+.barre label {
+  flex: 1 1 260px;
+  min-width: 180px;
+  gap: 10px;
+  padding: 0 10px;
+  height: 32px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+.barre label:focus-within {
+  border-color: color-mix(in srgb, var(--ink) 35%, transparent);
+}
+.barre input {
+  min-width: 0;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  min-height: 0;
+  outline: none;
+  box-shadow: none;
+}
+.segment {
+  background: var(--panel2);
+  border-radius: 9px;
+}
+.segment button,
+.page .connecter {
+  padding: 6px 14px;
+  border-radius: 8px;
+}
+.segment button[aria-pressed='true'],
+.page .connecter,
+.tri[aria-pressed='true'] {
+  background: var(--line);
+  box-shadow: inset 0 0 0 1px var(--line);
+}
+.page section {
+  margin: 24px 0 34px;
+}
+.page h3 {
+  font-size: 16px;
+  margin: 0 0 10px;
+  font-weight: 500;
+}
+.page h4,
+.page p,
+.identite small,
+.vide,
+.inclus,
+.points {
+  color: var(--muted);
+}
+.page h4 {
+  margin: 22px 0 6px;
+  font-size: 14px;
+}
+.entete {
+  justify-content: space-between;
+}
+.entete h3 {
+  margin: 0;
+}
+.entete a {
+  gap: 7px;
+  padding: 9px 12px;
+  color: inherit;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  text-decoration: none;
+}
+.vide {
+  gap: 22px;
+  padding: 14px 6px;
+}
+.vide span {
+  flex: 1;
+  padding: 9px 0 18px;
+  border-bottom: 1px solid var(--line);
+}
+.ligne {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 0 18px;
+  align-items: center;
+}
+.icone {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  background: var(--panel2);
+  display: grid;
+  place-items: center;
+}
+.icone:has(img) {
+  background: transparent;
+}
+.corps {
+  gap: 8px;
+  min-height: 74px;
+  border-bottom: 1px solid var(--line);
+}
+.ligne:last-child .corps {
+  border-color: transparent;
+}
+.identite {
+  flex: 1;
+  min-width: 0;
+}
+.identite span,
+.identite small {
+  display: block;
+}
+.identite small {
+  margin-top: 3px;
+  font-size: 14px;
+}
+.precision {
+  grid-column: 2;
+  padding: 8px 0;
+}
+.precision a,
+.parcourir {
+  color: var(--accent-b);
+}
+.page .points {
+  min-width: 34px;
+  font-size: 12px;
+}
+.page .inclus {
+  text-align: left;
+  padding: 12px 6px;
+}
+.page button:focus-visible,
+.page a:focus-visible {
+  outline: 2px solid var(--accent-b);
+  outline-offset: 2px;
+}
+@container (max-width:560px) {
+  .barre {
+    flex-wrap: wrap;
+  }
+  .barre label {
+    flex: 1 0 100%;
+  }
+  .segment {
+    flex: 1;
+  }
+  .segment button {
+    flex: 1;
+  }
+  .corps {
+    min-height: 64px;
+  }
+  .ligne {
+    gap: 0 10px;
+  }
+}

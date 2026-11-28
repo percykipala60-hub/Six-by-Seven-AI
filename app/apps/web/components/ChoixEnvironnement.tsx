@@ -23,7 +23,7 @@ import { recuperer } from '@/lib/recuperer';
  * - au démarrage d'une discussion, une carte avec les derniers environnements ;
  * - la fenêtre « Nouvel environnement » : onglets Local / Cloud / SSH / Remote Control, nom, dossiers.
  * Local : des dossiers de cet ordinateur. Cloud : un environnement en ligne lié au compte (Supabase), qu'on peut
- * remplir avec un dépôt GitHub public. Remote Control n'existe pas encore et le dit clairement.
+ * remplir avec un dépôt GitHub public. Le remote s’active dans la discussion.
  */
 
 type Pont = {
@@ -390,8 +390,8 @@ const ONGLETS: [Onglet, string][] = [
   ['cloud', 'Cloud'],
   ['distant', 'Remote Control'],
 ];
-const A_VENIR =
-  'Bientôt : vous piloterez depuis votre téléphone le Six qui tourne sur votre ordinateur.';
+const AIDE_REMOTE =
+  'Ouvrez une discussion, puis choisissez Remote pour activer son lien privé ou public.';
 
 /** Fenêtre « Nouvel environnement » (comme « New environment » de Claude Code). */
 export function NouvelEnvironnement({
@@ -527,7 +527,7 @@ export function NouvelEnvironnement({
           ))}
         </div>
         {onglet === 'distant' ? (
-          <p className="env-a-venir">{A_VENIR}</p>
+          <p className="env-a-venir">{AIDE_REMOTE}</p>
         ) : onglet === 'cloud' ? (
           <>
             <label className="env-champ">

@@ -59,3 +59,24 @@ describe('menu « … » des discussions', () => {
     });
   });
 });
+
+it('isole les fils de A et B même ouverts par identifiant et restaure les anciens fils de A', async () => {
+  const { reprendreHistoriqueExistant } = await import('@/lib/historique-compte');
+  const { effacerTousLesChats } = await import('@/lib/seven-chats');
+  const selectionner = (id: string) => stock.set('six-session', JSON.stringify({ id }));
+  garderChat('ancien', msg('Avant la mise à jour'));
+  selectionner('a');
+  reprendreHistoriqueExistant();
+  garderChat('cosinus', msg('Privé A'), 'sixtouch');
+  selectionner('b');
+  reprendreHistoriqueExistant();
+  expect(lireChats()).toEqual([]);
+  expect(lireChat('ancien')).toBeUndefined();
+  garderChat('cosinus', msg('Privé B'));
+  selectionner('a');
+  expect(lireChat('ancien')?.messages).toEqual(msg('Avant la mise à jour'));
+  expect(lireChat('cosinus')?.messages).toEqual(msg('Privé A'));
+  effacerTousLesChats();
+  selectionner('b');
+  expect(lireChat('cosinus')?.messages).toEqual(msg('Privé B'));
+});

@@ -96,7 +96,8 @@ export async function attendreDemandeQr(
       );
       return e ? 'refuse' : 'connecte';
     } catch {
-      return 'connecte'; // réponse perdue : la session est peut-être déjà enregistrée, l'écran se recharge
+      const session = await sb.auth.getSession().catch(() => null);
+      return session?.data.session ? 'connecte' : 'refuse';
     }
   }
   if (r.statut === 'expire' || r.statut === 'inconnu' || r.statut === 'consomme') return 'expire';

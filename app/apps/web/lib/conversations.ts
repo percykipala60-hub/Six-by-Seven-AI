@@ -1,3 +1,4 @@
+import { cleHistorique } from './historique-compte';
 /**
  * Conversations gardées par la mémoire de Six.
  *
@@ -54,7 +55,7 @@ function valide(x: unknown): x is ConversationGardee {
 /** Les conversations gardées, les plus récentes d'abord. */
 export function lireConversations(): ConversationGardee[] {
   try {
-    const brut = localStorage.getItem(KEY);
+    const brut = localStorage.getItem(cleHistorique(KEY));
     if (!brut) return [];
     const liste = JSON.parse(brut) as unknown;
     if (!Array.isArray(liste)) return [];
@@ -75,7 +76,10 @@ export function lireConversations(): ConversationGardee[] {
 export function garderConversation(c: ConversationGardee): void {
   try {
     const nouvelle: ConversationGardee = { ...c, masque: true };
-    localStorage.setItem(KEY, JSON.stringify([nouvelle, ...lireConversations()].slice(0, MAX)));
+    localStorage.setItem(
+      cleHistorique(KEY),
+      JSON.stringify([nouvelle, ...lireConversations()].slice(0, MAX)),
+    );
   } catch {
     /* stockage plein ou bloqué : Six marche, sans garder la conversation */
   }
@@ -85,7 +89,10 @@ export function garderConversation(c: ConversationGardee): void {
 /** Efface une conversation gardée précise. */
 export function effacerConversationGardee(id: string): void {
   try {
-    localStorage.setItem(KEY, JSON.stringify(lireConversations().filter((c) => c.id !== id)));
+    localStorage.setItem(
+      cleHistorique(KEY),
+      JSON.stringify(lireConversations().filter((c) => c.id !== id)),
+    );
   } catch {
     /* rien à effacer */
   }
@@ -95,7 +102,7 @@ export function effacerConversationGardee(id: string): void {
 /** Efface toutes les conversations gardées (mémoire coupée ou bouton d'effacement). */
 export function effacerConversations(): void {
   try {
-    localStorage.removeItem(KEY);
+    localStorage.removeItem(cleHistorique(KEY));
   } catch {
     /* rien à effacer */
   }
