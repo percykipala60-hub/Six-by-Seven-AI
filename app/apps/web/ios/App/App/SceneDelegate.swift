@@ -244,6 +244,12 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
         // Ouverture à froid par un lien six://… : la page est reprise par l'app web au chargement.
         for contexte in connectionOptions.urlContexts { SixRaccourcis.gererLien(contexte.url) }
+        // Ouverture à froid par un lien https://app.sixbysevenai.com/… : la page s'ouvre une fois l'app chargée.
+        for activite in connectionOptions.userActivities {
+            if let url = lienSix(activite) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self] in self?.ouvrir(url) }
+            }
+        }
         SceneDelegateProxy.shared.scene(scene, willConnectTo: session, options: connectionOptions)
     }
 
@@ -253,6 +259,19 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
 
     func scene(_ scene: UIScene, continue userActivity: NSUserActivity) {
+        if let url = lienSix(userActivity) { ouvrir(url) }
         SceneDelegateProxy.shared.scene(scene, continue: userActivity)
+    }
+
+    /// Lien universel vers Six (https://app.sixbysevenai.com/…), sinon nil.
+    private func lienSix(_ activite: NSUserActivity) -> URL? {
+        guard activite.activityType == NSUserActivityTypeBrowsingWeb, let url = activite.webpageURL,
+              url.scheme == "https", url.host == "app.sixbysevenai.com" else { return nil }
+        return url
+    }
+
+    /// Ouvre la page demandée dans l'app, déjà connectée (même site que l'app : la session est gardée).
+    private func ouvrir(_ url: URL) {
+        (window?.rootViewController as? CAPBridgeViewController)?.webView?.load(URLRequest(url: url))
     }
 }
