@@ -12420,3 +12420,55 @@ button.drawer-profile .grow .small {
   width: auto;
   white-space: nowrap;
 }
+
+/* Page Plug-ins : la recherche prend toute la largeur, sur sa propre ligne sous le titre (un seul cadre discret),
+   les filtres et « Ajouter » en dessous. Remplace les règles précédentes qui l'écrasaient à la taille de la loupe. */
+.app-plugins .catalogue-six header {
+  flex-wrap: wrap;
+}
+.app-plugins .catalogue-six .catalogue-actions {
+  display: flex;
+  flex: 1 1 100%;
+  flex-wrap: wrap;
+  width: 100%;
+  gap: 8px;
+}
+.app-plugins .catalogue-six .catalogue-actions label {
+  order: -1;
+  flex: 1 1 100%;
+  height: 38px;
+  padding: 0 12px;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel2);
+  color: var(--muted);
+  outline: none;
+}
+.app-plugins .catalogue-six .catalogue-actions label:focus-within {
+  outline: none;
+  border-color: color-mix(in srgb, var(--ink) 35%, transparent);
+}
+.app-plugins .catalogue-six .catalogue-actions input,
+.app-plugins .catalogue-six .catalogue-actions input:focus {
+  flex: 1;
+  width: auto;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+  color: var(--ink);
+  font-size: 0.92rem;
+}
+.app-plugins .catalogue-six .catalogue-actions .catalogue-menu {
+  top: 100%;
+}
+@media (max-width: 600px) {
+  .app-plugins .catalogue-six .catalogue-actions input {
+    font-size: 16px;
+  }
+}
