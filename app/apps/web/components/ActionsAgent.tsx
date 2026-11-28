@@ -3,11 +3,15 @@
 import { Icon } from './Icon';
 import { grouperActions, type ActionAgent, type GenreAction } from '@/lib/actions-agent';
 
-const ICONES: Record<GenreAction, 'liste' | 'pencil' | 'search' | 'ordinateur' | 'points'> = {
+const ICONES: Record<
+  GenreAction,
+  'liste' | 'pencil' | 'search' | 'ordinateur' | 'terminal' | 'points'
+> = {
   lecture: 'liste',
   modification: 'pencil',
   recherche: 'search',
   ordinateur: 'ordinateur',
+  commande: 'terminal',
   autre: 'points',
 };
 

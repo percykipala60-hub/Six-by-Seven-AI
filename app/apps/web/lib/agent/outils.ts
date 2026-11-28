@@ -212,6 +212,27 @@ export function definitionsOutils(ctx: ContexteOutils): OutilDef[] {
             required: ['action'],
           },
         },
+        {
+          nom: 'executer_commande',
+          description:
+            "Lance une commande sur l'ordinateur de la personne, comme un terminal : PowerShell (par défaut) ou un script Python. Préfère le code aux clics quand c'est possible (lister, chercher, copier, convertir des fichiers, git, calculs, scripts). L'app demande l'accord de la personne pour chaque programme ; les commandes dangereuses (formatage, suppression d'un disque, registre, arrêt) sont toujours refusées. Le résultat donne le code de sortie, la sortie et les erreurs : lis-les et corrige si le code n'est pas 0. Jamais de mot de passe ni d'installation sans que la personne le demande.",
+          parametres: {
+            type: 'object' as const,
+            properties: {
+              commande: {
+                type: 'string' as const,
+                description:
+                  'La commande PowerShell, ou le code Python complet si langage = python',
+              },
+              langage: {
+                type: 'string' as const,
+                description: 'powershell (par défaut) ou python',
+                enum: ['powershell', 'python'],
+              },
+            },
+            required: ['commande'],
+          },
+        },
       ]
     : [];
   // Navigateur interne : dans Cosinus comme dans le Chat (qui n'a pas d'espace de travail).
@@ -328,6 +349,8 @@ export function libelleEtape(nom: string, args: Record<string, unknown>): string
       if (a === 'raccourci') return `Six utilise le raccourci ${s('touches')}`;
       return "Six regarde l'écran";
     }
+    case 'executer_commande':
+      return `Six lance : ${s('commande')}`;
     case 'lister_espace':
       return "Six regarde les fichiers de l'espace de travail";
     case 'chercher_mes_documents':
@@ -510,6 +533,20 @@ export async function executerOutil(
       case 'ordinateur': {
         if (!ctx.ordinateur) break;
         return { resultat: couper(await ctx.ordinateur.demander(args), TEXTE_MAX) };
+      }
+      case 'executer_commande': {
+        if (!ctx.ordinateur) break;
+        return {
+          resultat: couper(
+            await ctx.ordinateur.demander({
+              action: 'commande',
+              commande: String(args.commande ?? ''),
+              langage: args.langage === 'python' ? 'python' : 'powershell',
+              ...(ctx.espace ? { dossier: ctx.espace } : {}),
+            }),
+            TEXTE_MAX,
+          ),
+        };
       }
       case 'naviguer': {
         if (!ctx.navigateur) break;

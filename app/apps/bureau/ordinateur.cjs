@@ -50,6 +50,7 @@ const INTERDITES = new Set(
 );
 const ENGAGEANT =
   /acheter|payer|paiement|commander|supprimer|effacer d[ée]finitivement|envoyer|publier|confirmer|valider le paiement|s['’]abonner|transf[ée]rer|virement|install(er|ation)|d[ée]sinstaller|formater/i;
+const { creerCommandes } = require('./commandes.cjs');
 const ACTIONS = new Set([
   'fenetres',
   'observer',
@@ -191,7 +192,13 @@ function creerOrdinateur(ctx) {
     permanentes.global = false;
     permanentes.apps.clear();
     garderPermanentes();
+    commandes.oublier();
   };
+  // Terminal de Six (outil « executer_commande ») : mêmes fenêtres d'accord, accords gardés à part.
+  const commandes = creerCommandes({
+    demander: ({ titre, texte }) => demander(titre, texte),
+    stockage: ctx.stockage ? ctx.stockage.replace(/\.json$/, '-commandes.json') : '',
+  });
   let raccourcis = null;
 
   function demarrerAide() {
@@ -415,6 +422,11 @@ function creerOrdinateur(ctx) {
   async function piloter(c) {
     if (process.platform !== 'win32')
       throw new Error('Le contrôle de l’ordinateur arrive bientôt sur ce système.');
+    if (c && typeof c === 'object' && c.action === 'commande') {
+      if (arrete)
+        throw new Error('Six a été arrêté : la personne doit d’abord lui redonner son accord.');
+      return commandes.executer(c);
+    }
     if (!c || typeof c !== 'object' || !ACTIONS.has(c.action)) throw new Error('Action inconnue.');
     if (c.action === 'etat')
       return { actif: accordGlobal && !arrete, applications: [...autorisees] };

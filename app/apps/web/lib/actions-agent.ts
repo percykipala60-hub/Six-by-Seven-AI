@@ -3,7 +3,8 @@
  * compactes et repliables (« 3 fichiers lus », « Modifié rapport.docx +12 −3 », « 2 recherches (1 échec) »),
  * et le remote les enverra telles quelles au téléphone.
  */
-export type GenreAction = 'lecture' | 'modification' | 'recherche' | 'ordinateur' | 'autre';
+export type GenreAction =
+  'lecture' | 'modification' | 'recherche' | 'ordinateur' | 'commande' | 'autre';
 
 export type ActionAgent = {
   genre: GenreAction;
@@ -48,6 +49,7 @@ const GENRES: Record<string, GenreAction> = {
   chercher_lieu_rdc: 'recherche',
   lieux_proches_rdc: 'recherche',
   ordinateur: 'ordinateur',
+  executer_commande: 'commande',
 };
 
 const ECHEC =
@@ -63,11 +65,18 @@ export function actionDe(
   resultat: string,
 ): ActionAgent {
   const genre = GENRES[nom] ?? 'autre';
-  const action: ActionAgent = { genre, texte, code: codeDe(nom, args) };
+  // Une commande se montre telle qu'elle a été lancée, comme dans un terminal.
+  const code =
+    nom === 'executer_commande' && typeof args.commande === 'string'
+      ? args.commande.slice(0, CODE_MAX)
+      : codeDe(nom, args);
+  const action: ActionAgent = { genre, texte, code };
   const sortie = resultat.trim();
   if (sortie)
     action.sortie = sortie.length > SORTIE_MAX ? sortie.slice(0, SORTIE_MAX) + '…' : sortie;
   if (ECHEC.test(resultat.trim())) action.echec = true;
+  // Commande : échec si le code de sortie n'est pas 0 (ou si elle n'a pas pu se lancer).
+  if (genre === 'commande' && /"code":\s*(null|[1-9]|-)/.test(resultat)) action.echec = true;
   if (genre === 'modification') {
     const fichier = args.nom ?? args.chemin;
     if (typeof fichier === 'string') action.fichier = fichier.split(/[\\/]/).pop();
@@ -85,6 +94,7 @@ const NOMS: Record<Exclude<GenreAction, 'modification'>, [string, string]> = {
   lecture: ['lecture', 'lectures'],
   recherche: ['recherche', 'recherches'],
   ordinateur: ["action sur l'ordinateur", "actions sur l'ordinateur"],
+  commande: ['commande', 'commandes'],
   autre: ['étape', 'étapes'],
 };
 
