@@ -1770,7 +1770,8 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   );
 
   const remote = useRemote({
-    discussion: messages.length ? chatId.current : null,
+    // Activable dès l'ouverture, même sans message : le téléphone voit la discussion et peut y écrire.
+    discussion: chatId.current,
     messages,
     titre: titreDe(messages),
     // Les messages du téléphone rejoignent la file comme ceux tapés ici (pendant un enregistrement vocal, ils
