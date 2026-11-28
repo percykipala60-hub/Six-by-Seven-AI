@@ -12472,3 +12472,25 @@ button.drawer-profile .grow .small {
     font-size: 16px;
   }
 }
+/* Recherche large sur la même ligne que Tous / Connecteurs / Skills / Ajouter ; sur une ligne à elle seulement
+   quand la place manque (téléphone). */
+.app-plugins .catalogue-six .catalogue-actions {
+  flex-wrap: nowrap;
+  align-items: center;
+}
+.app-plugins .catalogue-six .catalogue-actions label {
+  order: 0;
+  flex: 1 1 280px;
+  min-width: 180px;
+}
+.app-plugins .catalogue-six .catalogue-actions > :not(label) {
+  flex: none;
+}
+@container (max-width: 650px) {
+  .app-plugins .catalogue-six .catalogue-actions {
+    flex-wrap: wrap;
+  }
+  .app-plugins .catalogue-six .catalogue-actions label {
+    flex-basis: 100%;
+  }
+}
