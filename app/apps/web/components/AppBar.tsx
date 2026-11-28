@@ -13,6 +13,7 @@ import { ecouterCompte, lireCompte, type Compte } from '@/lib/compte';
 import { AvatarContenu } from './AvatarContenu';
 import { MenuCompte, useRaccourciReglages } from './MenuCompte';
 import { effacerChat, ecouterChats, lireChats, type ChatSeven } from '@/lib/seven-chats';
+import { useDiscussionsDistantes } from '@/lib/remote-distant';
 import { Recents, type ElementRecent } from './Recents';
 import {
   effacerConversationGardee,
@@ -225,6 +226,24 @@ export function AppBar({
         : page === 'seven-ai'
           ? chats.filter((c) => c.mode !== 'sixtouch' && !c.archive).map(versRecent)
           : chats.filter((c) => !c.archive).map(versRecent);
+  // Remote : les discussions des autres appareils du compte s'ajoutent aux Récents (logo Remote) et s'ouvrent dans
+  // l'écran de discussion normal (?r=…). Celles de cet appareil y sont déjà.
+  const distantes = useDiscussionsDistantes(page !== 'accueil');
+  const locales = new Set(chats.map((c) => c.id));
+  const baseRemote = page === 'sixtouch' ? '/cosinus' : '/chat';
+  if (page !== 'accueil')
+    recents.unshift(
+      ...distantes
+        .filter((d) => !locales.has(d.discussion))
+        .map((d): ElementRecent => ({
+          id: 'remote-' + d.discussion,
+          titre: d.titre || 'Discussion',
+          href: `${baseRemote}?r=${encodeURIComponent(d.discussion)}`,
+          actif: false,
+          remote: true,
+          onEffacer: () => {},
+        })),
+    );
   // Discussions archivées de l'espace ouvert (section « Archivées » en bas de « Récents »).
   const archives: ElementRecent[] =
     page === 'accueil'

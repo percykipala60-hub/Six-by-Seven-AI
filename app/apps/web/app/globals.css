@@ -12514,3 +12514,10 @@ button.drawer-profile .grow .small {
   background: var(--card);
   box-shadow: 0 10px 30px rgb(0 0 0 / 0.3);
 }
+/* Récents : logo Remote devant une discussion de l'ordinateur suivie depuis cet appareil. */
+.recent-remote {
+  display: inline-flex;
+  flex: none;
+  margin-right: 6px;
+  color: var(--brand);
+}

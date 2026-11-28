@@ -32,6 +32,8 @@ export type ElementRecent = {
   actif: boolean;
   /** Discussion (renommable) ; absent pour une réponse gardée de Responsive. */
   chat?: ChatSeven;
+  /** Discussion d'un autre appareil du compte, suivie par le Remote (logo, pas d'effacement ici). */
+  remote?: boolean;
   onEffacer: () => void;
 };
 
@@ -207,6 +209,15 @@ export function Recents({
           {e.chat?.epingle && (
             <span className="recent-epingle" aria-label="Épinglée">
               <Icon name="epingle" size={12} stroke={1.9} />
+            </span>
+          )}
+          {e.remote && (
+            <span
+              className="recent-remote"
+              aria-label="Remote"
+              title="Remote : discussion de l’ordinateur"
+            >
+              <Icon name="ordinateur" size={13} stroke={1.9} />
             </span>
           )}
           <span className="recent-titre">{e.titre}</span>

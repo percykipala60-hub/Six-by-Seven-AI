@@ -1,15 +1,6 @@
-import type { Metadata } from 'next';
-import { RemoteDirect } from '@/components/RemoteDirect';
+import { redirect } from 'next/navigation';
 
-export const metadata: Metadata = {
-  title: 'Remote',
-  robots: 'noindex, nofollow',
-};
-
+/** Les discussions Remote sont maintenant dans les Récents du Chat (logo Remote) : l'ancienne page y renvoie. */
 export default function Page() {
-  return (
-    <div className="app">
-      <RemoteDirect />
-    </div>
-  );
+  redirect('/chat');
 }

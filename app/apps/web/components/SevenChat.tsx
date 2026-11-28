@@ -11,6 +11,7 @@ import { AppBar } from './AppBar';
 import { UtilisationSix } from './UtilisationSix';
 import { Icon } from './Icon';
 import { useRemote } from './RemoteDiscussion';
+import { useDiscussionDistante } from '@/lib/remote-distant';
 import { ActionsAgent } from './ActionsAgent';
 import type { ActionAgent } from '@/lib/actions-agent';
 import type { EvenementDirect, GenreEvenement } from '@/lib/remote-direct';
@@ -477,6 +478,13 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   }, [volet]);
   const params = useSearchParams();
   const demandee = params.get('c') ?? ''; // discussion ouverte depuis le menu ; vide : nouvelle discussion
+  // Remote : discussion d'un autre appareil du compte (?r=…), affichée ici comme une discussion normale.
+  const remoteId = params.get('r') ?? '';
+  const distante = useDiscussionDistante(remoteId);
+  const distanteRef = useRef(distante);
+  useEffect(() => {
+    distanteRef.current = distante;
+  });
   // Projet de la discussion : celui où elle est rangée, sinon celui de l'adresse (/chat?projet=…, /cosinus?projet=…).
   const projetDemande = params.get('projet') ?? '';
   const avecBrouillonProjet = params.get('brouillon') === '1';
@@ -920,6 +928,16 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     reprise?: { index: number; pieces?: PieceAffichee[] },
   ) {
     if (enregistre && !depuisFile) return;
+    if (distanteRef.current.actif) {
+      const t = texte.trim();
+      if (!t) return;
+      setSaisie('');
+      if (!(await distanteRef.current.envoyer(t))) {
+        setSaisie(t);
+        setErreur('Message non envoyé. Réessayez.');
+      }
+      return;
+    }
     const docs = jointes.filter((p) => p.genre === 'document');
     const visuels = jointes.filter((p) => p.genre !== 'document');
     const images = visuels.flatMap((p) => p.images);
@@ -1771,7 +1789,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
 
   const remote = useRemote({
     // Activable dès l'ouverture, même sans message : le téléphone voit la discussion et peut y écrire.
-    discussion: chatId.current,
+    discussion: remoteId ? null : chatId.current,
     messages,
     titre: titreDe(messages),
     // Les messages du téléphone rejoignent la file comme ceux tapés ici (pendant un enregistrement vocal, ils
@@ -1790,6 +1808,10 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   useEffect(() => {
     remoteRef.current = remote;
   });
+  const fil = remoteId ? distante.messages : messages;
+  const occupeVue = remoteId ? distante.occupe : occupe;
+  const planVue = remoteId ? distante.plan : planEnCours;
+  const actionsVue = remoteId ? distante.actions : actionsEnCours;
   const panneauSession = (
     <PanneauSession
       cosinus={sixtouch}
@@ -1922,7 +1944,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         />
       )}
       <div className="seven-fil" ref={filRef} aria-live="polite" hidden={appel}>
-        {messages.length === 0 && !occupe && (
+        {fil.length === 0 && !occupeVue && (
           <div className="seven-vide">
             <span className="six-vide-logo" aria-hidden="true">
               <Logo label="" />
@@ -1956,7 +1978,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
             )}
           </div>
         )}
-        {messages.map((m, i) => {
+        {fil.map((m, i) => {
           const creation = m.role === 'assistant' ? extraireArtefacts(m.content) : null;
           const texte = creation?.texte ?? m.content;
           return (
@@ -2034,7 +2056,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
                   onOuvrir={ouvrirArtefact}
                 />
               )}
-              {edition?.index !== i && (
+              {edition?.index !== i && !remoteId && (
                 <ActionsMessage
                   message={m}
                   occupe={occupe}
@@ -2085,13 +2107,13 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
             <div className="seven-bulle">{enAttente}</div>
           </div>
         )}
-        {occupe && (
+        {occupeVue && (
           <div className="seven-msg assistant">
             <span className="six-msg-logo" aria-hidden="true">
               <Logo label="" small />
             </span>
-            {planEnCours.length > 0 && <PlanTaches taches={planEnCours} enCours />}
-            {actionsEnCours.length > 0 && <ActionsAgent actions={actionsEnCours} enCours />}
+            {planVue.length > 0 && <PlanTaches taches={planVue} enCours />}
+            {actionsVue.length > 0 && <ActionsAgent actions={actionsVue} enCours />}
             <div className="six-attente" role="status">
               <span className="six-attente-texte">
                 {sixtouch
@@ -2282,13 +2304,14 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
           />
           {/* Pendant la réponse : « Arrêter », et l'envoi reste possible (le message attend son tour). Sinon, micro
               tant que le champ est vide ; dès qu'on écrit, il laisse la place au bouton d'envoi. */}
-          {occupe && !enregistre && (
+          {occupeVue && !enregistre && (
             <button
               type="button"
               className="seven-arreter"
               aria-label="Arrêter la réponse"
               title="Arrêter"
               onClick={() => {
+                if (remoteId) return void distante.arreter();
                 arretVolontaire.current = true;
                 operation.current?.abort();
               }}
@@ -2306,7 +2329,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
             >
               <Icon name="up" size={18} stroke={2} />
             </button>
-          ) : occupe && !enregistre ? null : (
+          ) : occupeVue && !enregistre ? null : (
             <>
               {!enregistre && (
                 <button
