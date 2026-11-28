@@ -12494,3 +12494,23 @@ button.drawer-profile .grow .small {
     flex-basis: 100%;
   }
 }
+
+/* Menu latéral : « Plus » ouvre un petit menu flottant (tâches planifiées). */
+.drawer-plus {
+  position: relative;
+}
+.drawer-plus summary::-webkit-details-marker {
+  display: none;
+}
+.drawer-plus-menu {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 4px);
+  left: 8px;
+  min-width: 200px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.3);
+}

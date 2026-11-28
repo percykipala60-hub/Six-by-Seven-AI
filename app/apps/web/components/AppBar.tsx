@@ -460,16 +460,19 @@ export function AppBar({
               aria-label="Rechercher une discussion"
             />
           )}
-          {item('/artefacts', 'artefacts', <Icon name="file" />, 'Artéfacts')}
+          {item('/projets', 'projets', <Icon name="projets" />, 'Projets')}
+          {item('/artefacts', 'artefacts', <Icon name="artefacts" />, 'Artéfacts')}
           {item('/plugins', 'plugins', <Icon name="plugins" />, 'Plug-ins')}
           {item('/remote', 'remote', <Icon name="phone" />, 'Remote')}
+          {/* « Plus » ouvre un petit menu à côté (tâches planifiées), au lieu de pousser la liste vers le bas. */}
           <details className="drawer-plus">
             <summary className="drawer-item">
               <Icon name="plus-points" />
               Plus
             </summary>
-            {item('/projets', 'projets', <Icon name="file" />, 'Projets')}
-            {item('/taches', 'taches', <Icon name="file" />, 'Tâches planifiées')}
+            <div className="drawer-plus-menu">
+              {item('/taches', 'taches', <Icon name="horloge" />, 'Tâches planifiées')}
+            </div>
           </details>
           {item('/responsive', 'accueil', <Icon name="repondre" />, 'Responsive')}
           {item('/chat', 'seven-ai', <Icon name="discuter" />, 'Chat')}
