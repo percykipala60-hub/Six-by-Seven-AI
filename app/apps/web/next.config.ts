@@ -8,6 +8,9 @@ const config = {
   poweredByHeader: false,
   turbopack: { root: racine },
   outputFileTracingRoot: racine,
+  // Sur le serveur (1 Go de mémoire), la vérification des types de Next manque de mémoire : elle est déjà faite
+  // avant chaque envoi (crochet pre-push) et par la CI, la construction Docker la saute (SIX_SANS_VERIF_TYPES=1).
+  typescript: { ignoreBuildErrors: process.env.SIX_SANS_VERIF_TYPES === '1' },
   devIndicators: false, // pas de pastille « N » de Next.js par-dessus l'app (simulateur, téléphone)
   allowedDevOrigins: (process.env.ALLOWED_DEV_ORIGINS ?? '')
     .split(',')

@@ -10,6 +10,8 @@ ARG NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
 ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=$NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY     NEXT_OUTPUT=standalone NEXT_TELEMETRY_DISABLED=1
 COPY . .
 RUN pnpm install --frozen-lockfile
+# Petit serveur (1 Go + échange) : types déjà vérifiés avant l'envoi ; Node peut déborder sur l'échange.
+ENV SIX_SANS_VERIF_TYPES=1 NODE_OPTIONS=--max-old-space-size=1536
 RUN pnpm --filter "@six/web..." build
 
 FROM node:22.22-alpine AS runtime
