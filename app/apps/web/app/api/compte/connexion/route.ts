@@ -33,7 +33,7 @@ async function compte(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const blocked = await guard(req);
+  const blocked = await guard(req, false, 'leger');
   if (blocked) return blocked;
   if (!adminDisponible())
     return fail(503, 'Les alertes de connexion sont indisponibles pour le moment.');
@@ -74,7 +74,7 @@ export async function POST(req: Request) {
 }
 
 export async function GET(req: Request) {
-  const blocked = await guard(req);
+  const blocked = await guard(req, false, 'leger');
   if (blocked) return blocked;
   // Session fermée depuis un autre appareil : l'app se déconnecte (vérifié sans cache, même sans clé admin).
   const jeton = /^Bearer\s+(\S+)$/.exec(req.headers.get('authorization') ?? '')?.[1];

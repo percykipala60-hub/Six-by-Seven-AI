@@ -9,7 +9,7 @@ import { guard } from '@/lib/http';
 export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
-  const blocked = await guard(req);
+  const blocked = await guard(req, false, 'leger');
   if (blocked) return blocked;
   const modele = (process.env.IA_LOCALE_MODELE ?? '').trim();
   if (!modele) return NextResponse.json({ ok: false });

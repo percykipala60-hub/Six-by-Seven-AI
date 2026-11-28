@@ -27,7 +27,7 @@ export const runtime = 'nodejs';
  */
 async function garde(req: Request) {
   if (demandeLocale(req)) return foreignOrigin(req) ? fail(403, 'Requête non autorisée.') : null;
-  return guard(req);
+  return guard(req, false, 'leger');
 }
 
 const ABSENT = "L'espace de travail de Cosinus n'existe qu'en local pour l'instant.";

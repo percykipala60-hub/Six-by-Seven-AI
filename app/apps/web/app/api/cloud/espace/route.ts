@@ -47,7 +47,7 @@ const erreur = (e: unknown) =>
   );
 
 export async function GET(req: Request) {
-  const blocked = await guard(req);
+  const blocked = await guard(req, false, 'leger');
   if (blocked) return blocked;
   const c = await compte(req);
   if (!c) return fail(401, SANS_COMPTE);
@@ -103,7 +103,7 @@ export async function GET(req: Request) {
  * - { e, nom, contenu } : enregistre un texte dans « resultats/ » (bouton du volet Fichiers).
  */
 export async function POST(req: Request) {
-  const blocked = await guard(req);
+  const blocked = await guard(req, false, 'leger');
   if (blocked) return blocked;
   const c = await compte(req);
   if (!c) return fail(401, SANS_COMPTE);

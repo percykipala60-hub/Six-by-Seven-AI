@@ -3,7 +3,13 @@ import { ProviderError } from './providers';
 import { utilisateurDeRequete } from './supabase-serveur';
 
 const WINDOW_MS = 60_000;
-const MAX_REQ = 20;
+/**
+ * Deux compteurs séparés par adresse : « ia » (appels qui coûtent : réponse, analyse, voix…) et « leger »
+ * (relais des actions de l'ordinateur, vérifications du compte, fichiers de l'espace). Avant, tout partageait
+ * 20 appels par minute : une tâche de Six sur l'ordinateur (un appel par action) se bloquait elle-même.
+ */
+export type Seau = 'ia' | 'leger';
+const MAX_PAR_SEAU: Record<Seau, number> = { ia: 20, leger: 120 };
 const hits = new Map<string, number[]>();
 const RATE_LIMIT_SCRIPT =
   'local count = redis.call("INCR", KEYS[1]); if count == 1 then redis.call("PEXPIRE", KEYS[1], ARGV[1]); end; return count';
@@ -28,8 +34,8 @@ export function clientKey(req: Request): string {
 }
 
 /** Limite de 20 requêtes par minute et par adresse. Production utilise un compteur Redis partagé. */
-function localRateLimited(req: Request): boolean {
-  const key = clientKey(req);
+function localRateLimited(req: Request, seau: Seau = 'ia'): boolean {
+  const key = `${seau}:${clientKey(req)}`;
   const now = Date.now();
   const recent = (hits.get(key) ?? []).filter((t) => now - t < WINDOW_MS);
   recent.push(now);
@@ -38,17 +44,17 @@ function localRateLimited(req: Request): boolean {
     // Nettoyage des adresses inactives (on ne vide jamais tout : ce serait une remise à zéro pour tous).
     for (const [k, times] of hits) if (now - times[times.length - 1] >= WINDOW_MS) hits.delete(k);
   }
-  return recent.length > MAX_REQ;
+  return recent.length > MAX_PAR_SEAU[seau];
 }
 
-async function sharedRateLimited(req: Request): Promise<boolean> {
+async function sharedRateLimited(req: Request, seau: Seau = 'ia'): Promise<boolean> {
   const url = process.env.UPSTASH_REDIS_REST_URL?.trim();
   const token = process.env.UPSTASH_REDIS_REST_TOKEN?.trim();
   const secret = process.env.RATE_LIMIT_HASH_SECRET?.trim();
   const production = process.env.NODE_ENV === 'production';
 
   if (!url || !token || !secret) {
-    return localRateLimited(req);
+    return localRateLimited(req, seau);
   }
 
   const endpoint = new URL(url);
@@ -58,9 +64,9 @@ async function sharedRateLimited(req: Request): Promise<boolean> {
     throw new Error('Rate-limit hash secret must be at least 32 characters');
 
   const hops = Number(process.env.TRUST_PROXY || 0);
-  if (production && (!Number.isInteger(hops) || hops < 1)) return localRateLimited(req);
+  if (production && (!Number.isInteger(hops) || hops < 1)) return localRateLimited(req, seau);
   const address = clientKey(req);
-  if (production && address === 'direct') return localRateLimited(req);
+  if (production && address === 'direct') return localRateLimited(req, seau);
 
   const digest = await crypto.subtle.digest(
     'SHA-256',
@@ -76,7 +82,7 @@ async function sharedRateLimited(req: Request): Promise<boolean> {
       'content-type': 'application/json',
     },
     body: JSON.stringify([
-      ['EVAL', RATE_LIMIT_SCRIPT, '1', `six:rate-limit:${hash}`, String(WINDOW_MS)],
+      ['EVAL', RATE_LIMIT_SCRIPT, '1', `six:rate-limit:${seau}:${hash}`, String(WINDOW_MS)],
     ]),
     cache: 'no-store',
     signal: AbortSignal.timeout(3_000),
@@ -93,11 +99,11 @@ async function sharedRateLimited(req: Request): Promise<boolean> {
   ) {
     throw new Error('Shared rate-limit store returned an invalid response');
   }
-  return result[0].result > MAX_REQ;
+  return result[0].result > MAX_PAR_SEAU[seau];
 }
 
-export async function rateLimited(req: Request): Promise<boolean> {
-  return sharedRateLimited(req);
+export async function rateLimited(req: Request, seau: Seau = 'ia'): Promise<boolean> {
+  return sharedRateLimited(req, seau);
 }
 
 /**
@@ -144,12 +150,16 @@ export function foreignOrigin(req: Request): boolean {
 }
 
 /** Contrôles communs à toutes les routes d'IA. Renvoie une réponse d'erreur, ou null si la requête peut continuer. */
-export async function guard(req: Request, compteRequis = false): Promise<NextResponse | null> {
+export async function guard(
+  req: Request,
+  compteRequis = false,
+  seau: Seau = 'ia',
+): Promise<NextResponse | null> {
   if (foreignOrigin(req)) return fail(403, 'Requête non autorisée.');
   if (compteRequis && !(await utilisateurDeRequete(req)))
     return fail(401, 'Connectez-vous pour utiliser Six.');
   try {
-    if (await rateLimited(req)) return fail(429, 'Trop de demandes. Attendez une minute.');
+    if (await rateLimited(req, seau)) return fail(429, 'Trop de demandes. Attendez une minute.');
   } catch (error) {
     console.error(
       '[rate-limit] protection distribuée indisponible',

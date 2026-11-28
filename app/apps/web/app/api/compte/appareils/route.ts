@@ -36,7 +36,7 @@ async function contexte(req: Request) {
 }
 
 export async function GET(req: Request) {
-  const blocked = await guard(req);
+  const blocked = await guard(req, false, 'leger');
   if (blocked) return blocked;
   if (!adminDisponible())
     return fail(503, 'La liste des appareils est indisponible pour le moment.');
@@ -62,7 +62,7 @@ export async function GET(req: Request) {
 }
 
 export async function DELETE(req: Request) {
-  const blocked = await guard(req);
+  const blocked = await guard(req, false, 'leger');
   if (blocked) return blocked;
   if (!adminDisponible())
     return fail(503, 'La gestion des appareils est indisponible pour le moment.');

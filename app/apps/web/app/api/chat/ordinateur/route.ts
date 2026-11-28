@@ -17,7 +17,7 @@ const Corps = z.object({
 });
 
 export async function POST(req: Request) {
-  const blocked = await guard(req);
+  const blocked = await guard(req, false, 'leger');
   if (blocked) return blocked;
   const a = await appelant(req);
   if (!a.utilisateur) return fail(401, 'Connexion requise.');
