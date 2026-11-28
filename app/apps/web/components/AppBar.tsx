@@ -463,7 +463,6 @@ export function AppBar({
           {item('/projets', 'projets', <Icon name="projets" />, 'Projets')}
           {item('/artefacts', 'artefacts', <Icon name="artefacts" />, 'Artéfacts')}
           {item('/plugins', 'plugins', <Icon name="plugins" />, 'Plug-ins')}
-          {item('/remote', 'remote', <Icon name="phone" />, 'Remote')}
           {/* « Plus » ouvre un petit menu à côté (tâches planifiées), au lieu de pousser la liste vers le bas. */}
           <details className="drawer-plus">
             <summary className="drawer-item">

@@ -41,7 +41,6 @@ const PATHS = {
   projets: 'M5 4h14M4 8h16M5 8v11a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8',
   artefacts:
     'M9 8h10a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V9a1 1 0 0 1 1-1zM4 16V5a1 1 0 0 1 1-1h11',
-  horloge: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2',
   x: 'M6 6l12 12M18 6L6 18',
   pause: 'M8 5v14M16 5v14',
   play: 'M7 4l14 8-14 8z',
