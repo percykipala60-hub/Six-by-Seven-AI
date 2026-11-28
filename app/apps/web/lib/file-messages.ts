@@ -45,3 +45,26 @@ export function rendreALaSaisie<P>(
   const textes = [...file.map((m) => m.texte), saisie.trim()].filter(Boolean);
   return { texte: textes.join(' '), pieces: [...file.flatMap((m) => m.pieces), ...pieces] };
 }
+
+/**
+ * Plusieurs messages attendent (envoyés pendant que Six travaillait, ou depuis le téléphone) : ils partent ensemble,
+ * en un seul tour. Six en fait d'abord une liste de tâches, une par demande, puis les traite dans l'ordre et coche
+ * au fur et à mesure (comme Claude Code avec sa liste). Un seul message part tel quel.
+ */
+export function regrouperFile<P>(file: MessageEnFile<P>[]): {
+  texte: string;
+  affichage?: string;
+  pieces: P[];
+} {
+  if (file.length <= 1) return { texte: file[0]?.texte ?? '', pieces: file[0]?.pieces ?? [] };
+  const liste = file.map((m, i) => `${i + 1}. ${m.texte || '(pièce jointe)'}`).join('\n');
+  return {
+    texte:
+      `Pendant que tu travaillais, ${file.length} messages sont arrivés. Fais d'abord une liste de tâches ` +
+      `(une tâche par demande, dans l'ordre, en fusionnant seulement les doublons), puis traite-les une par une ` +
+      `en cochant chaque tâche finie. Si une demande annule ou corrige une précédente, suis la plus récente.\n\n` +
+      liste,
+    affichage: liste,
+    pieces: file.flatMap((m) => m.pieces),
+  };
+}

@@ -1,4 +1,6 @@
 'use client';
+import Image from 'next/image';
+import { cleHistorique, compteHistorique } from '@/lib/historique-compte';
 
 import { useCallback, useEffect, useMemo, useRef, useState, useLayoutEffect } from 'react';
 import { mouvementReduit } from '@/lib/accessibilite';
@@ -7,6 +9,11 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { AppBar } from './AppBar';
 import { UtilisationSix } from './UtilisationSix';
 import { Icon } from './Icon';
+import { useRemote } from './RemoteDiscussion';
+import { ActionsAgent } from './ActionsAgent';
+import type { ActionAgent } from '@/lib/actions-agent';
+import type { EvenementDirect, GenreEvenement } from '@/lib/remote-direct';
+import { BoutonRemote, PanneauSession } from './PanneauSession';
 import { BoutonPartager } from './BoutonPartager';
 import {
   estBureau,
@@ -19,7 +26,7 @@ import { lireDocx, texteDeBlocs } from '@/lib/docx';
 import { NOM_TEXTE_COLLE, extraitTexte, piecesDuCollage } from '@/lib/collage';
 import {
   mettreEnFile,
-  prochainMessage,
+  regrouperFile,
   rendreALaSaisie,
   retirerDeFile,
   type MessageEnFile,
@@ -398,6 +405,11 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   }, [volet, empile, sixtouch]);
   // Cosinus : étapes de l'agent reçues pendant la tâche en cours, et sa liste de tâches (cochée une à une).
   const [etapesEnCours, setEtapesEnCours] = useState<string[]>([]);
+  const [actionsEnCours, setActionsEnCours] = useState<ActionAgent[]>([]);
+  // Le remote privé publie en direct ; on passe par une référence car l'envoi est défini avant lui.
+  const remoteRef = useRef<{
+    publier: (g: GenreEvenement, d?: EvenementDirect['donnees']) => void;
+  }>(null);
   const [planEnCours, setPlanEnCours] = useState<{ texte: string; faite: boolean }[]>([]);
   // Messages envoyés pendant que Six répond : ils partent dans l'ordre dès que la réponse en cours est arrivée.
   const [file, setFile] = useState<MessageEnFile<Piece>[]>([]);
@@ -484,6 +496,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   }, [volet]);
   const envDemande = params.get('e') ?? ''; // Cosinus : nouvelle discussion dans cet environnement
   const dossierDemande = params.get('d') ?? ''; // (ancien lien : dans ce dossier)
+  const proprietaire = useRef(compteHistorique());
   const chatId = useRef('');
   // Navigateur de la discussion : historique, onglets et session web propres à chaque discussion (Chat ou Cosinus).
   // Sans message, c'est le brouillon de l'espace (retrouvé en revenant) ; il passe à la discussion au premier message.
@@ -553,6 +566,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   ): Promise<
     ChatResult & {
       etapes?: string[];
+      actions?: ActionAgent[];
       fichiers?: string[];
       plan?: { texte: string; faite: boolean }[];
     }
@@ -591,6 +605,8 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
             usage?: UsageJetons;
             modele?: string;
             etapes?: string[];
+            actions?: ActionAgent[];
+            action?: ActionAgent;
             fichiers?: string[];
             error?: string;
             session?: string;
@@ -598,7 +614,10 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
             taches?: { texte: string; faite: boolean }[];
             plan?: { texte: string; faite: boolean }[];
           };
-          if (o.type === 'plan' && Array.isArray(o.taches)) setPlanEnCours(o.taches);
+          if (o.type === 'plan' && Array.isArray(o.taches)) {
+            setPlanEnCours(o.taches);
+            remoteRef.current?.publier('plan', { taches: o.taches });
+          }
           // L'agent demande une action sur l'ordinateur : l'app de bureau l'exécute (après l'accord de la personne)
           // et le résultat repart vers l'agent, qui attend.
           if (o.type === 'ordinateur' && typeof o.id === 'string')
@@ -608,6 +627,11 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
             // Seule l'app de bureau montre ce que Six fait dans le navigateur.
             if (estBureau()) setVoletBrut('navigateur');
             window.dispatchEvent(new Event('six-navigateur-agent'));
+          }
+          if (o.type === 'action' && o.action) {
+            const a = o.action;
+            setActionsEnCours((l) => [...l, a]);
+            remoteRef.current?.publier('action', { action: a });
           }
           if (o.type === 'etape' && o.texte) {
             const t = o.texte;
@@ -621,6 +645,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
               usage: o.usage,
               modele: o.modele,
               etapes: o.etapes,
+              actions: o.actions,
               fichiers: o.fichiers,
               plan: o.plan,
             };
@@ -750,9 +775,9 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     setMessages(historique);
     if (avecBrouillonProjet && !demandee && projetDemande) {
       try {
-        const local = sessionStorage.getItem(CLE_BROUILLON_PROJET);
+        const local = sessionStorage.getItem(cleHistorique(CLE_BROUILLON_PROJET));
         if (local) {
-          sessionStorage.removeItem(CLE_BROUILLON_PROJET);
+          sessionStorage.removeItem(cleHistorique(CLE_BROUILLON_PROJET));
           const d = JSON.parse(local);
           if (d?.projetId === projetDemande && typeof d.texte === 'string')
             brouillonProjet.current = d;
@@ -864,6 +889,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
   }, [messages, occupe, suivreFin]);
 
   function pousser(fil: ChatMessage[]) {
+    if (proprietaire.current !== compteHistorique()) return;
     messagesRef.current = fil;
     setMessages(fil);
     garderChat(chatId.current, fil, mode, projetId || undefined, dossier, env?.id);
@@ -1057,10 +1083,13 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         body: corps,
       };
       setEtapesEnCours([]);
+      setActionsEnCours([]);
+      remoteRef.current?.publier('debut', { texte: affichage ?? texte });
       setPlanEnCours([]);
       let data: ChatResult & {
         error?: string;
         etapes?: string[];
+        actions?: ActionAgent[];
         fichiers?: string[];
         plan?: { texte: string; faite: boolean }[];
       };
@@ -1080,6 +1109,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         ...(data.usage ? { usage: data.usage } : {}),
         ...(typeof data.modele === 'string' && data.modele ? { modele: data.modele } : {}),
         ...(data.etapes?.length ? { etapes: data.etapes } : {}),
+        ...(data.actions?.length ? { actions: data.actions } : {}),
         ...(data.fichiers?.length ? { fichiers: data.fichiers } : {}),
         ...(data.lieux?.length ? { lieux: data.lieux } : {}),
         ...(data.plan?.length ? { plan: data.plan } : {}),
@@ -1102,8 +1132,12 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
         setDocumentAReimporter(false);
       }
       notifierFinReponse(data.reponse);
+      remoteRef.current?.publier('fin', { texte: data.reponse });
       return data.reponse;
     } catch (e) {
+      remoteRef.current?.publier('erreur', {
+        texte: e instanceof Error ? e.message : 'Erreur inattendue.',
+      });
       setDernierEchec({ texte, affichage, document, jointes, reprise });
       // Modification ou relance qui échoue : la discussion revient telle qu'elle était.
       if (version) {
@@ -1328,13 +1362,13 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       raccrocher();
     }
   }
-  // La réponse est arrivée : le message suivant de la file part (un seul à la fois, dans l'ordre).
+  // La réponse est arrivée : toute la file part en un tour. Plusieurs messages deviennent une liste de tâches
+  // que Six traite dans l'ordre (lib/file-messages.ts) ; un seul message part tel quel.
   useEffect(() => {
     if (occupe || !file.length) return;
-    const { message, reste } = prochainMessage(file);
-    if (!message) return;
-    setFile(reste);
-    void envoyer(message.texte, undefined, undefined, message.pieces, true);
+    const groupe = regrouperFile(file);
+    setFile([]);
+    void envoyer(groupe.texte, groupe.affichage, undefined, groupe.pieces, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- envoyer change à chaque rendu ; seul l'état compte
   }, [occupe, file]);
 
@@ -1734,6 +1768,44 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
     <BoutonPartager titre={titreDe(messages)} messages={messages} onErreur={setErreur} />
   );
 
+  const remote = useRemote({
+    discussion: messages.length ? chatId.current : null,
+    messages,
+    titre: titreDe(messages),
+    // Les messages du téléphone rejoignent la file comme ceux tapés ici (pendant un enregistrement vocal, ils
+    // attendent sur le serveur).
+    disponible: !enregistre,
+    recevoir: async (texte) => {
+      void envoyer(texte, undefined, undefined, []);
+      return true;
+    },
+    travail: occupe,
+    arreter: () => {
+      arretVolontaire.current = true;
+      operation.current?.abort();
+    },
+  });
+  useEffect(() => {
+    remoteRef.current = remote;
+  });
+  const panneauSession = (
+    <PanneauSession
+      cosinus={sixtouch}
+      environnement={env?.nom}
+      dossier={dossier}
+      cloud={enCloud}
+      usage={usageDiscussion}
+      sorties={[...versions.values()].map((liste) => liste[liste.length - 1])}
+      occupe={occupe}
+      enFile={file.length}
+      remote={remote}
+      onOuvrirSortie={(nom) => {
+        const liste = versions.get(nom);
+        if (liste?.length) ouvrirArtefact({ versions: liste, version: liste.length - 1 });
+      }}
+    />
+  );
+
   return (
     <main className="screen seven-screen">
       <AppBar
@@ -1770,6 +1842,8 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
       {(sixtouch || chatNavigateur || messages.length > 0) && (
         <div className="seven-outils-flottants seven-outils-ligne">
           {messages.length > 0 && <div className="volet-boutons">{partage}</div>}
+          <BoutonRemote remote={remote} />
+          {panneauSession}
           {sixtouch && bureau && !enCloud && !telephone && ouvrirVSCodeBureau() && (
             <div className="volet-boutons">
               <button
@@ -1790,7 +1864,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
                   );
                 }}
               >
-                <Icon name="code" size={18} stroke={1.8} />
+                <Image src="/visual-studio-code.svg" alt="" width={19} height={19} unoptimized />
               </button>
             </div>
           )}
@@ -1892,17 +1966,22 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
               )}
               {m.pieces && <PiecesJointes pieces={m.pieces} petit />}
               {m.plan && m.plan.length > 0 && <PlanTaches taches={m.plan} replie />}
-              {m.etapes && m.etapes.length > 0 && (
-                <details className="six-etapes">
-                  <summary>
-                    {m.etapes.length} étape{m.etapes.length > 1 ? 's' : ''} de travail
-                  </summary>
-                  <ol>
-                    {m.etapes.map((e, k) => (
-                      <li key={k}>{e}</li>
-                    ))}
-                  </ol>
-                </details>
+              {m.actions && m.actions.length > 0 ? (
+                <ActionsAgent actions={m.actions} />
+              ) : (
+                m.etapes &&
+                m.etapes.length > 0 && (
+                  <details className="six-etapes">
+                    <summary>
+                      {m.etapes.length} étape{m.etapes.length > 1 ? 's' : ''} de travail
+                    </summary>
+                    <ol>
+                      {m.etapes.map((e, k) => (
+                        <li key={k}>{e}</li>
+                      ))}
+                    </ol>
+                  </details>
+                )
               )}
               {edition?.index === i ? (
                 <form
@@ -2010,6 +2089,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
               <Logo label="" small />
             </span>
             {planEnCours.length > 0 && <PlanTaches taches={planEnCours} enCours />}
+            {actionsEnCours.length > 0 && <ActionsAgent actions={actionsEnCours} enCours />}
             <div className="six-attente" role="status">
               <span className="six-attente-texte">
                 {sixtouch

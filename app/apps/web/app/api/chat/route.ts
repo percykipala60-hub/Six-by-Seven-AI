@@ -162,12 +162,14 @@ ${dernier.content}`;
               },
             },
             surEtape: (texte) => envoyer({ type: 'etape', texte }),
+            surAction: (action) => envoyer({ type: 'action', action }),
             annulation: req.signal,
           });
           envoyer({
             type: 'fin',
             reponse: corrigerIdentite(r.reponse),
             etapes: r.etapes,
+            actions: r.actions,
             usage: lireUsage(),
             modele: lireModele(),
           });
@@ -265,6 +267,7 @@ ${dernier.content}`;
             },
             surEtape: (texte) => envoyer({ type: 'etape', texte }),
             surPlan: (taches) => envoyer({ type: 'plan', taches }),
+            surAction: (action) => envoyer({ type: 'action', action }),
             annulation: req.signal,
           });
           envoyer({
@@ -273,6 +276,7 @@ ${dernier.content}`;
               corrigerIdentite(r.reponse) ||
               'Travail terminé, mais Six n’a pas écrit de résumé. Regardez vos fichiers.',
             etapes: r.etapes,
+            actions: r.actions,
             fichiers: r.fichiers,
             plan: r.plan,
             usage: lireUsage(),

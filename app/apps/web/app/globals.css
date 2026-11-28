@@ -2408,7 +2408,7 @@ label.example {
   flex: 1;
   min-width: 0;
   padding-left: 2px;
-  font-weight: 700;
+  font-weight: 500;
   font-size: 1.1rem;
   letter-spacing: -0.01em;
   white-space: nowrap;
@@ -5135,7 +5135,7 @@ body {
 .drawer-new {
   margin-bottom: 6px;
   background: none;
-  font-weight: 600;
+  font-weight: 400;
 }
 .drawer-new svg {
   color: var(--ink);
@@ -7629,7 +7629,7 @@ html.volet-glisse .volet-cadre {
 .reglages-fenetre-tete h1 {
   margin: 0;
   font-size: 1rem;
-  font-weight: 700;
+  font-weight: 500;
 }
 .reglages-fenetre-corps {
   flex: 1;
@@ -7667,7 +7667,7 @@ html.volet-glisse .volet-cadre {
 .reglages-menu-titre {
   margin: 4px 10px 12px;
   font-size: 1.35rem;
-  font-weight: 800;
+  font-weight: 500;
 }
 .reglages-menu .lg-recherche {
   margin: 0 0 12px;
@@ -7697,7 +7697,7 @@ html.volet-glisse .volet-cadre {
 }
 .reglages-entree[aria-current='page'] {
   background: color-mix(in srgb, var(--ink) 9%, transparent);
-  font-weight: 600;
+  font-weight: 400;
 }
 .reglages-entree[aria-current='page'] > svg {
   color: var(--ink);
@@ -7755,7 +7755,7 @@ html.volet-glisse .volet-cadre {
 .reglages-contenu-titre {
   margin: 4px 0 20px;
   font-size: 1.35rem;
-  font-weight: 800;
+  font-weight: 500;
   letter-spacing: -0.01em;
 }
 /* L'avatar de la page Réglages fait 64 px (.lg-avatar, !important) : petit dans la colonne de gauche. */
@@ -11492,4 +11492,931 @@ button.drawer-profile .grow .small {
   flex: none;
   color: var(--muted);
   font-size: 0.72rem;
+}
+
+.six-remote {
+  align-self: flex-end;
+  position: relative;
+  z-index: 12;
+  margin-inline: 1rem;
+}
+.six-remote summary {
+  cursor: pointer;
+}
+.six-remote > div {
+  position: absolute;
+  inset-inline-end: 0;
+  width: min(19rem, 85vw);
+  padding: 1rem;
+  background: Canvas;
+  color: CanvasText;
+  border: 1px solid GrayText;
+  border-radius: 0.75rem;
+  display: grid;
+  gap: 0.75rem;
+}
+.six-remote label {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.drawer-plus summary {
+  cursor: pointer;
+  list-style: none;
+}
+.catalogue-six {
+  container-type: inline-size;
+  padding: clamp(16px, 4vw, 52px);
+  max-width: 1240px;
+  box-sizing: border-box;
+  width: 100%;
+  margin-inline: auto;
+  overflow: auto;
+}
+.catalogue-six header,
+.catalogue-actions,
+.catalogue-actions label,
+.catalogue-grille a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.catalogue-six header {
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.catalogue-six h1 {
+  font-size: 1.8rem;
+  margin: 0;
+}
+.catalogue-six p,
+.catalogue-grille small {
+  color: var(--muted);
+}
+.catalogue-six h2 {
+  font-size: 1.05rem;
+  margin: 32px 0 12px;
+}
+.catalogue-actions {
+  position: relative;
+  flex-wrap: wrap;
+}
+.catalogue-actions label,
+.catalogue-actions button {
+  padding: 8px 12px;
+  border: 1px solid currentColor;
+  border-radius: 24px;
+}
+.catalogue-actions input {
+  background: transparent;
+  color: inherit;
+  border: 0;
+  width: 10rem;
+}
+.catalogue-actions button {
+  cursor: pointer;
+}
+.catalogue-menu {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  z-index: 2;
+  display: grid;
+  gap: 10px;
+  background: Canvas;
+  color: CanvasText;
+  padding: 12px;
+  border-radius: 10px;
+}
+.catalogue-grille {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 24px;
+}
+.catalogue-grille a {
+  color: inherit;
+  text-decoration: none;
+  padding: 12px 4px;
+  border-radius: 8px;
+}
+.catalogue-grille a:hover {
+  background: color-mix(in srgb, currentColor 7%, transparent);
+}
+.catalogue-grille i {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  color: white;
+}
+.catalogue-grille span {
+  flex: 1;
+  min-width: 0;
+}
+.catalogue-grille small {
+  display: block;
+  margin-top: 4px;
+}
+@container (max-width:620px) {
+  .catalogue-grille {
+    grid-template-columns: 1fr;
+  }
+}
+
+.app.app-plugins {
+  max-width: none;
+}
+.app-plugins .catalogue-six {
+  max-width: 1140px;
+  padding: clamp(10px, 2.5vw, 32px);
+  font-size: 14px;
+}
+.app-plugins .catalogue-six h1 {
+  font-size: 24px;
+}
+.app-plugins .catalogue-six h2 {
+  font-size: 15px;
+  margin: 24px 0 6px;
+}
+.app-plugins .catalogue-six header p {
+  margin: 4px 0 0;
+}
+.app-plugins .catalogue-grille {
+  gap: 4px 32px;
+}
+.app-plugins .catalogue-grille a {
+  padding: 8px 2px;
+  gap: 9px;
+}
+.app-plugins .catalogue-grille i {
+  width: 30px;
+  height: 30px;
+  border-radius: 7px;
+}
+.app-plugins .catalogue-grille small {
+  font-size: 12px;
+  margin-top: 2px;
+}
+.app-plugins .catalogue-actions label {
+  padding: 0 10px;
+  gap: 6px;
+}
+.app-plugins .catalogue-actions input {
+  min-height: 0;
+  height: 34px;
+  padding: 0;
+  width: min(13rem, 44vw);
+  font: inherit;
+}
+.app-plugins .catalogue-actions button {
+  font: inherit;
+  min-height: 34px;
+  padding: 4px 12px;
+}
+
+.app-plugins .catalogue-actions label {
+  border-color: var(--line);
+  background: var(--card);
+  min-width: 0;
+}
+.app-plugins .catalogue-actions label:focus-within {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+.app-plugins .catalogue-actions input {
+  outline: none;
+  box-shadow: none;
+  max-width: 100%;
+  min-width: 0;
+}
+.app-plugins .catalogue-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--ink);
+  color: var(--card);
+  border: 0;
+  font-weight: 600;
+}
+.app-plugins .catalogue-actions button svg {
+  transform: rotate(90deg);
+}
+.app-plugins .catalogue-menu {
+  top: calc(100% + 6px);
+  padding: 4px;
+  gap: 1px;
+  background: var(--card);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  box-shadow: 0 6px 20px #0002;
+  min-width: 170px;
+}
+.app-plugins .catalogue-menu a {
+  color: inherit;
+  text-decoration: none;
+  border-radius: 6px;
+  font-size: 13px;
+  padding: 8px 10px;
+}
+.app-plugins .catalogue-menu a:hover,
+.app-plugins .catalogue-menu a:focus-visible {
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+}
+@container (max-width:620px) {
+  .app-plugins .catalogue-actions {
+    display: grid;
+    width: 100%;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+  .app-plugins .catalogue-actions input {
+    flex: 1;
+    width: 0;
+  }
+}
+@media (pointer: coarse) {
+  .app-plugins .catalogue-actions input,
+  .app-plugins .catalogue-actions button {
+    min-height: 44px;
+  }
+}
+
+.app-plugins .catalogue-six header {
+  display: grid;
+  gap: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+}
+.app-plugins .catalogue-six header > div:first-child,
+.catalogue-section {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.app-plugins .catalogue-six h1 {
+  font-size: 1.45rem;
+  font-weight: 400;
+}
+.catalogue-options,
+.catalogue-section button {
+  color: var(--muted);
+  font: inherit;
+  text-decoration: none;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+.catalogue-section {
+  margin: 24px 0 6px;
+}
+.app-plugins .catalogue-section h2 {
+  margin: 0;
+  font-weight: 500;
+}
+.app-plugins .catalogue-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 8px;
+}
+.app-plugins .catalogue-actions label {
+  flex: 1;
+  border: 0;
+  border-radius: 8px;
+  background: var(--panel2);
+}
+.app-plugins .catalogue-actions input {
+  flex: 1;
+  width: 0;
+}
+.catalogue-types {
+  display: flex;
+  background: var(--panel2);
+  border-radius: 8px;
+}
+.app-plugins .catalogue-actions button {
+  font-weight: 400;
+  border-radius: 8px;
+}
+.app-plugins .catalogue-actions .catalogue-types button,
+.app-plugins .catalogue-actions .catalogue-tri {
+  background: transparent;
+  color: var(--ink);
+}
+.app-plugins .catalogue-actions button[aria-pressed='true'] {
+  background: var(--line);
+}
+.app-plugins .catalogue-actifs {
+  grid-template-columns: 1fr;
+}
+.app-plugins .catalogue-grille a {
+  padding-block: 12px;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+}
+@container (max-width:650px) {
+  .app-plugins .catalogue-actions {
+    flex-wrap: wrap;
+  }
+  .app-plugins .catalogue-actions label {
+    flex-basis: 100%;
+  }
+  .catalogue-types {
+    margin-right: auto;
+  }
+  .app-plugins .catalogue-actions button {
+    padding-inline: 8px;
+  }
+}
+
+/* ---------- Barres de recherche : simples et compactes, un seul contour discret ---------- */
+.lg-recherche input,
+.drawer-recherche,
+.env-recherche {
+  height: 32px;
+  min-height: 32px;
+  padding-top: 0;
+  padding-bottom: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: transparent;
+  box-shadow: none;
+  font-size: 0.88rem;
+}
+.lg-recherche input {
+  padding-left: 34px;
+}
+.lg-recherche svg {
+  left: 11px;
+}
+.lg-recherche input:focus,
+.lg-recherche input:focus-visible,
+.drawer-recherche:focus,
+.drawer-recherche:focus-visible,
+.env-recherche:focus,
+.env-recherche:focus-visible {
+  outline: none;
+  box-shadow: none;
+  border-color: color-mix(in srgb, var(--ink) 35%, transparent);
+}
+@media (max-width: 600px) {
+  .lg-recherche input,
+  .drawer-recherche,
+  .env-recherche,
+  .catalogue-actions input {
+    font-size: 16px; /* pas de zoom automatique sur iPhone */
+  }
+}
+/* Page Plug-ins : un seul cadre (celui du libellé), le champ dedans sans bord ni contour. */
+.catalogue-actions label:has(input) {
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--muted);
+}
+.catalogue-actions label:has(input:focus) {
+  border-color: color-mix(in srgb, var(--ink) 35%, transparent);
+}
+.catalogue-actions input,
+.catalogue-actions input:focus,
+.catalogue-actions input:focus-visible {
+  min-height: 0;
+  height: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
+  color: var(--ink);
+  font-size: 0.88rem;
+}
+@media (max-width: 600px) {
+  .catalogue-actions input {
+    font-size: 16px;
+  }
+}
+
+/* ---------- Cosinus : panneau de session (menu sous le bouton, comme Claude) ---------- */
+.session-boite {
+  position: relative;
+}
+.session-panneau {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 60;
+  width: min(300px, 86vw);
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: 6px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel, var(--card));
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.35);
+  color: var(--ink);
+  font-size: 0.9rem;
+}
+.session-panneau section {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+.session-panneau section:last-child {
+  border-bottom: 0;
+}
+.session-panneau h3 {
+  margin: 0 0 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+.session-panneau p,
+.session-ligne {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  margin: 0;
+  padding: 5px 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+.session-panneau span {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.session-ligne {
+  cursor: pointer;
+  border-radius: 6px;
+}
+.session-ligne:hover {
+  color: var(--brand);
+}
+.session-vide {
+  color: var(--muted);
+}
+.session-remote {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 0;
+}
+.session-remote > span {
+  flex: 1;
+}
+.session-plus {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+.session-plus:hover,
+.session-plus[aria-expanded='true'] {
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  color: var(--ink);
+}
+.session-interrupteur {
+  position: relative;
+  flex: none;
+  width: 36px;
+  height: 20px;
+  border: 0;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--ink) 25%, transparent);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.session-interrupteur::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.15s;
+}
+.session-interrupteur[aria-checked='true'] {
+  background: var(--brand);
+}
+.session-interrupteur[aria-checked='true']::after {
+  transform: translateX(16px);
+}
+.session-interrupteur:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.session-options {
+  display: grid;
+  gap: 8px;
+  padding: 6px 0 2px;
+  font-size: 0.84rem;
+}
+.session-options label {
+  display: grid;
+  gap: 4px;
+  color: var(--muted);
+}
+.session-options select,
+.session-options textarea,
+.session-panneau input {
+  width: 100%;
+  min-height: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.84rem;
+  box-shadow: none;
+}
+.session-options textarea {
+  resize: vertical;
+}
+.session-options small {
+  font-size: 0.75rem;
+}
+.session-erreur {
+  color: var(--danger, #e5484d);
+  font-size: 0.82rem;
+}
+.session-partager {
+  width: auto;
+  gap: 6px;
+  padding: 0 12px;
+  font: inherit;
+  font-size: 0.88rem;
+}
+
+/* ---------- Actions de Six : lignes compactes repliables (PC, Cosinus, remote) ---------- */
+.six-actions {
+  display: grid;
+  gap: 2px;
+  max-width: 100%;
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+.six-action summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  max-width: 100%;
+  padding: 3px 0;
+  cursor: pointer;
+  list-style: none;
+}
+.six-action summary::-webkit-details-marker {
+  display: none;
+}
+.six-action summary:hover {
+  color: var(--ink);
+}
+.six-action summary > svg:last-child {
+  transition: transform 0.15s;
+}
+.six-action[open] summary > svg:last-child {
+  transform: rotate(90deg);
+}
+.six-action-resume {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.six-action-ajout {
+  color: #3fb950;
+}
+.six-action-retrait {
+  color: #f85149;
+}
+.six-action-encours {
+  font-size: 0.78rem;
+  opacity: 0.8;
+}
+.six-action[data-echec] summary > svg:nth-of-type(2) {
+  color: #d29922;
+}
+.six-action ol {
+  margin: 4px 0 6px;
+  padding-left: 30px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.six-action li[data-echec] {
+  color: #f85149;
+}
+.six-action-code {
+  display: grid;
+  gap: 4px;
+  margin: 4px 0 8px;
+}
+.six-action-code pre {
+  max-height: 220px;
+  margin: 0;
+  padding: 8px 10px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
+  color: var(--ink);
+  font:
+    0.78rem/1.45 ui-monospace,
+    SFMono-Regular,
+    Consolas,
+    monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.six-action-code pre + pre {
+  color: var(--muted);
+}
+
+/* ---------- Remote sur le téléphone : discussions du compte en direct (comme le remote de la vidéo) ---------- */
+.remote-direct {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  max-width: 720px;
+  margin: 0 auto;
+  color: var(--ink);
+}
+.remote-tete {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: calc(env(safe-area-inset-top) + 10px) 14px 10px;
+  background: var(--bg, var(--card));
+  border-bottom: 1px solid var(--line);
+}
+.remote-tete h1 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+.remote-retour {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  background: none;
+  color: inherit;
+}
+.remote-titre {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  padding: 4px 14px;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  text-align: center;
+}
+.remote-titre strong,
+.remote-ligne strong {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-size: 0.92rem;
+}
+.remote-titre small,
+.remote-ligne small {
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+.remote-point {
+  flex: none;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--ink) 25%, transparent);
+}
+.remote-point[data-actif] {
+  background: #3fb950;
+  animation: remote-pouls 1.4s ease-in-out infinite;
+}
+@keyframes remote-pouls {
+  50% {
+    opacity: 0.35;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .remote-point[data-actif] {
+    animation: none;
+  }
+}
+.remote-liste {
+  margin: 0;
+  padding: 6px 10px;
+  list-style: none;
+}
+.remote-liste button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 14px 8px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+.remote-ligne {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+.remote-vide {
+  margin: 24px 18px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+.remote-fil {
+  display: grid;
+  flex: 1;
+  align-content: start;
+  gap: 14px;
+  padding: 16px 16px 24px;
+}
+.remote-message {
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.remote-user {
+  justify-self: end;
+  max-width: 85%;
+  padding: 10px 14px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--ink) 9%, transparent);
+}
+.remote-erreur {
+  color: #f85149;
+}
+.remote-pied {
+  position: sticky;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px calc(env(safe-area-inset-bottom) + 12px);
+  border-top: 1px solid var(--line);
+  background: var(--bg, var(--card));
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+/* Panneau de session fixé à droite de l'écran de base (grand écran), à gauche du volet s'il est ouvert. */
+@media (min-width: 1024px) {
+  html[data-session] {
+    --session: 300px;
+  }
+  html[data-session] body {
+    padding-right: calc(var(--volet, 0px) + var(--session));
+  }
+  html[data-session] .seven-outils-flottants {
+    right: calc(var(--volet, 0px) + var(--session) + 12px);
+  }
+  .session-panneau.session-ancre {
+    position: fixed;
+    top: 0;
+    right: var(--volet, 0px);
+    bottom: 0;
+    z-index: 23;
+    width: var(--session);
+    max-height: none;
+    padding: 16px 18px;
+    border: 0;
+    border-left: 1px solid var(--line);
+    border-radius: 0;
+    box-shadow: none;
+    background: var(--card);
+  }
+  .session-panneau.session-ancre section {
+    padding: 14px 0;
+  }
+}
+.remote-pied {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 8px;
+}
+.remote-etat {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+.remote-info {
+  margin: 0;
+  font-size: 0.82rem;
+}
+.remote-saisie {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 6px 6px 6px 14px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--ink) 4%, transparent);
+}
+.remote-saisie textarea {
+  flex: 1;
+  min-height: 0;
+  max-height: 140px;
+  padding: 8px 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px;
+  resize: none;
+  outline: none;
+}
+.remote-saisie textarea:focus {
+  border: 0;
+  box-shadow: none;
+}
+.remote-envoyer,
+.remote-arret {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  cursor: pointer;
+}
+.remote-envoyer {
+  background: var(--ink);
+  color: var(--card);
+}
+.remote-envoyer:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+.remote-arret {
+  background: color-mix(in srgb, var(--ink) 12%, transparent);
+}
+.remote-arret span {
+  width: 11px;
+  height: 11px;
+  border-radius: 2px;
+  background: var(--ink);
+}
+.remote-bandeau {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 8px 8px 14px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--ink) 7%, transparent);
+  color: var(--ink);
+  font-size: 0.86rem;
+}
+.remote-bandeau span {
+  flex: 1;
+}
+.remote-bandeau button {
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+.remote-bandeau .remote-activer {
+  padding: 6px 12px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--ink) 10%, transparent);
+  color: var(--ink);
+  font: inherit;
+}
+.volet-bouton.session-partager {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  width: auto;
+  white-space: nowrap;
 }

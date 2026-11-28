@@ -27,6 +27,9 @@ import { Suivis } from './Suivis';
 import { useConfirmer } from './Confirmer';
 
 type Page =
+  | 'plugins'
+  | 'remote'
+  | 'artefacts'
   | 'projets'
   | 'taches'
   | 'accueil'
@@ -457,11 +460,20 @@ export function AppBar({
               aria-label="Rechercher une discussion"
             />
           )}
+          {item('/artefacts', 'artefacts', <Icon name="file" />, 'Artéfacts')}
+          {item('/plugins', 'plugins', <Icon name="plugins" />, 'Plug-ins')}
+          {item('/remote', 'remote', <Icon name="phone" />, 'Remote')}
+          <details className="drawer-plus">
+            <summary className="drawer-item">
+              <Icon name="plus-points" />
+              Plus
+            </summary>
+            {item('/projets', 'projets', <Icon name="file" />, 'Projets')}
+            {item('/taches', 'taches', <Icon name="file" />, 'Tâches planifiées')}
+          </details>
           {item('/responsive', 'accueil', <Icon name="repondre" />, 'Responsive')}
           {item('/chat', 'seven-ai', <Icon name="discuter" />, 'Chat')}
           {item('/cosinus', 'sixtouch', <Icon name="sixtouch" />, 'Cosinus')}
-          {item('/projets', 'projets', <Icon name="file" />, 'Projets')}
-          {item('/taches', 'taches', <Icon name="file" />, 'Tâches planifiées')}
         </nav>
         <Recents
           elements={recents}
@@ -567,6 +579,7 @@ function Rail({
           <Icon name="nouvelle" size={20} stroke={1.75} />
         </Link>
       )}
+      {lien('/plugins', 'plugins', 'plugins', 'Plug-ins')}
       {lien('/responsive', 'accueil', 'repondre', 'Responsive')}
       {lien('/chat', 'seven-ai', 'discuter', 'Chat')}
       {lien('/cosinus', 'sixtouch', 'sixtouch', 'Cosinus')}

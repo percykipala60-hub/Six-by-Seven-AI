@@ -1,4 +1,5 @@
 import { appelAgent } from '@/lib/ai';
+import { actionDe, type ActionAgent } from '@/lib/actions-agent';
 import { sevenAiSystem } from '@/lib/prompt';
 import { verifierReponse } from '@/lib/verification-reponse';
 import { consignesSkill, choisirSkill, type ChoixSkill } from '@/lib/skills-cosinus';
@@ -39,6 +40,8 @@ const SOURCES_CONNUES = new Set(['chercher_sources', 'lire_page', 'lire_fichier'
 export type ResultatAgent = {
   reponse: string;
   etapes: string[];
+  /** Les mêmes étapes dans le format commun (lib/actions-agent.ts), avec réussite ou échec. */
+  actions: ActionAgent[];
   fichiers: string[];
   plan: Tache[];
 };
@@ -225,6 +228,7 @@ export async function executerAgent({
   ctx,
   surEtape,
   surPlan,
+  surAction,
   annulation,
   skill = 'auto',
   capacites = CAPACITES_DEFAUT,
@@ -237,6 +241,8 @@ export async function executerAgent({
   surEtape: (texte: string) => void;
   /** Le plan de travail vient d'être écrit ou une tâche vient d'être cochée. */
   surPlan?: (plan: Tache[]) => void;
+  /** Une action vient de se terminer (format commun, pour l'affichage et le remote). */
+  surAction?: (action: ActionAgent) => void;
   annulation?: AbortSignal;
   skill?: ChoixSkill;
   /** Réglages → Capacités : outils retirés et consignes ajoutées quand une capacité est coupée. */
@@ -317,6 +323,12 @@ Respecte ce style dans les documents que tu rédiges (plan, numérotation, ton, 
     },
   ];
   const etapes: string[] = [];
+  const actions: ActionAgent[] = [];
+  const noter = (nom: string, args: Record<string, unknown>, texte: string, resultat: string) => {
+    const action = actionDe(nom, args, texte, resultat);
+    actions.push(action);
+    surAction?.(action);
+  };
   const methode = choisirSkill(skill, question, Boolean(images?.length));
   if (methode) {
     const etape = `Focus : ${methode.nom}`;
@@ -338,6 +350,7 @@ Respecte ce style dans les documents que tu rédiges (plan, numérotation, ton, 
         await verifierReponse({ question, reponse: texte, preuves, fichiers, premium }),
       ),
       etapes,
+      actions,
       fichiers,
       plan,
     };
@@ -393,6 +406,7 @@ Respecte ce style dans les documents que tu rédiges (plan, numérotation, ton, 
       etapes.push(texte);
       surEtape(texte);
       const { resultat } = await executerOutil(appel.nom, appel.args, ctxTache);
+      noter(appel.nom, appel.args, texte, resultat);
       preuves.push(`${appel.nom} : ${resultat}`);
       messages.push({ role: 'tool', id: appel.id, nom: appel.nom, content: resultat });
     }
@@ -483,6 +497,7 @@ Respecte ce style dans les documents que tu rédiges (plan, numérotation, ton, 
             }
           : await executerOutil(a.nom, a.args, ctxTache);
       if (crees) fichiers.push(...crees);
+      noter(a.nom, a.args, texte, resultat);
       preuves.push(`${a.nom} : ${resultat}`);
       if (SOURCES_CONNUES.has(a.nom)) ctxTache.suivi?.vus.push(resultat);
       messages.push({ role: 'tool', id: a.id, nom: a.nom, content: resultat });

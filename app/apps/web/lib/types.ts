@@ -1,3 +1,4 @@
+import type { ActionAgent } from './actions-agent';
 import type { LieuCarte } from './carte-rdc';
 export const MAX_CHARS = 2000;
 
@@ -114,6 +115,8 @@ export interface ChatMessage {
   pieces?: PieceAffichee[];
   /** Cosinus : ce que l'agent a fait (« Six lit … ») et les fichiers qu'il a enregistrés. Affichage seulement. */
   etapes?: string[];
+  /** Les mêmes étapes au format commun (lib/actions-agent.ts) : lignes compactes, réussite ou échec. */
+  actions?: ActionAgent[];
   fichiers?: string[];
   /** Chat : lieux trouvés dans OpenStreetMap, montrés sur une carte sous la réponse. Affichage seulement. */
   lieux?: LieuCarte[];
