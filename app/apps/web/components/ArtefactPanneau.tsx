@@ -1,5 +1,6 @@
 'use client';
 
+import { copierTexte } from '@/lib/presse-papiers';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Diapositives } from './Diapositives';
 import { Icon } from './Icon';
@@ -71,7 +72,7 @@ export default function ArtefactPanneau({
 
   async function copier() {
     try {
-      await navigator.clipboard.writeText(contenu);
+      await copierTexte(contenu);
       setCopie(true);
       setTimeout(() => setCopie(false), 1600);
     } catch {

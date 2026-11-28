@@ -1,4 +1,5 @@
 'use client';
+import { copierTexte } from '@/lib/presse-papiers';
 import Image from 'next/image';
 import { cleHistorique, compteHistorique } from '@/lib/historique-compte';
 
@@ -2036,7 +2037,7 @@ export function SevenChatPage({ mode = 'chat' }: { mode?: ModeChat } = {}) {
                 <ActionsMessage
                   message={m}
                   occupe={occupe}
-                  onCopier={() => navigator.clipboard.writeText(m.content)}
+                  onCopier={() => copierTexte(m.content).catch(() => {})}
                   onRelancer={
                     m.role === 'user'
                       ? () => relancer(i)

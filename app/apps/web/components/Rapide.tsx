@@ -1,5 +1,6 @@
 'use client';
 
+import { copierTexte } from '@/lib/presse-papiers';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { anonymize, restore } from '@/lib/anonymize';
 import { heuristicScam, SCAM_THRESHOLD } from '@/lib/scam';
@@ -109,7 +110,7 @@ export function Rapide() {
       return;
     }
     try {
-      await navigator.clipboard.writeText(finale);
+      await copierTexte(finale);
       setErreur('Réponse copiée.');
     } catch {
       setErreur('La copie a échoué : sélectionne le texte et copie-le.');

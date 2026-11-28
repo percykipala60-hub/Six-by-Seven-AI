@@ -1,5 +1,6 @@
 'use client';
 
+import { copierTexte } from '@/lib/presse-papiers';
 import { useEffect, useRef, useState } from 'react';
 import { SITUATIONS, type Situation, type TopicsResult } from '@/lib/types';
 import { Icon } from './Icon';
@@ -8,7 +9,7 @@ import { entetesCompte } from '@/lib/premium-client';
 
 async function copyText(text: string): Promise<boolean> {
   try {
-    await navigator.clipboard.writeText(text);
+    await copierTexte(text);
     return true;
   } catch {
     return false;

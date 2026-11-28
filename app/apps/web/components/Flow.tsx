@@ -1,5 +1,6 @@
 'use client';
 
+import { copierTexte } from '@/lib/presse-papiers';
 import { useEffect, useMemo, useRef, useState, type ClipboardEvent, type DragEvent } from 'react';
 import { mouvementReduit } from '@/lib/accessibilite';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -334,7 +335,7 @@ function fit(text: string, max: number): string {
 
 async function copyText(text: string): Promise<boolean> {
   try {
-    await navigator.clipboard.writeText(text);
+    await copierTexte(text);
     return true;
   } catch {
     const ta = document.createElement('textarea');

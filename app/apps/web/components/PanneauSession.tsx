@@ -1,5 +1,6 @@
 'use client';
 
+import { copierTexte } from '@/lib/presse-papiers';
 import { useEffect, useRef, useState, type RefObject } from 'react';
 import { Icon } from './Icon';
 import type { Artefact } from '@/lib/artefacts';
@@ -251,10 +252,14 @@ export function BoutonRemote({ remote }: { remote: EtatRemote }) {
               type="button"
               className="session-ligne"
               onClick={() =>
-                void navigator.clipboard.writeText(remote.lien).then(() => {
-                  setCopie(true);
-                  setTimeout(() => setCopie(false), 1500);
-                })
+                void copierTexte(remote.lien)
+                  .then(() => {
+                    setCopie(true);
+                    setTimeout(() => setCopie(false), 1500);
+                  })
+                  .catch(() => {
+                    /* le lien reste sélectionnable dans le champ */
+                  })
               }
             >
               <Icon name={copie ? 'check' : 'copy'} size={16} stroke={1.8} />

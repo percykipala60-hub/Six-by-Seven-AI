@@ -1,5 +1,6 @@
 'use client';
 
+import { copierTexte } from '@/lib/presse-papiers';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Icon } from './Icon';
 import { Afficheur } from './Afficheur';
@@ -240,7 +241,7 @@ export function Explorateur({
   };
   const copier = async (texte: string, quoi: string) => {
     try {
-      await navigator.clipboard.writeText(texte);
+      await copierTexte(texte);
       onInfo(`${quoi} copié.`);
     } catch {
       onInfo('Copie impossible dans ce navigateur.');
